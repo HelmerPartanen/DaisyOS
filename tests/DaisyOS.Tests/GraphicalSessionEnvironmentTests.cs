@@ -39,4 +39,23 @@ public sealed class GraphicalSessionEnvironmentTests
         }
         finally { Directory.Delete(root, true); }
     }
+
+    [Fact]
+    public void ResolvesListenerOnlyWhenPeerCredentialsMatchCompositor()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        var root = Path.Combine(Path.GetTempPath(), "daisy-peer-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var listener = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix,
+                System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Unspecified);
+            listener.Bind(new System.Net.Sockets.UnixDomainSocketEndPoint(Path.Combine(root, "X7")));
+            listener.Listen(4);
+            Assert.Null(GraphicalSessionEnvironment.ResolveListenerDisplay(-1, root));
+            Assert.Equal(":7", GraphicalSessionEnvironment.ResolveListenerDisplay(Environment.ProcessId, root)?.Display);
+        }
+        finally { Directory.Delete(root, true); }
+    }
+
 }
