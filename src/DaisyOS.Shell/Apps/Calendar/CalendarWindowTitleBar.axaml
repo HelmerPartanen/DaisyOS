@@ -1,0 +1,73 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Apps.Calendar.CalendarWindowTitleBar"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="clr-namespace:DaisyOS.Shell.Apps.Calendar"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    Height="44">
+  <UserControl.Styles>
+    <Style Selector="Button.CaptionButton">
+      <Setter Property="Width" Value="42" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.CaptionButton:not(.CaptionClose):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionButton:not(.CaptionClose):pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionDangerHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource CaptionCloseGlyphBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionDangerPressedBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pressed">
+      <Setter Property="Foreground" Value="{DynamicResource CaptionCloseGlyphBrush}" />
+    </Style>
+    <Style Selector="controls|DaisyIcon.CaptionIcon">
+      <Setter Property="Size" Value="18" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="controls|DaisyIcon.CaptionIcon.CaptionMaximizeIcon">
+      <Setter Property="Size" Value="15" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border Background="{DynamicResource SurfaceBaseBrush}"
+          BorderThickness="0"
+          PointerPressed="OnTitleBarPointerPressed"
+          DoubleTapped="OnTitleBarDoubleTapped">
+    <Grid ColumnDefinitions="Auto,*,Auto">
+      <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="12,0,10,0">
+        <controls:DaisyIcon Icon="calendar"
+                            Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=local:CalendarWindowTitleBar}}"
+                   FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+
+      <StackPanel Grid.Column="2" Orientation="Horizontal">
+        <Button Classes="CaptionButton" Click="OnMinimizeClicked" ToolTip.Tip="{DynamicResource Loc_D72E311C4DDA}">
+          <controls:DaisyIcon Icon="minus" Classes="CaptionIcon" />
+        </Button>
+        <Button Classes="CaptionButton" Click="OnMaximizeRestoreClicked" ToolTip.Tip="{DynamicResource Loc_9E47A676743F}">
+          <controls:DaisyIcon Icon="square" Classes="CaptionIcon CaptionMaximizeIcon" />
+        </Button>
+        <Button Classes="CaptionButton CaptionClose" Click="OnCloseClicked" ToolTip.Tip="{DynamicResource Loc_7D9EB7ACB13E}">
+          <controls:DaisyIcon Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Icon="x" Classes="CaptionIcon" />
+        </Button>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

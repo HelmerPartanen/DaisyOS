@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Calendar
+Name[fi]=Kalenteri
+Comment=View your calendar
+Comment[fi]=Tarkastele kalenteria
+Exec=daisyos-shell --open-app=calendar
+Icon=org.daisyos.calendar
+StartupWMClass=org.daisyos.calendar
+Categories=Office;Calendar;

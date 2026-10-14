@@ -1,0 +1,340 @@
+<UserControl
+ x:Class="DaisyOS.Shell.Views.Components.SystemBar.SystemBarView"
+ xmlns="https://github.com/avaloniaui"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+ xmlns:notifications="clr-namespace:DaisyOS.Shell.Views.Components.Notifications"
+ xmlns:quickSettings="clr-namespace:DaisyOS.Shell.Views.Components.QuickSettings"
+ xmlns:systemBar="clr-namespace:DaisyOS.Shell.Views.Components.SystemBar"
+ HorizontalAlignment="Right"
+ VerticalAlignment="Bottom"
+ Margin="0,3,6,3">
+
+<UserControl.Resources> <!-- Flyout has no second opaque frame; each popover owns its material card. --> <ControlTheme x:Key="SystemBarFlyoutPresenter" TargetType="FlyoutPresenter"> <Setter Property="Background" Value="Transparent"/> <Setter Property="BorderThickness" Value="0"/> <Setter Property="Padding" Value="0"/> <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}"/> </ControlTheme>
+</UserControl.Resources>
+
+<UserControl.Styles>
+
+<!-- ========================================================= -->
+<!-- SYSTEM BAR BUTTONS                                        -->
+<!-- ========================================================= -->
+
+<!-- Remove default button background/border from the main System Bar buttons. -->
+<Style Selector="Border#SystemBarFrame Button.ShellButton">
+  <Setter Property="Background" Value="Transparent"/>
+  <Setter Property="BorderBrush" Value="Transparent"/>
+  <Setter Property="BorderThickness" Value="0"/>
+  <Setter Property="RenderTransform" Value="none"/>
+  <Setter Property="Transitions">
+    <Transitions>
+      <TransformOperationsTransition
+          Property="RenderTransform"
+          Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut"/>
+    </Transitions>
+  </Setter>
+</Style>
+
+<!-- Click scale effect. -->
+<Style Selector="Border#SystemBarFrame Button.ShellButton:pressed">
+  <Setter Property="RenderTransform" Value="scale(0.92)"/>
+</Style>
+
+<!-- Active state: match taskbar button active state. -->
+<Style Selector="Border#SystemBarFrame Button.ShellButton.ShellButtonActive /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+</Style>
+
+<!-- Foreground color for System Bar glyphs, icons, and clock text. -->
+<Style Selector="Border#SystemBarFrame Button TextBlock">
+  <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/>
+</Style>
+
+<Style Selector="Border#SystemBarFrame Button controls|DaisyIcon">
+  <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/>
+</Style>
+
+<Style Selector="Border#SystemBarFrame Button controls|WifiSignalIcon">
+  <Setter Property="ActiveBrush" Value="{DynamicResource ContentSecondaryBrush}"/>
+  <Setter Property="InactiveBrush" Value="{DynamicResource ContentTertiaryBrush}"/>
+</Style>
+
+
+</UserControl.Styles>
+
+  <Grid>
+
+<!-- ========================================================= -->
+<!-- SYSTEM BAR                                                -->
+<!-- Unified shell frame matching Taskbar and MediaWidget      -->
+<!-- ========================================================= -->
+
+<controls:ShellFrameBorder x:Name="SystemBarFrame"
+        Height="{DynamicResource ShellChromeHeight}"
+        HorizontalAlignment="Right"
+        VerticalAlignment="Bottom"
+        Padding="1"
+        Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+        CornerRadius="{DynamicResource RoundedXL}">
+
+  <controls:ShellFrameBorder Background="Transparent"
+          BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
+          BorderThickness="1"
+          CornerRadius="{DynamicResource RoundedXLInset}">
+
+    <!-- The two frame pixels leave the original 4px content inset and 40px controls intact. -->
+    <Border Background="{DynamicResource SurfaceBaseBrush}"
+            Padding="4"
+            CornerRadius="{DynamicResource RoundedXLDoubleInset}"
+            ClipToBounds="True">
+
+      <StackPanel
+          Orientation="Horizontal"
+          VerticalAlignment="Center"
+          Spacing="0">
+
+        <Button x:Name="AppTrayButton" Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}"
+                Padding="0" ToolTip.Tip="{DynamicResource Loc_D15070AD05F6}" AutomationProperties.Name="{DynamicResource Loc_D15070AD05F6}"
+                Click="OnAppTrayRequested">
+          <controls:DaisyIcon x:Name="AppTrayChevron" Icon="caret-up"
+              Size="{DynamicResource ShellStatusIconSize}" RenderTransformOrigin="50%,50%"
+              RenderTransform="rotate(0deg)">
+            <controls:DaisyIcon.Transitions>
+              <Transitions>
+                <TransformOperationsTransition Property="RenderTransform"
+                    Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut"/>
+              </Transitions>
+            </controls:DaisyIcon.Transitions>
+          </controls:DaisyIcon>
+        </Button>
+
+        <!-- ===================================================== -->
+        <!-- QUICK SETTINGS BUTTON                                 -->
+        <!-- ===================================================== -->
+
+        <Button x:Name="QuickSettingsButton"
+                Classes="ShellButton"
+                Height="{DynamicResource ControlHeightStandard}"
+                Padding="8,0"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="0"
+                ToolTip.Tip="{DynamicResource Loc_6BED1F88D239}"
+                Click="OnQuickSettingsRequested">
+
+          <Border Height="{DynamicResource ControlHeightStandard}"
+                  Background="Transparent"
+                  BorderBrush="Transparent"
+                  BorderThickness="0"
+                  CornerRadius="{DynamicResource RoundedMD}">
+
+            <StackPanel
+                Orientation="Horizontal"
+                Spacing="12"
+                VerticalAlignment="Center">
+
+              <Grid Width="18" Height="18">
+
+                <controls:WifiSignalIcon
+                    x:Name="SystemBarWifiIcon"
+                    IsVisible="False"
+                    SignalPercent="0"
+                    ActiveBrush="{DynamicResource ContentSecondaryBrush}"
+                    InactiveBrush="{DynamicResource ContentTertiaryBrush}"/>
+
+                <controls:DaisyIcon
+                    x:Name="SystemBarEthernetIcon"
+                    Icon="Ethernet"
+                    IsVisible="False"
+                    Size="{DynamicResource ShellStatusIconSize}"
+                    Foreground="{DynamicResource ContentSecondaryBrush}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
+
+                <controls:DaisyIcon
+                    x:Name="SystemBarOfflineIcon"
+                    Icon="globe"
+                    Size="{DynamicResource ShellStatusIconSize}"
+                    Foreground="{DynamicResource ContentSecondaryBrush}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
+
+              </Grid>
+
+              <controls:DaisyIcon
+                  x:Name="SystemBarBluetoothIcon"
+                  Icon="bluetooth"
+                  IsVisible="False"
+                  Size="{DynamicResource ShellStatusIconSize}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"/>
+
+              <controls:DaisyIcon
+                  Icon="speaker-high"
+                  Size="{DynamicResource ShellStatusIconSize}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"/>
+
+            </StackPanel>
+          </Border>
+        </Button>
+
+
+        <!-- ===================================================== -->
+        <!-- NOTIFICATIONS BUTTON                                  -->
+        <!-- ===================================================== -->
+
+        <Button x:Name="NotificationsButton"
+                Classes="ShellButton"
+                Width="{DynamicResource ControlHeightStandard}"
+                Height="{DynamicResource ControlHeightStandard}"
+                Padding="0"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="0"
+                ToolTip.Tip="{DynamicResource Loc_788011833A5A}"
+                Click="OnNotificationsRequested">
+
+          <Border
+              Background="Transparent"
+              BorderBrush="Transparent"
+              BorderThickness="0"
+              CornerRadius="{DynamicResource RoundedMD}">
+
+            <Grid>
+
+              <controls:DaisyIcon
+                  Icon="bell"
+                  Size="{DynamicResource ShellStatusIconSize}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"/>
+
+              <Border
+                  x:Name="NotificationBadge"
+                  Width="8"
+                  Height="8"
+                  CornerRadius="{DynamicResource RoundedXS}"
+                  Background="{DynamicResource ActionPrimaryBrush}"
+                  IsVisible="False"
+                  HorizontalAlignment="Right"
+                  VerticalAlignment="Top"
+                  Margin="0,10,10,0"
+                  ToolTip.Tip="{DynamicResource Loc_B1E97DFC5EB8}"/>
+
+            </Grid>
+
+          </Border>
+        </Button>
+
+
+        <!-- ===================================================== -->
+        <!-- CALENDAR / CLOCK BUTTON                                -->
+        <!-- ===================================================== -->
+
+        <Button x:Name="CalendarButton"
+                Classes="Ghost Small"
+                ToolTip.Tip="{DynamicResource Loc_D5D0A30B517E}"
+                Click="OnCalendarRequested">
+
+          <Border
+              Background="Transparent"
+              BorderBrush="Transparent"
+              BorderThickness="0"
+              CornerRadius="{DynamicResource RoundedMD}">
+
+            <StackPanel
+                Orientation="Horizontal"
+                Spacing="12"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center">
+
+              <TextBlock
+                  x:Name="DateText"
+                  IsVisible="False"
+                  FontSize="{DynamicResource TypeSizeBodySmall}"
+                  FontWeight="Medium"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  TextAlignment="Center"
+                  VerticalAlignment="Center"/>
+
+              <TextBlock
+                  x:Name="ClockText"
+                  FontSize="{DynamicResource TypeSizeBodySmall}"
+                  FontWeight="Medium"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  TextAlignment="Center"
+                  VerticalAlignment="Center"/>
+
+            </StackPanel>
+
+          </Border>
+        </Button>
+
+      </StackPanel>
+    </Border>
+  </controls:ShellFrameBorder>
+</controls:ShellFrameBorder>
+
+
+<systemBar:AppTrayView x:Name="AppTrayPanel" IsVisible="False"
+    HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,61"/>
+
+<!-- ========================================================= -->
+<!-- QUICK SETTINGS PANEL                                     -->
+<!-- ========================================================= -->
+
+<quickSettings:QuickSettings x:Name="QuickSettingsPanel"
+    IsVisible="False" HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,6,61"/>
+
+
+<!-- ========================================================= -->
+<!-- NOTIFICATION DRAWER                                      -->
+<!-- ========================================================= -->
+
+<notifications:NotificationCenterView
+    x:Name="NotificationDrawer"
+    IsVisible="False"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Bottom"
+    Margin="0,0,6,61"/>
+
+
+<!-- ========================================================= -->
+<!-- CALENDAR OVERLAY                                         -->
+<!-- ========================================================= -->
+
+<controls:ShellFrameBorder
+    x:Name="CalendarPanel"
+    Width="340"
+    IsVisible="False"
+    Padding="1"
+    Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+    CornerRadius="{DynamicResource RoundedXXL}"
+    BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Bottom"
+    Margin="0,0,6,61">
+
+  <controls:ShellFrameBorder
+      Background="Transparent"
+      BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
+      BorderThickness="1"
+      CornerRadius="{DynamicResource RoundedXXLInset}">
+
+    <Border
+        Background="{DynamicResource SurfaceBaseBrush}"
+        Padding="16"
+        CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
+        ClipToBounds="True">
+
+      <systemBar:CustomCalendarView
+          x:Name="CalendarView"/>
+
+    </Border>
+  </controls:ShellFrameBorder>
+</controls:ShellFrameBorder>
+
+  </Grid>
+</UserControl>

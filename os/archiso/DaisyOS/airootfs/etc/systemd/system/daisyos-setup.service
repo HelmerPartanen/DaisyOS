@@ -1,0 +1,13 @@
+[Unit]
+Description=DaisyOS System Setup
+DefaultDependencies=no
+After=systemd-sysusers.service
+Before=systemd-firstboot.service sysinit.target getty.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/daisyos-setup.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

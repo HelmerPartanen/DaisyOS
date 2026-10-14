@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(AvsCurrentTargetFramework);$(AvsLegacyTargetFrameworks)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Generated COM interfaces in .NET 10 require explicit opt-in to the
+         source-generated marshaller. This assembly is Windows-only and does
+         not use runtime COM marshalling. -->
+    <DisableRuntimeMarshalling>true</DisableRuntimeMarshalling>
+    <BuiltInComInteropSupport Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net8.0'))">true</BuiltInComInteropSupport>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\packages\Avalonia\Avalonia.csproj"/>
+  </ItemGroup>
+  <Import Project="..\..\..\build\NullableEnable.props"/>
+  <Import Project="..\..\..\build\DevAnalyzers.props"/>
+  <Import Project="..\..\..\build\TrimmingEnable.props"/>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="Avalonia.Win32, PublicKey=$(AvaloniaPublicKey)"/>
+  </ItemGroup>
+</Project>

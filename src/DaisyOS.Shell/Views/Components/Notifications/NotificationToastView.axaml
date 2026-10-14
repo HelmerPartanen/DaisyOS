@@ -1,0 +1,12 @@
+<UserControl x:Class="DaisyOS.Shell.Views.Components.Notifications.NotificationToastView"
+ xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:notifications="clr-namespace:DaisyOS.Shell.Views.Components.Notifications"
+ ClipToBounds="False">
+ <controls:ShellFrameBorder Classes="ToastCard" Padding="1" Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+           CornerRadius="{DynamicResource RoundedXXL}" BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}">
+  <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+            BackgroundSizing="InnerBorderEdge" BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+   <notifications:NotificationCard x:Name="Card" CornerRadius="{DynamicResource RoundedXXLDoubleInset}" Background="{DynamicResource SurfaceBaseBrush}" />
+  </controls:ShellFrameBorder>
+ </controls:ShellFrameBorder>
+</UserControl>

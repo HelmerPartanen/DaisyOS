@@ -1,0 +1,351 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings"
+             Width="340" ClipToBounds="False">
+  <UserControl.Styles>
+<!-- ========================================================= -->
+<!-- OUTPUT DEVICES                                            -->
+<!-- ========================================================= -->
+
+<Style Selector="Button.OutputDevicesButton">
+  <Setter Property="Width" Value="40"/>
+  <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}"/>
+  <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}"/>
+  <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
+</Style>
+
+<Style Selector="Button.OutputDevicesButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDevicesButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource ActionSecondaryPressedBrush}"/>
+</Style>
+
+
+<!-- ========================================================= -->
+<!-- OUTPUT DEVICE LIST ITEMS                                  -->
+<!-- ========================================================= -->
+
+<Style Selector="Button.OutputDeviceItem">
+  <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}"/>
+  <Setter Property="HorizontalAlignment" Value="Stretch"/>
+  <Setter Property="Background" Value="Transparent"/>
+  <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+  <Setter Property="Padding" Value="10,0"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem.SelectedOutputDevice">
+  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem.SelectedOutputDevice TextBlock">
+  <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem.SelectedOutputDevice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem.ConnectedWifiNetwork">
+  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem.ConnectedWifiNetwork:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem.ConnectedBluetoothDevice">
+  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
+</Style>
+
+<Style Selector="Button.OutputDeviceItem.ConnectedBluetoothDevice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
+</Style>
+
+    <Style Selector="Button.AudioOutputItem">
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="Padding" Value="12,10" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.AudioOutputItem.SelectedOutputDevice">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+    </Style>
+    <Style Selector="Button.AudioOutputItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.AudioOutputItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+  </UserControl.Styles>
+<controls:ShellFrameBorder x:Name="MaterialFrame"
+        Padding="1"
+        Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+        CornerRadius="{DynamicResource RoundedXXL}"
+        BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}">
+
+  <controls:ShellFrameBorder
+      Background="Transparent"
+      BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
+      BorderThickness="1"
+      CornerRadius="{DynamicResource RoundedXXLInset}">
+
+    <Border
+        Background="{DynamicResource SurfaceBaseBrush}"
+        Padding="16"
+        CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
+        ClipToBounds="True">
+
+      <Grid x:Name="MotionContent">
+
+        <!-- ================================================= -->
+        <!-- MAIN QUICK SETTINGS PAGE                         -->
+        <!-- ================================================= -->
+
+        <StackPanel
+            x:Name="QuickSettingsMainPage"
+            Spacing="14">
+
+          <Grid
+              Width="304"
+              HorizontalAlignment="Center"
+              x:Name="QuickSettingsTiles"
+              ColumnDefinitions="96,96,96"
+              ColumnSpacing="8"
+              RowDefinitions="Auto,Auto"
+              RowSpacing="8">
+
+            <controls:QuickSettingTile
+                Grid.Row="0"
+                Grid.Column="0"
+                x:Name="WifiTile"
+                Icon="wifi-high"
+                Label="Wi-Fi"
+                HasDetails="True"
+                ToolTipText="{DynamicResource Loc_079C143D59D9}"
+                DetailsToolTipText="{DynamicResource Loc_CB4EC95A3F55}"
+                Toggled="OnWifiTileToggled"
+                DetailsClicked="OnWifiNetworksButtonClicked"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="0"
+                Grid.Column="0"
+                x:Name="EthernetTile"
+                IsVisible="False"
+                Icon="Ethernet"
+                Label="Ethernet"
+                HasDetails="True"
+                ToolTipText="{DynamicResource Loc_134B0C5D61EE}"
+                DetailsToolTipText="{DynamicResource Loc_600F22C13F36}"
+                Toggled="OnEthernetTileClicked"
+                DetailsClicked="OnNetworkSettingsClicked"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="0"
+                Grid.Column="1"
+                x:Name="BluetoothTile"
+                Icon="bluetooth"
+                Label="Bluetooth"
+                HasDetails="True"
+                ToolTipText="{DynamicResource Loc_DA8B2D1CD1C7}"
+                DetailsToolTipText="{DynamicResource Loc_62B2E1B18694}"
+                Toggled="OnBluetoothTileToggled"
+                DetailsClicked="OnBluetoothDevicesButtonClicked"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="0"
+                Grid.Column="1"
+                x:Name="DndTile"
+                IsVisible="False"
+                Icon="bell-slash"
+                Label="Do not disturb"
+                ToolTipText="{DynamicResource Loc_0C798C5A9B24}"
+                Toggled="OnDndTileToggled"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="0"
+                Grid.Column="2"
+                x:Name="LocalSendTile"
+                Icon="local-send"
+                Label="LocalSend"
+                ToolTipText="{DynamicResource Loc_8FF7C4B4B002}"
+                Toggled="OnLocalSendTileToggled"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="1"
+                Grid.Column="0"
+                x:Name="NightLightTile"
+                Icon="moon"
+                Label="Night light"
+                ToolTipText="{DynamicResource Loc_213E626A5B30}"
+                Toggled="OnNightLightTileToggled"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="1"
+                Grid.Column="1"
+                x:Name="ThemeTile"
+                Icon="circle-half"
+                Label="Theme"
+                ToolTipText="{DynamicResource Loc_DB1DE510BCB2}"
+                Toggled="OnThemeTileToggled"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="1"
+                Grid.Column="2"
+                x:Name="GamingTile"
+                Icon="game-controller"
+                Label="Gaming"
+                HasDetails="True"
+                ToolTipText="{DynamicResource Loc_9C65D676E7AB}"
+                DetailsToolTipText="{DynamicResource Loc_165AB99C5DA0}"
+                Toggled="OnGamingTileToggled"
+                DetailsClicked="OnGamingDetailsClicked"/>
+
+          </Grid>
+
+
+          <!-- ================================================= -->
+          <!-- VOLUME ROW CARD                                  -->
+          <!-- ================================================= -->
+
+          <Border
+              Background="{DynamicResource ActionSecondaryBrush}"
+              CornerRadius="{DynamicResource RadiusSurface}"
+              Padding="4,2,6,2"
+              Height="{DynamicResource QuickSettingsControlHeight}">
+
+            <Grid
+                ColumnDefinitions="*,34"
+                VerticalAlignment="Center">
+
+              <controls:QuickSettingsSlider
+                  x:Name="VolumeSlider"
+                  Grid.Column="0"
+                  Icon="speaker-high"
+                  Minimum="0"
+                  Maximum="100"
+                  ValueChanged="OnVolumeChanged"/>
+
+              <Button
+                  Grid.Column="1"
+                  Classes="ShellButton VolumeOutputDetails"
+                  ToolTip.Tip="{DynamicResource Loc_1D19A06C499E}"
+                  Width="32"
+                  Height="{DynamicResource ControlHeightStandard}"
+                  CornerRadius="{DynamicResource RadiusSurfaceInner}"
+                  Click="OnOutputDevicesButtonClicked">
+
+                <controls:DaisyIcon
+                    Icon="caret-right"
+                    Size="{DynamicResource IconSizeStandard}"
+                    HorizontalAlignment="Center"
+                    VerticalAlignment="Center"/>
+
+              </Button>
+            </Grid>
+          </Border>
+
+        </StackPanel>
+
+
+        <!-- ================================================= -->
+        <!-- OUTPUT DEVICES PAGE                              -->
+        <!-- ================================================= -->
+
+        <StackPanel
+            x:Name="OutputDevicesPage"
+            IsVisible="False"
+            Spacing="12">
+
+          <controls:FlyoutPageHeader
+              Title="{DynamicResource Loc_3D1E662940E7}"
+              BackClicked="OnOutputDevicesBackClicked"/>
+
+          <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                x:Name="OutputDevicesHost"
+                Spacing="6">
+
+              <TextBlock
+                  Text="{DynamicResource Loc_B3F4C73BD205}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Margin="10,8"/>
+
+            </StackPanel>
+          </ScrollViewer>
+
+        </StackPanel>
+
+
+        <!-- ================================================= -->
+        <!-- WI-FI NETWORKS PAGE                              -->
+        <!-- ================================================= -->
+
+        <StackPanel
+            x:Name="WifiNetworksPage"
+            IsVisible="False"
+            Spacing="12">
+
+          <controls:FlyoutPageHeader
+              Title="{DynamicResource Loc_CB4EC95A3F55}"
+              BackClicked="OnWifiNetworksBackClicked"/>
+
+          <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                x:Name="WifiNetworksHost"
+                Spacing="4"
+                Margin="0,0,4,0">
+
+              <TextBlock
+                  Text="{DynamicResource Loc_A388D2A773EF}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Margin="10,8"/>
+
+            </StackPanel>
+          </ScrollViewer>
+
+        </StackPanel>
+
+
+        <!-- ================================================= -->
+        <!-- BLUETOOTH DEVICES PAGE                           -->
+        <!-- ================================================= -->
+
+        <StackPanel
+            x:Name="BluetoothDevicesPage"
+            IsVisible="False"
+            Spacing="12">
+
+          <controls:FlyoutPageHeader
+              Title="{DynamicResource Loc_62B2E1B18694}"
+              BackClicked="OnBluetoothDevicesBackClicked"/>
+
+          <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+            <StackPanel
+                x:Name="BluetoothDevicesHost"
+                Spacing="4"
+                Margin="0,0,4,0">
+
+              <TextBlock
+                  Text="{DynamicResource Loc_B3F4C73BD205}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Margin="10,8"/>
+
+            </StackPanel>
+          </ScrollViewer>
+
+        </StackPanel>
+
+      </Grid>
+    </Border>
+  </controls:ShellFrameBorder>
+</controls:ShellFrameBorder>
+</UserControl>

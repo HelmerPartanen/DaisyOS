@@ -1,0 +1,455 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        xmlns:typography="clr-namespace:DaisyOS.Shell.Services.Theming">
+
+    <Style Selector=":is(Control)">
+      <Setter Property="typography:ThemeTransitionPolicy.Enabled" Value="True" />
+    </Style>
+
+    <!-- This presenter forwards native-surface transparency from PopupRoot.
+         Animating that binding can resurrect the root's initial white fill. -->
+    <Style Selector="PopupRoot /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="typography:ThemeTransitionPolicy.Enabled" Value="False" />
+    </Style>
+
+    <Style Selector="TextBlock">
+      <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+      <Setter Property="FontWeight" Value="Regular" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+
+    <Style Selector="AccessText">
+      <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+      <Setter Property="FontWeight" Value="Regular" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+  <!-- Grayscale antialiasing stays clean on both opaque and translucent KWin surfaces. -->
+  <Style Selector="Window, UserControl, ToolTip, PopupRoot">
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+    <Setter Property="UseLayoutRounding" Value="True" />
+    <Setter Property="typography:TextRenderingPolicy.Enabled" Value="True" />
+    <Setter Property="FlowDirection" Value="{DynamicResource SystemFlowDirection}" />
+  </Style>
+
+  <Style Selector="ComboBox, ComboBoxItem">
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+  </Style>
+
+  <!-- Shared button foundation. Variants are semantic and may be used on
+       Button or ToggleButton without copying a template into a feature view. -->
+  <Style Selector="Button, ToggleButton:not(CheckBox):not(RadioButton)">
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="Padding" Value="{DynamicResource ControlPaddingHorizontal}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+        <BrushTransition Property="Foreground" Duration="{DynamicResource MotionDurationFast}" />
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <!-- Pointer feedback has its own short timing; do not inherit theme-fade duration. -->
+  <Style Selector="Button /template/ ContentPresenter#PART_ContentPresenter, ToggleButton /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="ListBoxItem, TabItem">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <!-- Caption Close must never animate through Fluent's neutral hover fill.
+       Keep this semantic interaction immediate; other caption/theme motion is unchanged. -->
+  <Style Selector="Button.CaptionClose">
+    <Setter Property="typography:ThemeTransitionPolicy.Enabled" Value="False" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="Transitions"><Transitions /></Setter>
+  </Style>
+  <Style Selector="Button.CaptionClose controls|WindowCaptionGlyph, Button.CaptionClose controls|DaisyIcon">
+    <Setter Property="typography:ThemeTransitionPolicy.Enabled" Value="False" />
+    <Setter Property="Transitions"><Transitions /></Setter>
+  </Style>
+  <Style Selector="Button.CaptionClose /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="typography:ThemeTransitionPolicy.Enabled" Value="False" />
+    <Setter Property="Transitions"><Transitions /></Setter>
+  </Style>
+
+  <!-- Scale the complete button around its center; never transform text independently. -->
+  <Style Selector="Button.Primary, Button.Secondary, Button.Subtle, Button.Ghost, Button.ShellButton, Button.SettingsNavItem, Button.LauncherTile">
+    <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+    <Setter Property="RenderTransform" Value="none" />
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{DynamicResource MotionEasePress}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="Button.Primary:pressed, Button.Secondary:pressed, Button.Subtle:pressed, Button.Ghost:pressed, Button.ShellButton:pressed, Button.SettingsNavItem:pressed, Button.LauncherTile:pressed">
+    <Setter Property="RenderTransform" Value="scale(0.98)" />
+  </Style>
+
+  <Style Selector="Button:focus-visible /template/ Border#PART_FocusRing, ToggleButton:focus-visible /template/ Border#PART_FocusRing">
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessFocus}" />
+    <Setter Property="Opacity" Value="1" />
+  </Style>
+
+  <Style Selector="TextBox">
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="FontWeight" Value="Regular" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+  </Style>
+  <Style Selector="TextBox[AcceptsReturn=False]">
+    <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
+    <Setter Property="Padding" Value="12,0" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBox /template/ Border#PART_BorderElement">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+        <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionDurationFast}" />
+      </Transitions>
+    </Setter>
+  </Style>
+  <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
+  </Style>
+  <Style Selector="TextBox:focus-visible /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessFocus}" />
+  </Style>
+  <!-- Compact inline editing shared by desktop items and Files. -->
+  <Style Selector="TextBox.RenameBox">
+    <Setter Property="Height" Value="28" />
+    <Setter Property="MinHeight" Value="28" />
+    <Setter Property="Padding" Value="7,3" />
+    <Setter Property="CornerRadius" Value="6" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CaretBrush" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="SelectionBrush" Value="{DynamicResource ActionPrimaryBrush}" />
+    <Setter Property="SelectionForegroundBrush" Value="{DynamicResource ContentOnPrimaryActionBrush}" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="TextBox.RenameBox:focus /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+  <Style Selector="TextBox.DesktopRenameBox">
+    <Setter Property="Height" Value="NaN" />
+    <Setter Property="MinHeight" Value="24" />
+    <Setter Property="MaxHeight" Value="Infinity" />
+    <Setter Property="Padding" Value="4,3" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource DesktopItemLabelBrush}" />
+    <Setter Property="CaretBrush" Value="{DynamicResource DesktopItemLabelBrush}" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Disabled" />
+  </Style>
+
+  <Style Selector="TextBox.RenameBox.DesktopRenameBox /template/ Border#PART_BorderElement, TextBox.RenameBox.DesktopRenameBox:pointerover /template/ Border#PART_BorderElement, TextBox.RenameBox.DesktopRenameBox:focus /template/ Border#PART_BorderElement, TextBox.RenameBox.DesktopRenameBox:focus-visible /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="1" />
+  </Style>
+
+  <Style Selector="TextBox:disabled /template/ Border#PART_BorderElement, TextBox:read-only /template/ Border#PART_BorderElement">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+  </Style>
+  <Style Selector="TextBox:disabled, TextBox:read-only">
+    <Setter Property="Foreground" Value="{DynamicResource ContentDisabledBrush}" />
+    <Setter Property="Opacity" Value="0.72" />
+  </Style>
+  <Style Selector="TextBox.Error /template/ Border#PART_BorderElement">
+    <Setter Property="BorderBrush" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessFocus}" />
+  </Style>
+
+  <Style Selector="Button.Primary, ToggleButton.Primary, Button.Secondary, ToggleButton.Secondary, Button.Subtle, ToggleButton.Subtle, Button.Ghost, ToggleButton.Ghost, Button.Danger, ToggleButton.Danger">
+    <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="Padding" Value="{DynamicResource ControlPaddingHorizontal}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+    <Setter Property="Cursor" Value="Hand" />
+  </Style>
+  <Style Selector="Button.Small, ToggleButton.Small">
+    <Setter Property="Height" Value="{DynamicResource ButtonHeightSmall}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightSmall}" />
+  </Style>
+  <Style Selector="Button.Medium, ToggleButton.Medium">
+    <Setter Property="Height" Value="{DynamicResource ButtonHeightMedium}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightMedium}" />
+  </Style>
+  <Style Selector="Button.Large, ToggleButton.Large">
+    <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightLarge}" />
+  </Style>
+  <Style Selector="Button.Compact, ToggleButton.Compact">
+    <Setter Property="Height" Value="{DynamicResource ControlHeightCompact}" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetCompact}" />
+  </Style>
+  <Style Selector="Button.Comfortable, ToggleButton.Comfortable">
+    <Setter Property="Height" Value="{DynamicResource ControlHeightComfortable}" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetComfortable}" />
+    <Setter Property="Padding" Value="{DynamicResource ControlPaddingComfortable}" />
+  </Style>
+
+  <Style Selector="Button.Primary, ToggleButton.Primary">
+    <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentOnPrimaryActionBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+  </Style>
+  <Style Selector="Button.Primary /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Primary /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+    <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentOnPrimaryActionBrush}" />
+  </Style>
+  <Style Selector="Button.Primary TextBlock, ToggleButton.Primary TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ContentOnPrimaryActionBrush}" />
+  </Style>
+  <Style Selector="Button.Primary AccessText, ToggleButton.Primary AccessText">
+    <Setter Property="Foreground" Value="{DynamicResource ContentOnPrimaryActionBrush}" />
+  </Style>
+  <Style Selector="Button.Primary controls|DaisyIcon, ToggleButton.Primary controls|DaisyIcon">
+    <Setter Property="Foreground" Value="{DynamicResource ContentOnPrimaryActionBrush}" />
+  </Style>
+  <Style Selector="Button.Primary:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Primary:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+  </Style>
+  <Style Selector="Button.Primary:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Primary:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+  </Style>
+
+  <Style Selector="Button.Secondary, ToggleButton.Secondary, Button.Subtle, ToggleButton.Subtle, Button.SubtleButton, ToggleButton.SubtleButton">
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+  </Style>
+  <Style Selector="Button.Secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Secondary:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.Subtle:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Subtle:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.SubtleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.SubtleButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
+  </Style>
+  <Style Selector="Button.Secondary:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Secondary:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.Subtle:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Subtle:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.SubtleButton:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.SubtleButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryPressedBrush}" />
+  </Style>
+
+  <Style Selector="Button.Ghost, ToggleButton.Ghost">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+  </Style>
+  <Style Selector="Button.Ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Ghost:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+  </Style>
+  <Style Selector="Button.Ghost:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Ghost:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+  </Style>
+
+  <Style Selector="Button.Danger, ToggleButton.Danger">
+    <Setter Property="Background" Value="{DynamicResource ActionDangerBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+  </Style>
+  <Style Selector="Button.Danger:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionDangerHoverBrush}" />
+  </Style>
+  <Style Selector="Button.Danger:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Danger:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionDangerPressedBrush}" />
+  </Style>
+
+  <Style Selector="Button.IconButton, ToggleButton.IconButton">
+    <Setter Property="Width" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="MinWidth" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="Padding" Value="{DynamicResource SpaceInsetNone}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+  </Style>
+
+  <Style Selector="Button:disabled, ToggleButton:disabled">
+    <Setter Property="Opacity" Value="0.42" />
+    <Setter Property="Cursor" Value="Arrow" />
+  </Style>
+  <Style Selector="Button.Loading, ToggleButton.Loading">
+    <Setter Property="Opacity" Value="0.72" />
+    <Setter Property="IsHitTestVisible" Value="False" />
+    <Setter Property="Cursor" Value="AppStarting" />
+  </Style>
+  <Style Selector="Button.Selected /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Selected /template/ ContentPresenter#PART_ContentPresenter, ToggleButton:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+  </Style>
+
+  <!-- Selection controls share one keyboard-focus and state language. -->
+  <Style Selector="ListBoxItem, TabItem">
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+    <Setter Property="Padding" Value="{DynamicResource ControlPaddingHorizontal}" />
+  </Style>
+  <Style Selector="ListBoxItem:pointerover, TabItem:pointerover">
+    <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:selected, TabItem:selected">
+    <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:pressed, TabItem:pressed">
+    <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+  </Style>
+  <Style Selector="ListBoxItem:focus-visible, TabItem:focus-visible, ToggleSwitch:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessFocus}" />
+  </Style>
+  <Style Selector="ListBoxItem:disabled, TabItem:disabled, CheckBox:disabled, RadioButton:disabled, ToggleSwitch:disabled">
+    <Setter Property="Opacity" Value="0.42" />
+  </Style>
+  <Style Selector="CheckBox, RadioButton, ToggleSwitch">
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetCompact}" />
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="ProgressBar">
+    <Setter Property="MinHeight" Value="{DynamicResource Space1}" />
+    <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+  </Style>
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource SurfaceOverlayBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlInner}" />
+    <Setter Property="Padding" Value="{DynamicResource TooltipPadding}" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" />
+  </Style>
+
+  <!-- Standard feedback hosts compose the same icon/title/body/action rhythm. -->
+  <Style Selector="Border.FeedbackState">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+    <Setter Property="Padding" Value="{DynamicResource PanelPadding}" />
+  </Style>
+  <Style Selector="Border.FeedbackState.Error">
+    <Setter Property="Background" Value="{DynamicResource StatusDangerContainerBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+  <Style Selector="Border.FeedbackState.Warning">
+    <Setter Property="Background" Value="{DynamicResource StatusWarningContainerBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StatusWarningBrush}" />
+  </Style>
+  <Style Selector="StackPanel.EmptyState, StackPanel.ErrorState, StackPanel.LoadingState">
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Spacing" Value="{DynamicResource Space2}" />
+    <Setter Property="Margin" Value="{DynamicResource SpaceInset6}" />
+    <Setter Property="MaxWidth" Value="360" />
+  </Style>
+  <Style Selector="StackPanel.EmptyState TextBlock, StackPanel.ErrorState TextBlock, StackPanel.LoadingState TextBlock">
+    <Setter Property="TextAlignment" Value="Center" />
+    <Setter Property="TextWrapping" Value="Wrap" />
+  </Style>
+  <Style Selector="StackPanel.EmptyState controls|DaisyIcon, StackPanel.ErrorState controls|DaisyIcon, StackPanel.LoadingState controls|DaisyIcon">
+    <Setter Property="Size" Value="{DynamicResource IconSizeHero}" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentTertiaryBrush}" />
+  </Style>
+  <Style Selector="StackPanel.ErrorState controls|DaisyIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+
+  <!-- Compatibility contract for existing shell icon buttons. New feature UI
+       should use Ghost; the aliases remain centralized here during migration. -->
+  <Style Selector="Button.ShellButton:not(.QuickSetting):not(.QuickAction):not(.QuickSettingDetails), ToggleButton.ShellButton:not(.QuickSetting):not(.QuickAction):not(.QuickSettingDetails), Button.SettingsNavItem, Button.BackButton, Button.SubtleLink">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+    <Setter Property="MinHeight" Value="{DynamicResource Space0}" />
+    <Setter Property="Padding" Value="{DynamicResource SpaceInsetNone}" />
+  </Style>
+
+  <!-- Reusable surfaces and typography. -->
+  <Style Selector="Button.SettingsNavItem.Active /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+  </Style>
+  <Style Selector="Button.SettingsNavItem.Active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+  </Style>
+  <Style Selector="Button.SettingsNavItem.Active:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+  </Style>
+
+  <Style Selector="Border.Card">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+    <Setter Property="Padding" Value="{DynamicResource CardPadding}" />
+  </Style>
+  <Style Selector="Border.Card.Inset">
+    <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+    <Setter Property="BoxShadow" Value="none" />
+  </Style>
+  <Style Selector="Border.Badge">
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedPill}" />
+    <Setter Property="Padding" Value="{DynamicResource SpaceInset2}" />
+  </Style>
+  <Style Selector="TextBlock.Display">
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeDisplay}" />
+    <Setter Property="TextBlock.LineHeight" Value="{DynamicResource TypeLineDisplay}" />
+    <Setter Property="FontWeight" Value="Bold" />
+  </Style>
+  <Style Selector="TextBlock.Heading">
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" />
+    <Setter Property="TextBlock.LineHeight" Value="{DynamicResource TypeLineHeading}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.Title">
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeTitle}" />
+    <Setter Property="TextBlock.LineHeight" Value="{DynamicResource TypeLineTitle}" />
+    <Setter Property="FontWeight" Value="SemiBold" />
+  </Style>
+  <Style Selector="TextBlock.Body">
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+    <Setter Property="TextBlock.LineHeight" Value="{DynamicResource TypeLineBody}" />
+  </Style>
+  <Style Selector="TextBlock.Caption, TextBlock.Muted">
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" />
+    <Setter Property="TextBlock.LineHeight" Value="{DynamicResource TypeLineCaption}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+  </Style>
+</Styles>

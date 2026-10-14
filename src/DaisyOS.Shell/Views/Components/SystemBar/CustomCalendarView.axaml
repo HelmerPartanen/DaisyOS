@@ -1,0 +1,65 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.Components.SystemBar.CustomCalendarView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:systemBar="clr-namespace:DaisyOS.Shell.Views.Components.SystemBar"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  
+  <StackPanel Spacing="16">
+    <!-- Header -->
+    <Grid ColumnDefinitions="*,Auto,Auto">
+      <Button x:Name="ViewToggle" Grid.Column="0" Classes="Ghost Small" HorizontalAlignment="Left" ToolTip.Tip="{DynamicResource Loc_6BBACD57F69E}" Click="OnViewToggleClicked">
+      <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+        <TextBlock x:Name="MonthText" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+        <TextBlock x:Name="YearText" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="Regular" Foreground="{DynamicResource ContentSecondaryBrush}" />
+      </StackPanel>
+      </Button>
+      <Button x:Name="PreviousButton" Grid.Column="1" Classes="Ghost Small IconButton" Margin="0,0,8,0" Click="OnPreviousMonthClicked">
+        <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Button>
+      <Button x:Name="NextButton" Grid.Column="2" Classes="Ghost Small IconButton" Click="OnNextMonthClicked">
+        <controls:DaisyIcon Icon="caret-right" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+      </Button>
+    </Grid>
+
+    <Grid Height="304">
+    <Grid x:Name="DaysView" RowDefinitions="Auto,*">
+      <!-- Weekday Headers -->
+      <UniformGrid Columns="7" Margin="0,0,0,8">
+        <TextBlock Text="{DynamicResource Loc_D23E867E38E8}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_62AFCC74654D}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_F3FE997B8D1C}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_3BFF939C10F4}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_EED8F901692D}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_A951EFC79DEB}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_2D88A3A2842E}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+      </UniformGrid>
+
+      <!-- Days Grid -->
+      <UniformGrid x:Name="DaysGrid" Grid.Row="1" Columns="7" Rows="6" />
+    </Grid>
+
+    <ScrollViewer x:Name="YearView" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <UniformGrid x:Name="MonthsGrid" Columns="2" Rows="6" />
+    </ScrollViewer>
+    </Grid>
+
+    <!-- Divider -->
+    <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="0,4" />
+
+    <!-- Footer -->
+    <Grid ColumnDefinitions="Auto,*">
+      <Button x:Name="TodayButton" Grid.Column="0" Classes="Ghost Small" Click="OnTodayClicked" ToolTip.Tip="{DynamicResource Loc_7BD2C90ACEBE}">
+        <TextBlock Text="{DynamicResource Loc_2B065C7C9CE4}" FontSize="{DynamicResource TypeSizeBody}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+      </Button>
+      <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" Margin="0,0,12,0" HorizontalAlignment="Right" VerticalAlignment="Center">
+        <TextBlock x:Name="TodayDayText" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" />
+        <TextBlock Text="/" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Medium" Foreground="{DynamicResource ContentDisabledBrush}" />
+        <TextBlock x:Name="TodayMonthText" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" />
+        <TextBlock Text="/" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Medium" Foreground="{DynamicResource ContentDisabledBrush}" />
+        <TextBlock x:Name="TodayYearText" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" />
+      </StackPanel>
+    </Grid>
+
+  </StackPanel>
+</UserControl>

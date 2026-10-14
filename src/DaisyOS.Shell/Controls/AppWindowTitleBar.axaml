@@ -1,0 +1,63 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Controls.AppWindowTitleBar"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    Height="{DynamicResource KWinDecorationTitleBarHeight}">
+  <UserControl.Styles>
+    <Style Selector="Button.CaptionButton">
+      <Setter Property="Width" Value="{DynamicResource KWinDecorationCaptionButtonWidth}" />
+      <Setter Property="Height" Value="{DynamicResource KWinDecorationCaptionButtonHeight}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.CaptionButton:not(.CaptionClose):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionButton:not(.CaptionClose):pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionDangerHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pointerover">
+      <Setter Property="Foreground" Value="{DynamicResource CaptionCloseGlyphBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionDangerPressedBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pressed">
+      <Setter Property="Foreground" Value="{DynamicResource CaptionCloseGlyphBrush}" />
+    </Style>
+    <Style Selector="controls|WindowCaptionGlyph.CaptionIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="GlyphSize" Value="{DynamicResource KWinDecorationCaptionGlyphSize}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border Background="{DynamicResource SurfaceBaseSolidBrush}"
+          BorderThickness="0"
+          PointerPressed="OnTitleBarPointerPressed"
+          DoubleTapped="OnTitleBarDoubleTapped">
+    <Grid ColumnDefinitions="*,Auto">
+      <StackPanel Grid.Column="1" Orientation="Horizontal">
+        <Button Classes="CaptionButton" Click="OnMinimizeClicked" ToolTip.Tip="{DynamicResource Loc_D72E311C4DDA}">
+          <controls:WindowCaptionGlyph Kind="Minimize" Classes="CaptionIcon" />
+        </Button>
+        <Button x:Name="MaximizeButton" Classes="CaptionButton" Click="OnMaximizeRestoreClicked" ToolTip.Tip="{DynamicResource Loc_9E47A676743F}">
+          <controls:WindowCaptionGlyph x:Name="MaximizeIcon" Kind="Maximize" Classes="CaptionIcon" />
+        </Button>
+        <Button Classes="CaptionButton CaptionClose" Click="OnCloseClicked" ToolTip.Tip="{DynamicResource Loc_7D9EB7ACB13E}">
+          <controls:WindowCaptionGlyph Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Kind="Close" Classes="CaptionIcon" />
+        </Button>
+      </StackPanel>
+    </Grid>
+  </Border>
+</UserControl>

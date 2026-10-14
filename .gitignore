@@ -1,0 +1,61 @@
+# Build results
+[Bb]in/
+[Oo]bj/
+target/
+DaisyIconBundle/
+[Oo]ut/
+artifacts/
+publish/
+work/
+out/
+.codex/
+packaging/
+# The KWin bridge is source code installed into the user's session, not a
+# generated packaging artifact.
+!packaging/
+packaging/*
+!packaging/kwin/
+!packaging/kwin/daisyos-window-bridge/
+!packaging/kwin/daisyos-window-bridge/metadata.json
+!packaging/kwin/daisyos-window-bridge/contents/
+!packaging/kwin/daisyos-window-bridge/contents/code/
+!packaging/kwin/daisyos-window-bridge/contents/code/main.js
+!packaging/wayland-sessions/
+packaging/wayland-sessions/*
+!packaging/wayland-sessions/daisyos-development.desktop
+
+# User-specific files
+*.rsuser
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+*.userprefs
+
+# IDEs
+.idea/
+.vscode/
+.vs/
+*.swp
+*.*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+
+# Native GPU wallpaper build outputs
+src/native/daisy_mpv_wallpaper/build/
+
+# Native application launch service
+services/DaisyLaunch/build/
+
+# Native busy cursor plugin build outputs
+src/native/daisy_busy_cursor/build/

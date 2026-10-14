@@ -1,0 +1,19 @@
+<Window
+    x:Class="DaisyOS.Shell.Apps.System.Settings.SettingsWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:settings="clr-namespace:DaisyOS.Shell.Apps.System.Settings"
+    Title="{DynamicResource Loc_74A883A037BC}"
+    Width="1280"
+    Height="720"
+    MinWidth="760"
+    MinHeight="560"
+    CanResize="True"
+    WindowStartupLocation="CenterScreen"
+    WindowDecorations="None"
+    Classes="SidebarAppWindow"
+    TextOptions.TextRenderingMode="Antialias"
+    Background="{DynamicResource SurfaceBaseSolidBrush}"
+    PointerPressed="OnWindowPointerPressed">
+  <settings:SettingsView x:Name="SettingsContent" />
+</Window>

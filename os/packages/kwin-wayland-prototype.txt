@@ -1,0 +1,20 @@
+# KWin Wayland development and acceptance package reference. The core runtime
+# subset is now part of the default live profile; interactive diagnostic tools
+# remain here so the production image does not carry every test utility.
+aurorae
+dbus
+kwin
+plasma-workspace
+polkit-kde-agent
+powerdevil
+qt6-base
+xorg-xwayland
+xdg-desktop-portal
+xdg-desktop-portal-kde
+foot
+mesa-utils
+pipewire
+wireplumber
+wl-clipboard
+wayland-utils
+xterm

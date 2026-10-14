@@ -1,0 +1,12 @@
+{
+  "KPackageStructure": "KWin/Script",
+  "KPlugin": {
+    "Id": "daisyos-taskbar-preview",
+    "Name": "DaisyOS Taskbar Previews",
+    "Description": "Live compositor-owned previews of taskbar windows",
+    "Version": "1.0",
+    "License": "MIT",
+    "EnabledByDefault": true
+  },
+  "X-Plasma-API": "declarativescript"
+}

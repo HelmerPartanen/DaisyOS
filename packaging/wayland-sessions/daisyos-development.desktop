@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=DaisyOS (Windowed Prototype)
+Comment=DaisyOS development session in a nested KWin window
+Exec=/usr/local/bin/daisyos-development-session
+TryExec=/usr/local/bin/daisyos-development-session
+Type=Application

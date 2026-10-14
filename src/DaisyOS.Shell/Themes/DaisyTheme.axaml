@@ -1,0 +1,695 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:easings="clr-namespace:Avalonia.Animation.Easings;assembly=Avalonia.Base">
+  <!--
+    DaisyOS semantic theme contract. Components select a role, never a literal
+    paint or a desktop/console-specific palette. Theme-specific values belong
+    only in these dictionaries.
+  -->
+  <!-- Filled destructive actions need a saturated red with readable white content. -->
+  <Color x:Key="ActionDangerColor">#FFC92A35</Color>
+  <Color x:Key="ActionDangerHoverColor">#FFB8212C</Color>
+  <Color x:Key="ActionDangerPressedColor">#FFA51925</Color>
+  <SolidColorBrush x:Key="ActionDangerBrush" Color="{StaticResource ActionDangerColor}" />
+  <SolidColorBrush x:Key="ActionDangerHoverBrush" Color="{StaticResource ActionDangerHoverColor}" />
+  <SolidColorBrush x:Key="ActionDangerPressedBrush" Color="{StaticResource ActionDangerPressedColor}" />
+  <ResourceDictionary.ThemeDictionaries>
+   <ResourceDictionary x:Key="Light">
+    <!-- Surfaces -->
+    <Color x:Key="SurfaceCanvasColor">#FFF2F2F2</Color>
+    <!-- Translucent so KWin's native background effect remains visible. -->
+    <Color x:Key="SurfaceBaseColor">#99F2F2F2</Color>
+    <Color x:Key="SurfaceBaseColorSolid">#FFF2F2F2</Color>
+    <Color x:Key="SurfaceRaisedColor">#FFFFFFFF</Color>
+    <Color x:Key="SurfaceRaisedSubtleColor">#0F000000</Color>
+    <Color x:Key="SurfaceInputSubtleColor">#12FFFFFF</Color>
+    <Color x:Key="SurfaceOverlayColor">#FFFFFFFF</Color>
+    <Color x:Key="SurfaceSunkenColor">#FFEDEDEF</Color>
+    <Color x:Key="SurfaceInputColor">#FFF1F1F3</Color>
+    <Color x:Key="SurfaceInputHoverColor">#FFE9E9EC</Color>
+    <Color x:Key="ContextMenuBackgroundColor">#FFF1F1F1</Color>
+
+    <!-- Content -->
+    <Color x:Key="ContentPrimaryColor">#FF000000</Color>
+    <Color x:Key="ContentSecondaryColor">#CC000000</Color>
+    <Color x:Key="ContentTertiaryColor">#99000000</Color>
+    <Color x:Key="ContentDisabledColor">#FFA5A5AA</Color>
+
+    <!-- Strokes -->
+    <Color x:Key="StrokeSubtleColor">#FFE4E4E7</Color>
+    <Color x:Key="StrokeDefaultColor">#26000000</Color>
+    <Color x:Key="StrokeStrongColor">#FFA4A4AB</Color>
+
+
+           <Color x:Key="RedSwatch">#FF383C</Color>
+           <Color x:Key="OrangeSwatch">#FFFF9500</Color>
+
+
+    <!--
+        Large shell surfaces use two distinct perimeter roles.
+        Ordinary borders and dividers keep Stroke*.
+    -->
+    <Color x:Key="ShellFrameOuterEdgeColor">#33000000</Color>
+    <Color x:Key="ShellFrameInnerHighlightColor">#99FFFFFF</Color>
+    <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
+
+    <!-- Interaction states -->
+<Color x:Key="DesktopHoverColor">#33FFFFFF</Color>
+<Color x:Key="StatePressedColor">#38000000</Color>
+<Color x:Key="StateSelectedColor">#30000000</Color>
+
+    <!-- Overlays -->
+    <Color x:Key="OverlayScrimColor">#6608080A</Color>
+
+    <!--
+        A restrained concentration edge behind a fullscreen client,
+        not a panel background.
+    -->
+    <Color x:Key="FullscreenBottomScrimColor">#33000000</Color>
+
+    <!-- Primary actions -->
+    <Color x:Key="ActionPrimaryColor">#FF1598FF</Color>
+    <Color x:Key="ActionPrimaryHoverColor">#FF138CEB</Color>
+    <Color x:Key="ActionPrimaryPressedColor">#FF1283DB</Color>
+    <Color x:Key="ContentOnActionColor">#FFFFFFFF</Color>
+      <Color x:Key="ContentOnPrimaryActionColor">#FF111113</Color>
+    <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
+    <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
+    <Color x:Key="QuickSettingActiveSurfacePressedColor">#FFECECEF</Color>
+
+    <!--
+        Keep inactive controls visually continuous with taskbar item
+        interaction material.
+    -->
+    <Color x:Key="ActionSecondaryHoverColor">#14000000</Color>
+    <Color x:Key="ActionSecondaryPressedColor">#1F000000</Color>
+    <Color x:Key="ContentOnSecondaryActionColor">#FF1C1C1F</Color>
+
+    <!-- Focus -->
+    <Color x:Key="FocusRingColor">#FF1598FF</Color>
+
+        <Color x:Key="SelectedBlue">#FF1598FF</Color>
+
+    <!-- Status: Success -->
+    <Color x:Key="StatusSuccessColor">#FF0F6B38</Color>
+    <Color x:Key="StatusSuccessContainerColor">#FFE4F6EA</Color>
+
+    <!-- Status: Warning -->
+    <Color x:Key="StatusWarningColor">#FF8A4B00</Color>
+    <Color x:Key="StatusWarningContainerColor">#FFFFF0D5</Color>
+
+    <!-- Status: Danger -->
+    <Color x:Key="StatusDangerColor">#FFB4232A</Color>
+    <Color x:Key="StatusDangerContainerColor">#FFFFE8E7</Color>
+
+    <!-- Status: Info -->
+    <Color x:Key="StatusInfoColor">#FF1E5AA8</Color>
+    <Color x:Key="StatusInfoContainerColor">#FFE5F0FF</Color>
+
+<!-- Branding options -->
+    <Color x:Key="FaviconColor">#FF1598FF</Color>
+
+    <!-- Accent options -->
+    <Color x:Key="AccentOptionDefaultColor">#FF1598FF</Color>
+    <Color x:Key="AccentOptionBlueColor">#FF1598FF</Color>
+    <Color x:Key="AccentOptionPurpleColor">#FF7652D9</Color>
+    <Color x:Key="AccentOptionPinkColor">#FFD94F8D</Color>
+    <Color x:Key="AccentOptionRedColor">#FFD84A43</Color>
+    <Color x:Key="AccentOptionOrangeColor">#FFD97822</Color>
+    <Color x:Key="AccentOptionGreenColor">#FF2B8A52</Color>
+    <Color x:Key="AccentOptionGrayColor">#FF777B84</Color>
+    <Color x:Key="AccentOptionWhiteColor">#FFFFFFFF</Color>
+
+    <!-- File location colors -->
+    <Color x:Key="FileLocationDesktopColor">#FF3478E5</Color>
+    <Color x:Key="FileLocationDocumentsColor">#FF68778D</Color>
+    <Color x:Key="FileLocationDownloadsColor">#FF1687A5</Color>
+    <Color x:Key="FileLocationPicturesColor">#FF3682C7</Color>
+    <Color x:Key="FileLocationVideosColor">#FF7652D9</Color>
+    <Color x:Key="FileLocationMusicColor">#FFD84A43</Color>
+
+      <SolidColorBrush x:Key="SelectedBlueBrush" Color="{StaticResource SelectedBlue}" />
+      <SolidColorBrush x:Key="SurfaceCanvasBrush" Color="{StaticResource SurfaceCanvasColor}" />
+      <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
+      <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
+      <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
+      <SolidColorBrush x:Key="SurfaceRaisedSubtleBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="SurfaceInputSubtleBrush" Color="{StaticResource SurfaceInputSubtleColor}" />
+      <SolidColorBrush x:Key="SurfaceOverlayBrush" Color="{StaticResource SurfaceOverlayColor}" />
+      <SolidColorBrush x:Key="SurfaceModalGlassBrush" Color="{StaticResource SurfaceOverlayColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="SurfaceSunkenBrush" Color="{StaticResource SurfaceSunkenColor}" />
+      <SolidColorBrush x:Key="SearchFieldBackgroundBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="SearchFieldHoverBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="SurfaceInputBrush" Color="{StaticResource SurfaceInputColor}" />
+      <SolidColorBrush x:Key="SurfaceInputHoverBrush" Color="{StaticResource SurfaceInputHoverColor}" />
+      <SolidColorBrush x:Key="ContextMenuBackgroundBrush" Color="{StaticResource ContextMenuBackgroundColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="ContentPrimaryBrush" Color="{StaticResource ContentPrimaryColor}" />
+      <SolidColorBrush x:Key="ContentSecondaryBrush" Color="{StaticResource ContentSecondaryColor}" />
+      <SolidColorBrush x:Key="ContentTertiaryBrush" Color="{StaticResource ContentTertiaryColor}" />
+      <SolidColorBrush x:Key="ContentDisabledBrush" Color="{StaticResource ContentDisabledColor}" />
+      <SolidColorBrush x:Key="StrokeSubtleBrush" Color="{StaticResource StrokeSubtleColor}" />
+      <SolidColorBrush x:Key="StrokeDefaultBrush" Color="{StaticResource StrokeDefaultColor}" />
+      <SolidColorBrush x:Key="StrokeStrongBrush" Color="{StaticResource StrokeStrongColor}" />
+      <SolidColorBrush x:Key="ShellFrameOuterEdgeBrush" Color="{StaticResource ShellFrameOuterEdgeColor}" />
+      <SolidColorBrush x:Key="ShellFrameInnerHighlightBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
+      <!-- Ghost controls and quiet raised surfaces intentionally share one
+           interaction layer. Desktop items use DesktopHoverBrush instead. -->
+      <SolidColorBrush x:Key="StateHoverBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="DesktopHoverBrush" Color="{StaticResource DesktopHoverColor}" />
+      <SolidColorBrush x:Key="StatePressedBrush" Color="{StaticResource StatePressedColor}" />
+      <SolidColorBrush x:Key="StateSelectedBrush" Color="{StaticResource StateSelectedColor}" />
+      <SolidColorBrush x:Key="OverlayScrimBrush" Color="{StaticResource OverlayScrimColor}" />
+      <SolidColorBrush x:Key="FullscreenBottomScrimBrush" Color="{StaticResource FullscreenBottomScrimColor}" />
+      <SolidColorBrush x:Key="ToggleTrackOffBrush" Color="#FFB6B6B6" />
+      <SolidColorBrush x:Key="ActionPrimaryBrush" Color="{StaticResource ActionPrimaryColor}" />
+      <!-- Storage capacity segments: soft blue and quiet neutral fills. -->
+      <SolidColorBrush x:Key="StorageUsedBrush" Color="#2997E8" />
+      <SolidColorBrush x:Key="StorageOtherVolumesBrush" Color="#A5ACB8" />
+      <SolidColorBrush x:Key="StorageReservedBrush" Color="#BEC6D2" />
+      <SolidColorBrush x:Key="StorageUnknownBrush" Color="#C8CED7" />
+      <SolidColorBrush x:Key="StorageFreeBrush" Color="#DCE2E9" />
+      <SolidColorBrush x:Key="StorageUnallocatedBrush" Color="#E9EDF2" />
+
+      <SolidColorBrush x:Key="ActionPrimaryHoverBrush" Color="{StaticResource ActionPrimaryHoverColor}" />
+      <SolidColorBrush x:Key="ActionPrimaryPressedBrush" Color="{StaticResource ActionPrimaryPressedColor}" />
+      <SolidColorBrush x:Key="ContentOnActionBrush" Color="{StaticResource ContentOnActionColor}" />
+      <SolidColorBrush x:Key="ContentOnPrimaryActionBrush" Color="{StaticResource ContentOnPrimaryActionColor}" />
+      <SolidColorBrush x:Key="QuickSettingActiveSurfaceBrush" Color="{StaticResource QuickSettingActiveSurfaceColor}" />
+      <SolidColorBrush x:Key="QuickSettingActiveSurfaceHoverBrush" Color="{StaticResource QuickSettingActiveSurfaceHoverColor}" />
+      <SolidColorBrush x:Key="QuickSettingActiveSurfacePressedBrush" Color="{StaticResource QuickSettingActiveSurfacePressedColor}" />
+      <SolidColorBrush x:Key="ActionSecondaryBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="ActionSecondaryHoverBrush" Color="{StaticResource ActionSecondaryHoverColor}" />
+      <SolidColorBrush x:Key="ActionSecondaryPressedBrush" Color="{StaticResource ActionSecondaryPressedColor}" />
+      <SolidColorBrush x:Key="ContentOnSecondaryActionBrush" Color="{StaticResource ContentOnSecondaryActionColor}" />
+      <SolidColorBrush x:Key="FocusRingBrush" Color="{StaticResource FocusRingColor}" />
+      <SolidColorBrush x:Key="StatusSuccessBrush" Color="{StaticResource StatusSuccessColor}" />
+      <SolidColorBrush x:Key="StatusSuccessContainerBrush" Color="{StaticResource StatusSuccessContainerColor}" />
+      <SolidColorBrush x:Key="StatusWarningBrush" Color="{StaticResource StatusWarningColor}" />
+      <SolidColorBrush x:Key="StatusWarningContainerBrush" Color="{StaticResource StatusWarningContainerColor}" />
+      <SolidColorBrush x:Key="StatusDangerBrush" Color="{StaticResource StatusDangerColor}" />
+      <SolidColorBrush x:Key="StatusDangerContainerBrush" Color="{StaticResource StatusDangerContainerColor}" />
+      <SolidColorBrush x:Key="StatusInfoBrush" Color="{StaticResource StatusInfoColor}" />
+      <SolidColorBrush x:Key="StatusInfoContainerBrush" Color="{StaticResource StatusInfoContainerColor}" />
+      <SolidColorBrush x:Key="AccentOptionDefaultBrush" Color="{StaticResource AccentOptionDefaultColor}" />
+      <SolidColorBrush x:Key="AccentOptionBlueBrush" Color="{StaticResource AccentOptionBlueColor}" />
+      <SolidColorBrush x:Key="AccentOptionPurpleBrush" Color="{StaticResource AccentOptionPurpleColor}" />
+      <SolidColorBrush x:Key="AccentOptionPinkBrush" Color="{StaticResource AccentOptionPinkColor}" />
+      <SolidColorBrush x:Key="AccentOptionRedBrush" Color="{StaticResource AccentOptionRedColor}" />
+      <SolidColorBrush x:Key="AccentOptionOrangeBrush" Color="{StaticResource AccentOptionOrangeColor}" />
+      <SolidColorBrush x:Key="AccentOptionGreenBrush" Color="{StaticResource AccentOptionGreenColor}" />
+      <SolidColorBrush x:Key="AccentOptionGrayBrush" Color="{StaticResource AccentOptionGrayColor}" />
+      <SolidColorBrush x:Key="AccentOptionWhiteBrush" Color="{StaticResource AccentOptionWhiteColor}" />
+      <SolidColorBrush x:Key="FileLocationDesktopBrush" Color="{StaticResource FileLocationDesktopColor}" />
+      <SolidColorBrush x:Key="FileLocationDocumentsBrush" Color="{StaticResource FileLocationDocumentsColor}" />
+      <SolidColorBrush x:Key="FileLocationDownloadsBrush" Color="{StaticResource FileLocationDownloadsColor}" />
+      <SolidColorBrush x:Key="FileLocationPicturesBrush" Color="{StaticResource FileLocationPicturesColor}" />
+      <SolidColorBrush x:Key="FileLocationVideosBrush" Color="{StaticResource FileLocationVideosColor}" />
+      <SolidColorBrush x:Key="FileLocationMusicBrush" Color="{StaticResource FileLocationMusicColor}" />
+      <SolidColorBrush x:Key="DesktopLabelBrush" Color="{StaticResource ContentPrimaryColor}" />
+      <SolidColorBrush x:Key="DesktopItemLabelBrush" Color="{StaticResource ContentPrimaryColor}" />
+      <SolidColorBrush x:Key="RedSwatchBrush" Color="{StaticResource RedSwatch}" />
+      <SolidColorBrush x:Key="OrangeSwatchBrush" Color="{StaticResource OrangeSwatch}" />
+      <SolidColorBrush x:Key="ClockDialBrush" Color="#FFFFFFFF" />
+      <SolidColorBrush x:Key="ClockForegroundBrush" Color="#FF000000" />
+      <LinearGradientBrush x:Key="CalendarBackgroundBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#FFFFFFFF" />
+        <GradientStop Offset="1" Color="#FFF0F0F0" />
+      </LinearGradientBrush>
+      <!-- Theme App and Trash Icons -->
+      <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator_Light.png</Bitmap>
+      <SolidColorBrush x:Key="CalendarTodayBackgroundBrush" Color="#FF000000" />
+      <SolidColorBrush x:Key="CalendarTodayForegroundBrush" Color="#FFFFFFFF" />
+      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconUiKit">avares://DaisyOS.Shell/Assets/AppIcons/UiKit_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconTrash">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconTrashItem">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Item_Light.png</Bitmap>
+    </ResourceDictionary>
+
+
+
+    <ResourceDictionary x:Key="Dark">
+      <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
+      <Color x:Key="SurfaceBaseColor">#33282828</Color>
+    <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
+      <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
+      <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>
+      <Color x:Key="SurfaceInputSubtleColor">#0FFFFFFF</Color>
+      <Color x:Key="SurfaceOverlayColor">#FF292929</Color>
+      <Color x:Key="SurfaceSunkenColor">#FF111111</Color>
+      <Color x:Key="SurfaceInputColor">#FF242424</Color>
+      <Color x:Key="SurfaceInputHoverColor">#FF2B2B2B</Color>
+      <Color x:Key="ContextMenuBackgroundColor">#FF212121</Color>
+      <Color x:Key="ContentPrimaryColor">#FFF5F5F5</Color>
+      <Color x:Key="ContentSecondaryColor">#CCF5F5F5</Color>
+      <Color x:Key="ContentTertiaryColor">#99F5F5F5</Color>
+      <Color x:Key="ContentDisabledColor">#FF777777</Color>
+      <Color x:Key="StrokeSubtleColor">#FF303030</Color>
+      <Color x:Key="StrokeDefaultColor">#26FFFFFF</Color>
+      <Color x:Key="StrokeStrongColor">#FF6A6A6A</Color>
+      <!-- Large shell surfaces use two distinct perimeter roles. Ordinary borders and dividers keep Stroke*. -->
+
+       <Color x:Key="SelectedBlue">#FF148BE8</Color>
+
+        <Color x:Key="RedSwatch">#FF4245</Color>
+        <Color x:Key="OrangeSwatch">#FFFF9F0A</Color>
+
+        <!-- Branding options -->
+    <Color x:Key="FaviconColor">#FFF2F2F2</Color>
+
+
+
+      <Color x:Key="ShellFrameOuterEdgeColor">#99000000</Color>
+      <Color x:Key="ShellFrameInnerHighlightColor">#1AFFFFFF</Color>
+      <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
+      <Color x:Key="DesktopHoverColor">#33FFFFFF</Color>
+      <Color x:Key="StatePressedColor">#24FFFFFF</Color>
+      <Color x:Key="StateSelectedColor">#1FFFFFFF</Color>
+      <Color x:Key="OverlayScrimColor">#B8060607</Color>
+      <!-- A restrained concentration edge behind a fullscreen client, not a panel background. -->
+      <Color x:Key="FullscreenBottomScrimColor">#66000000</Color>
+      <Color x:Key="ActionPrimaryColor">#FF148BE8</Color>
+      <Color x:Key="ActionPrimaryHoverColor">#FF2794EA</Color>
+      <Color x:Key="ActionPrimaryPressedColor">#FF359BEB</Color>
+      <Color x:Key="ContentOnActionColor">#FFFFFFFF</Color>
+      <Color x:Key="ContentOnPrimaryActionColor">#FF111113</Color>
+      <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
+      <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
+      <Color x:Key="QuickSettingActiveSurfacePressedColor">#FFECECEF</Color>
+      <!-- Keep inactive controls visually continuous with taskbar item interaction material. -->
+      <Color x:Key="ActionSecondaryHoverColor">#24FFFFFF</Color>
+      <Color x:Key="ActionSecondaryPressedColor">#33FFFFFF</Color>
+      <Color x:Key="ContentOnSecondaryActionColor">#FFF5F5F7</Color>
+      <Color x:Key="FocusRingColor">#FF148BE8</Color>
+      <Color x:Key="StatusSuccessColor">#FF58D68D</Color>
+      <Color x:Key="StatusSuccessContainerColor">#FF163D28</Color>
+      <Color x:Key="StatusWarningColor">#FFFFB95B</Color>
+      <Color x:Key="StatusWarningContainerColor">#FF4A300D</Color>
+      <Color x:Key="StatusDangerColor">#FFFF626C</Color>
+      <Color x:Key="StatusDangerContainerColor">#FF491B23</Color>
+      <Color x:Key="StatusInfoColor">#FF85B6FF</Color>
+      <Color x:Key="StatusInfoContainerColor">#FF1C355E</Color>
+      <Color x:Key="AccentOptionDefaultColor">#FF148BE8</Color>
+      <Color x:Key="AccentOptionBlueColor">#FF148BE8</Color>
+      <Color x:Key="AccentOptionPurpleColor">#FFBB9CFF</Color>
+      <Color x:Key="AccentOptionPinkColor">#FFFF9AC6</Color>
+      <Color x:Key="AccentOptionRedColor">#FFFF9B91</Color>
+      <Color x:Key="AccentOptionOrangeColor">#FFFFB87B</Color>
+      <Color x:Key="AccentOptionGreenColor">#FF7DD9A0</Color>
+      <Color x:Key="AccentOptionGrayColor">#FFC4C7CD</Color>
+      <Color x:Key="AccentOptionWhiteColor">#FFF5F5F7</Color>
+      <Color x:Key="FileLocationDesktopColor">#FF75A7FF</Color>
+      <Color x:Key="FileLocationDocumentsColor">#FFC4CFDF</Color>
+      <Color x:Key="FileLocationDownloadsColor">#FF57C7E8</Color>
+      <Color x:Key="FileLocationPicturesColor">#FF8FC7FF</Color>
+      <Color x:Key="FileLocationVideosColor">#FFBB9CFF</Color>
+      <Color x:Key="FileLocationMusicColor">#FFFF9B91</Color>
+      <SolidColorBrush x:Key="SurfaceCanvasBrush" Color="{StaticResource SurfaceCanvasColor}" />
+       <SolidColorBrush x:Key="SelectedBlueBrush" Color="{StaticResource SelectedBlue}" />
+      <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
+            <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
+      <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
+      <SolidColorBrush x:Key="SurfaceRaisedSubtleBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="SurfaceInputSubtleBrush" Color="{StaticResource SurfaceInputSubtleColor}" />
+      <SolidColorBrush x:Key="SurfaceOverlayBrush" Color="{StaticResource SurfaceOverlayColor}" />
+      <SolidColorBrush x:Key="SurfaceModalGlassBrush" Color="{StaticResource SurfaceOverlayColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="SurfaceSunkenBrush" Color="{StaticResource SurfaceSunkenColor}" />
+      <SolidColorBrush x:Key="SearchFieldBackgroundBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="SearchFieldHoverBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="SurfaceInputBrush" Color="{StaticResource SurfaceInputColor}" />
+      <SolidColorBrush x:Key="SurfaceInputHoverBrush" Color="{StaticResource SurfaceInputHoverColor}" />
+      <SolidColorBrush x:Key="ContextMenuBackgroundBrush" Color="{StaticResource ContextMenuBackgroundColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="ContentPrimaryBrush" Color="{StaticResource ContentPrimaryColor}" />
+      <SolidColorBrush x:Key="ContentSecondaryBrush" Color="{StaticResource ContentSecondaryColor}" />
+      <SolidColorBrush x:Key="ContentTertiaryBrush" Color="{StaticResource ContentTertiaryColor}" />
+      <SolidColorBrush x:Key="ContentDisabledBrush" Color="{StaticResource ContentDisabledColor}" />
+      <SolidColorBrush x:Key="StrokeSubtleBrush" Color="{StaticResource StrokeSubtleColor}" />
+      <SolidColorBrush x:Key="StrokeDefaultBrush" Color="{StaticResource StrokeDefaultColor}" />
+      <SolidColorBrush x:Key="StrokeStrongBrush" Color="{StaticResource StrokeStrongColor}" />
+      <SolidColorBrush x:Key="ShellFrameOuterEdgeBrush" Color="{StaticResource ShellFrameOuterEdgeColor}" />
+      <SolidColorBrush x:Key="ShellFrameInnerHighlightBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
+      <SolidColorBrush x:Key="StateHoverBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="DesktopHoverBrush" Color="{StaticResource DesktopHoverColor}" />
+      <SolidColorBrush x:Key="StatePressedBrush" Color="{StaticResource StatePressedColor}" />
+      <SolidColorBrush x:Key="StateSelectedBrush" Color="{StaticResource StateSelectedColor}" />
+      <SolidColorBrush x:Key="OverlayScrimBrush" Color="{StaticResource OverlayScrimColor}" />
+      <SolidColorBrush x:Key="FullscreenBottomScrimBrush" Color="{StaticResource FullscreenBottomScrimColor}" />
+      <SolidColorBrush x:Key="ToggleTrackOffBrush" Color="#FF4B4B4B" />
+      <SolidColorBrush x:Key="ActionPrimaryBrush" Color="{StaticResource ActionPrimaryColor}" />
+      <!-- Storage capacity segments: soft blue and quiet neutral fills. -->
+      <SolidColorBrush x:Key="StorageUsedBrush" Color="#4CA8E8" />
+      <SolidColorBrush x:Key="StorageOtherVolumesBrush" Color="#738093" />
+      <SolidColorBrush x:Key="StorageReservedBrush" Color="#5B6778" />
+      <SolidColorBrush x:Key="StorageUnknownBrush" Color="#485261" />
+      <SolidColorBrush x:Key="StorageFreeBrush" Color="#343C48" />
+      <SolidColorBrush x:Key="StorageUnallocatedBrush" Color="#414956" />
+
+      <SolidColorBrush x:Key="ActionPrimaryHoverBrush" Color="{StaticResource ActionPrimaryHoverColor}" />
+      <SolidColorBrush x:Key="ActionPrimaryPressedBrush" Color="{StaticResource ActionPrimaryPressedColor}" />
+      <SolidColorBrush x:Key="ContentOnActionBrush" Color="{StaticResource ContentOnActionColor}" />
+      <SolidColorBrush x:Key="ContentOnPrimaryActionBrush" Color="{StaticResource ContentOnPrimaryActionColor}" />
+      <SolidColorBrush x:Key="QuickSettingActiveSurfaceBrush" Color="{StaticResource QuickSettingActiveSurfaceColor}" />
+      <SolidColorBrush x:Key="QuickSettingActiveSurfaceHoverBrush" Color="{StaticResource QuickSettingActiveSurfaceHoverColor}" />
+      <SolidColorBrush x:Key="QuickSettingActiveSurfacePressedBrush" Color="{StaticResource QuickSettingActiveSurfacePressedColor}" />
+      <SolidColorBrush x:Key="ActionSecondaryBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
+      <SolidColorBrush x:Key="ActionSecondaryHoverBrush" Color="{StaticResource ActionSecondaryHoverColor}" />
+      <SolidColorBrush x:Key="ActionSecondaryPressedBrush" Color="{StaticResource ActionSecondaryPressedColor}" />
+      <SolidColorBrush x:Key="ContentOnSecondaryActionBrush" Color="{StaticResource ContentOnSecondaryActionColor}" />
+      <SolidColorBrush x:Key="FocusRingBrush" Color="{StaticResource FocusRingColor}" />
+      <SolidColorBrush x:Key="StatusSuccessBrush" Color="{StaticResource StatusSuccessColor}" />
+      <SolidColorBrush x:Key="StatusSuccessContainerBrush" Color="{StaticResource StatusSuccessContainerColor}" />
+      <SolidColorBrush x:Key="StatusWarningBrush" Color="{StaticResource StatusWarningColor}" />
+      <SolidColorBrush x:Key="StatusWarningContainerBrush" Color="{StaticResource StatusWarningContainerColor}" />
+      <SolidColorBrush x:Key="StatusDangerBrush" Color="{StaticResource StatusDangerColor}" />
+      <SolidColorBrush x:Key="StatusDangerContainerBrush" Color="{StaticResource StatusDangerContainerColor}" />
+      <SolidColorBrush x:Key="StatusInfoBrush" Color="{StaticResource StatusInfoColor}" />
+      <SolidColorBrush x:Key="StatusInfoContainerBrush" Color="{StaticResource StatusInfoContainerColor}" />
+      <SolidColorBrush x:Key="AccentOptionDefaultBrush" Color="{StaticResource AccentOptionDefaultColor}" />
+      <SolidColorBrush x:Key="AccentOptionBlueBrush" Color="{StaticResource AccentOptionBlueColor}" />
+      <SolidColorBrush x:Key="AccentOptionPurpleBrush" Color="{StaticResource AccentOptionPurpleColor}" />
+      <SolidColorBrush x:Key="AccentOptionPinkBrush" Color="{StaticResource AccentOptionPinkColor}" />
+      <SolidColorBrush x:Key="AccentOptionRedBrush" Color="{StaticResource AccentOptionRedColor}" />
+      <SolidColorBrush x:Key="AccentOptionOrangeBrush" Color="{StaticResource AccentOptionOrangeColor}" />
+      <SolidColorBrush x:Key="AccentOptionGreenBrush" Color="{StaticResource AccentOptionGreenColor}" />
+      <SolidColorBrush x:Key="AccentOptionGrayBrush" Color="{StaticResource AccentOptionGrayColor}" />
+      <SolidColorBrush x:Key="AccentOptionWhiteBrush" Color="{StaticResource AccentOptionWhiteColor}" />
+      <SolidColorBrush x:Key="FileLocationDesktopBrush" Color="{StaticResource FileLocationDesktopColor}" />
+      <SolidColorBrush x:Key="FileLocationDocumentsBrush" Color="{StaticResource FileLocationDocumentsColor}" />
+      <SolidColorBrush x:Key="FileLocationDownloadsBrush" Color="{StaticResource FileLocationDownloadsColor}" />
+      <SolidColorBrush x:Key="FileLocationPicturesBrush" Color="{StaticResource FileLocationPicturesColor}" />
+      <SolidColorBrush x:Key="FileLocationVideosBrush" Color="{StaticResource FileLocationVideosColor}" />
+      <SolidColorBrush x:Key="FileLocationMusicBrush" Color="{StaticResource FileLocationMusicColor}" />
+      <SolidColorBrush x:Key="DesktopLabelBrush" Color="{StaticResource ContentPrimaryColor}" />
+      <SolidColorBrush x:Key="DesktopItemLabelBrush" Color="{StaticResource ContentPrimaryColor}" />
+      <SolidColorBrush x:Key="RedSwatchBrush" Color="{StaticResource RedSwatch}" />
+      <SolidColorBrush x:Key="OrangeSwatchBrush" Color="{StaticResource OrangeSwatch}" />
+      <SolidColorBrush x:Key="ClockDialBrush" Color="#FF000000" />
+      <SolidColorBrush x:Key="ClockForegroundBrush" Color="#FFFFFFFF" />
+      <LinearGradientBrush x:Key="CalendarBackgroundBrush" StartPoint="0%,0%" EndPoint="0%,100%">
+        <GradientStop Offset="0" Color="#FF1C1C1C" />
+        <GradientStop Offset="1" Color="#FF000000" />
+      </LinearGradientBrush>
+      <!-- Theme App and Trash Icons -->
+      <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator_Dark.png</Bitmap>
+      <SolidColorBrush x:Key="CalendarTodayBackgroundBrush" Color="#FFFFFFFF" />
+      <SolidColorBrush x:Key="CalendarTodayForegroundBrush" Color="#FF000000" />
+      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconUiKit">avares://DaisyOS.Shell/Assets/AppIcons/UiKit_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconTrash">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconTrashItem">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Item_Dark.png</Bitmap>
+    </ResourceDictionary>
+
+
+
+  </ResourceDictionary.ThemeDictionaries>
+
+  <DropShadowEffect x:Key="DesktopLabelShadow" OffsetX="0" OffsetY="1" BlurRadius="2" Color="Black" Opacity="0.65" />
+  <DropShadowEffect x:Key="DesktopItemLabelShadow" OffsetX="0" OffsetY="1" BlurRadius="2" Color="Black" Opacity="0.65" />
+  <BoxShadows x:Key="ElevationWindowShadow">0 1 5 0 #16000000</BoxShadows>
+  <BoxShadows x:Key="ElevationWindowFocusedShadow">0 2 8 0 #3D000000</BoxShadows>
+  <BoxShadows x:Key="ElevationFlyoutShadow">0 4 16 0 #30000000</BoxShadows>
+  <!-- Translucent shell cards already separate themselves through blur and
+       their double frame. Keep their shadow close and restrained so it does
+       not turn into a dark halo over the wallpaper. -->
+  <BoxShadows x:Key="ElevationShellGlassPanelShadow">0 3 12 0 #24000000</BoxShadows>
+  <BoxShadows x:Key="ElevationPopupShadow">0 6 18 0 #38000000</BoxShadows>
+  <BoxShadows x:Key="ElevationPanelShadow">0 8 24 0 #60000000</BoxShadows>
+  <BoxShadows x:Key="ElevationDialogShadow">0 12 36 0 #80000000</BoxShadows>
+  <!-- Floating shell surfaces sit directly over wallpaper and application
+       content, so their elevation is intentionally clearer than an in-app
+       card. Keep these roles separate from ordinary menus and windows. -->
+  <BoxShadows x:Key="ElevationShellChromeShadow">0 8 28 0 #A6000000</BoxShadows>
+  <BoxShadows x:Key="ElevationShellPopupShadow">0 12 36 0 #B3000000</BoxShadows>
+  <BoxShadows x:Key="ElevationShellDialogShadow">0 16 44 0 #BF000000</BoxShadows>
+<CornerRadius x:Key="RoundedXS">6</CornerRadius>
+<CornerRadius x:Key="RoundedSM">10</CornerRadius>
+<CornerRadius x:Key="RoundedMD">12</CornerRadius>
+<CornerRadius x:Key="RoundedLG">14</CornerRadius>
+<CornerRadius x:Key="RoundedXL">18</CornerRadius>
+
+<CornerRadius x:Key="RoundedXXL">32</CornerRadius>
+<CornerRadius x:Key="RoundedXXLInset">31</CornerRadius>
+<CornerRadius x:Key="RoundedXXLDoubleInset">30</CornerRadius>
+
+<CornerRadius x:Key="RoundedXLInset">17</CornerRadius>
+<CornerRadius x:Key="RoundedXLDoubleInset">16</CornerRadius>
+
+<!-- One geometry contract for normal application windows and modal pickers.
+     KWin consumes the matching scalar through WindowDecorationThemeService. -->
+<CornerRadius x:Key="AppWindowCornerRadius">16</CornerRadius>
+<CornerRadius x:Key="AppWindowCornerRadiusInset">15</CornerRadius>
+<CornerRadius x:Key="AppWindowContentCornerRadius">14</CornerRadius>
+<x:Double x:Key="AppWindowCornerRadiusValue">16</x:Double>
+
+<CornerRadius x:Key="RoundedMDLeft">12,0,0,12</CornerRadius>
+<CornerRadius x:Key="RoundedMDRight">0,12,12,0</CornerRadius>
+
+<CornerRadius x:Key="RoundedLGInset">13</CornerRadius>
+<CornerRadius x:Key="RoundedNone">0</CornerRadius>
+<CornerRadius x:Key="RoundedPill">15</CornerRadius>
+
+<x:Double x:Key="RoundedLGValue">14</x:Double>
+  <!-- Shared visual size for compact shell status and media transport glyphs. -->
+  <x:Double x:Key="ShellStatusIconSize">16</x:Double>
+  <!-- Shared by Settings client chrome and the native KWin decoration. -->
+  <x:Double x:Key="WindowTitleBarHeight">32</x:Double>
+  <x:Double x:Key="WindowCaptionButtonWidth">42</x:Double>
+  <x:Double x:Key="WindowCaptionButtonHeight">32</x:Double>
+  <!-- KWin owns server-side titlebars. Keep their hit targets generous while
+       allowing their visual density to remain calmer than DaisyOS app chrome. -->
+  <!-- App dock stays compact; crowded items shrink within this screen-clamped width. -->
+  <x:Double x:Key="TaskbarMaximumWidth">1200</x:Double>
+  <x:Double x:Key="KWinDecorationTitleBarHeight">32</x:Double>
+  <x:Double x:Key="KWinDecorationCaptionButtonWidth">46</x:Double>
+  <x:Double x:Key="KWinDecorationCaptionButtonHeight">32</x:Double>
+  <x:Double x:Key="KWinDecorationCaptionGlyphSize">10</x:Double>
+<x:Double x:Key="KWinDecorationTitleFontPixels">13</x:Double>
+
+  <!-- Canonical design tokens. Values follow a 4px grid. Feature views use
+       semantic roles first and these primitives only when no semantic role
+       exists. Keeping them here makes light and dark themes share geometry. -->
+  <x:Double x:Key="Space0">0</x:Double>
+  <x:Double x:Key="Space1">4</x:Double>
+  <x:Double x:Key="Space2">8</x:Double>
+  <x:Double x:Key="Space3">12</x:Double>
+  <x:Double x:Key="Space4">16</x:Double>
+  <x:Double x:Key="Space5">20</x:Double>
+  <x:Double x:Key="Space6">24</x:Double>
+  <x:Double x:Key="Space8">32</x:Double>
+  <x:Double x:Key="Space10">40</x:Double>
+  <x:Double x:Key="Space12">48</x:Double>
+  <x:Double x:Key="Space16">64</x:Double>
+  <Thickness x:Key="SpaceInsetNone">0</Thickness>
+  <Thickness x:Key="SpaceInset1">4</Thickness>
+  <Thickness x:Key="SpaceInset2">8</Thickness>
+  <Thickness x:Key="SpaceInset3">12</Thickness>
+  <Thickness x:Key="SpaceInset4">16</Thickness>
+  <Thickness x:Key="SpaceInset5">20</Thickness>
+  <Thickness x:Key="SpaceInset6">24</Thickness>
+  <Thickness x:Key="ControlPaddingHorizontal">12,0</Thickness>
+  <Thickness x:Key="ControlPaddingComfortable">16,0</Thickness>
+  <Thickness x:Key="ControlPaddingCompact">8,0</Thickness>
+  <Thickness x:Key="MenuItemPadding">8,6,10,6</Thickness>
+  <Thickness x:Key="MenuIconMargin">0,0,8,0</Thickness>
+  <Thickness x:Key="MenuGestureMargin">20,0,0,0</Thickness>
+  <Thickness x:Key="TooltipPadding">8,6</Thickness>
+  <Thickness x:Key="CardPadding">20</Thickness>
+  <Thickness x:Key="PanelPadding">20</Thickness>
+  <Thickness x:Key="PanelPaddingCompact">16</Thickness>
+
+  <x:Double x:Key="TypeSizeCaption">12</x:Double>
+  <x:Double x:Key="TypeSizeBodySmall">13</x:Double>
+  <x:Double x:Key="TypeSizeBody">14</x:Double>
+  <x:Double x:Key="TypeSizeBodyLarge">16</x:Double>
+  <x:Double x:Key="TypeSizeTitle">20</x:Double>
+  <x:Double x:Key="TypeSizeHeading">24</x:Double>
+  <x:Double x:Key="TypeSizeDisplay">32</x:Double>
+  <x:Double x:Key="TypeSizeDisplayLarge">44</x:Double>
+  <x:Double x:Key="TypeSizeDisplayHero">104</x:Double>
+  <x:Double x:Key="TypeLineCaption">16</x:Double>
+  <x:Double x:Key="TypeLineBodySmall">18</x:Double>
+  <x:Double x:Key="TypeLineBody">20</x:Double>
+  <x:Double x:Key="TypeLineBodyLarge">24</x:Double>
+  <x:Double x:Key="TypeLineTitle">28</x:Double>
+  <x:Double x:Key="TypeLineHeading">32</x:Double>
+  <x:Double x:Key="TypeLineDisplay">40</x:Double>
+  <x:Double x:Key="TypeLineDisplayLarge">52</x:Double>
+  <x:Double x:Key="TypeLineDisplayHero">112</x:Double>
+
+  <CornerRadius x:Key="RadiusNone">0</CornerRadius>
+  <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
+  <CornerRadius x:Key="RadiusControl">10</CornerRadius>
+  <CornerRadius x:Key="RadiusControlInner">8</CornerRadius>
+  <CornerRadius x:Key="RadiusSurface">18</CornerRadius>
+  <CornerRadius x:Key="RadiusSurfaceLeft">18,0,0,18</CornerRadius>
+  <CornerRadius x:Key="RadiusSurfaceRight">0,18,18,0</CornerRadius>
+  <CornerRadius x:Key="RadiusSurfaceInner">16</CornerRadius>
+  <CornerRadius x:Key="RadiusDialog">18</CornerRadius>
+  <CornerRadius x:Key="RadiusPill">999</CornerRadius>
+  <CornerRadius x:Key="RadiusCircle">999</CornerRadius>
+  <!-- Scalar geometry tokens for custom drawing controls whose radius property is a Double. -->
+  <x:Double x:Key="RadiusSurfaceInnerValue">16</x:Double>
+
+  <x:Double x:Key="BorderWidthNone">0</x:Double>
+  <x:Double x:Key="BorderWidthDefault">1</x:Double>
+  <x:Double x:Key="BorderWidthFocus">2</x:Double>
+  <Thickness x:Key="BorderThicknessNone">0</Thickness>
+  <Thickness x:Key="BorderThicknessDefault">1</Thickness>
+  <Thickness x:Key="BorderThicknessFocus">2</Thickness>
+
+  <x:Double x:Key="HitTargetCompact">32</x:Double>
+  <x:Double x:Key="HitTargetStandard">32</x:Double>
+  <x:Double x:Key="HitTargetComfortable">32</x:Double>
+  <FlowDirection x:Key="SystemFlowDirection">LeftToRight</FlowDirection>
+  <x:Double x:Key="ShellChromeHeight">52</x:Double>
+  <x:Double x:Key="ControlHeightCompact">32</x:Double>
+  <x:Double x:Key="ControlHeightStandard">32</x:Double>
+  <x:Double x:Key="ButtonHeightSmall">32</x:Double>
+  <x:Double x:Key="ButtonHeightMedium">36</x:Double>
+  <x:Double x:Key="ButtonHeightLarge">42</x:Double>
+  <x:Double x:Key="QuickSettingsControlHeight">44</x:Double>
+  <x:Double x:Key="ControlHeightComfortable">32</x:Double>
+  <x:Double x:Key="InputHeightStandard">40</x:Double>
+  <x:Double x:Key="SearchHeightStandard">40</x:Double>
+  <x:Double x:Key="SearchHeightProminent">40</x:Double>
+  <x:Double x:Key="IconSizeSmall">12</x:Double>
+  <x:Double x:Key="IconSizeStandard">16</x:Double>
+  <x:Double x:Key="IconSizeMedium">20</x:Double>
+  <x:Double x:Key="IconSizeLarge">24</x:Double>
+  <x:Double x:Key="IconSizeHero">32</x:Double>
+  <x:Double x:Key="ReadableContentMaxWidth">820</x:Double>
+  <x:Double x:Key="MenuMinWidth">184</x:Double>
+  <x:Double x:Key="MenuMaxHeight">288</x:Double>
+
+  <x:TimeSpan x:Key="MotionDelayBrief">0:0:0.08</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationShellEnter">0:0:0.22</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationShellExit">0:0:0.14</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationEnter">0:0:0.28</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationExit">0:0:0.14</x:TimeSpan>
+  <easings:SplineEasing x:Key="MotionEaseEnter" X1="0.22" Y1="1" X2="0.36" Y2="1" />
+  <easings:SplineEasing x:Key="MotionEaseExit" X1="0.4" Y1="0" X2="0.7" Y2="0.2" />
+  <easings:SpringEasing x:Key="MotionEasePress" Mass="1" Stiffness="500" Damping="40" />
+  <x:TimeSpan x:Key="MotionDurationInstant">0:0:0</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationHover">0:0:0.05</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationFast">0:0:0.10</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationBase">0:0:0.16</x:TimeSpan>
+  <x:TimeSpan x:Key="MotionDurationSlow">0:0:0.22</x:TimeSpan>
+
+  <!-- Fixed media-overlay neutrals remain theme-independent because they sit
+       over photography, wallpaper, or capture content rather than a themed
+       application surface. -->
+  <Color x:Key="TransparentColor">#00000000</Color>
+  <Color x:Key="BlackAlpha08Color">#15000000</Color>
+  <Color x:Key="BlackAlpha13Color">#20000000</Color>
+  <Color x:Key="BlackAlpha15Color">#25000000</Color>
+  <Color x:Key="BlackAlpha20Color">#33000000</Color>
+  <Color x:Key="BlackAlpha25Color">#40000000</Color>
+  <Color x:Key="BlackAlpha27Color">#44000000</Color>
+  <Color x:Key="BlackAlpha33Color">#55000000</Color>
+  <Color x:Key="BlackAlpha40Color">#66000000</Color>
+  <Color x:Key="BlackAlpha44Color">#70000000</Color>
+  <Color x:Key="BlackAlpha50Color">#80000000</Color>
+  <Color x:Key="BlackAlpha53Color">#88000000</Color>
+  <Color x:Key="BlackAlpha56Color">#90000000</Color>
+  <Color x:Key="BlackAlpha60Color">#99000000</Color>
+  <Color x:Key="BlackAlpha67Color">#AA000000</Color>
+  <Color x:Key="BlackAlpha80Color">#CC000000</Color>
+  <Color x:Key="BlackAlpha90Color">#E6000000</Color>
+  <SolidColorBrush x:Key="TransparentBrush" Color="{StaticResource TransparentColor}" />
+  <SolidColorBrush x:Key="BlackAlpha08Brush" Color="{StaticResource BlackAlpha08Color}" />
+  <SolidColorBrush x:Key="BlackAlpha13Brush" Color="{StaticResource BlackAlpha13Color}" />
+  <SolidColorBrush x:Key="BlackAlpha15Brush" Color="{StaticResource BlackAlpha15Color}" />
+  <SolidColorBrush x:Key="BlackAlpha20Brush" Color="{StaticResource BlackAlpha20Color}" />
+  <SolidColorBrush x:Key="BlackAlpha25Brush" Color="{StaticResource BlackAlpha25Color}" />
+  <SolidColorBrush x:Key="BlackAlpha27Brush" Color="{StaticResource BlackAlpha27Color}" />
+  <SolidColorBrush x:Key="BlackAlpha33Brush" Color="{StaticResource BlackAlpha33Color}" />
+  <SolidColorBrush x:Key="BlackAlpha40Brush" Color="{StaticResource BlackAlpha40Color}" />
+  <SolidColorBrush x:Key="BlackAlpha44Brush" Color="{StaticResource BlackAlpha44Color}" />
+  <SolidColorBrush x:Key="BlackAlpha50Brush" Color="{StaticResource BlackAlpha50Color}" />
+  <SolidColorBrush x:Key="BlackAlpha53Brush" Color="{StaticResource BlackAlpha53Color}" />
+  <SolidColorBrush x:Key="BlackAlpha56Brush" Color="{StaticResource BlackAlpha56Color}" />
+  <SolidColorBrush x:Key="BlackAlpha60Brush" Color="{StaticResource BlackAlpha60Color}" />
+  <SolidColorBrush x:Key="BlackAlpha67Brush" Color="{StaticResource BlackAlpha67Color}" />
+  <SolidColorBrush x:Key="BlackAlpha80Brush" Color="{StaticResource BlackAlpha80Color}" />
+  <SolidColorBrush x:Key="BlackAlpha90Brush" Color="{StaticResource BlackAlpha90Color}" />
+
+  <Color x:Key="WhiteAlpha08Color">#15FFFFFF</Color>
+  <Color x:Key="WhiteAlpha20Color">#33FFFFFF</Color>
+  <Color x:Key="WhiteAlpha27Color">#44FFFFFF</Color>
+  <Color x:Key="WhiteAlpha40Color">#66FFFFFF</Color>
+  <Color x:Key="WhiteAlpha44Color">#70FFFFFF</Color>
+  <Color x:Key="WhiteAlpha53Color">#88FFFFFF</Color>
+  <Color x:Key="WhiteAlpha56Color">#90FFFFFF</Color>
+  <Color x:Key="WhiteAlpha85Color">#D8FFFFFF</Color>
+  <Color x:Key="WhiteAlpha95Color">#F2F2F2</Color>
+  <Color x:Key="LockScreenMutedColor">#80F2F2F2</Color>
+  <SolidColorBrush x:Key="CaptionCloseGlyphBrush" Color="White" />
+  <SolidColorBrush x:Key="WhiteAlpha08Brush" Color="{StaticResource WhiteAlpha08Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha20Brush" Color="{StaticResource WhiteAlpha20Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha27Brush" Color="{StaticResource WhiteAlpha27Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha40Brush" Color="{StaticResource WhiteAlpha40Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha44Brush" Color="{StaticResource WhiteAlpha44Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha53Brush" Color="{StaticResource WhiteAlpha53Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha56Brush" Color="{StaticResource WhiteAlpha56Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha85Brush" Color="{StaticResource WhiteAlpha85Color}" />
+  <SolidColorBrush x:Key="WhiteAlpha95Brush" Color="{StaticResource WhiteAlpha95Color}" />
+  <SolidColorBrush x:Key="LockScreenMutedBrush" Color="{StaticResource LockScreenMutedColor}" />
+
+  <Color x:Key="LockScreenCanvasColor">#FF0B0D12</Color>
+  <SolidColorBrush x:Key="LockScreenCanvasBrush" Color="{StaticResource LockScreenCanvasColor}" />
+  <Color x:Key="LockScreenDangerColor">#FFFF6B6B</Color>
+  <Color x:Key="LockScreenWarningColor">#FFFFAA00</Color>
+  <SolidColorBrush x:Key="LockScreenDangerBrush" Color="{StaticResource LockScreenDangerColor}" />
+  <SolidColorBrush x:Key="LockScreenWarningBrush" Color="{StaticResource LockScreenWarningColor}" />
+
+  <Color x:Key="WallpaperBlackColor">#FF000000</Color>
+  <Color x:Key="WallpaperGraphiteColor">#FF1B1D22</Color>
+  <Color x:Key="WallpaperSlateColor">#FF2E3440</Color>
+  <Color x:Key="WallpaperMidnightColor">#FF1B263B</Color>
+  <Color x:Key="WallpaperOceanColor">#FF1E4D7B</Color>
+  <Color x:Key="WallpaperTealColor">#FF0B4F4A</Color>
+  <Color x:Key="WallpaperForestColor">#FF254117</Color>
+  <Color x:Key="WallpaperPlumColor">#FF4A2C40</Color>
+  <Color x:Key="WallpaperClayColor">#FF6B3E2E</Color>
+  <Color x:Key="WallpaperSandColor">#FFA8997A</Color>
+  <Color x:Key="WallpaperMistColor">#FFC8D5E5</Color>
+  <Color x:Key="WallpaperWhiteColor">#FFF5F5F5</Color>
+  <SolidColorBrush x:Key="WallpaperBlackBrush" Color="{StaticResource WallpaperBlackColor}" />
+  <SolidColorBrush x:Key="WallpaperGraphiteBrush" Color="{StaticResource WallpaperGraphiteColor}" />
+  <SolidColorBrush x:Key="WallpaperSlateBrush" Color="{StaticResource WallpaperSlateColor}" />
+  <SolidColorBrush x:Key="WallpaperMidnightBrush" Color="{StaticResource WallpaperMidnightColor}" />
+  <SolidColorBrush x:Key="WallpaperOceanBrush" Color="{StaticResource WallpaperOceanColor}" />
+  <SolidColorBrush x:Key="WallpaperTealBrush" Color="{StaticResource WallpaperTealColor}" />
+  <SolidColorBrush x:Key="WallpaperForestBrush" Color="{StaticResource WallpaperForestColor}" />
+  <SolidColorBrush x:Key="WallpaperPlumBrush" Color="{StaticResource WallpaperPlumColor}" />
+  <SolidColorBrush x:Key="WallpaperClayBrush" Color="{StaticResource WallpaperClayColor}" />
+  <SolidColorBrush x:Key="WallpaperSandBrush" Color="{StaticResource WallpaperSandColor}" />
+  <SolidColorBrush x:Key="WallpaperMistBrush" Color="{StaticResource WallpaperMistColor}" />
+  <SolidColorBrush x:Key="WallpaperWhiteBrush" Color="{StaticResource WallpaperWhiteColor}" />
+
+  <BoxShadows x:Key="ElevationNone">0 0 0 0 #00000000</BoxShadows>
+  <BoxShadows x:Key="ElevationItemLift">0 2 6 0 #33000000</BoxShadows>
+  <BoxShadows x:Key="ElevationItemDrag">0 3 8 0 #4D000000</BoxShadows>
+  <BoxShadows x:Key="ElevationPreview">0 2 8 0 #20000000</BoxShadows>
+  <BoxShadows x:Key="ElevationSelectionHandle">0 1 3 0 #40000000</BoxShadows>
+  <x:Double x:Key="SidebarItemGap">4</x:Double>
+  <SolidColorBrush x:Key="ToggleThumbBrush" Color="#FFF2F2F2" />
+  <SolidColorBrush x:Key="ToggleThumbStrokeBrush" Color="#FFFFFFFF" />
+  <x:Double x:Key="ToggleTrackWidth">56</x:Double>
+  <x:Double x:Key="ToggleHitWidth">60</x:Double>
+  <x:Double x:Key="ToggleTrackHeight">24</x:Double>
+  <x:Double x:Key="ToggleThumbWidth">28</x:Double>
+  <x:Double x:Key="ToggleThumbHeight">20</x:Double>
+  <x:Double x:Key="ToggleThumbTravel">24</x:Double>
+</ResourceDictionary>

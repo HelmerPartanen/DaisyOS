@@ -1,0 +1,377 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="clr-namespace:DaisyOS.Shell.ViewModels"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Controls.DesktopItemView"
+             x:DataType="vm:DesktopItemViewModel"
+             ClipToBounds="{Binding IsWidgetCard}"
+             Classes.Selected="{Binding IsSelected}"
+             Classes.Widget="{Binding IsWidgetCard}"
+             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+  <UserControl.Styles>
+    <Style Selector="controls|DesktopItemView">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="Border#CellCard">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" Easing="QuadraticEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="controls|DesktopItemView[IsHiddenPlaceholder=True] Border#CellCard">
+      <Setter Property="Opacity" Value="0.0" />
+    </Style>
+    <Style Selector="controls|DesktopItemView[IsHiddenPlaceholder=True] ContentPresenter#WidgetCard">
+      <Setter Property="Opacity" Value="0.0" />
+    </Style>
+
+    <Style Selector="controls|DesktopItemView[IsDragProxy=True]">
+      <Setter Property="ZIndex" Value="100" />
+    </Style>
+    <Style Selector="controls|DesktopItemView[IsDragProxy=True] Border#CellCard">
+      <Setter Property="RenderTransform" Value="scale(1.08)" />
+      <Setter Property="Opacity" Value="0.98" />
+    </Style>
+    <Style Selector="controls|DesktopItemView[IsDragProxy=True] ContentPresenter#WidgetCard">
+      <Setter Property="RenderTransform" Value="scale(1.02)" />
+      <Setter Property="Opacity" Value="0.98" />
+    </Style>
+
+    <Style Selector="controls|DesktopItemView:not(.Widget) Border#CellCard:pointerover">
+      <Setter Property="Background" Value="{DynamicResource DesktopHoverBrush}" />
+    </Style>
+
+    <Style Selector="controls|DesktopItemView.Selected:not(.Widget) Border#CellCard">
+      <Setter Property="Background" Value="{DynamicResource DesktopHoverBrush}" />
+    </Style>
+
+    <Style Selector="controls|DesktopItemView:not(.Widget) Border#CellCard:pressed">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+    <Style Selector="ContentPresenter#WidgetCard">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" Easing="QuadraticEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <!-- Widget Remove (-) Button Styling -->
+    <Style Selector="controls|DesktopItemView.Widget Button#RemoveWidgetButton">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="controls|DesktopItemView.Widget:pointerover Button#RemoveWidgetButton">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+
+    <Style Selector="controls|DesktopItemView[IsHiddenPlaceholder=True] Button#RemoveWidgetButton">
+      <Setter Property="Opacity" Value="0.0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
+    <Style Selector="controls|DesktopItemView[IsDragProxy=True] Button#RemoveWidgetButton">
+      <Setter Property="Opacity" Value="0.0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+
+    <Style Selector="Button.WidgetRemoveButton">
+      <Setter Property="ClipToBounds" Value="False" />
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="MinWidth" Value="28" />
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Left" />
+      <Setter Property="VerticalAlignment" Value="Top" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="ButtonBorder"
+                  Width="22"
+                  Height="22"
+                  CornerRadius="11"
+                  Background="{DynamicResource SurfaceRaisedBrush}"
+                  BorderBrush="{DynamicResource StrokeDefaultBrush}"
+                  BorderThickness="1"
+                  BoxShadow="0 2 6 0 #33000000"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center">
+            <Border.Transitions>
+              <Transitions>
+                <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
+                <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionDurationFast}" />
+                <BoxShadowsTransition Property="BoxShadow" Duration="{DynamicResource MotionDurationFast}" />
+              </Transitions>
+            </Border.Transitions>
+            <ContentPresenter Name="PART_ContentPresenter"
+                              Content="{TemplateBinding Content}"
+                              Background="Transparent"
+                              BorderThickness="0"
+                              Padding="0"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="Button.WidgetRemoveButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.WidgetRemoveButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="Button.WidgetRemoveButton:pointerover /template/ Border#ButtonBorder">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
+      <Setter Property="BoxShadow" Value="0 3 8 0 #4D000000" />
+    </Style>
+
+    <Style Selector="Button.WidgetRemoveButton:pressed /template/ Border#ButtonBorder">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+  </UserControl.Styles>
+
+
+  <Panel x:Name="RootPanel" ClipToBounds="False" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+
+    <Panel.ContextMenu>
+      <ContextMenu>
+        <!-- Open -->
+        <MenuItem Header="{DynamicResource Loc_ED077F3D8125}" Click="OnOpenClicked" IsVisible="{Binding !IsWidgetCard}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="arrow-square-out" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Set as Wallpaper (for image files) -->
+        <MenuItem Header="{DynamicResource Loc_2C391CE3980C}" Click="OnSetWallpaperClicked" IsVisible="{Binding CanSetAsWallpaper}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="image" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Open in Terminal (for folders) -->
+        <MenuItem Header="{DynamicResource Loc_0E9F3AED3CED}" Click="OnOpenInTerminalClicked" IsVisible="{Binding CanOpenInTerminal}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="terminal-window" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Pin to Taskbar (for app launchers) -->
+        <MenuItem Header="{DynamicResource Loc_83F1B0FAC0CE}" Click="OnPinToTaskbarClicked" IsVisible="{Binding IsDesktopEntry}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="push-pin" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Share (for shareable files/folders) -->
+        <MenuItem Header="{DynamicResource Loc_29887A5FF984}" IsVisible="{Binding IsShareable}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="share-network" Classes="MenuIcon"/></MenuItem.Icon>
+          <MenuItem Header="LocalSend" Click="OnShareLocalSendClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="LocalSend" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+        </MenuItem>
+
+        <!-- Rename -->
+        <MenuItem Header="{DynamicResource Loc_3064D79A295C}" Click="OnRenameClicked" IsVisible="{Binding CanBeRenamed}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="pencil-simple" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <Separator IsVisible="{Binding CanBeTrashed}" />
+
+        <!-- Cut / Copy -->
+        <MenuItem Header="{DynamicResource Loc_1F45F02561F4}" Click="OnCutClicked" IsVisible="{Binding CanBeTrashed}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="scissors" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="{DynamicResource Loc_E21F935F11D7}" Click="OnCopyClicked" IsVisible="{Binding CanBeTrashed}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="copy" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+        <MenuItem Header="{DynamicResource Loc_720FF4160412}" Click="OnCopyPathClicked" IsVisible="{Binding CanBeTrashed}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="link" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Compress -->
+        <MenuItem Header="{DynamicResource Loc_033FC0445B90}" Click="OnCompressClicked" IsVisible="{Binding CanBeCompressed}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="file-zip" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <Separator IsVisible="{Binding CanBeTrashed}" />
+
+        <!-- Empty Trash -->
+        <MenuItem Header="{DynamicResource Loc_B85CF0888F79}"
+                  Click="OnEmptyTrashClicked"
+                  IsVisible="{Binding IsTrash}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Move to Trash -->
+        <MenuItem Header="{DynamicResource Loc_9ADCDF33DCE1}"
+                  Click="OnMoveToTrashClicked"
+                  IsVisible="{Binding CanBeTrashed}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Widget Size Selector Row (Small, Medium, Large) -->
+        <MenuItem x:Name="WidgetSizesHeader" IsVisible="{Binding IsWidgetCard}" StaysOpenOnClick="True">
+          <MenuItem.Header>
+            <UniformGrid Rows="1" HorizontalAlignment="Stretch" Margin="0">
+              <Button Classes="WidgetSizeButton"
+                      Classes.Active="{Binding IsSizeSmall}"
+                      IsVisible="{Binding SupportsSmallSize}"
+                      Click="OnSizeSmallClicked"
+                      ToolTip.Tip="{DynamicResource Loc_5263293FC202}"
+                      Margin="2,0">
+                <controls:DaisyIcon Icon="widget_small" Classes="WidgetSizeIcon" Width="18" Height="18"
+                                    Foreground="{DynamicResource ContentSecondaryBrush}" />
+              </Button>
+              <Button Classes="WidgetSizeButton"
+                      Classes.Active="{Binding IsSizeMedium}"
+                      IsVisible="{Binding SupportsMediumSize}"
+                      Click="OnSizeMediumClicked"
+                      ToolTip.Tip="{DynamicResource Loc_8E588CD18774}"
+                      Margin="2,0">
+                <controls:DaisyIcon Icon="widget_medium" Classes="WidgetSizeIcon" Width="18" Height="18"
+                                    Foreground="{DynamicResource ContentSecondaryBrush}" />
+              </Button>
+              <Button Classes="WidgetSizeButton"
+                      Classes.Active="{Binding IsSizeLarge}"
+                      IsVisible="{Binding SupportsLargeSize}"
+                      Click="OnSizeLargeClicked"
+                      ToolTip.Tip="{DynamicResource Loc_AB80540D98D2}"
+                      Margin="2,0">
+                <controls:DaisyIcon Icon="widget_large" Classes="WidgetSizeIcon" Width="26" Height="18"
+                                    Foreground="{DynamicResource ContentSecondaryBrush}" />
+              </Button>
+              <Button Classes="WidgetSizeButton"
+                      Classes.Active="{Binding IsSizeExtraLarge}"
+                      IsVisible="{Binding SupportsExtraLargeSize}"
+                      Click="OnSizeExtraLargeClicked"
+                      ToolTip.Tip="{DynamicResource Loc_F44F24C71F1F}"
+                      Margin="2,0">
+                <controls:DaisyIcon Icon="widget_extralarge" Classes="WidgetSizeIcon" Width="18" Height="18"
+                                    Foreground="{DynamicResource ContentSecondaryBrush}" />
+              </Button>
+            </UniformGrid>
+          </MenuItem.Header>
+        </MenuItem>
+
+        <Separator IsVisible="{Binding IsWidgetCard}" />
+
+        <!-- Move to bottom shelf (for Media Widget only) -->
+        <MenuItem Header="{DynamicResource Loc_12690E79F16F}"
+                  Click="OnMoveToBottomShelfClicked"
+                  IsVisible="{Binding IsMediaWidget}">
+          <MenuItem.Icon>
+            <controls:DaisyIcon Icon="arrow-down-left" Classes="MenuIcon" />
+          </MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Choose photos (for Image Widget only) -->
+        <MenuItem Header="{DynamicResource Loc_DDB2E1E865AA}"
+                  Click="OnChoosePhotosClicked"
+                  IsVisible="{Binding IsImageWidget}">
+          <MenuItem.Icon>
+            <controls:DaisyIcon Icon="image" Classes="MenuIcon" />
+          </MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Remove Widget -->
+        <MenuItem Header="{DynamicResource Loc_66DC00642E56}"
+                  Click="OnRemoveWidgetClicked"
+                  IsVisible="{Binding IsWidgetCard}"
+                  Classes="Danger">
+          <MenuItem.Icon>
+            <controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon" />
+          </MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Properties -->
+        <MenuItem Header="{DynamicResource Loc_AE43692B2A31}" Click="OnPropertiesClicked" IsVisible="{Binding !IsWidgetCard}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="info" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+      </ContextMenu>
+    </Panel.ContextMenu>
+
+    <!-- Standard 1x1 Desktop App Item -->
+    <Border Name="CellCard" IsVisible="{Binding !IsWidgetCard}" Padding="0,4,0,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+      <Grid RowDefinitions="Auto,*">
+        <Border Name="IconWrapper" Grid.Row="0" Width="48" Height="48" HorizontalAlignment="Center">
+          <Image Name="AppIcon" 
+                 Source="{Binding IconBitmap}" 
+                 RenderOptions.BitmapInterpolationMode="HighQuality" />
+        </Border>
+
+        <!-- Label below the icon (normal display mode) -->
+        <controls:DesktopItemLabel x:Name="ItemLabel" Grid.Row="1" FontFamily="{DynamicResource ShellFontFamily}"
+                   FullText="{Binding Label}"
+                   IsVisible="{Binding !IsRenaming}"
+                   TextAlignment="Center"
+                   TextWrapping="NoWrap"
+                   TextTrimming="CharacterEllipsis"
+                   MaxLines="2"
+                   ToolTip.Tip="{Binding Label}"
+                   Margin="0,4,0,0"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource DesktopItemLabelBrush}"
+                   Effect="{DynamicResource DesktopItemLabelShadow}" />
+
+      </Grid>
+    </Border>
+
+    <!-- The editor measures independently from the fixed desktop cell. -->
+    <controls:DesktopRenameHost IsVisible="{Binding IsRenaming}" ZIndex="10">
+        <!-- Inline Rename TextBox (active when renaming) -->
+        <TextBox x:Name="RenameBox" Classes="RenameBox DesktopRenameBox"
+                 Text="{Binding Label, Mode=TwoWay}"
+                 IsVisible="{Binding IsRenaming}"
+                 MinWidth="0" MaxWidth="84"
+                 KeyDown="OnRenameKeyDown"
+                 LostFocus="OnRenameLostFocus"
+                 FontSize="{DynamicResource TypeSizeCaption}"
+                 MinLines="1" MaxLines="2"
+                 TextAlignment="Center" HorizontalContentAlignment="Center" />
+    </controls:DesktopRenameHost>
+
+    <!-- Desktop Widget Host (Hosts CalendarWidget, ClockWidget, or any custom widget) -->
+    <ContentPresenter Name="WidgetCard"
+                      IsVisible="{Binding IsWidgetCard}"
+                      Content="{Binding WidgetContent}"
+                      HorizontalAlignment="Stretch"
+                      VerticalAlignment="Stretch" />
+
+    <!-- Circular Remove (-) Button on Top Left Corner (shifted further outside) -->
+    <Button Name="RemoveWidgetButton"
+            Classes="WidgetRemoveButton"
+            IsVisible="{Binding IsWidgetCard}"
+            Click="OnRemoveWidgetClicked"
+            Margin="-3,-3,0,0"
+            ZIndex="10"
+            ToolTip.Tip="{DynamicResource Loc_66DC00642E56}">
+      <Border Width="9"
+              Height="2"
+              CornerRadius="1"
+              Background="{DynamicResource ContentPrimaryBrush}"
+              HorizontalAlignment="Center"
+              VerticalAlignment="Center" />
+    </Button>
+  </Panel>
+</UserControl>

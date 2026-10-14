@@ -1,0 +1,119 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:avaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Name="Root"
+             x:Class="DaisyOS.Shell.Apps.Notes.Editor.Code.CodeEditorControl">
+
+  <UserControl.Styles>
+    <StyleInclude Source="avares://AvaloniaEdit/Themes/Fluent/AvaloniaEdit.xaml" />
+  </UserControl.Styles>
+
+  <Grid RowDefinitions="*,Auto">
+    <!-- Editor and Preview Area -->
+    <Grid Grid.Row="0">
+      <!-- Binary placeholder -->
+      <StackPanel IsVisible="{Binding #Root.IsBinary}"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="16">
+        <controls:DaisyIcon Icon="file-not-found"
+                            Size="{DynamicResource IconSizeHero}"
+                            Foreground="{DynamicResource ContentSecondaryBrush}"
+                            Opacity="0.5"
+                            HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_2C7CCF98F8B3}"
+                   FontSize="{DynamicResource TypeSizeBodyLarge}"
+                   FontWeight="SemiBold"
+                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                   HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_E40472865046}"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource ContentSecondaryBrush}"
+                   HorizontalAlignment="Center" />
+      </StackPanel>
+
+      <!-- Split/Dual view for Markdown preview -->
+      <Grid x:Name="EditorLayout" IsVisible="{Binding !#Root.IsBinary}" ColumnDefinitions="*,Auto,0">
+        <!-- Main Code Editor -->
+        <Border Grid.Column="0"
+                x:Name="EditorContainer"
+                Background="{DynamicResource SurfaceBaseSolidBrush}">
+          <avaloniaEdit:TextEditor x:Name="Editor"
+                                   ShowLineNumbers="True"
+                                   WordWrap="True"
+                                   FontFamily="JetBrains Mono, Cascadia Code, Consolas, monospace"
+                                   Background="Transparent"
+                                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                                   FontSize="{DynamicResource TypeSizeBody}"
+                                   HorizontalScrollBarVisibility="Auto"
+                                   VerticalScrollBarVisibility="Auto"
+                                   Margin="16,12" />
+        </Border>
+
+        <!-- Splitter when Markdown Preview is active -->
+        <GridSplitter Grid.Column="1"
+                      Width="1"
+                      Background="{DynamicResource StrokeDefaultBrush}"
+                      IsVisible="{Binding #Root.IsMarkdownPreviewActive}" />
+
+        <!-- Markdown HTML/Rendered Preview Pane -->
+        <Border Grid.Column="2"
+                Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                Padding="32,24"
+                IsVisible="{Binding #Root.IsMarkdownPreviewActive}">
+          <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="MarkdownPreviewStack" Spacing="12">
+              <TextBlock x:Name="MarkdownPreviewText"
+                         TextWrapping="Wrap"
+                         FontSize="{DynamicResource TypeSizeBodyLarge}"
+                         LineHeight="24"
+                         Foreground="{DynamicResource ContentPrimaryBrush}" />
+            </StackPanel>
+          </ScrollViewer>
+        </Border>
+      </Grid>
+    </Grid>
+
+    <!-- Bottom Status Bar -->
+    <Border Grid.Row="1"
+            Height="28"
+            Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+            BorderBrush="{DynamicResource StrokeDefaultBrush}"
+            BorderThickness="0,1,0,0"
+            Padding="16,0"
+            IsVisible="{Binding !#Root.IsBinary}">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <!-- Left: Line, Column, Selection, Word Count -->
+        <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+          <TextBlock x:Name="CursorPositionText"
+                     Text="{DynamicResource Loc_9B63A02D0F39}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     FontWeight="Medium"
+                     Foreground="{DynamicResource ContentSecondaryBrush}" />
+          <TextBlock x:Name="WordCountText"
+                     Text="{DynamicResource Loc_DCFF6FBE6F18}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     Foreground="{DynamicResource ContentSecondaryBrush}" />
+        </StackPanel>
+
+        <!-- Right: Language, Encoding, Line Ending -->
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="16" VerticalAlignment="Center">
+          <TextBlock x:Name="LanguageText"
+                     Text="{DynamicResource Loc_7B5CB3C7F705}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     FontWeight="Medium"
+                     Foreground="{DynamicResource ContentSecondaryBrush}" />
+          <TextBlock x:Name="EncodingText"
+                     Text="{DynamicResource Loc_3AD3031F5503}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     Foreground="{DynamicResource ContentSecondaryBrush}" />
+          <TextBlock x:Name="LineEndingText"
+                     Text="{DynamicResource Loc_53A36375DCFB}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     Foreground="{DynamicResource ContentSecondaryBrush}" />
+        </StackPanel>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

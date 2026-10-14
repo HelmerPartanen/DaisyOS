@@ -1,0 +1,63 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Transitions x:Key="ToggleThumbTransitions">
+    <DoubleTransition Property="{x:Static Canvas.LeftProperty}" Duration="0:0:0.1" Easing="CubicEaseInOut" />
+  </Transitions>
+  <Transitions x:Key="ToggleTrackTransitions">
+    <BrushTransition Property="{x:Static Border.BackgroundProperty}" Duration="0:0:0.1" Easing="CubicEaseInOut" />
+  </Transitions>
+  <!-- Retain ToggleSwitch's native drag, keyboard, binding and automation behavior. -->
+  <ControlTheme x:Key="DaisyToggleSwitchTheme" TargetType="ToggleSwitch">
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="KnobTransitions" Value="{DynamicResource ToggleThumbTransitions}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <StackPanel Spacing="4" Background="{TemplateBinding Background}">
+          <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                            ContentTemplate="{TemplateBinding ContentTemplate}" RecognizesAccessKey="True" />
+          <Grid ColumnDefinitions="Auto,Auto" ColumnSpacing="0" MinHeight="{DynamicResource HitTargetCompact}">
+            <Grid Width="{DynamicResource ToggleHitWidth}" Height="32" VerticalAlignment="Center" Background="Transparent"
+                  TemplatedControl.IsTemplateFocusTarget="True">
+              <Border x:Name="FocusOutline" CornerRadius="16" BorderThickness="2" BorderBrush="Transparent" />
+              <Grid Width="{DynamicResource ToggleTrackWidth}" Height="{DynamicResource ToggleTrackHeight}" VerticalAlignment="Center">
+                <Border x:Name="ToggleTrack" Background="{DynamicResource ToggleTrackOffBrush}" CornerRadius="12"
+                        Transitions="{DynamicResource ToggleTrackTransitions}" />
+                <!-- Canvas width is the travel distance, as required by ToggleSwitch. -->
+                <Canvas x:Name="PART_SwitchKnob" Width="{DynamicResource ToggleThumbTravel}"
+                        Height="{DynamicResource ToggleThumbHeight}" Margin="2,2,0,0" HorizontalAlignment="Left" VerticalAlignment="Top">
+                  <Grid x:Name="PART_MovingKnobs" Width="{DynamicResource ToggleThumbWidth}" Height="{DynamicResource ToggleThumbHeight}">
+                    <Border x:Name="ToggleThumb" Background="{DynamicResource ToggleThumbBrush}"
+                            BorderBrush="{DynamicResource ToggleThumbStrokeBrush}" BorderThickness="1" CornerRadius="10" />
+                  </Grid>
+                </Canvas>
+              </Grid>
+            </Grid>
+            <ContentPresenter x:Name="PART_OffContentPresenter" Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0"
+                              Content="{TemplateBinding OffContent}" ContentTemplate="{TemplateBinding OffContentTemplate}" />
+            <ContentPresenter x:Name="PART_OnContentPresenter" Grid.Column="1" VerticalAlignment="Center" Margin="12,0,0,0"
+                              Content="{TemplateBinding OnContent}" ContentTemplate="{TemplateBinding OnContentTemplate}" />
+          </Grid>
+        </StackPanel>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^ /template/ ContentPresenter:empty">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#ToggleTrack">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+    <Style Selector="^:checked:pointerover /template/ Border#ToggleTrack">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="^:checked:pressed /template/ Border#ToggleTrack">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ Border#FocusOutline">
+      <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    </Style>
+    <Style Selector="^:checked /template/ ContentPresenter#PART_OffContentPresenter, ^:unchecked /template/ ContentPresenter#PART_OnContentPresenter">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

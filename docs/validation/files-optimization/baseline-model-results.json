@@ -1,0 +1,194 @@
+[
+  {
+    "path": "/tmp/daisy-files-benchmarks/100k",
+    "runs": [
+      {
+        "run": 0,
+        "enumeration": 47.5034,
+        "vm": 595.8654,
+        "sort": 256.4829,
+        "collection": 15.8482,
+        "events": 100000,
+        "allocated": 102077696
+      },
+      {
+        "run": 1,
+        "enumeration": 54.5159,
+        "vm": 531.0666,
+        "sort": 166.2166,
+        "collection": 13.777,
+        "events": 100000,
+        "allocated": 100998952
+      },
+      {
+        "run": 2,
+        "enumeration": 50.53,
+        "vm": 427.2367,
+        "sort": 223.8126,
+        "collection": 13.7552,
+        "events": 100000,
+        "allocated": 100998608
+      }
+    ]
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/1k",
+    "runs": [
+      {
+        "run": 0,
+        "enumeration": 0.5811,
+        "vm": 4.1248,
+        "sort": 1.1295,
+        "collection": 0.0591,
+        "events": 1000,
+        "allocated": 1006672
+      },
+      {
+        "run": 1,
+        "enumeration": 0.3712,
+        "vm": 24.242,
+        "sort": 0.8916,
+        "collection": 0.0724,
+        "events": 1000,
+        "allocated": 1006672
+      },
+      {
+        "run": 2,
+        "enumeration": 0.4978,
+        "vm": 3.3121,
+        "sort": 0.8038,
+        "collection": 0.044,
+        "events": 1000,
+        "allocated": 1006672
+      }
+    ]
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/25k",
+    "runs": [
+      {
+        "run": 0,
+        "enumeration": 7.8426,
+        "vm": 112.0428,
+        "sort": 34.2316,
+        "collection": 1.6549,
+        "events": 25000,
+        "allocated": 25250696
+      },
+      {
+        "run": 1,
+        "enumeration": 15.0311,
+        "vm": 118.2304,
+        "sort": 41.3296,
+        "collection": 2.6239,
+        "events": 25000,
+        "allocated": 25250696
+      },
+      {
+        "run": 2,
+        "enumeration": 13.1015,
+        "vm": 143.492,
+        "sort": 36.1253,
+        "collection": 1.5348,
+        "events": 25000,
+        "allocated": 25250712
+      }
+    ]
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/5k",
+    "runs": [
+      {
+        "run": 0,
+        "enumeration": 2.3665,
+        "vm": 21.4232,
+        "sort": 5.2529,
+        "collection": 0.3055,
+        "events": 5000,
+        "allocated": 5077432
+      },
+      {
+        "run": 1,
+        "enumeration": 1.489,
+        "vm": 28.8926,
+        "sort": 5.4218,
+        "collection": 0.3445,
+        "events": 5000,
+        "allocated": 5077440
+      },
+      {
+        "run": 2,
+        "enumeration": 2.0268,
+        "vm": 19.5692,
+        "sort": 5.9494,
+        "collection": 5.0746,
+        "events": 5000,
+        "allocated": 5077432
+      }
+    ]
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/images",
+    "runs": [
+      {
+        "run": 0,
+        "enumeration": 1.897,
+        "vm": 16.2811,
+        "sort": 5.2917,
+        "collection": 0.3348,
+        "events": 5000,
+        "allocated": 5117432
+      },
+      {
+        "run": 1,
+        "enumeration": 1.5383,
+        "vm": 18.7832,
+        "sort": 5.2461,
+        "collection": 0.291,
+        "events": 5000,
+        "allocated": 5117432
+      },
+      {
+        "run": 2,
+        "enumeration": 1.4057,
+        "vm": 21.222,
+        "sort": 5.2002,
+        "collection": 0.3311,
+        "events": 5000,
+        "allocated": 5117432
+      }
+    ]
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/mixed",
+    "runs": [
+      {
+        "run": 0,
+        "enumeration": 1.9684,
+        "vm": 20.8354,
+        "sort": 6.0001,
+        "collection": 0.3356,
+        "events": 5000,
+        "allocated": 5117432
+      },
+      {
+        "run": 1,
+        "enumeration": 1.7107,
+        "vm": 26.6603,
+        "sort": 5.486,
+        "collection": 0.3194,
+        "events": 5000,
+        "allocated": 5117432
+      },
+      {
+        "run": 2,
+        "enumeration": 1.4216,
+        "vm": 17.2118,
+        "sort": 5.7277,
+        "collection": 0.2959,
+        "events": 5000,
+        "allocated": 5117432
+      }
+    ]
+  }
+]

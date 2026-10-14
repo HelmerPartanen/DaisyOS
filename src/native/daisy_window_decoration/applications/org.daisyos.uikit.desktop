@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=UI Kit
+Name[fi]=Käyttöliittymäkomponentit
+Comment=Explore DaisyOS reusable interface components
+Comment[fi]=Tutustu DaisyOS:n käyttöliittymäkomponentteihin
+Exec=daisyos-shell --open-app=uikit
+Icon=org.daisyos.uikit
+StartupWMClass=org.daisyos.uikit
+Categories=Development;Utility;

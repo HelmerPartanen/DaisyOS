@@ -1,0 +1,46 @@
+<UserControl x:Class="DaisyOS.Shell.Controls.QuickSettingsSlider"
+            x:Name="Root"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             Focusable="True"
+             AutomationProperties.Name="{DynamicResource Loc_B10FB966D720}"
+             Height="40">
+  <Grid x:Name="RangeSurface" ColumnDefinitions="Auto,*">
+    
+    <controls:DaisyIcon Icon="{Binding Icon, ElementName=Root}"
+                        Size="{DynamicResource IconSizeMedium}"
+                        Foreground="{DynamicResource ContentPrimaryBrush}"
+                        Margin="12,0,12,0"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Grid.Column="0" />
+
+    <Panel Grid.Column="1" VerticalAlignment="Center">
+      <Border x:Name="TrackBackground"
+              Height="8"
+              Margin="12,0,12,0"
+              VerticalAlignment="Center"
+              Background="{DynamicResource ActionSecondaryBrush}"
+              BorderBrush="{Binding TrackBorderBrush, ElementName=Root}"
+              BorderThickness="{Binding TrackBorderThickness, ElementName=Root}"
+              CornerRadius="{DynamicResource RadiusSmall}"
+              ClipToBounds="False">
+        <Border x:Name="ProgressFill"
+                Background="{DynamicResource ActionPrimaryBrush}"
+                CornerRadius="{DynamicResource RadiusSmall}"
+                HorizontalAlignment="Left" />
+      </Border>
+      
+      <Border x:Name="ProgressThumb"
+              Width="24" Height="16"
+              Background="{DynamicResource ContentOnActionBrush}"
+              BorderBrush="{DynamicResource StrokeDefaultBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RadiusControlInner}"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Center"
+              IsVisible="{Binding ShowThumb, ElementName=Root}" />
+    </Panel>
+  </Grid>
+</UserControl>

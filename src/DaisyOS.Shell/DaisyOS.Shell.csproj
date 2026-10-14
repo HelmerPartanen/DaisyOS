@@ -1,0 +1,107 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <!-- Native AOT is incompatible with runtime bindings and the R2R composite
+         release pipeline. ReadyToRun is handled exclusively by publish-shell.sh. -->
+    <!-- Arch splits ASP.NET's pruning metadata from the runtime package. The
+         framework reference remains valid; allow restore when that optional
+         metadata package is absent on a development machine. -->
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+    <!-- The complete HugeIcons library is a development input. Only the
+         generated, referenced subset becomes an Avalonia application resource. -->
+    <DaisyIconLibraryDirectory Condition="'$(DaisyIconLibraryDirectory)' == ''">$(MSBuildProjectDirectory)/Assets/Icons/HugeIcons</DaisyIconLibraryDirectory>
+    <DaisyIconAliases>$(MSBuildProjectDirectory)/IconBundle.aliases.json</DaisyIconAliases>
+    <DaisyGeneratedIconDirectory>$(MSBuildProjectDirectory)/obj/$(Configuration)/$(TargetFramework)/DaisyIconBundle</DaisyGeneratedIconDirectory>
+    <DaisyIconManifest>$(MSBuildProjectDirectory)/IconBundle.manifest</DaisyIconManifest>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <TrimmerRootDescriptor Include="Roots.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- LocalSend hosts its secure LAN endpoint with Kestrel.  The shell is
+         the executable boundary, so it must declare the shared framework for
+         framework-dependent Debug and installed builds alike. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <PackageReference Include="Avalonia.AvaloniaEdit" Version="12.0.0" />
+    <PackageReference Include="AvaloniaEdit.TextMate" Version="12.0.0" />
+    <PackageReference Include="SkiaSharp" Version="3.119.4" />
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.13" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <AvaloniaResource Include="Assets\**\*" Exclude="Assets\Cursor\**\*;Assets\Icons\HugeIcons\**\*.svg;Assets\Icons\Phosphor\**\*;Assets\fonts\MaterialSymbolsRounded*.ttf;Assets\Icons\MaterialSymbols*.ttf" />
+  </ItemGroup>
+  <ItemGroup>
+    <!--
+      The native session depends on DaisyOS's pinned Avalonia fork.  Keep these
+      references together: mixing a forked Avalonia.Wayland assembly with the
+      NuGet Avalonia core creates incompatible platform types at runtime.
+    -->
+    <ProjectReference Include="../../external/Avalonia/packages/Avalonia/Avalonia.csproj" />
+    <ProjectReference Include="../../external/Avalonia/src/Avalonia.Desktop/Avalonia.Desktop.csproj" />
+    <ProjectReference Include="../../external/Avalonia/src/Skia/Avalonia.Skia/Avalonia.Skia.csproj" />
+    <ProjectReference Include="../../external/Avalonia/src/HarfBuzz/Avalonia.HarfBuzz/Avalonia.HarfBuzz.csproj" />
+    <ProjectReference Include="../../external/Avalonia/src/Avalonia.Wayland/Avalonia.Wayland.csproj" />
+    <ProjectReference Include="../../external/Avalonia/src/Avalonia.Themes.Fluent/Avalonia.Themes.Fluent.csproj" />
+    <ProjectReference Include="../../external/Avalonia/src/tools/Avalonia.Generators/Avalonia.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../../external/Avalonia/src/Avalonia.Build.Tasks/Avalonia.Build.Tasks.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../DaisyOS.Core/DaisyOS.Core.csproj" />
+    <ProjectReference Include="../DaisyOS.System/DaisyOS.System.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/daisy-mpv-preview" Condition="Exists('$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/daisy-mpv-preview')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="daisy-mpv-preview" />
+    <None Include="$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/libdaisy_mpv_wallpaper.so" Condition="Exists('$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/libdaisy_mpv_wallpaper.so')" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Link="libdaisy_mpv_wallpaper.so" />
+    <None Include="$(MSBuildThisFileDirectory)../native/daisy_live_wallpaper/build/libdaisy_live_wallpaper.so" Condition="Exists('$(MSBuildThisFileDirectory)../native/daisy_live_wallpaper/build/libdaisy_live_wallpaper.so')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>libdaisy_live_wallpaper.so</Link>
+    </None>
+    <None Include="$(MSBuildThisFileDirectory)../native/daisy_idle_monitor/build/libdaisy_idle.so" Condition="Exists('$(MSBuildThisFileDirectory)../native/daisy_idle_monitor/build/libdaisy_idle.so')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>libdaisy_idle.so</Link>
+    </None>
+  </ItemGroup>
+  <!-- Project references do not import Avalonia's NuGet build targets. -->
+  <Import Project="../../external/Avalonia/src/tools/Avalonia.Generators/Avalonia.Generators.props" />
+  <Import Project="../../external/Avalonia/build/BuildTargets.targets" />
+  <ItemGroup>
+    <DaisyIconBundleInput Include="$(DaisyIconManifest)" />
+    <DaisyIconBundleInput Include="$(DaisyIconAliases)" />
+    <DaisyIconBundleInput Include="$(DaisyIconLibraryDirectory)" />
+    <DaisyIconBundleInput Include="$(DaisyIconLibraryDirectory)/**/*.svg" />
+    <DaisyIconBundleInput Include="$(MSBuildProjectDirectory)/../../scripts/build-icon-bundle.py" />
+    <DaisyIconBundleInput Include="$(MSBuildProjectDirectory)/**/*.axaml" Exclude="$(MSBuildProjectDirectory)/obj/**;$(MSBuildProjectDirectory)/bin/**" />
+    <DaisyIconBundleInput Include="$(MSBuildProjectDirectory)/**/*.cs" Exclude="$(MSBuildProjectDirectory)/obj/**;$(MSBuildProjectDirectory)/bin/**" />
+  </ItemGroup>
+  <Target Name="GenerateDaisyIconBundle" BeforeTargets="PrepareDaisyIconResources" Inputs="@(DaisyIconBundleInput)" Outputs="$(DaisyGeneratedIconDirectory)/.bundle-stamp">
+    <Exec Command="python3 &quot;$(MSBuildProjectDirectory)/../../scripts/build-icon-bundle.py&quot; --library &quot;$(DaisyIconLibraryDirectory)&quot; --output &quot;$(DaisyGeneratedIconDirectory)&quot; --manifest &quot;$(DaisyIconManifest)&quot; --aliases &quot;$(DaisyIconAliases)&quot; --scan-root &quot;$(MSBuildProjectDirectory)&quot;" />
+  </Target>
+  <Target Name="PrepareDaisyIconResources" BeforeTargets="GenerateAvaloniaResources" DependsOnTargets="GenerateDaisyIconBundle">
+    <ItemGroup>
+      <!-- Keep the generated file's metadata in its own item group. Referencing
+           bare %(RecursiveDir) here accidentally batches against the existing
+           AvaloniaResource items, causing every icon to inherit an unrelated
+           asset path at runtime. -->
+      <_DaisyGeneratedIcon Include="$(DaisyGeneratedIconDirectory)\**\*.svg" />
+      <AvaloniaResource Include="@(_DaisyGeneratedIcon)">
+        <Link>Assets/Icons/HugeIcons/%(_DaisyGeneratedIcon.RecursiveDir)%(_DaisyGeneratedIcon.Filename)%(_DaisyGeneratedIcon.Extension)</Link>
+      </AvaloniaResource>
+    </ItemGroup>
+  </Target>
+  <!-- BuildTargets enables compiled bindings by default; DaisyOS deliberately
+       uses runtime bindings in views without an x:DataType contract. -->
+  <PropertyGroup>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <!-- Atomic replacement preserves an already-running shell's native mapping. -->
+  <Target Name="CopyMpvWallpaperAtomically" BeforeTargets="CopyFilesToOutputDirectory" Condition="$([MSBuild]::IsOSPlatform('Linux')) And Exists('$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/libdaisy_mpv_wallpaper.so')">
+    <Exec Command="cp &quot;$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/libdaisy_mpv_wallpaper.so&quot; &quot;$(TargetDir)libdaisy_mpv_wallpaper.so.next&quot; &amp;&amp; mv &quot;$(TargetDir)libdaisy_mpv_wallpaper.so.next&quot; &quot;$(TargetDir)libdaisy_mpv_wallpaper.so&quot;" />
+  </Target>
+</Project>

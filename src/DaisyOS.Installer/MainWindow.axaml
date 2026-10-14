@@ -1,0 +1,117 @@
+<Window
+    x:Class="DaisyOS.Installer.MainWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    Title="Install DaisyOS"
+    Width="980"
+    Height="700"
+    MinWidth="760"
+    MinHeight="580"
+    WindowStartupLocation="CenterScreen">
+  <Grid RowDefinitions="Auto,*,Auto">
+    <Grid Margin="32,24" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="2">
+        <TextBlock FontSize="20" FontWeight="SemiBold" Text="DaisyOS Installer" />
+        <TextBlock Classes="Subtitle" FontSize="12" Text="Safe mock mode · no disks can be changed" />
+      </StackPanel>
+      <Border Grid.Column="1" Background="#173C4650" CornerRadius="16" Padding="12,6">
+        <TextBlock Foreground="#8ADCF4" FontSize="12" FontWeight="SemiBold" Text="{Binding StepLabel}" />
+      </Border>
+    </Grid>
+
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <Grid Margin="32,12,32,24" MaxWidth="760" HorizontalAlignment="Center">
+        <StackPanel IsVisible="{Binding IsWelcome}" Spacing="22">
+          <StackPanel Spacing="8">
+            <TextBlock Classes="Heading" Text="Try the DaisyOS installer" />
+            <TextBlock Classes="Subtitle" TextWrapping="Wrap" Text="Walk through the complete installation experience without changing this computer." />
+          </StackPanel>
+          <Border Classes="Card">
+            <StackPanel Spacing="14">
+              <TextBlock FontSize="18" FontWeight="SemiBold" Text="Virtual-machine prototype" />
+              <TextBlock Classes="Subtitle" TextWrapping="Wrap" Text="This build uses example disks and simulated progress. It cannot partition, format, mount, or write to any real device." />
+              <CheckBox IsChecked="{Binding VmWarningAccepted}" Content="I understand this is a mock installer intended for VM testing" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsRegion}" Spacing="22">
+          <StackPanel Spacing="8"><TextBlock Classes="Heading" Text="Region and language" /><TextBlock Classes="Subtitle" Text="Choose how DaisyOS should display text, interpret your keyboard, and show local time." /></StackPanel>
+          <Border Classes="Card"><Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="190,*" RowSpacing="16">
+            <TextBlock Classes="Label" VerticalAlignment="Center" Text="Language" /><ComboBox Grid.Column="1" ItemsSource="{Binding Languages}" SelectedItem="{Binding Language}" />
+            <TextBlock Grid.Row="1" Classes="Label" VerticalAlignment="Center" Text="Keyboard" /><ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding Keyboards}" SelectedItem="{Binding Keyboard}" />
+            <TextBlock Grid.Row="2" Classes="Label" VerticalAlignment="Center" Text="Time zone" /><ComboBox Grid.Row="2" Grid.Column="1" ItemsSource="{Binding TimeZones}" SelectedItem="{Binding TimeZone}" />
+          </Grid></Border>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsUser}" Spacing="22">
+          <StackPanel Spacing="8"><TextBlock Classes="Heading" Text="Create your account" /><TextBlock Classes="Subtitle" Text="This will be the administrator account for your DaisyOS installation." /></StackPanel>
+          <Border Classes="Card"><Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="190,*" RowSpacing="14">
+            <TextBlock Classes="Label" VerticalAlignment="Center" Text="Your name" /><TextBox Grid.Column="1" Text="{Binding FullName}" PlaceholderText="Alex Example" />
+            <TextBlock Grid.Row="1" Classes="Label" VerticalAlignment="Center" Text="User name" /><TextBox Grid.Row="1" Grid.Column="1" Text="{Binding UserName}" PlaceholderText="alex" />
+            <TextBlock Grid.Row="2" Classes="Label" VerticalAlignment="Center" Text="Device name" /><TextBox Grid.Row="2" Grid.Column="1" Text="{Binding HostName}" PlaceholderText="daisyos" />
+            <TextBlock Grid.Row="3" Classes="Label" VerticalAlignment="Center" Text="Password" /><TextBox Grid.Row="3" Grid.Column="1" Text="{Binding Password}" PasswordChar="●" />
+            <TextBlock Grid.Row="4" Classes="Label" VerticalAlignment="Center" Text="Confirm password" /><TextBox Grid.Row="4" Grid.Column="1" Text="{Binding PasswordConfirmation}" PasswordChar="●" />
+          </Grid></Border>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsDisk}" Spacing="22">
+          <StackPanel Spacing="8"><TextBlock Classes="Heading" Text="Choose storage" /><TextBlock Classes="Subtitle" TextWrapping="Wrap" Text="Only fictional example devices appear here. Real disk discovery is intentionally unavailable." /></StackPanel>
+          <Border Classes="Card"><StackPanel Spacing="14">
+            <TextBlock Classes="Label" Text="Example destination" />
+            <ComboBox ItemsSource="{Binding Disks}" SelectedItem="{Binding SelectedDisk}"><ComboBox.ItemTemplate><DataTemplate><StackPanel Margin="2" Spacing="2"><TextBlock Text="{Binding DisplayName}" /><TextBlock Classes="Subtitle" FontSize="11" Text="{Binding Detail}" /></StackPanel></DataTemplate></ComboBox.ItemTemplate></ComboBox>
+            <Border Height="1" Background="#34373E" Margin="0,4" />
+            <CheckBox IsChecked="{Binding Encrypt}" Content="Encrypt the installation (planned)" />
+            <CheckBox IsChecked="{Binding CreateRecoveryPartition}" Content="Create a recovery partition (planned)" />
+          </StackPanel></Border>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsSummary}" Spacing="22">
+          <StackPanel Spacing="8"><TextBlock Classes="Heading" Text="Review your choices" /><TextBlock Classes="Subtitle" Text="Go back if anything needs changing." /></StackPanel>
+          <Border Classes="Card"><Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto,Auto" ColumnDefinitions="190,*" RowSpacing="13">
+            <TextBlock Classes="Label" Text="Language" /><TextBlock Grid.Column="1" Text="{Binding Language}" />
+            <TextBlock Grid.Row="1" Classes="Label" Text="Keyboard" /><TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Keyboard}" />
+            <TextBlock Grid.Row="2" Classes="Label" Text="Time zone" /><TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TimeZone}" />
+            <TextBlock Grid.Row="3" Classes="Label" Text="Account" /><TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding UserName}" />
+            <TextBlock Grid.Row="4" Classes="Label" Text="Storage" /><TextBlock Grid.Row="4" Grid.Column="1" TextWrapping="Wrap" Text="{Binding DiskSummary}" />
+            <TextBlock Grid.Row="5" Classes="Label" Text="Encryption" /><TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding EncryptionSummary}" />
+            <TextBlock Grid.Row="6" Classes="Label" Text="Recovery" /><TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding RecoverySummary}" />
+          </Grid></Border>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsConfirm}" Spacing="22">
+          <StackPanel Spacing="8"><TextBlock Classes="Heading" Text="Confirm the demonstration" /><TextBlock Classes="Subtitle" TextWrapping="Wrap" Text="A real installer would erase the selected destination after this step. This prototype only simulates that process." /></StackPanel>
+          <Border Classes="Card" BorderBrush="#8A6440"><StackPanel Spacing="14">
+            <TextBlock FontWeight="SemiBold" Text="Type INSTALL DAISYOS to continue" />
+            <TextBox Text="{Binding ConfirmationText}" PlaceholderText="INSTALL DAISYOS" />
+            <TextBlock Classes="Subtitle" Text="No real storage APIs or disk commands exist in this application." />
+          </StackPanel></Border>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsInstalling}" Spacing="22">
+          <StackPanel Spacing="8"><TextBlock Classes="Heading" Text="Installing DaisyOS" /><TextBlock Classes="Subtitle" Text="This is simulated. You can safely close the window at any time." /></StackPanel>
+          <Border Classes="Card"><StackPanel Spacing="14">
+            <ProgressBar Minimum="0" Maximum="100" Value="{Binding ProgressPercentage}" Height="8" />
+            <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding ProgressStage}" />
+            <TextBlock Classes="Subtitle" TextWrapping="Wrap" Text="{Binding ProgressDetail}" />
+          </StackPanel></Border>
+        </StackPanel>
+
+        <StackPanel IsVisible="{Binding IsComplete}" Spacing="22">
+          <StackPanel Spacing="8"><TextBlock Classes="Heading" Text="The demonstration is complete" /><TextBlock Classes="Subtitle" TextWrapping="Wrap" Text="You explored the full installation flow. No disks, partitions, accounts, or boot settings were changed." /></StackPanel>
+          <Border Classes="Card"><StackPanel Spacing="8"><TextBlock FontSize="18" FontWeight="SemiBold" Text="Safe mock installation finished" /><TextBlock Classes="Subtitle" TextWrapping="Wrap" Text="Close this window to return to DaisyOS. Restarting into an installed system will be added only after real installation is reviewed and VM-tested." /></StackPanel></Border>
+        </StackPanel>
+      </Grid>
+    </ScrollViewer>
+
+    <Border Grid.Row="2" BorderBrush="#303238" BorderThickness="0,1,0,0" Padding="32,18">
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10">
+        <TextBlock Foreground="#EF9A9A" VerticalAlignment="Center" Text="{Binding ValidationMessage}" />
+        <Button Grid.Column="1" IsVisible="{Binding CanGoBack}" Command="{Binding BackCommand}" Content="Back" />
+        <Button Grid.Column="2" Classes="Primary" IsVisible="{Binding ShowsNext}" IsEnabled="{Binding CanGoNext}" Command="{Binding NextCommand}" Content="Continue" />
+        <Button Grid.Column="2" Classes="Primary" IsVisible="{Binding IsConfirm}" IsEnabled="{Binding CanInstall}" Command="{Binding InstallCommand}" Content="Run mock installation" />
+        <Button Grid.Column="2" Classes="Primary" IsVisible="{Binding IsComplete}" Click="CloseClicked" Content="Close" />
+      </Grid>
+    </Border>
+  </Grid>
+</Window>

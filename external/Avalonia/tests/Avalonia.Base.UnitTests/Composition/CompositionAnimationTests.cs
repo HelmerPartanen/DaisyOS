@@ -1,0 +1,244 @@
+using System;
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
+using Avalonia.Animation.Easings;
+using Avalonia.Controls;
+using Avalonia.Rendering;
+using Avalonia.Rendering.Composition;
+using Avalonia.Rendering.Composition.Expressions;
+using Avalonia.Rendering.Composition.Server;
+using Avalonia.Threading;
+using Avalonia.UnitTests;
+using Xunit;
+using Xunit.Sdk;
+using Xunit.v3;
+
+namespace Avalonia.Base.UnitTests.Composition;
+
+public class CompositionAnimationTests : ScopedTestBase
+{
+
+    class AnimationDataProvider : DataAttribute
+    {
+        IEnumerable<AnimationData> Generate() =>
+            new AnimationData[]
+            {
+                new("3 frames starting from 0")
+                {
+                    Frames =
+                    {
+                        (0f, 10f),
+                        (0.5f, 30f),
+                        (1f, 20f)
+                    },
+                    Checks =
+                    {
+                        (0.25f, 20f),
+                        (0.5f, 30f),
+                        (0.75f, 25f),
+                        (1f, 20f)
+                    }
+                },
+                new("1 final frame")
+                {
+                    Frames =
+                    {
+                        (1f, 10f)
+                    },
+                    Checks =
+                    {
+                        (0f, 0f),
+                        (0.5f, 5f),
+                        (1f, 10f)
+                    }
+                }
+            };
+
+        public override ValueTask<IReadOnlyCollection<ITheoryDataRow>> GetData(MethodInfo testMethod, DisposalTracker disposalTracker)
+        {
+            var list = new List<ITheoryDataRow>();
+            foreach (var ani in Generate())
+            {
+                list.Add(new TheoryDataRow<AnimationData>(ani));
+            }
+
+            return ValueTask.FromResult<IReadOnlyCollection<ITheoryDataRow>>(list);
+        }
+
+        public override bool SupportsDiscoveryEnumeration()
+            => true;
+    }
+
+    class DummyDispatcher : IDispatcher
+    {
+        public bool CheckAccess() => true;
+
+        public void VerifyAccess()
+        {
+        }
+
+        public void Post(Action action, DispatcherPriority priority = default) => throw new NotSupportedException();
+    }
+
+    [AnimationDataProvider]
+    [Theory]
+    public void GenericCheck(AnimationData data)
+    {
+        using var scope = AvaloniaLocator.EnterScope();
+        var compositor =
+            new Compositor(RenderLoop.FromTimer(new CompositorTestServices.ManualRenderTimer()), null);
+        var target = compositor.CreateSolidColorVisual();
+        var ani = new ScalarKeyFrameAnimation(compositor);
+        foreach (var frame in data.Frames)
+            ani.InsertKeyFrame(frame.key, frame.value, new LinearEasing());
+        ani.Duration = TimeSpan.FromSeconds(1);
+        var instance = ani.CreateInstance(target.Server, null);
+        instance.Initialize(TimeSpan.Zero, data.StartingValue, ServerCompositionVisual.s_IdOfRotationAngleProperty);
+        var currentValue = ExpressionVariant.Create(data.StartingValue);
+        foreach (var check in data.Checks)
+        {
+            currentValue = instance.Evaluate(TimeSpan.FromSeconds(check.time), currentValue);
+            Assert.Equal(check.value, currentValue.Double);
+        }
+
+    }
+
+    public class AnimationData
+    {
+        public AnimationData(string name)
+        {
+            Name = name;
+        }
+
+        public string Name { get; }
+        public List<(float key, float value)> Frames { get; set; } = new();
+        public List<(float time, float value)> Checks { get; set; } = new();
+        public float StartingValue { get; set; }
+        public float Duration { get; set; } = 1;
+        public override string ToString()
+        {
+            return Name;
+        }
+    }
+
+    [Theory]
+    [InlineData("Color")]
+    [InlineData("Offset")]
+
+    public void GetCompositionProperty_ReturnsRegisteredProperties(string propName)
+    {
+        using var scope = AvaloniaLocator.EnterScope();
+        var compositor = new Compositor(RenderLoop.FromTimer(new CompositorTestServices.ManualRenderTimer()), null);
+        var target = compositor.CreateSolidColorVisual();
+
+        var property = target.Server.GetCompositionProperty(propName);
+
+        Assert.NotNull(property);
+        Assert.Equal(propName, property.Name);
+        Assert.NotNull(property.GetVariant);
+    }
+
+    [Fact]
+    public void ExpressionAnimation_Operations_WorksCorrectly()
+    {
+        using var scope = AvaloniaLocator.EnterScope();
+        var compositor = new Compositor(RenderLoop.FromTimer(new CompositorTestServices.ManualRenderTimer()), null);
+        var target = compositor.CreateSolidColorVisual();
+        target.Server.Offset = new Vector3D(100, 200, 0);
+
+        var ani = compositor.CreateExpressionAnimation("this.Target.Offset.X * 0.5 + 10");
+        var instance = ani.CreateInstance(target.Server, null);
+        instance.Initialize(TimeSpan.Zero, ExpressionVariant.Create(0f),
+            ServerCompositionVisual.s_IdOfRotationAngleProperty);
+
+        var result = instance.Evaluate(TimeSpan.Zero, ExpressionVariant.Create(0f));
+
+        Assert.Equal(VariantType.Double, result.Type);
+        Assert.Equal(60.0, result.Double);
+    }
+
+
+    [Fact]
+    public void ExpressionAnimation_Tracks_ReferenceParameter()
+    {
+        using var scope = AvaloniaLocator.EnterScope();
+        var compositor = new Compositor(RenderLoop.FromTimer(new CompositorTestServices.ManualRenderTimer()), null);
+        var target = compositor.CreateSolidColorVisual();
+        var obj = compositor.CreateSolidColorVisual();
+        obj.Server.Offset = new Vector3D(100, 200, 0);
+
+        var ani = compositor.CreateExpressionAnimation("obj.Offset.X * 0.5 + 10");
+        ani.SetReferenceParameter("obj", obj);
+        var instance = ani.CreateInstance(target.Server, null);
+
+        target.Server.Activate();
+
+        // Invoke OnSetAnimatedValue manually to create ServerObjectAnimationInstance.
+        target.Server.GetOrCreateAnimations();
+        var tmp = 0f;
+        target.Server.Animations!.OnSetAnimatedValue(ServerCompositionVisual.s_IdOfRotationAngleProperty, ref tmp, TimeSpan.Zero, instance);
+
+        var initialResult = instance.Evaluate(TimeSpan.Zero, ExpressionVariant.Create(0f));
+        Assert.Equal(60.0, initialResult.Double);
+
+        obj.Server.Offset = new Vector3D(200, 300, 0);
+        var updatedResult = instance.Evaluate(TimeSpan.Zero, ExpressionVariant.Create(0f));
+        Assert.Equal(110.0, updatedResult.Double);
+    }
+
+    [Fact]
+    public void ExpressionAnimation_Tracks_Target()
+    {
+        using var scope = AvaloniaLocator.EnterScope();
+        var compositor = new Compositor(RenderLoop.FromTimer(new CompositorTestServices.ManualRenderTimer()), null);
+        var target = compositor.CreateSolidColorVisual();
+
+        target.Server.Offset = new Vector3D(100, 200, 0);
+
+        var ani = compositor.CreateExpressionAnimation("this.Target.Offset.X * 0.5 + 10");
+        var instance = ani.CreateInstance(target.Server, null);
+
+        target.Server.Activate();
+
+        // Invoke OnSetAnimatedValue manually to create ServerObjectAnimationInstance.
+        target.Server.GetOrCreateAnimations();
+        var tmp = 0f;
+        target.Server.Animations!.OnSetAnimatedValue(ServerCompositionVisual.s_IdOfRotationAngleProperty, ref tmp, TimeSpan.Zero, instance);
+
+        var initialResult = instance.Evaluate(TimeSpan.Zero, ExpressionVariant.Create(0f));
+        Assert.Equal(60, initialResult.Double);
+
+        target.Server.Offset = new Vector3D(200, 300, 0);
+        var updatedResult = instance.Evaluate(TimeSpan.Zero, ExpressionVariant.Create(0f));
+        Assert.Equal(110.0, updatedResult.Double);
+    }
+
+    [Fact]
+    public void ExpressionAnimation_Requeues_Target_When_Another_Animation_Is_Invalidated_During_Evaluation()
+    {
+        using var services = new CompositorTestServices();
+        var border = new Border
+        {
+            Width = 10,
+            Height = 10
+        };
+
+        services.TopLevel.Content = border;
+        services.RunJobs();
+
+        var visual = ElementComposition.GetElementVisual(border)!;
+        var opacityAnimation = visual.Compositor.CreateExpressionAnimation("this.Target.RotationAngle * 0.1");
+        var rotationAnimation = visual.Compositor.CreateExpressionAnimation("this.Target.Offset.X * 0.5");
+
+        visual.StartAnimation("Opacity", opacityAnimation);
+        visual.StartAnimation("RotationAngle", rotationAnimation);
+
+        services.RunJobs();
+        visual.Offset = new Vector3D(100, 0, 0);
+        services.RunJobs();
+
+        Assert.Equal(50, visual.Server.RotationAngle);
+        Assert.Equal(5, visual.Server.Opacity);
+    }
+}

@@ -1,0 +1,16 @@
+<Window
+    x:Class="DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:diag="clr-namespace:DaisyOS.Shell.Apps.System.Diagnostics"
+    Title="{DynamicResource Loc_58D65C201FC0}"
+    Width="760"
+    Height="560"
+    MinWidth="600"
+    MinHeight="450"
+    WindowStartupLocation="CenterScreen"
+    WindowDecorations="Full"
+    TextOptions.TextRenderingMode="Antialias"
+    Background="{DynamicResource SurfaceBaseBrush}">
+  <diag:TaskManagerView DataContext="{Binding}" />
+</Window>

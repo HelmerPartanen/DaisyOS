@@ -1,0 +1,174 @@
+<UserControl x:Class="DaisyOS.Shell.Apps.LocalSend.LocalSendWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        IsVisible="False"
+        PointerPressed="OnBackdropPointerPressed"
+        KeyDown="OnWindowKeyDown">
+
+  <UserControl.Styles>
+    <!-- Shell-owned panels use the same two-pixel optical frame as the
+         launcher, taskbar, media widget, and system-bar flyouts. -->
+    <Style Selector="Border.ShareDialogFrame">
+      <Setter Property="Background" Value="{DynamicResource ShellFrameOuterEdgeBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedXL}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ElevationShellGlassPanelShadow}" />
+      <Setter Property="Padding" Value="1" />
+    </Style>
+    <Style Selector="Border.ShareDialogHighlight">
+      <Setter Property="Background" Value="{DynamicResource ShellFrameInnerHighlightBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedXLInset}" />
+      <Setter Property="Padding" Value="1" />
+    </Style>
+    <Style Selector="Border.ShareDialog">
+      <Setter Property="Background" Value="{DynamicResource SurfaceModalGlassBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedXLDoubleInset}" />
+      <Setter Property="Padding" Value="20" />
+    </Style>
+    <Style Selector="Border.FilePreview">
+      <Setter Property="Width" Value="56" />
+      <Setter Property="Height" Value="56" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="ListBox.DeviceList">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ListBox.DeviceList > ListBoxItem">
+      <!-- Match taskbar items: quiet at rest, with the shared shell hover
+           material making both hover and selected state unmistakable. -->
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="10,8" />
+      <Setter Property="MinHeight" Value="48" />
+      <Setter Property="Margin" Value="0,0,0,4" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="ListBox.DeviceList > ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="ListBox.DeviceList > ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.DialogButton">
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.CancelButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.CancelButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.SendButton">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+    </Style>
+    <!-- Mirror Settings' active navigation contract: every descendant gets
+         the contrast-safe foreground, including template-generated text. -->
+    <Style Selector="Button.SendButton TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+    </Style>
+    <Style Selector="Button.SendButton controls|DaisyIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+    </Style>
+    <Style Selector="Button.SendButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.SendButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+    </Style>
+    <Style Selector="Button.SendButton:disabled">
+      <Setter Property="Opacity" Value="0.48" />
+    </Style>
+  </UserControl.Styles>
+
+  <!--
+    This control deliberately fills its native layer surface. The transparent
+    backdrop is the modal input boundary; the card itself remains the only
+    visible component, centred over the active DaisyOS desktop.
+  -->
+  <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+    <Border Classes="ShareDialogFrame"
+            Width="500"
+            MinHeight="468"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center">
+      <Border Classes="ShareDialogHighlight">
+        <Border x:Name="ShareDialogCard" Classes="ShareDialog">
+          <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="16">
+      <StackPanel Orientation="Horizontal" Spacing="14">
+        <Border Classes="FilePreview">
+          <Grid>
+            <Image x:Name="FilePreviewImage" IsVisible="False" Stretch="UniformToFill" />
+            <controls:DaisyIcon x:Name="FilePreviewIcon" Icon="file" Size="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+        <StackPanel VerticalAlignment="Center" Spacing="3" MaxWidth="370">
+          <TextBlock x:Name="QueuedFilesText" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+          <TextBlock x:Name="FileDetailText" FontSize="{DynamicResource TypeSizeBodySmall}" Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+          <Button x:Name="ChooseFilesButton" Classes="Ghost Compact" Content="{DynamicResource Loc_6D4E30EEA694}"
+                  HorizontalAlignment="Left" Click="OnChooseFilesClicked" />
+        </StackPanel>
+      </StackPanel>
+
+      <TextBlock Grid.Row="1" Text="{DynamicResource Loc_500F1E2B2238}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+      <!-- The hint is a final, flowing discovery item rather than a footer:
+           it directly follows the last device, or starts at the top when no
+           devices have been discovered yet. -->
+      <StackPanel Grid.Row="2" Spacing="8" VerticalAlignment="Top">
+        <ListBox x:Name="DevicesList" Classes="DeviceList" SelectionChanged="OnDeviceSelectionChanged"
+                 DoubleTapped="OnDeviceDoubleTapped" KeyDown="OnDevicesKeyDown"
+                 AutomationProperties.Name="{DynamicResource Loc_D54096BC72BF}" MaxHeight="220">
+          <ListBox.ItemTemplate>
+            <DataTemplate>
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <controls:DaisyIcon Icon="device-mobile" Weight="Fill" Size="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+                  <TextBlock Text="{Binding Alias}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <TextBlock Text="{Binding DeviceType}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                </StackPanel>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel x:Name="NoDevicesPanel" HorizontalAlignment="Center" Spacing="8" MaxWidth="330">
+          <controls:DaisyIcon Icon="devices" Size="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Center" />
+          <TextBlock x:Name="NoDevicesText" Text="{DynamicResource Loc_8CA91FBABAA3}" Foreground="{DynamicResource ContentSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center" />
+          <Button Classes="Ghost Compact" Content="{DynamicResource Loc_0E9161011702}" HorizontalAlignment="Center" Click="OnRefreshDevicesClicked" />
+        </StackPanel>
+        <TextBlock x:Name="ServiceStatusText" Text="{DynamicResource Loc_F19FFA1D4990}" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource ContentTertiaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" TextWrapping="Wrap" />
+      </StackPanel>
+
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
+        <Button Classes="DialogButton CancelButton" Content="{DynamicResource Loc_19766ED6CCB2}" Click="OnCancelClicked" HorizontalAlignment="Left" />
+        <TextBlock Grid.Column="1" x:Name="SelectedDeviceText" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+        <Button Grid.Column="2" x:Name="SendButton" Classes="Primary" IsEnabled="False" Click="OnSendClicked"
+                ToolTip.Tip="{DynamicResource Loc_A0A147A8D371}">
+          <TextBlock Text="{DynamicResource Loc_F6F4688FF23D}"
+                     Foreground="{DynamicResource ContentOnActionBrush}"
+                     FontWeight="SemiBold"
+                     FontSize="{DynamicResource TypeSizeBody}"
+                     VerticalAlignment="Center"
+                     HorizontalAlignment="Center" />
+        </Button>
+      </Grid>
+          </Grid>
+        </Border>
+      </Border>
+    </Border>
+  </Grid>
+</UserControl>

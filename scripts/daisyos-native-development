@@ -1,0 +1,325 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# User-facing control command for the native DaisyOS development session.
+# It intentionally has no ability to start a compositor: the display manager
+# owns that lifecycle through daisyos-native-development-session.
+config_file="${DAISYOS_NATIVE_DEVELOPMENT_CONFIG:-/etc/daisyos/daisyos-native-development.conf}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/DaisyOS"
+session_log="$state_dir/native-development-session.log"
+runtime_root="${XDG_RUNTIME_DIR:-}/daisyos-native-development"
+
+if [[ -r "$config_file" ]]; then
+  # The installed configuration is administrator-owned and contains only the
+  # checkout path selected at installation time.
+  # shellcheck disable=SC1090
+  source "$config_file"
+fi
+
+source_root="${DAISYOS_NATIVE_DEVELOPMENT_ROOT:-}"
+
+usage() {
+  cat <<'EOF'
+Usage: daisyos-native-development <restart|status|logs|memory|decoration>
+
+restart  Build the configured DaisyOS checkout, then restart only its native
+         layer-shell process. KWin and open applications remain running.
+status   Show the active supervisor, KWin, shell, socket, and latest outcome.
+logs     Print the native development-session log. Pass --follow to tail it.
+memory   Show the active protected-memory policy and app boundary.
+decoration
+         Manage the Native Development KWin decoration. Run
+         'daisyos-native-development decoration --help' for commands.
+EOF
+}
+
+resolve_source_root() {
+  if [[ -z "$source_root" || ! -d "$source_root/src/DaisyOS.Shell" ]]; then
+    echo "DaisyOS development source is unavailable. Reinstall the native development session with the correct checkout." >&2
+    exit 1
+  fi
+
+  source_root="$(cd "$source_root" && pwd -P)"
+}
+
+read_runtime_value() {
+  local name="$1"
+  local path="$runtime_root/$name"
+  [[ -r "$path" ]] || return 1
+  tr -d '\n' < "$path"
+}
+
+reconfigure_kwin_effects() {
+  # A development restart leaves KWin alive. Reload its effect configuration
+  # so changes made in kwinrc (including BlurStrength) take effect alongside
+  # the rebuilt shell instead of waiting for a full logout.
+  if command -v qdbus6 >/dev/null 2>&1; then
+    qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.reconfigureEffect blur >/dev/null 2>&1 || true
+  fi
+}
+
+is_current_user_process() {
+  local pid="$1"
+  [[ "$pid" =~ ^[0-9]+$ ]] || return 1
+  kill -0 "$pid" 2>/dev/null || return 1
+  [[ "$(stat -c '%u' "/proc/$pid" 2>/dev/null || true)" == "$UID" ]]
+}
+
+restart_shell() {
+  resolve_source_root
+  if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "$runtime_root" ]]; then
+    echo "No active DaisyOS native development session was found." >&2
+    exit 1
+  fi
+
+  local supervisor_pid shell_pid
+  supervisor_pid="$(read_runtime_value supervisor.pid || true)"
+  shell_pid="$(read_runtime_value shell.pid || true)"
+  if ! is_current_user_process "$supervisor_pid" || ! is_current_user_process "$shell_pid"; then
+    echo "DaisyOS native development session is not running or belongs to another user." >&2
+    exit 1
+  fi
+
+  if ! command -v dotnet >/dev/null 2>&1; then
+    echo "The .NET SDK is required to rebuild DaisyOS." >&2
+    exit 1
+  fi
+
+  echo "Building DaisyOS before restarting the native shell..."
+  "$source_root/scripts/build-mpv-wallpaper.sh" || return 1
+  # Keep the shell debuggable; run standalone apps with the same optimized
+  # configuration measured by the performance suite.
+  if ! dotnet build "$source_root/src/DaisyOS.Shell/DaisyOS.Shell.csproj" -f net10.0 --no-restore --disable-build-servers -m:1 -v:minimal; then
+    echo "Shell build failed. The running desktop was left untouched." >&2
+    exit 1
+  fi
+  for application in Files Notes Settings DiskManager; do
+    if ! dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --no-restore --disable-build-servers -m:1 -v:minimal; then
+      echo "Build failed. The running DaisyOS shell was left untouched." >&2
+      exit 1
+    fi
+  done
+  "$source_root/scripts/install-system-apps.sh"
+
+  # The bridge is source-controlled alongside the shell. Refresh it before a
+  # controlled restart so taskbar fixes take effect without a logout, while a
+  # bridge-install failure still leaves the currently running shell untouched.
+  if [[ ! -x "$source_root/scripts/install-kwin-window-bridge.sh" ]] \
+    || ! "$source_root/scripts/install-kwin-window-bridge.sh"; then
+    echo "The KWin window bridge could not be refreshed. The running DaisyOS shell was left untouched." >&2
+    exit 1
+  fi
+
+  # The request identifies the exact child the supervisor is allowed to
+  # replace. A stale request can never turn an unrelated shell exit into a
+  # controlled restart.
+  umask 077
+  printf 'pid=%s\n' "$shell_pid" > "$runtime_root/restart.request.tmp.$$"
+  mv -f "$runtime_root/restart.request.tmp.$$" "$runtime_root/restart.request"
+  kill -TERM "$shell_pid"
+
+  # Avalonia does not always leave its Wayland dispatcher on SIGTERM (notably
+  # while a native layer surface owns keyboard focus). The supervisor cannot
+  # replace the shell until its child has exited, so bound that graceful wait
+  # and escalate only for an explicitly requested development restart. KWin
+  # and every normal application remain untouched.
+  local deadline=$((SECONDS + 3))
+  while kill -0 "$shell_pid" 2>/dev/null && (( SECONDS < deadline )); do
+    sleep 0.1
+  done
+  if kill -0 "$shell_pid" 2>/dev/null; then
+    echo "The shell did not exit after SIGTERM; completing the requested restart."
+    kill -KILL "$shell_pid"
+  fi
+  reconfigure_kwin_effects
+  echo "Requested a DaisyOS shell restart. KWin and open applications stay running."
+}
+
+show_status() {
+  if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "$runtime_root" ]]; then
+    echo "DaisyOS native development session: not running"
+    exit 1
+  fi
+
+  local supervisor_pid kwin_pid shell_pid socket outcome
+  supervisor_pid="$(read_runtime_value supervisor.pid || true)"
+  kwin_pid="$(read_runtime_value kwin.pid || true)"
+  shell_pid="$(read_runtime_value shell.pid || true)"
+  socket="$(read_runtime_value wayland-display || true)"
+  outcome="$(read_runtime_value last-status || true)"
+
+  printf 'DaisyOS native development session\n'
+  printf '  Supervisor: %s\n' "${supervisor_pid:-unavailable}"
+  printf '  KWin: %s\n' "${kwin_pid:-unavailable}"
+  printf '  Shell: %s\n' "${shell_pid:-not running}"
+  printf '  Wayland socket: %s\n' "${socket:-unavailable}"
+  printf '  Last outcome: %s\n' "${outcome:-unavailable}"
+
+  is_current_user_process "$supervisor_pid" || exit 1
+}
+
+show_logs() {
+  local follow="${1:-}"
+  if [[ ! -f "$session_log" ]]; then
+    echo "No native development-session log exists yet: $session_log" >&2
+    exit 1
+  fi
+
+  case "$follow" in
+    "") tail -n 160 "$session_log" ;;
+    --follow|-f) tail -n 160 -f "$session_log" ;;
+    *) echo "logs accepts only --follow." >&2; exit 2 ;;
+  esac
+}
+
+show_memory_status() {
+  if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "$runtime_root" ]]; then
+    echo "DaisyOS memory protection: no active native development session" >&2
+    exit 1
+  fi
+
+  local total reserve core_min apps_high
+  total="$(read_runtime_value memory.total-mib || true)"
+  reserve="$(read_runtime_value memory.reserve-mib || true)"
+  core_min="$(read_runtime_value memory.core-min-mib || true)"
+  apps_high="$(read_runtime_value memory.apps-high-mib || true)"
+
+  printf 'DaisyOS protected memory policy\n'
+  printf '  Installed RAM: %s MiB\n' "${total:-unavailable}"
+  printf '  Reserved headroom: %s MiB\n' "${reserve:-unavailable}"
+  printf '  KWin and shell hard protection: %s MiB\n' "${core_min:-unavailable}"
+  printf '  Aggregate app high watermark: %s MiB\n' "${apps_high:-unavailable}"
+  if systemctl --user show daisyos-apps.slice -p MemoryHigh -p ManagedOOMMemoryPressure --no-pager >/dev/null 2>&1; then
+    systemctl --user show daisyos-apps.slice -p MemoryHigh -p ManagedOOMMemoryPressure --no-pager |
+      sed 's/^/  /'
+  fi
+  if systemctl is-active --quiet systemd-oomd.service 2>/dev/null; then
+    printf '  Early OOM recovery: active\n'
+  else
+    printf '  Early OOM recovery: inactive\n'
+  fi
+}
+
+window_decoration_plugin_path() {
+  local user_plugin="$HOME/.local/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so"
+  if [[ -s "$user_plugin" ]] && grep -a -Fq 'org.daisyos.decoration' "$user_plugin"; then
+    printf '%s\n' "$user_plugin"
+    return 0
+  fi
+
+  local manifest="/etc/daisyos/kwin-window-decoration.conf"
+  if [[ -r "$manifest" ]]; then
+    # shellcheck disable=SC1090
+    source "$manifest"
+    if [[ -n "${DAISYOS_KWIN_DECORATION_PATH:-}" ]]; then
+      printf '%s\n' "$DAISYOS_KWIN_DECORATION_PATH"
+      return 0
+    fi
+  fi
+  printf '%s\n' /usr/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so
+}
+
+request_decoration_reconfigure() {
+  # KWin resolves an xdg_toplevel app_id through the user's desktop-service
+  # database. Refresh it before repainting so newly installed DaisyOS app
+  # icons replace a previously cached generic window icon immediately.
+  if command -v kbuildsycoca6 >/dev/null 2>&1; then
+    kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
+  fi
+  if command -v qdbus6 >/dev/null 2>&1; then
+    qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
+  fi
+}
+
+decoration_usage() {
+  cat <<'EOF'
+Usage: daisyos-native-development decoration <install|rebuild|enable|disable|reload|status>
+
+install/rebuild  Build and install the native KDecoration3 plugin. These write
+                 KWin's system plugin directory and therefore require sudo.
+enable           Use the installed decoration in the next Native Development session.
+disable          Keep the prior KWin decoration in Native Development.
+reload           Reconfigure KWin so the current decoration reads the latest Daisy theme.
+status           Report plugin, opt-in, and active KWin configuration state.
+EOF
+}
+
+manage_decoration() {
+  local action="${1:-}"
+  local marker="${XDG_CONFIG_HOME:-$HOME/.config}/DaisyOS/disable-kwin-window-decoration"
+  local plugin_path
+  plugin_path="$(window_decoration_plugin_path)"
+
+  case "$action" in
+    install|rebuild)
+      [[ $# -eq 1 ]] || { decoration_usage >&2; exit 2; }
+      resolve_source_root
+      exec "$source_root/scripts/install-kwin-window-decoration.sh"
+      ;;
+    enable)
+      [[ $# -eq 1 ]] || { decoration_usage >&2; exit 2; }
+      mkdir -p "$(dirname "$marker")"
+      rm -f "$marker"
+      echo "DaisyOS window decoration will be used by the next Native Development session."
+      ;;
+    disable)
+      [[ $# -eq 1 ]] || { decoration_usage >&2; exit 2; }
+      mkdir -p "$(dirname "$marker")"
+      : > "$marker"
+      echo "DaisyOS window decoration is disabled for future Native Development sessions."
+      ;;
+    reload)
+      [[ $# -eq 1 ]] || { decoration_usage >&2; exit 2; }
+      request_decoration_reconfigure
+      echo "Requested KWin window-decoration reload."
+      ;;
+    status)
+      [[ $# -eq 1 ]] || { decoration_usage >&2; exit 2; }
+      printf 'DaisyOS KWin window decoration\n'
+      printf '  Plugin: %s (%s)\n' "$plugin_path" "$([[ -f "$plugin_path" ]] && printf installed || printf missing)"
+      printf '  Native Development: %s\n' "$([[ -e "$marker" ]] && printf disabled || printf enabled)"
+      if command -v kreadconfig6 >/dev/null 2>&1; then
+        printf '  KWin configured plugin: %s\n' "$(kreadconfig6 --file kwinrc --group org.kde.kdecoration2 --key library --default org.kde.breeze)"
+      fi
+      ;;
+    --help|-h|"")
+      decoration_usage
+      ;;
+    *)
+      echo "Unknown decoration command: $action" >&2
+      decoration_usage >&2
+      exit 2
+      ;;
+  esac
+}
+
+case "${1:-}" in
+  restart)
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    restart_shell
+    ;;
+  status)
+    [[ $# -eq 1 ]] || { usage >&2; exit 2; }
+    show_status
+    ;;
+  logs)
+    shift
+    show_logs "${1:-}"
+    ;;
+  memory)
+    [[ $# -eq 2 && "${2:-}" == "status" ]] || { echo "Usage: daisyos-native-development memory status" >&2; exit 2; }
+    show_memory_status
+    ;;
+  decoration)
+    shift
+    manage_decoration "$@"
+    ;;
+  --help|-h|"")
+    usage
+    ;;
+  *)
+    echo "Unknown command: $1" >&2
+    usage >&2
+    exit 2
+    ;;
+esac

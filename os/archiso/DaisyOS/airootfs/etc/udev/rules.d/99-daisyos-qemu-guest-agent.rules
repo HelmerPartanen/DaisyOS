@@ -1,0 +1,3 @@
+# Start diagnostics only when QEMU exposes the standard guest-agent channel.
+# This keeps normal boots independent of VM-only devices.
+SUBSYSTEM=="virtio-ports", ATTR{name}=="org.qemu.guest_agent.0", TAG+="systemd", ENV{SYSTEMD_WANTS}+="qemu-guest-agent.service"

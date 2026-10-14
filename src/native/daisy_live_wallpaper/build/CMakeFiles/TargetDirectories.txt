@@ -1,0 +1,4 @@
+/home/helmeri/DaisyOS/src/native/daisy_live_wallpaper/build/CMakeFiles/daisy_live_wallpaper.dir
+/home/helmeri/DaisyOS/src/native/daisy_live_wallpaper/build/CMakeFiles/daisy_wallpaper_test.dir
+/home/helmeri/DaisyOS/src/native/daisy_live_wallpaper/build/CMakeFiles/edit_cache.dir
+/home/helmeri/DaisyOS/src/native/daisy_live_wallpaper/build/CMakeFiles/rebuild_cache.dir

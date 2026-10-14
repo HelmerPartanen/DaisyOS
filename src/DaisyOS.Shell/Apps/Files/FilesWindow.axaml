@@ -1,0 +1,1012 @@
+<Window
+    x:Class="DaisyOS.Shell.Apps.Files.FilesWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:files="clr-namespace:DaisyOS.Shell.Apps.Files"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    xmlns:converters="clr-namespace:DaisyOS.Shell.Converters"
+    xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming"
+    xmlns:services="clr-namespace:DaisyOS.Shell.Apps.Files.Services"
+    Title="{DynamicResource Loc_ABC7E9892806}"
+    Width="1040"
+    Height="680"
+    MinWidth="740"
+    MinHeight="480"
+    CanResize="True"
+    WindowStartupLocation="CenterScreen"
+    WindowDecorations="None"
+    TextOptions.TextRenderingMode="Antialias"
+    Background="{DynamicResource SurfaceBaseSolidBrush}"
+    PointerPressed="OnWindowPointerPressed"
+    KeyDown="OnWindowKeyDown">
+
+  <Window.Styles>
+    <Style Selector="Button.FilesBreadcrumb">
+      <Setter Property="Height" Value="28" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MaxWidth" Value="150" />
+      <Setter Property="Padding" Value="8,0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlInner}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.FilesBreadcrumb:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.FilesBreadcrumb.Current /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+    </Style>
+    <Style Selector="Border.FilesToolbar Button, Border.FilesToolbar ToggleButton">
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    </Style>
+    <Style Selector="Border.FilesToolbar Button /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    </Style>
+    <Style Selector="Border.FilesToolbar ToggleButton /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    </Style>
+    <Style Selector="ToggleButton.FilesHiddenToggle">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ToggleButton.FilesHiddenToggle /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ToggleButton.FilesHiddenToggle:not(:checked):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.FilesHiddenToggle:not(:checked):pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.FilesHiddenToggle:checked">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.FilesHiddenToggle:checked /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.FilesHiddenToggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
+    </Style>
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
+    <Style Selector="Button.SettingsNavItem.DragOver /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+    <!-- A pinned location is one visual control group. Navigation occupies
+         the row while the trailing unpin action receives its own hover layer
+         without looking like a detached sibling button. -->
+    <Style Selector="Border.PinnedLocationRow">
+      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.PinnedLocationRow">
+      <Setter Property="Transitions">
+        <Transitions><BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" /></Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.PinnedLocationRow:pointerover">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.PinnedLocationBody">
+      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
+      <Setter Property="Padding" Value="10,0,46,0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.PinnedLocationBody /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.PinnedLocationBody:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.PinnedLocationBody:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Button.PinnedUnpin">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,0,5,0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="Button.PinnedUnpin /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.PinnedUnpin:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.PinnedUnpin:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Border.FileDropTarget.DragOver">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- Flat Column Header Buttons -->
+    <Style Selector="Button.ColumnHeader">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="4,0" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.ColumnHeader TextBlock">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ColumnHeader:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.ColumnHeader:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.ColumnHeader.SortActive TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.ColumnHeader:not(.SortActive) TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="FontWeight" Value="Regular" />
+    </Style>
+
+    <!-- Clean ListBox Item Style -->
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <!-- The presenter owns row feedback. Avoid a second animated fill on its parent. -->
+    <Style Selector="ListBoxItem:pointerover, ListBoxItem:selected, ListBoxItem:selected:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:not(:selected):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <!-- Note: DaisyIcon foreground for selected items is inherited via the icon's Foreground binding on IconColor,
+         so we only force text here. Icon colors are per-item bindings and won't be overridden here. -->
+
+    <!-- Tab Active State -->
+    <Style Selector="Button.ShellButton.TabActive /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+    </Style>
+    <Style Selector="Button.ShellButton.TabDragOver /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+
+    <!-- Caption Window Controls -->
+    <Style Selector="Button.CaptionButton">
+      <Setter Property="Width" Value="42" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.CaptionButton:not(.CaptionClose) /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.CaptionButton:not(.CaptionClose):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionButton:not(.CaptionClose):pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionDangerHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionDangerPressedBrush}" />
+    </Style>
+    <Style Selector="Button.CaptionClose:pointerover, Button.CaptionClose:pressed">
+      <Setter Property="Foreground" Value="{DynamicResource CaptionCloseGlyphBrush}" />
+    </Style>
+    <Style Selector="controls|WindowCaptionGlyph.CaptionIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="GlyphSize" Value="{DynamicResource KWinDecorationCaptionGlyphSize}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+  </Window.Styles>
+
+  <Window.Resources>
+  </Window.Resources>
+
+  <Grid>
+          <Grid>
+            <Grid x:Name="FilesLayout" ColumnDefinitions="240,*">
+              <Border x:Name="NavigationSidebar" Grid.Column="0"
+                      Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                      BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,0,1,0">
+                <ScrollViewer x:Name="SidebarScrollViewer"
+                          Margin="0,16,0,12"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalScrollBarVisibility="Disabled">
+              <StackPanel Spacing="12" Margin="20,0,14,0">
+
+                      <StackPanel Spacing="4" IsVisible="{Binding HasPinnedLocations}">
+                        <TextBlock Text="{DynamicResource Loc_FEB050500E22}" FontWeight="Bold" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="12,0,0,4"/>
+                        <ItemsControl ItemsSource="{Binding PinnedLocations}">
+                          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="files:SidebarLocation">
+                              <Border Classes="PinnedLocationRow">
+                              <Grid>
+                                <Button Classes="Large SettingsNavItem PinnedLocationBody" Tag="{Binding Path}" Click="OnSidebarLocationClicked"
+                                        DragDrop.AllowDrop="True" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
+                                  <Grid ColumnDefinitions="24,*">
+                                    <controls:DaisyIcon Icon="{Binding Icon}" Size="{DynamicResource IconSizeMedium}" Width="24" HorizontalAlignment="Left"
+                                                        theming:ThemeResourceBrush.ForegroundKey="{Binding ColorResourceKey}"/>
+                                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium" Margin="10,0,0,0"
+                                               VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                  </Grid>
+                                </Button>
+                                <Button Classes="PinnedUnpin"
+                                        HorizontalAlignment="Right" VerticalAlignment="Center"
+                                        Tag="{Binding Path}" Click="OnUnpinLocationClicked" ToolTip.Tip="{DynamicResource Loc_E462F73BB646}">
+                                  <controls:DaisyIcon Icon="pin-02" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource OrangeSwatchBrush}"/>
+                                </Button>
+                              </Grid>
+                              </Border>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+
+                      <StackPanel Spacing="4">
+                        <TextBlock Text="{DynamicResource Loc_2EE1766F6F1B}" FontWeight="Bold" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="12,0,0,4"/>
+                        <ItemsControl ItemsSource="{Binding StandardLocations}">
+                          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="files:SidebarLocation">
+                              <Button Classes="Large SettingsNavItem" Tag="{Binding Path}" Click="OnSidebarLocationClicked"
+                                      DragDrop.AllowDrop="True" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
+                                <Grid ColumnDefinitions="24,*">
+                                  <controls:DaisyIcon Icon="{Binding Icon}" Size="{DynamicResource IconSizeMedium}" Width="24" theming:ThemeResourceBrush.ForegroundKey="{Binding ColorResourceKey}"/>
+                                  <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium" Margin="10,0,0,0" TextTrimming="CharacterEllipsis"/>
+                                </Grid>
+                              </Button>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+
+                      <StackPanel Spacing="4" IsVisible="{Binding HasVolumes}">
+                        <Rectangle Height="1" Fill="{DynamicResource StrokeSubtleBrush}" Margin="12,0"/>
+                        <TextBlock Text="{DynamicResource Loc_6D42B8A54F63}" FontWeight="Bold" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="12,4,0,4"/>
+                        <ItemsControl ItemsSource="{Binding Volumes}">
+                          <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                          <ItemsControl.ItemTemplate>
+                            <DataTemplate x:DataType="services:VolumeInfo">
+                              <Grid ColumnDefinitions="*,Auto">
+                                <Button Grid.Column="0" Classes="Large SettingsNavItem" Tag="{Binding Path}" Click="OnSidebarLocationClicked" DragDrop.AllowDrop="True" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
+                                  <StackPanel Orientation="Horizontal">
+                                    <controls:DaisyIcon Icon="hard-drives" Size="{DynamicResource IconSizeStandard}" Width="24" Foreground="{DynamicResource StatusSuccessBrush}"/>
+                                    <TextBlock Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" Margin="12,0,0,0" TextTrimming="CharacterEllipsis"/>
+                                  </StackPanel>
+                                </Button>
+                                <Button Grid.Column="1" Classes="SubtleIcon" Tag="{Binding Path}" IsVisible="{Binding IsRemovable}" Click="OnEjectVolumeClicked" ToolTip.Tip="{DynamicResource Loc_F1995545C646}" Width="28" Height="28" Margin="0,0,4,0">
+                                  <controls:DaisyIcon Icon="eject" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+                                </Button>
+                              </Grid>
+                            </DataTemplate>
+                          </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                      </StackPanel>
+
+              </StackPanel>
+            </ScrollViewer>
+              </Border>
+            <Grid Grid.Column="1" x:Name="ContentLayout" RowDefinitions="44,60,*,28" Background="{DynamicResource SurfaceBaseSolidBrush}">
+
+              <!-- ROW 0: TABS AREA & WINDOW CONTROLS -->
+              <Panel x:Name="TabRow"
+                     Grid.Row="0"
+                     Background="{DynamicResource SurfaceBaseSolidBrush}"
+                     PointerPressed="OnTabRowPointerPressed"
+                     DoubleTapped="OnTabRowDoubleTapped">
+        <!-- Bottom divider under tab row -->
+        <Grid ColumnDefinitions="*,Auto">
+          <Grid Grid.Column="0" ColumnDefinitions="*,Auto" Margin="6,0,6,0" VerticalAlignment="Center">
+              <ItemsControl x:Name="TabsControl" ItemsSource="{Binding Tabs}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <controls:ShrinkingTabPanel />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="files:FilesTabViewModel">
+                    <!-- Tab: button with active state style -->
+                    <Button Classes="ShellButton FileTab" HorizontalAlignment="Stretch" MinWidth="0" SizeChanged="OnTabSizeChanged"
+                            Classes.TabActive="{Binding IsActive}"
+                            Height="38"
+                            Margin="0,3,0,3"
+                            Padding="4,0"
+                            ClipToBounds="True"
+                            ToolTip.Tip="{Binding Title}"
+                            HorizontalContentAlignment="Stretch"
+                            VerticalAlignment="Center"
+                            Click="OnTabClicked"
+                            DragDrop.AllowDrop="True"
+                            DragDrop.DragOver="OnTabDragOver"
+                            DragDrop.DragLeave="OnTabDragLeave"
+                            DragDrop.Drop="OnTabDrop"
+                            Tag="{Binding}">
+                      <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                        <!-- Folder / location icon -->
+                        <controls:DaisyIcon Classes="TabLocationIcon" Icon="{Binding TabIcon}"
+                                 Width="20" Size="{DynamicResource IconSizeStandard}" Margin="0,0,4,0"
+                                 theming:ThemeResourceBrush.ForegroundKey="{Binding TabIconColorResourceKey}"
+                                 VerticalAlignment="Center"
+                                 HorizontalAlignment="Center"/>
+
+                        <!-- Left Aligned Tab Title -->
+                        <TextBlock Grid.Column="1"
+                                   Text="{Binding Title}" Classes="TabLabel"
+                                   FontSize="{DynamicResource TypeSizeCaption}"
+                                   FontWeight="Medium"
+                                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Left"
+                                   TextTrimming="CharacterEllipsis"
+                                   Margin="0,0,6,0"/>
+
+                        <!-- Right Aligned Close Button -->
+                        <Button Grid.Column="2"
+                                Classes="ShellButton"
+                                Width="18"
+                                Height="18"
+                                Padding="0"
+                                CornerRadius="{DynamicResource RadiusControl}"
+                                HorizontalAlignment="Right"
+                                VerticalAlignment="Center"
+                                MinWidth="0" Click="OnCloseTabClicked"
+                                Tag="{Binding}"
+                                ToolTip.Tip="{DynamicResource Loc_F271892DC1C3}">
+                          <controls:DaisyIcon Icon="x"
+                                     Size="{DynamicResource IconSizeSmall}"
+                                     Foreground="{DynamicResource ContentSecondaryBrush}"/>
+                        </Button>
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <!-- Standard Shell Ghost New Tab Button (Transparent at rest, StateHoverBrush on hover) -->
+              <Button Grid.Column="1" Classes="ShellButton"
+                      Width="32"
+                      Height="{DynamicResource ControlHeightStandard}"
+                      Margin="6,0,0,0"
+                      CornerRadius="{DynamicResource RoundedMD}"
+                      VerticalAlignment="Center"
+                      Click="OnNewTabClicked"
+                      ToolTip.Tip="{DynamicResource Loc_85B3159CE44F}">
+                <controls:DaisyIcon Icon="plus"
+                           Size="{DynamicResource IconSizeStandard}"
+                           Foreground="{DynamicResource ContentSecondaryBrush}" />
+              </Button>
+          </Grid>
+
+          <!-- Window Caption Controls on the right edge -->
+          <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Stretch">
+            <Button Classes="CaptionButton" Click="OnMinimizeWindowClicked" ToolTip.Tip="{DynamicResource Loc_D72E311C4DDA}">
+              <controls:WindowCaptionGlyph Kind="Minimize" Classes="CaptionIcon" />
+            </Button>
+            <Button x:Name="MaximizeRestoreButton" Classes="CaptionButton" Click="OnMaximizeRestoreWindowClicked" ToolTip.Tip="{DynamicResource Loc_FBA6C2C5D946}">
+              <controls:WindowCaptionGlyph x:Name="MaximizeRestoreIcon" Kind="Maximize" Classes="CaptionIcon" />
+            </Button>
+            <Button Classes="CaptionButton CaptionClose" Click="OnCloseWindowClicked" ToolTip.Tip="{DynamicResource Loc_7D9EB7ACB13E}">
+              <controls:WindowCaptionGlyph Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" Kind="Close" Classes="CaptionIcon" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Panel>
+
+      <!-- ROW 1: NAVIGATION TOOLBAR (ALL 4 BUTTONS ARE STANDARD SHELL GHOST BUTTONS) -->
+          <Panel Grid.Row="1" Background="{DynamicResource SurfaceBaseSolidBrush}" ZIndex="20" ClipToBounds="False">
+            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="14,8" VerticalAlignment="Center">
+
+              <!-- All 4 Nav Controls (Back, Forward, Up, Refresh) using identical ShellButton ghost style -->
+              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
+                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnBackClicked" IsEnabled="{Binding ActiveTab.CanGoBack}" ToolTip.Tip="{DynamicResource Loc_76900F1BFD16}">
+                  <controls:DaisyIcon Icon="arrow-left" Size="{DynamicResource IconSizeStandard}"/>
+                </Button>
+                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnForwardClicked" IsEnabled="{Binding ActiveTab.CanGoForward}" ToolTip.Tip="{DynamicResource Loc_F1C65E14817E}">
+                  <controls:DaisyIcon Icon="arrow-right" Size="{DynamicResource IconSizeStandard}"/>
+                </Button>
+                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnUpClicked" IsEnabled="{Binding ActiveTab.CanGoUp}" ToolTip.Tip="{DynamicResource Loc_AD18290855A2}">
+                  <controls:DaisyIcon Icon="arrow-up" Size="{DynamicResource IconSizeStandard}"/>
+                </Button>
+                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnRefreshClicked" ToolTip.Tip="{DynamicResource Loc_2B9CBC5BD2E2}">
+                  <controls:DaisyIcon Icon="arrows-clockwise" Size="{DynamicResource IconSizeStandard}"/>
+                </Button>
+              </StackPanel>
+
+              <!-- Breadcrumb Address Box -->
+              <Border Grid.Column="1"
+                      Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                      CornerRadius="{DynamicResource RoundedMD}"
+                      Height="40"
+                      Padding="9,0"
+                      PointerPressed="OnBreadcrumbBackgroundPressed">
+                <Border.ContextMenu>
+                  <ContextMenu>
+                    <MenuItem Header="{DynamicResource Loc_83BB108FA6B3}" Click="OnCopyCurrentLocationClicked">
+                      <MenuItem.Icon><controls:DaisyIcon Icon="copy" Classes="MenuIcon"/></MenuItem.Icon>
+                    </MenuItem>
+                  </ContextMenu>
+                </Border.ContextMenu>
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6">
+                  <controls:DaisyIcon Icon="folder-open"
+                             Size="{DynamicResource IconSizeStandard}"
+                             Foreground="{DynamicResource ContentSecondaryBrush}"
+                             VerticalAlignment="Center"
+                             Margin="2,0,0,0"/>
+                             
+                  <ItemsControl Grid.Column="1"
+                                ItemsSource="{Binding ActiveTab.Breadcrumbs}"
+                                IsVisible="{Binding !#PathBox.IsVisible}"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                Height="32">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="2"/>
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="files:BreadcrumbSegment">
+                      <StackPanel Orientation="Horizontal" Height="32" Spacing="2" VerticalAlignment="Center">
+                        <controls:DaisyIcon Icon="caret-right"
+                                   Size="{DynamicResource IconSizeSmall}"
+                                   IsVisible="{Binding !IsFirst}"
+                                   Foreground="{DynamicResource ContentTertiaryBrush}"
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Center"/>
+                        <Button Classes="FilesBreadcrumb"
+                                Classes.Current="{Binding IsCurrent}"
+                                Tag="{Binding Path}"
+                                Click="OnBreadcrumbClicked">
+                          <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="{DynamicResource TypeSizeBodySmall}" VerticalAlignment="Center"/>
+                        </Button>
+                      </StackPanel>
+                    </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                  
+                  <!-- Fallback raw path input -->
+                  <TextBox x:Name="PathBox"
+                           Grid.Column="1"
+                           Background="Transparent"
+                           BorderThickness="0"
+                           VerticalContentAlignment="Center"
+                           FontSize="{DynamicResource TypeSizeBodySmall}"
+                           Foreground="{DynamicResource ContentPrimaryBrush}"
+                           Text="{Binding ActiveTab.CurrentPath, Mode=OneWay}"
+                           KeyDown="OnPathKeyDown"
+                           LostFocus="OnPathBoxLostFocus"
+                           IsVisible="False"/>
+                </Grid>
+              </Border>
+
+              <Border x:Name="SearchTools" Classes="FilesToolbar" Grid.Column="2"
+                      MinWidth="220" Background="{DynamicResource SurfaceRaisedSubtleBrush}" CornerRadius="{DynamicResource RoundedMD}" MinHeight="{DynamicResource InputHeightStandard}" Padding="4"
+                      ClipToBounds="False" ZIndex="10">
+                <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center">
+                  <controls:ToolbarSearchPopover x:Name="FilesSearch"
+                                                 Text="{Binding ActiveTab.SearchQuery, Mode=TwoWay}"
+                                                 PlaceholderText="{DynamicResource Loc_86326F17936B}" />
+                  <ToggleButton Classes="ShellButton FilesHiddenToggle" Width="32" Height="{DynamicResource ControlHeightStandard}" Padding="0"
+                                IsChecked="{Binding ActiveTab.ShowHiddenFiles, Mode=TwoWay}" ToolTip.Tip="{DynamicResource Loc_B5EDE7FB45DF}">
+                    <Grid>
+                      <controls:DaisyIcon Icon="eye" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding !ActiveTab.ShowHiddenFiles}"/>
+                      <controls:DaisyIcon Icon="view-off" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding ActiveTab.ShowHiddenFiles}"/>
+                    </Grid>
+                  </ToggleButton>
+                  <Rectangle Width="1" Height="20" Fill="{DynamicResource StrokeDefaultBrush}" Margin="3,0"/>
+                  <Button x:Name="SortButton" Classes="ShellButton" MinWidth="58" Height="{DynamicResource ControlHeightStandard}" Padding="6,0" VerticalContentAlignment="Center" Click="OnSortNameClicked" ToolTip.Tip="{DynamicResource Loc_588A08236C7E}">
+                    <Grid ColumnDefinitions="16,Auto" ColumnSpacing="5" VerticalAlignment="Center">
+                      <controls:DaisyIcon Icon="sort-ascending" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center"/>
+                      <TextBlock Grid.Column="1" Text="{DynamicResource Loc_BEC69036AA27}" FontSize="{DynamicResource TypeSizeCaption}" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Button>
+                  <Rectangle Width="1" Height="20" Fill="{DynamicResource StrokeDefaultBrush}" Margin="3,0"/>
+                  <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnToggleViewModeClicked" ToolTip.Tip="{DynamicResource Loc_14326E4C4DD5}">
+                    <Grid>
+                      <controls:DaisyIcon Icon="squares-four" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding !ActiveTab.IsGridView}"/>
+                      <controls:DaisyIcon Icon="list-view" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding ActiveTab.IsGridView}"/>
+                    </Grid>
+                  </Button>
+                  <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnTogglePreviewPaneClicked" ToolTip.Tip="{DynamicResource Loc_454C908A49FB}">
+                    <controls:DaisyIcon Icon="sidebar-simple" Size="{DynamicResource IconSizeStandard}"/>
+                  </Button>
+                </StackPanel>
+              </Border>
+            </Grid>
+          </Panel>
+
+          <!-- ROW 2: MAIN CONTENT AREA -->
+          <Grid Grid.Row="2">
+
+            <!-- MAIN FILE CONTENT AREA (Transparent over App Canvas) -->
+            <Grid x:Name="FileContentGrid"
+                  Background="Transparent"
+                  Margin="20,10,12,12"
+                  ClipToBounds="True"
+                  DragDrop.AllowDrop="True"
+                  DragDrop.DragOver="OnFileAreaDragOver"
+                  DragDrop.Drop="OnFileAreaDrop"
+                  ColumnDefinitions="*,0">
+              <Grid Grid.Column="0">
+
+              <!-- VIEW MODE 1: DETAILS LIST VIEW -->
+              <Grid RowDefinitions="40,*" IsVisible="{Binding !ActiveTab.IsGridView}">
+
+                <!-- Table Header Bar -->
+                <Panel Grid.Row="0" Background="Transparent">
+                  <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="16,0" VerticalAlignment="Center">
+                    <Button Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortByName}" Click="OnSortNameClicked">
+                      <TextBlock Text="{DynamicResource Loc_DCD1D5223F73}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                    </Button>
+                    <Button Grid.Column="1" Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortByDate}" Width="160" IsVisible="{Binding ActiveTab.ShowDateColumn}" Click="OnSortDateClicked">
+                      <TextBlock Text="{DynamicResource Loc_EB5E7A5E3D68}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                    </Button>
+                    <Button Grid.Column="2" Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortByType}" Width="120" IsVisible="{Binding ActiveTab.ShowTypeColumn}" Click="OnSortTypeClicked">
+                      <TextBlock Text="{DynamicResource Loc_BAADDF70FB5D}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                    </Button>
+                    <Button Grid.Column="3" Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortBySize}" Width="80" IsVisible="{Binding ActiveTab.ShowSizeColumn}" HorizontalAlignment="Right" Click="OnSortSizeClicked">
+                      <TextBlock Text="{DynamicResource Loc_1AF851907331}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                    </Button>
+                  </Grid>
+                </Panel>
+
+                <!-- Details File List -->
+                <ListBox x:Name="EntriesList"
+                         Grid.Row="1"
+                         ItemsSource="{Binding ActiveTab.FilteredEntries}"
+                         SelectedItems="{Binding ActiveTab.SelectedItems}"
+                         SelectionMode="Multiple"
+                         DoubleTapped="OnEntryDoubleTapped"
+                         DragDrop.AllowDrop="True"
+                         DragDrop.DragOver="OnFileAreaDragOver"
+                         DragDrop.Drop="OnFileAreaDrop"
+                         Background="Transparent"
+                         BorderThickness="0"
+                         Padding="8,4,8,8">
+                  <ListBox.ContextMenu>
+                    <ContextMenu>
+                      <MenuItem Header="{DynamicResource Loc_CF28F49EC597}" Click="OnNewFolderClicked">
+                        <MenuItem.Icon><controls:DaisyIcon Icon="folder-plus" Classes="MenuIcon"/></MenuItem.Icon>
+                      </MenuItem>
+                      <MenuItem Header="{DynamicResource Loc_BACA9AAE8199}" Click="OnNewTextDocumentClicked">
+                        <MenuItem.Icon><controls:DaisyIcon Icon="file-text" Classes="MenuIcon"/></MenuItem.Icon>
+                      </MenuItem>
+                      <MenuItem Header="{DynamicResource Loc_2E4DB783ED58}" Click="OnPasteClicked">
+                        <MenuItem.Icon><controls:DaisyIcon Icon="clipboard-text" Classes="MenuIcon"/></MenuItem.Icon>
+                      </MenuItem>
+                      <MenuItem Header="{DynamicResource Loc_288F1961CE3F}" Click="OnPasteReplaceClicked">
+                        <MenuItem.Icon><controls:DaisyIcon Icon="clipboard-text" Classes="MenuIcon"/></MenuItem.Icon>
+                      </MenuItem>
+                      <Separator />
+                      <MenuItem Header="{DynamicResource Loc_83BB108FA6B3}" Click="OnCopyCurrentLocationClicked">
+                        <MenuItem.Icon><controls:DaisyIcon Icon="copy" Classes="MenuIcon"/></MenuItem.Icon>
+                      </MenuItem>
+                      <MenuItem Header="{DynamicResource Loc_0E9F3AED3CED}" Click="OnOpenCurrentInTerminalClicked">
+                        <MenuItem.Icon><controls:DaisyIcon Icon="terminal-window" Classes="MenuIcon"/></MenuItem.Icon>
+                      </MenuItem>
+                    </ContextMenu>
+                  </ListBox.ContextMenu>
+                  <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="files:FileEntryViewModel">
+                      <Border Classes="FileDropTarget"
+                              DragDrop.AllowDrop="True"
+                              DragDrop.DragOver="OnFolderDragOver"
+                              DragDrop.DragLeave="OnFolderDragLeave"
+                              DragDrop.Drop="OnFolderDrop"
+                              Height="40"
+                              Padding="12,0"
+                              CornerRadius="{DynamicResource RoundedSM}"
+                              Background="Transparent"
+                              PointerPressed="OnEntryPointerPressed"
+                              PointerMoved="OnEntryPointerMoved"
+                              PointerReleased="OnEntryPointerReleased">
+                        <Border.ContextMenu>
+                          <ContextMenu Opened="OnEntryContextMenuOpened">
+                            <MenuItem Header="{DynamicResource Loc_ED077F3D8125}" Click="OnOpenEntryContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="arrow-square-out" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_E0AF5C0BC245}"
+                                      IsVisible="{Binding IsDirectory}"
+                                      Click="OnOpenEntryInNewTabContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="browser" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_0E9F3AED3CED}"
+                                      IsVisible="{Binding IsDirectory}"
+                                      Click="OnOpenEntryInTerminalContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="terminal-window" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_3064D79A295C}" Click="OnRenameEntryContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="pencil-simple" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_D5112330C62B}" IsVisible="{Binding IsDirectory}" Click="OnAddToPinnedContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="pin-02" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="{DynamicResource Loc_1F45F02561F4}" Click="OnCutEntryContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="scissors" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_E21F935F11D7}" Click="OnCopyEntryContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="copy" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_720FF4160412}" Click="OnCopyEntryPathContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="link" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_B35D349F0433}" Click="OnShareEntryContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="LocalSend" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_033FC0445B90}" Click="OnCompressEntryContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="file-zip" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_F0064F1D815D}" Click="OnExtractHereContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="file-archive" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_72CA90F51626}" Click="OnExtractToFolderContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="folder-simple-plus" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <Separator />
+                            <MenuItem Header="{DynamicResource Loc_9ADCDF33DCE1}"
+                                      Classes="Danger"
+                                      Click="OnTrashEntryContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                            <MenuItem Header="{DynamicResource Loc_AE43692B2A31}" Click="OnShowPropertiesContextClicked">
+                              <MenuItem.Icon><controls:DaisyIcon Icon="info" Classes="MenuIcon"/></MenuItem.Icon>
+                            </MenuItem>
+                          </ContextMenu>
+                        </Border.ContextMenu>
+                        <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+
+                          <!-- Name, preview, or preferred application icon -->
+                          <Grid Grid.Column="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center" Margin="0,0,16,0">
+                            <Border Grid.Column="0" Width="26" Height="26" Margin="0,0,8,0" CornerRadius="{DynamicResource RoundedXS}" ClipToBounds="True">
+                              <Grid>
+                                <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}"
+                                       Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                <Image Source="{Binding ApplicationIcon}" IsVisible="{Binding HasApplicationIcon}"
+                                       Stretch="Uniform" Margin="3" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                                <controls:DaisyIcon Icon="{Binding Icon}" IsVisible="{Binding !HasVisualImage}"
+                                                    Size="{DynamicResource IconSizeMedium}" Foreground="{Binding IconColor}" VerticalAlignment="Center"
+                                                    HorizontalAlignment="Center"/>
+                              </Grid>
+                            </Border>
+                            <TextBlock Grid.Column="1"
+                                       Text="{Binding DisplayName}"
+                                       FontSize="{DynamicResource TypeSizeBodySmall}"
+                                       Foreground="{DynamicResource ContentPrimaryBrush}"
+                                       VerticalAlignment="Center"
+                                       TextTrimming="CharacterEllipsis"
+                                       IsVisible="{Binding !IsRenaming}"/>
+                            <TextBox Grid.Column="1"
+                                     Classes="RenameBox"
+                                     Text="{Binding Name, Mode=TwoWay}"
+                                     FontSize="{DynamicResource TypeSizeBodySmall}"
+                                     HorizontalAlignment="Stretch"
+                                     VerticalAlignment="Center"
+                                     IsVisible="{Binding IsRenaming}"
+                                     KeyDown="OnRenameKeyDown"
+                                     LostFocus="OnRenameLostFocus"/>
+                          </Grid>
+
+                          <!-- Date Modified -->
+                          <TextBlock Grid.Column="1"
+                                     Text="{Binding LastWriteTimeDisplay}"
+                                     Width="160"
+                                     FontSize="{DynamicResource TypeSizeCaption}"
+                                     Foreground="{DynamicResource ContentSecondaryBrush}"
+                                     IsVisible="{Binding $parent[Window].DataContext.ActiveTab.ShowDateColumn}"
+                                     VerticalAlignment="Center"/>
+
+                          <!-- Type -->
+                          <TextBlock Grid.Column="2"
+                                     Text="{Binding DisplayType}"
+                                     Width="120"
+                                     FontSize="{DynamicResource TypeSizeCaption}"
+                                     Foreground="{DynamicResource ContentSecondaryBrush}"
+                                     IsVisible="{Binding $parent[Window].DataContext.ActiveTab.ShowTypeColumn}"
+                                     VerticalAlignment="Center"/>
+
+                          <!-- Size -->
+                          <TextBlock Grid.Column="3"
+                                     Text="{Binding DisplaySize}"
+                                     Width="80"
+                                     FontSize="{DynamicResource TypeSizeCaption}"
+                                     Foreground="{DynamicResource ContentSecondaryBrush}"
+                                     IsVisible="{Binding $parent[Window].DataContext.ActiveTab.ShowSizeColumn}"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Center"/>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ListBox.ItemTemplate>
+                </ListBox>
+
+              </Grid>
+
+              <!-- Virtualized icon grid: fixed cells and recycled viewport containers. -->
+              <ListBox x:Name="EntriesGrid"
+                       ItemsSource="{Binding ActiveTab.FilteredEntries}"
+                       SelectedItems="{Binding ActiveTab.SelectedItems}"
+                       SelectionMode="Multiple"
+                       DoubleTapped="OnEntryDoubleTapped"
+                       DragDrop.AllowDrop="True"
+                       DragDrop.DragOver="OnFileAreaDragOver"
+                       DragDrop.Drop="OnFileAreaDrop"
+                       Background="Transparent"
+                       BorderThickness="0"
+                       Padding="16"
+                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                       IsVisible="{Binding ActiveTab.IsGridView}">
+                <ListBox.ContextMenu>
+                  <ContextMenu>
+                    <MenuItem Header="{DynamicResource Loc_CF28F49EC597}" Click="OnNewFolderClicked">
+                      <MenuItem.Icon><controls:DaisyIcon Icon="folder-plus" Classes="MenuIcon"/></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource Loc_BACA9AAE8199}" Click="OnNewTextDocumentClicked">
+                      <MenuItem.Icon><controls:DaisyIcon Icon="file-text" Classes="MenuIcon"/></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource Loc_2E4DB783ED58}" Click="OnPasteClicked">
+                      <MenuItem.Icon><controls:DaisyIcon Icon="clipboard-text" Classes="MenuIcon"/></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource Loc_288F1961CE3F}" Click="OnPasteReplaceClicked">
+                      <MenuItem.Icon><controls:DaisyIcon Icon="clipboard-text" Classes="MenuIcon"/></MenuItem.Icon>
+                    </MenuItem>
+                    <Separator />
+                    <MenuItem Header="{DynamicResource Loc_83BB108FA6B3}" Click="OnCopyCurrentLocationClicked">
+                      <MenuItem.Icon><controls:DaisyIcon Icon="copy" Classes="MenuIcon"/></MenuItem.Icon>
+                    </MenuItem>
+                    <MenuItem Header="{DynamicResource Loc_0E9F3AED3CED}" Click="OnOpenCurrentInTerminalClicked">
+                      <MenuItem.Icon><controls:DaisyIcon Icon="terminal-window" Classes="MenuIcon"/></MenuItem.Icon>
+                    </MenuItem>
+                  </ContextMenu>
+                </ListBox.ContextMenu>
+                <ListBox.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <files:VirtualizingFileGrid />
+                  </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="files:FileEntryViewModel">
+                    <Border Classes="FileDropTarget"
+                            DragDrop.AllowDrop="True"
+                            DragDrop.DragOver="OnFolderDragOver"
+                            DragDrop.DragLeave="OnFolderDragLeave"
+                            DragDrop.Drop="OnFolderDrop"
+                            Width="114"
+                            MinHeight="106"
+                            Margin="4"
+                            Padding="6"
+                            CornerRadius="{DynamicResource RoundedMD}"
+                            Background="Transparent"
+                            PointerPressed="OnEntryPointerPressed"
+                            PointerMoved="OnEntryPointerMoved"
+                            PointerReleased="OnEntryPointerReleased"
+                            ToolTip.Tip="{Binding DisplayName}">
+                      <Border.ContextMenu>
+                        <ContextMenu Opened="OnEntryContextMenuOpened">
+                          <MenuItem Header="{DynamicResource Loc_ED077F3D8125}" Click="OnOpenEntryContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="arrow-square-out" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_E0AF5C0BC245}"
+                                    IsVisible="{Binding IsDirectory}"
+                                    Click="OnOpenEntryInNewTabContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="browser" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_0E9F3AED3CED}"
+                                    IsVisible="{Binding IsDirectory}"
+                                    Click="OnOpenEntryInTerminalContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="terminal-window" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_3064D79A295C}" Click="OnRenameEntryContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="pencil-simple" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_D5112330C62B}" IsVisible="{Binding IsDirectory}" Click="OnAddToPinnedContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="pin-02" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <Separator />
+                          <MenuItem Header="{DynamicResource Loc_1F45F02561F4}" Click="OnCutEntryContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="scissors" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_E21F935F11D7}" Click="OnCopyEntryContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="copy" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_720FF4160412}" Click="OnCopyEntryPathContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="link" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_B35D349F0433}" Click="OnShareEntryContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="LocalSend" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_033FC0445B90}" Click="OnCompressEntryContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="file-zip" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_F0064F1D815D}" Click="OnExtractHereContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="file-archive" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_72CA90F51626}" Click="OnExtractToFolderContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="folder-simple-plus" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <Separator />
+                          <MenuItem Header="{DynamicResource Loc_9ADCDF33DCE1}"
+                                    Classes="Danger"
+                                    Click="OnTrashEntryContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_AE43692B2A31}" Click="OnShowPropertiesContextClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="info" Classes="MenuIcon"/></MenuItem.Icon>
+                          </MenuItem>
+                        </ContextMenu>
+                      </Border.ContextMenu>
+                      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
+                        <Border Height="58" MaxWidth="96" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="{DynamicResource RoundedSM}" ClipToBounds="True">
+                          <Grid>
+                            <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}"
+                                   Height="58"
+                                   Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                            <Image Source="{Binding ApplicationIcon}" IsVisible="{Binding HasApplicationIcon}"
+                                   Height="46"
+                                   Stretch="Uniform" Margin="4" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                            <controls:DaisyIcon Icon="{Binding Icon}" IsVisible="{Binding !HasVisualImage}"
+                                                Size="{DynamicResource IconSizeHero}" Foreground="{Binding IconColor}"
+                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                          </Grid>
+                        </Border>
+                        <TextBlock Text="{Binding DisplayName}"
+                                   FontSize="{DynamicResource TypeSizeCaption}"
+                                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   TextAlignment="Center"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxLines="2"
+                                   TextWrapping="Wrap"
+                                   IsVisible="{Binding !IsRenaming}"/>
+                        <TextBox Classes="RenameBox"
+                                 Text="{Binding Name, Mode=TwoWay}"
+                                 FontSize="{DynamicResource TypeSizeCaption}"
+                                 TextAlignment="Center"
+                                 Width="102"
+                                 HorizontalAlignment="Center"
+                                 IsVisible="{Binding IsRenaming}"
+                                 KeyDown="OnRenameKeyDown"
+                                 LostFocus="OnRenameLostFocus"/>
+                      </StackPanel>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+
+                <files:FilesRenderProbe Tab="{Binding ActiveTab}" />
+
+                <StackPanel IsVisible="{Binding ActiveTab.IsEmpty}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="10">
+                  <controls:DaisyIcon Icon="folder-open" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Center"/>
+                  <TextBlock Text="{DynamicResource Loc_3043F9FA4D31}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                  <Button Classes="ShellButton" Click="OnNewFolderClicked" HorizontalAlignment="Center" Padding="10,6">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><controls:DaisyIcon Icon="folder-plus" Size="{DynamicResource IconSizeStandard}"/><TextBlock Text="{DynamicResource Loc_82B9E1EF0B40}"/></StackPanel>
+                  </Button>
+                </StackPanel>
+              </Grid>
+
+              <Border Grid.Column="1"
+                      Background="{DynamicResource SurfaceSunkenBrush}"
+                      BorderBrush="{DynamicResource StrokeSubtleBrush}"
+                      BorderThickness="1,0,0,0"
+                      Padding="16"
+                      IsVisible="{Binding IsPreviewPaneVisible}">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                  <StackPanel Spacing="14" IsVisible="{Binding ActiveTab.HasSelectedEntry}">
+                    <TextBlock Text="{DynamicResource Loc_59E1F415BF9D}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+                    <Border Height="170" Background="{DynamicResource SurfaceBaseBrush}" CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True">
+                      <Grid>
+                        <Image Source="{Binding ActiveTab.SelectedEntry.Thumbnail}" IsVisible="{Binding ActiveTab.SelectedEntry.HasThumbnail}" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        <Image Source="{Binding ActiveTab.SelectedEntry.ApplicationIcon}" IsVisible="{Binding ActiveTab.SelectedEntry.HasApplicationIcon}" Stretch="Uniform" Margin="34" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                        <controls:DaisyIcon Icon="{Binding ActiveTab.SelectedEntry.Icon}" IsVisible="{Binding !ActiveTab.SelectedEntry.HasVisualImage}" Size="{DynamicResource IconSizeHero}" Foreground="{Binding ActiveTab.SelectedEntry.IconColor}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                      </Grid>
+                    </Border>
+                    <TextBlock Text="{Binding ActiveTab.SelectedEntry.DisplayName}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold" TextWrapping="Wrap"/>
+                    <StackPanel Spacing="5">
+                      <TextBlock Text="{Binding ActiveTab.SelectedEntry.DisplayType}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                      <TextBlock Text="{Binding ActiveTab.SelectedEntry.DisplaySize}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" IsVisible="{Binding !ActiveTab.SelectedEntry.IsDirectory}"/>
+                      <TextBlock Text="{Binding ActiveTab.SelectedEntry.ImageDimensions}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" IsVisible="{Binding ActiveTab.SelectedEntry.HasImageDimensions}"/>
+                      <TextBlock Text="{Binding ActiveTab.SelectedEntry.LastWriteTimeDisplay}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                    </StackPanel>
+                    <Rectangle Height="1" Fill="{DynamicResource StrokeSubtleBrush}"/>
+                    <StackPanel Spacing="4" IsVisible="{Binding !ActiveTab.SelectedEntry.IsDirectory}">
+                      <TextBlock Text="{DynamicResource Loc_A031D9DD1985}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+                      <TextBlock Text="{DynamicResource Loc_12235F20DCCE}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                    </StackPanel>
+                  </StackPanel>
+                </ScrollViewer>
+              </Border>
+            </Grid>
+          </Grid>
+
+          <!-- ROW 3: BOTTOM STATUS BAR -->
+          <Panel Grid.Row="3" Background="{DynamicResource SurfaceBaseSolidBrush}">
+            <!-- Divider above Status Bar -->
+            <Rectangle VerticalAlignment="Top" Height="1" Fill="{DynamicResource StrokeSubtleBrush}" />
+
+            <Grid Margin="14,0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                <TextBlock Text="{Binding ActiveTab.StatusText}"
+                         FontSize="{DynamicResource TypeSizeCaption}"
+                         Foreground="{DynamicResource ContentSecondaryBrush}"
+                         VerticalAlignment="Center"/>
+                <!-- Only shown once idle; while an operation is running the
+                     progress column to the right owns this text instead, so
+                     the same message no longer appears twice at once. -->
+                <TextBlock Text="{Binding ActiveTab.OperationStatus}"
+                           FontSize="{DynamicResource TypeSizeCaption}"
+                           Foreground="{DynamicResource ContentSecondaryBrush}"
+                           IsVisible="{Binding ActiveTab.ShowIdleOperationStatus}"/>
+              </StackPanel>
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding ActiveTab.IsOperationInProgress}" VerticalAlignment="Center">
+                <ProgressBar Width="72" Height="3" IsIndeterminate="True" />
+                <TextBlock Text="{Binding ActiveTab.OperationStatus}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+              </StackPanel>
+              <Button Grid.Column="2" Classes="SubtleLink" Content="{DynamicResource Loc_3B7EA51793E9}" Click="OnClearSearchClicked"
+                      ToolTip.Tip="{Binding ActiveTab.SearchQuery}" IsVisible="{Binding ActiveTab.HasSearchQuery}" />
+              <Button Grid.Column="3" Classes="SubtleLink" Content="{DynamicResource Loc_A8283ADE3185}" Click="OnUndoTrashClicked" IsVisible="{Binding ActiveTab.CanUndoTrash}"/>
+            </Grid>
+          </Panel>
+
+        </Grid>
+        </Grid>
+
+      </Grid>
+  </Grid>
+</Window>

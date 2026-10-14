@@ -1,0 +1,9 @@
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/daisy_window_decoration.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/edit_cache.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/rebuild_cache.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/list_install_components.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/install.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/install/local.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/install/strip.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/daisy_window_decoration_autogen_timestamp_deps.dir
+/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/CMakeFiles/daisy_window_decoration_autogen.dir

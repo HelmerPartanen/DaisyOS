@@ -1,0 +1,217 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerWindow" Width="960" Height="680" MinWidth="760" MinHeight="540" WindowStartupLocation="CenterOwner" WindowDecorations="Full" Background="{DynamicResource SurfaceBaseSolidBrush}" xmlns:picker="clr-namespace:DaisyOS.Shell.Apps.Files.Picker">
+  <Window.Styles>
+    <Style Selector="Button.PickerIconButton">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.PickerIconButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.PickerSidebarItem">
+      <Setter Property="Height" Value="42" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+    </Style>
+    <Style Selector="Button.PickerSidebarItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.PickerSidebarItem.Active /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+    </Style>
+    <Style Selector="Button.FileTile">
+      <Setter Property="Width" Value="114" />
+      <Setter Property="MinHeight" Value="106" />
+      <Setter Property="Padding" Value="6" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.FileTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.FileTile.Selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+    <Style Selector="Button.FileRow">
+      <Setter Property="Height" Value="40" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    </Style>
+    <Style Selector="Button.FileRow:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.FileRow.Selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+  </Window.Styles>
+  <Grid ColumnDefinitions="240,*" MinHeight="0">
+    <Border BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0" Background="{DynamicResource SurfaceRaisedSubtleBrush}" Padding="18,16" ClipToBounds="True" x:Name="NavigationSidebar">
+      <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+        <StackPanel x:Name="LocationsPanel" Spacing="{DynamicResource SidebarItemGap}" />
+      </ScrollViewer>
+    </Border>
+    <Grid Grid.Column="1" RowDefinitions="58,*,Auto">
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,200" Margin="14,9" ColumnSpacing="6">
+        <Button x:Name="BackButton" Classes="PickerIconButton" Click="OnBackClicked" ToolTip.Tip="{DynamicResource Loc_4AE57F86C932}" AutomationProperties.Name="{DynamicResource Loc_76900F1BFD16}">
+          <controls:DaisyIcon Icon="chevron-left" Size="{DynamicResource IconSizeStandard}" />
+        </Button>
+        <Button x:Name="UpButton" Grid.Column="1" Classes="PickerIconButton" Click="OnUpClicked" ToolTip.Tip="{DynamicResource Loc_A5B93B0B215F}" AutomationProperties.Name="{DynamicResource Loc_158F5A01EF8C}">
+          <controls:DaisyIcon Icon="arrow-up" Size="{DynamicResource IconSizeStandard}" />
+        </Button>
+        <Border Grid.Column="2" Height="32" CornerRadius="{DynamicResource RoundedSM}" ClipToBounds="True" Background="{DynamicResource SurfaceInputBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1">
+          <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="Breadcrumbs" Orientation="Horizontal" Margin="8,0" VerticalAlignment="Center" Spacing="2" />
+          </ScrollViewer>
+        </Border>
+        <controls:SearchBar x:Name="SearchBox" Grid.Column="3" Height="{DynamicResource SearchHeightStandard}" MinHeight="{DynamicResource SearchHeightStandard}" PlaceholderText="{DynamicResource Loc_86326F17936B}" />
+      </Grid>
+      <Border Grid.Row="1">
+        <Grid RowDefinitions="Auto,*">
+          <Grid Margin="18,14,18,8" ColumnDefinitions="*,Auto">
+            <StackPanel>
+              <TextBlock x:Name="FolderTitle" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+              <TextBlock x:Name="FolderSummary" Margin="0,2,0,0" FontSize="{DynamicResource TypeSizeCaption}" TextWrapping="Wrap" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </StackPanel>
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+              <Button Classes="PickerIconButton" Click="OnToggleViewClicked" ToolTip.Tip="{DynamicResource Loc_6487C181016A}">
+                <controls:DaisyIcon x:Name="ViewModeIcon" Icon="list-view" Size="{DynamicResource IconSizeStandard}" />
+              </Button>
+              <Button x:Name="SortButton" Classes="PickerIconButton" Click="OnSortMenuClicked" ToolTip.Tip="{DynamicResource Loc_00FBDA14747A}">
+                <controls:DaisyIcon Icon="sort-ascending" Size="{DynamicResource IconSizeStandard}" />
+                <Button.ContextMenu>
+                  <ContextMenu x:Name="SortMenu">
+                    <MenuItem Header="{DynamicResource Loc_DCD1D5223F73}" Click="OnSortNameClicked" />
+                    <MenuItem Header="{DynamicResource Loc_EB5E7A5E3D68}" Click="OnSortDateClicked" />
+                    <MenuItem Header="{DynamicResource Loc_BAADDF70FB5D}" Click="OnSortTypeClicked" />
+                    <MenuItem Header="{DynamicResource Loc_1AF851907331}" Click="OnSortSizeClicked" />
+                    <Separator />
+                    <MenuItem Header="{DynamicResource Loc_77184595BDE3}" Click="OnSortAscendingClicked" />
+                    <MenuItem Header="{DynamicResource Loc_79479A6C76D8}" Click="OnSortDescendingClicked" />
+                  </ContextMenu>
+                </Button.ContextMenu>
+              </Button>
+              <Button x:Name="AddFolderButton" Classes="Secondary Compact" Click="OnAddFolderClicked">
+                <StackPanel Orientation="Horizontal" Spacing="6">
+                  <controls:DaisyIcon Icon="folder-plus" Size="{DynamicResource IconSizeStandard}" />
+                  <TextBlock Text="{DynamicResource Loc_7A4DBAB42604}" VerticalAlignment="Center" />
+                </StackPanel>
+              </Button>
+            </StackPanel>
+          </Grid>
+          <Grid Grid.Row="1" MinHeight="0" ClipToBounds="True">
+            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+              <Grid>
+              <ItemsControl x:Name="EntriesGridView" Margin="14,4,10,14" Focusable="True" AutomationProperties.Name="{DynamicResource Loc_9D40D2B97028}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate>
+                    <WrapPanel ItemWidth="122" ItemHeight="114" />
+                  </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="picker:PickerEntry">
+                    <Button Classes="FileTile" Classes.Selected="{Binding IsSelected}" Click="OnEntryClicked" AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Name}">
+                      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
+                        <Border Height="58" MaxWidth="96" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="{DynamicResource RoundedSM}" ClipToBounds="True">
+                          <Grid>
+                            <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}" Height="58" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                            <Image Source="{Binding ApplicationIcon}" IsVisible="{Binding HasApplicationIcon}" Height="46" Stretch="Uniform" Margin="4" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                            <controls:DaisyIcon Icon="{Binding Icon}" IsVisible="{Binding !HasVisualImage}" Size="{DynamicResource IconSizeHero}" Foreground="{Binding IconColor}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          </Grid>
+                        </Border>
+                        <TextBlock Text="{Binding DisplayName}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" TextAlignment="Center" TextTrimming="CharacterEllipsis" MaxLines="2" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              <ItemsControl x:Name="EntriesListView" Margin="14,4,10,14" IsVisible="False" Focusable="True" AutomationProperties.Name="{DynamicResource Loc_9D40D2B97028}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><StackPanel Spacing="2" /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="picker:PickerEntry">
+                    <Button Classes="FileRow" Classes.Selected="{Binding IsSelected}" Click="OnEntryClicked" AutomationProperties.Name="{Binding Name}">
+                      <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
+                        <Grid Grid.Column="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center" Margin="0,0,16,0">
+                          <Border Width="26" Height="26" Margin="0,0,8,0" CornerRadius="{DynamicResource RoundedXS}" ClipToBounds="True">
+                            <Grid>
+                              <Image Source="{Binding Thumbnail}" IsVisible="{Binding HasThumbnail}" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                              <Image Source="{Binding ApplicationIcon}" IsVisible="{Binding HasApplicationIcon}" Stretch="Uniform" Margin="3" RenderOptions.BitmapInterpolationMode="HighQuality" />
+                              <controls:DaisyIcon Icon="{Binding Icon}" IsVisible="{Binding !HasVisualImage}" Size="{DynamicResource IconSizeStandard}" Foreground="{Binding IconColor}" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                            </Grid>
+                          </Border>
+                          <TextBlock Grid.Column="1" Text="{Binding DisplayName}" FontSize="{DynamicResource TypeSizeBodySmall}" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                        </Grid>
+                        <TextBlock Grid.Column="1" Text="{Binding LastWriteTimeDisplay}" Width="160" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="2" Text="{Binding DisplayType}" Width="120" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+                        <TextBlock Grid.Column="3" Text="{Binding DisplaySize}" Width="80" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                      </Grid>
+                    </Button>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+              </Grid>
+            </ScrollViewer>
+            <StackPanel x:Name="EmptyState" Classes="EmptyState" IsVisible="False">
+              <controls:DaisyIcon Icon="file-search" />
+              <TextBlock x:Name="EmptyStateTitle" Text="{DynamicResource Loc_501BBA8D3D90}" FontWeight="Medium" HorizontalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_307EE4E0B83D}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </StackPanel>
+          </Grid>
+        </Grid>
+      </Border>
+      <Border Grid.Row="2" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,1,0,0" Background="{DynamicResource SurfaceBaseSolidBrush}" Padding="16,12" MinHeight="68">
+        <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="10">
+          <StackPanel Spacing="2" VerticalAlignment="Center">
+            <TextBlock x:Name="SelectionTitle" FontWeight="SemiBold" Text="{DynamicResource Loc_0C4BA345E8AF}" />
+            <TextBlock x:Name="SelectionHint" Text="{DynamicResource Loc_9C6A74BE1D0F}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+          </StackPanel>
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+            <Button Classes="Secondary" Click="OnCancelClicked" Content="{DynamicResource Loc_19766ED6CCB2}" />
+            <Button x:Name="ConfirmButton" Classes="Primary" ToolTip.Tip="{DynamicResource Loc_49F92EE0A86E}" Click="OnConfirmClicked" IsEnabled="False" Content="{DynamicResource Loc_C7F937836F5D}" />
+          </StackPanel>
+          <ScrollViewer x:Name="SelectionTrayScroller" Grid.Row="1" Grid.ColumnSpan="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxHeight="58" IsVisible="False">
+            <ItemsControl x:Name="SelectionTray">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <StackPanel Orientation="Horizontal" Spacing="7" />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate x:DataType="picker:PickerSelection">
+                  <Border Height="48" Padding="4,4,5,4" CornerRadius="{DynamicResource RoundedSM}" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <Border Width="40" Height="40" CornerRadius="{DynamicResource RadiusControlInner}" ClipToBounds="True">
+                        <Grid>
+                          <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding HasThumbnail}" />
+                          <controls:DaisyIcon Icon="file" Size="{DynamicResource IconSizeMedium}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !HasThumbnail}" />
+                        </Grid>
+                      </Border>
+                      <TextBlock Text="{Binding Name}" MaxWidth="120" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                      <Button Classes="PickerIconButton" Width="24" Height="24" Padding="0" Click="OnRemoveSelectionClicked" ToolTip.Tip="{DynamicResource Loc_C3812FC4ACB8}">
+                        <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeSmall}" />
+                      </Button>
+                    </StackPanel>
+                  </Border>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+          </ScrollViewer>
+        </Grid>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

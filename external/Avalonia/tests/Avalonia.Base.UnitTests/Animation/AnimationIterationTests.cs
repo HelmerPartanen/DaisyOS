@@ -1,0 +1,1319 @@
+using System;
+using System.Threading.Tasks;
+using Avalonia.Animation;
+using Avalonia.Controls;
+using Avalonia.Styling;
+using Xunit;
+using Avalonia.Animation.Easings;
+using System.Threading;
+using System.Reactive.Linq;
+using Avalonia.Data;
+using Avalonia.Layout;
+using Avalonia.UnitTests;
+
+namespace Avalonia.Base.UnitTests.Animation
+{
+    using Animation = Avalonia.Animation.Animation;
+
+    public class AnimationIterationTests
+    {
+        [Fact]
+        public void Check_KeyTime_Correctly_Converted_To_Cue()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, KeyTime = TimeSpan.FromSeconds(0.5)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 0d), }, KeyTime = TimeSpan.FromSeconds(0)
+            };
+
+            var animation = new Animation() { Duration = TimeSpan.FromSeconds(1), Children = { keyframe2, keyframe1 } };
+
+            var border = new Border() { Height = 100d, Width = 100d };
+
+            var clock = new TestClock();
+
+            animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.Equal(border.Width, 0d);
+
+            clock.Step(TimeSpan.FromSeconds(1));
+            Assert.Equal(border.Width, 100d);
+        }
+
+
+        [Fact]
+        public void Check_Initial_Inter_and_Trailing_Delay_Values()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(3),
+                Delay = TimeSpan.FromSeconds(3),
+                DelayBetweenIterations = TimeSpan.FromSeconds(3),
+                IterationCount = new IterationCount(2),
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            border.Measure(Size.Infinity);
+            border.Arrange(new Rect(border.DesiredSize));
+            
+            clock.Step(TimeSpan.Zero);
+
+            // Initial Delay.
+            clock.Step(TimeSpan.FromSeconds(0));
+            Assert.Equal(100d, border.Width);
+
+            clock.Step(TimeSpan.FromSeconds(6));
+
+            // First Inter-Iteration delay.
+            clock.Step(TimeSpan.FromSeconds(8));
+            Assert.Equal(border.Width, 200d);
+
+            // Trailing Delay should be non-existent.
+            clock.Step(TimeSpan.FromSeconds(14));
+            Assert.True(animationRun.Status == TaskStatus.RanToCompletion);
+            Assert.Equal(border.Width, 100d);
+        }
+        
+        [Fact]
+        public void OnlyIfVisible_Pauses_Animation_When_IsEffectivelyVisible_Is_False()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 150d), }, Cue = new Cue(0.5d)
+            };
+
+            var keyframe3 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(3),
+                Delay = TimeSpan.FromSeconds(3),
+                DelayBetweenIterations = TimeSpan.FromSeconds(3),
+                IterationCount = new IterationCount(2),
+                // Explicit opt-in: RunAsync (manual) with Auto resolves to Always,
+                // but this test specifically exercises the pause-on-invisible feature.
+                PlaybackBehavior = PlaybackBehavior.OnlyIfVisible,
+                Children = { keyframe1, keyframe2, keyframe3 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            border.Measure(Size.Infinity);
+            border.Arrange(new Rect(border.DesiredSize));
+
+            clock.Step(TimeSpan.Zero);
+
+            clock.Step(TimeSpan.FromSeconds(0));
+            Assert.Equal(100d, border.Width);
+
+            // Hide the border — this should pause the animation clock.
+            border.IsVisible = false;
+
+            clock.Step(TimeSpan.FromSeconds(4.5));
+
+            // Width should not change while invisible (animation is paused).
+            Assert.Equal(100d, border.Width);
+
+            // Show the border — animation resumes from where it left off.
+            border.IsVisible = true;
+
+            // The pause absorbed 4.5s of wall-clock time, so internal time = wall - 4.5.
+            // To reach internal time 6s (end of iteration 1, cue 1.0 -> width 200):
+            // wall = 4.5 + 6 = 10.5
+            clock.Step(TimeSpan.FromSeconds(10.5));
+            Assert.Equal(200d, border.Width);
+
+            // To complete the animation (internal time 14s triggers trailing delay of iter 2):
+            // wall = 4.5 + 14 = 18.5
+            clock.Step(TimeSpan.FromSeconds(18.5));
+            Assert.True(animationRun.Status == TaskStatus.RanToCompletion);
+            Assert.Equal(100d, border.Width);
+        }
+        
+        [Fact]
+        public void OnlyIfVisible_Pauses_Animation_When_IsEffectivelyVisible_Is_False_Nested()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 150d), }, Cue = new Cue(0.5d)
+            };
+
+            var keyframe3 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(3),
+                Delay = TimeSpan.FromSeconds(3),
+                DelayBetweenIterations = TimeSpan.FromSeconds(3),
+                IterationCount = new IterationCount(2),
+                // Explicit opt-in: RunAsync (manual) with Auto resolves to Always,
+                // but this test specifically exercises the pause-on-invisible feature.
+                PlaybackBehavior = PlaybackBehavior.OnlyIfVisible,
+                Children = { keyframe1, keyframe2, keyframe3 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d };
+
+            var borderParent = new Border { Child = border };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            border.Measure(Size.Infinity);
+            border.Arrange(new Rect(border.DesiredSize));
+
+            clock.Step(TimeSpan.Zero);
+
+            clock.Step(TimeSpan.FromSeconds(0));
+            Assert.Equal(100d, border.Width);
+
+            // Hide the parent — this makes border.IsEffectivelyVisible false,
+            // which should pause the animation clock.
+            borderParent.IsVisible = false;
+
+            clock.Step(TimeSpan.FromSeconds(4.5));
+
+            // Width should not change while parent is invisible (animation is paused).
+            Assert.Equal(100d, border.Width);
+
+            // Show the parent — animation resumes from where it left off.
+            borderParent.IsVisible = true;
+
+            // The pause absorbed 4.5s of wall-clock time, so internal time = wall - 4.5.
+            // To reach internal time 6s (end of iteration 1, cue 1.0 -> width 200):
+            // wall = 4.5 + 6 = 10.5
+            clock.Step(TimeSpan.FromSeconds(10.5));
+            Assert.Equal(200d, border.Width);
+
+            // To complete the animation (internal time 14s triggers trailing delay of iter 2):
+            // wall = 4.5 + 14 = 18.5
+            clock.Step(TimeSpan.FromSeconds(18.5));
+            Assert.True(animationRun.Status == TaskStatus.RanToCompletion);
+            Assert.Equal(100d, border.Width);
+        }
+        
+        [Fact]
+        public void Stop_And_Dispose_Animation_When_Detached_From_Visual_Tree()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10),
+                IterationCount = new IterationCount(1),
+                Children = { keyframe2, keyframe1 }
+            };
+            var border = new Border() { Height = 100d, Width = 50d };
+            var root = new TestRoot(border);
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+            clock.Step(TimeSpan.Zero);
+            clock.Step(TimeSpan.FromSeconds(0));
+            Assert.False(animationRun.IsCompleted);
+
+            // Detach from visual tree
+            root.Child = null;
+
+            // Animation should be completed/disposed
+            Assert.True(animationRun.IsCompleted);
+
+            // Further clock ticks should not affect the border
+            var widthAfterDetach = border.Width;
+            clock.Step(TimeSpan.FromSeconds(5));
+            clock.Step(TimeSpan.FromSeconds(10));
+            Assert.Equal(widthAfterDetach, border.Width);
+        }
+
+        [Fact]
+        public void OnlyIfVisible_Pauses_Animation_When_Control_Starts_Invisible()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(3),
+                IterationCount = new IterationCount(1),
+                // Explicit opt-in: RunAsync (manual) with Auto resolves to Always,
+                // but this test specifically exercises the pause-on-invisible feature.
+                PlaybackBehavior = PlaybackBehavior.OnlyIfVisible,
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d, IsVisible = false };
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            // Clock ticks while invisible should not advance the animation.
+            clock.Step(TimeSpan.Zero);
+            clock.Step(TimeSpan.FromSeconds(1));
+            clock.Step(TimeSpan.FromSeconds(2));
+            Assert.Equal(100d, border.Width);
+            Assert.False(animationRun.IsCompleted);
+
+            // Make visible — animation starts from the beginning.
+            border.IsVisible = true;
+
+            // The pause absorbed 2s of wall-clock time, so to reach internal time 3s:
+            // wall = 2 + 3 = 5
+            clock.Step(TimeSpan.FromSeconds(5));
+            Assert.True(animationRun.IsCompleted);
+            Assert.Equal(100d, border.Width);
+        }
+
+        [Fact]
+        public void Animation_Plays_Correctly_After_Reattach()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(5),
+                IterationCount = new IterationCount(1),
+                FillMode = FillMode.Forward,
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 50d };
+            var root = new TestRoot(border);
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.False(animationRun.IsCompleted);
+
+            // Detach — animation completes.
+            root.Child = null;
+            Assert.True(animationRun.IsCompleted);
+
+            // Reattach and start a fresh animation.
+            root.Child = border;
+            var clock2 = new TestClock();
+            var animationRun2 = animation.RunAsync(border, clock2, TestContext.Current.CancellationToken);
+
+            clock2.Step(TimeSpan.Zero);
+            Assert.False(animationRun2.IsCompleted);
+
+            clock2.Step(TimeSpan.FromSeconds(5));
+            Assert.True(animationRun2.IsCompleted);
+            Assert.Equal(200d, border.Width);
+        }
+
+        [Fact]
+        public void Check_FillModes_Start_and_End_Values_if_Retained()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 0d), }, Cue = new Cue(0.0d)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 300d), }, Cue = new Cue(1.0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(0.05d),
+                Delay = TimeSpan.FromSeconds(0.05d),
+                Easing = new SineEaseInOut(),
+                FillMode = FillMode.Both,
+                Children = { keyframe1, keyframe2 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d, };
+
+            var clock = new TestClock();
+
+            animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.FromSeconds(0d));
+            Assert.Equal(border.Width, 0d);
+
+            clock.Step(TimeSpan.FromSeconds(0.050d));
+            Assert.Equal(border.Width, 0d);
+
+            clock.Step(TimeSpan.FromSeconds(0.100d));
+            Assert.Equal(border.Width, 300d);
+        }
+        
+        [Theory]
+        [InlineData(FillMode.Backward, 50.0, 0.0, 0.7, false)]
+        [InlineData(FillMode.Backward, 50.0, 0.0, 0.7, true )]
+        [InlineData(FillMode.Both,     50.0, 0.0, 0.7, false)]
+        [InlineData(FillMode.Both,     50.0, 0.0, 0.7, true )]
+        [InlineData(FillMode.Forward,  50.0, 0.0, 0.7, false)] // no delay but cue 0.0: the animation has started normally, explaining the 50.0 target without fill
+        [InlineData(FillMode.Forward, 100.0, 0.0, 0.7, true )]
+        [InlineData(FillMode.Backward, 50.0, 0.3, 0.7, false)]
+        [InlineData(FillMode.Backward, 50.0, 0.3, 0.7, true )]
+        [InlineData(FillMode.Both,     50.0, 0.3, 0.7, false)]
+        [InlineData(FillMode.Both,     50.0, 0.3, 0.7, true )]
+        [InlineData(FillMode.Forward, 100.0, 0.3, 0.7, false)]
+        [InlineData(FillMode.Forward, 100.0, 0.3, 0.7, true )]
+        public void Check_FillMode_Start_Value(FillMode fillMode, double target, double startCue, double endCue, bool delay)
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 50d), }, Cue = new Cue(startCue)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 300d), }, Cue = new Cue(endCue)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10d),
+                Delay = delay ? TimeSpan.FromSeconds(5d) : TimeSpan.Zero,
+                FillMode = fillMode,
+                Children = { keyframe1, keyframe2 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d, };
+            
+            var clock = new TestClock();
+            
+            animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+            
+            clock.Step(TimeSpan.Zero);
+            
+            Assert.Equal(target, border.Width);
+        }
+        
+        [Theory]
+        [InlineData(FillMode.Backward, 100.0, 0.3, 1.0, false)]
+        [InlineData(FillMode.Backward, 100.0, 0.3, 1.0, true )]
+        [InlineData(FillMode.Both,     300.0, 0.3, 1.0, false)]
+        [InlineData(FillMode.Both,     300.0, 0.3, 1.0, true )]
+        [InlineData(FillMode.Forward,  300.0, 0.3, 1.0, false)]
+        [InlineData(FillMode.Forward,  300.0, 0.3, 1.0, true )]
+        [InlineData(FillMode.Backward, 100.0, 0.3, 0.7, false)]
+        [InlineData(FillMode.Backward, 100.0, 0.3, 0.7, true )]
+        [InlineData(FillMode.Both,     300.0, 0.3, 0.7, false)]
+        [InlineData(FillMode.Both,     300.0, 0.3, 0.7, true )]
+        [InlineData(FillMode.Forward,  300.0, 0.3, 0.7, false)]
+        [InlineData(FillMode.Forward,  300.0, 0.3, 0.7, true )]
+        public void Check_FillMode_End_Value(FillMode fillMode, double target, double startCue, double endCue, bool delay)
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 0d), }, Cue = new Cue(startCue)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 300d), }, Cue = new Cue(endCue)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10d),
+                Delay = delay ? TimeSpan.FromSeconds(5d) : TimeSpan.Zero,
+                FillMode = fillMode,
+                Children = { keyframe1, keyframe2 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d, };
+            
+            var clock = new TestClock();
+            
+            animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+            
+            clock.Step(TimeSpan.FromSeconds(0));
+            clock.Step(TimeSpan.FromSeconds(20));
+            
+            Assert.Equal(target, border.Width);
+        }
+        
+        [Fact]
+        public void Dispose_Subscription_Should_Stop_Animation()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10),
+                Delay = TimeSpan.FromSeconds(0),
+                DelayBetweenIterations = TimeSpan.FromSeconds(0),
+                IterationCount = new IterationCount(1),
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 50d };
+            var propertyChangedCount = 0;
+            var animationCompletedCount = 0;
+            border.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == Layoutable.WidthProperty)
+                {
+                    propertyChangedCount++;
+                }
+            };
+
+            var clock = new TestClock();
+            var disposable = animation.Apply(border, clock, Observable.Return(true), () => animationCompletedCount++);
+
+            Assert.Equal(0, propertyChangedCount);
+
+            clock.Step(TimeSpan.FromSeconds(0));
+            Assert.Equal(0, animationCompletedCount);
+            Assert.Equal(1, propertyChangedCount);
+
+            disposable.Dispose();
+
+            // Clock ticks should be ignored after Dispose
+            clock.Step(TimeSpan.FromSeconds(5));
+            clock.Step(TimeSpan.FromSeconds(6));
+            clock.Step(TimeSpan.FromSeconds(7));
+
+            // On animation disposing (cancellation) on completed is not invoked (is it expected?)
+            Assert.Equal(0, animationCompletedCount);
+            // Initial property changed before cancellation + animation value removal.
+            Assert.Equal(2, propertyChangedCount);
+        }
+
+        [Fact]
+        public void Do_Not_Run_Cancelled_Animation()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10),
+                Delay = TimeSpan.FromSeconds(0),
+                DelayBetweenIterations = TimeSpan.FromSeconds(0),
+                IterationCount = new IterationCount(1),
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 100d };
+            var propertyChangedCount = 0;
+            border.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == Layoutable.WidthProperty)
+                {
+                    propertyChangedCount++;
+                }
+            };
+
+            var clock = new TestClock();
+            var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.Cancel();
+            var animationRun = animation.RunAsync(border, clock, cancellationTokenSource.Token);
+
+            clock.Step(TimeSpan.FromSeconds(10));
+            Assert.Equal(0, propertyChangedCount);
+            Assert.True(animationRun.IsCompleted);
+        }
+
+        [Fact]
+        public async Task Cancellation_Should_Stop_Animation()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10),
+                Delay = TimeSpan.FromSeconds(0),
+                DelayBetweenIterations = TimeSpan.FromSeconds(0),
+                IterationCount = new IterationCount(1),
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 50d };
+            var propertyChangedCount = 0;
+            border.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == Layoutable.WidthProperty)
+                {
+                    propertyChangedCount++;
+                }
+            };
+
+            var clock = new TestClock();
+            var cancellationTokenSource = new CancellationTokenSource();
+            var animationRun = animation.RunAsync(border, clock, cancellationTokenSource.Token);
+            Assert.False(animationRun.IsCompleted);
+
+            Assert.Equal(0, propertyChangedCount);
+
+            clock.Step(TimeSpan.FromSeconds(0));
+            Assert.False(animationRun.IsCompleted);
+            Assert.Equal(1, propertyChangedCount);
+
+            cancellationTokenSource.Cancel();
+            clock.Step(TimeSpan.FromSeconds(1));
+            clock.Step(TimeSpan.FromSeconds(2));
+            clock.Step(TimeSpan.FromSeconds(3));
+
+            await animationRun;
+
+            clock.Step(TimeSpan.FromSeconds(6));
+            Assert.True(animationRun.IsCompleted);
+            Assert.Equal(2, propertyChangedCount);
+        }
+
+        [Fact]
+        public void Dont_Run_Infinite_Iteration_Animation_On_RunAsync_Method()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10),
+                Delay = TimeSpan.FromSeconds(0),
+                DelayBetweenIterations = TimeSpan.FromSeconds(0),
+                IterationCount = IterationCount.Infinite,
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 50d };
+            var clock = new TestClock();
+            var cancellationTokenSource = new CancellationTokenSource();
+            var animationRun = animation.RunAsync(border, clock, cancellationTokenSource.Token);
+
+
+            Assert.True(animationRun.IsCompleted);
+            Assert.NotNull(animationRun.Exception);
+        }
+
+        [Fact]
+        public async Task Cancellation_Of_Completed_Animation_Does_Not_Fail()
+        {
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d), }, Cue = new Cue(1d)
+            };
+
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d), }, Cue = new Cue(0d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(10),
+                Delay = TimeSpan.FromSeconds(0),
+                DelayBetweenIterations = TimeSpan.FromSeconds(0),
+                IterationCount = new IterationCount(1),
+                Children = { keyframe2, keyframe1 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 50d };
+            var propertyChangedCount = 0;
+            border.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == Layoutable.WidthProperty)
+                {
+                    propertyChangedCount++;
+                }
+            };
+
+            var clock = new TestClock();
+            var cancellationTokenSource = new CancellationTokenSource();
+            var animationRun = animation.RunAsync(border, clock, cancellationTokenSource.Token);
+
+            Assert.Equal(0, propertyChangedCount);
+
+            clock.Step(TimeSpan.FromSeconds(0));
+            Assert.False(animationRun.IsCompleted);
+            Assert.Equal(1, propertyChangedCount);
+
+            clock.Step(TimeSpan.FromSeconds(10));
+            Assert.True(animationRun.IsCompleted);
+            Assert.Equal(2, propertyChangedCount);
+
+            cancellationTokenSource.Cancel();
+            await animationRun;
+        }
+
+        // https://github.com/AvaloniaUI/Avalonia/issues/12582
+        [Fact]
+        public async Task Interpolator_Is_Not_Called_After_Last_Iteration()
+        {
+            var animator = new FakeAnimator();
+
+            Setter CreateWidthSetter(double value)
+            {
+                var setter = new Setter(Layoutable.WidthProperty, value);
+                Animation.SetAnimator(setter, animator);
+                return setter;
+            }
+
+            var animation = new Animation
+            {
+                Duration = TimeSpan.FromSeconds(1),
+                Delay = TimeSpan.FromSeconds(0),
+                DelayBetweenIterations = TimeSpan.FromSeconds(0),
+                IterationCount = new IterationCount(1),
+                Easing = new LinearEasing(),
+                Children =
+                {
+                    new KeyFrame
+                    {
+                        Setters = { CreateWidthSetter(100d) },
+                        Cue = new Cue(0d)
+                    },
+                    new KeyFrame
+                    {
+                        Setters = { CreateWidthSetter(200d) },
+                        Cue = new Cue(1d)
+                    }
+                }
+            };
+
+            var border = new Border
+            {
+                Height = 100d,
+                Width = 50d
+            };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.Equal(1, animator.CallCount);
+            Assert.Equal(0.0d, animator.LastProgress);
+            animator.LastProgress = double.NaN;
+
+            clock.Step(TimeSpan.FromSeconds(0.5d));
+            Assert.Equal(2, animator.CallCount);
+            Assert.Equal(0.5d, animator.LastProgress);
+            animator.LastProgress = double.NaN;
+
+            clock.Step(TimeSpan.FromSeconds(1.5d));
+            Assert.Equal(3, animator.CallCount);
+            Assert.Equal(1.0d, animator.LastProgress);
+
+            await animationRun;
+        }
+
+        [Theory]
+        [InlineData(0, 1, 2)]
+        [InlineData(0, 2, 1)]
+        [InlineData(1, 0, 2)]
+        [InlineData(1, 2, 0)]
+        [InlineData(2, 0, 1)]
+        [InlineData(2, 1, 0)]
+        public void KeyFrames_Order_Does_Not_Matter(int index0, int index1, int index2)
+        {
+            static KeyFrame CreateKeyFrame(double width, double cue)
+                => new()
+                {
+                    Setters = { new Setter(Layoutable.WidthProperty, width) },
+                    Cue = new Cue(cue)
+                };
+
+            var keyFrames = new[]
+            {
+                CreateKeyFrame(100.0, 0.0),
+                CreateKeyFrame(200.0, 0.5),
+                CreateKeyFrame(300.0, 1.0)
+            };
+
+            var animation = new Animation
+            {
+                Duration = TimeSpan.FromSeconds(1.0),
+                IterationCount = new IterationCount(1),
+                Easing = new LinearEasing(),
+                FillMode = FillMode.Forward
+            };
+
+            animation.Children.Add(keyFrames[index0]);
+            animation.Children.Add(keyFrames[index1]);
+            animation.Children.Add(keyFrames[index2]);
+
+            var border = new Border
+            {
+                Height = 100.0,
+                Width = 50.0
+            };
+
+            var clock = new TestClock();
+            animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.Equal(100.0, border.Width);
+
+            clock.Step(TimeSpan.FromSeconds(0.5));
+            Assert.Equal(200.0, border.Width);
+
+            clock.Step(TimeSpan.FromSeconds(1.0));
+            Assert.Equal(300.0, border.Width);
+        }
+
+        [Theory]
+        [InlineData(0.0)]
+        [InlineData(0.5)]
+        [InlineData(1.0)]
+        public void Single_KeyFrame_Works(double cue)
+        {
+            var animation = new Animation
+            {
+                Duration = TimeSpan.FromSeconds(1.0),
+                IterationCount = new IterationCount(1),
+                Easing = new LinearEasing(),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame
+                    {
+                        Setters = { new Setter(Layoutable.WidthProperty, 100.0) },
+                        Cue = new Cue(cue)
+                    }
+                }
+            };
+
+            var border = new Border
+            {
+                Height = 100.0,
+                Width = 50.0
+            };
+
+            var clock = new TestClock();
+            animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            clock.Step(TimeSpan.FromSeconds(cue));
+            Assert.Equal(100.0, border.Width);
+        }
+
+        [Fact]
+        public void Animation_Completes_Gracefully_When_First_KeyFrame_Value_Is_Null()
+        {
+            var clock = new MockGlobalClock();
+            var services = new TestServices(globalClock: clock);
+
+            using (UnitTestApplication.Start(services))
+            {
+                var nullBinding = new Binding("NonExistentProperty");
+
+                var animation = new Animation
+                {
+                    Duration = TimeSpan.FromSeconds(1),
+                    FillMode = FillMode.Both,
+                    Children =
+                    {
+                        new KeyFrame
+                        {
+                            KeyTime = TimeSpan.FromSeconds(0),
+                            Setters = { new Setter(Layoutable.WidthProperty, nullBinding) }
+                        },
+                        new KeyFrame
+                        {
+                            KeyTime = TimeSpan.FromSeconds(1),
+                            Setters = { new Setter(Layoutable.WidthProperty, 200d) }
+                        }
+                    }
+                };
+
+                var border = new Border { Width = 100d, Height = 100d };
+
+                var root = new TestRoot(border);
+                root.LayoutManager.ExecuteInitialLayoutPass();
+
+                var animationTask = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+                // Pulse the clock - this should not throw even though
+                // the first keyframe's value is null (falls back to neutral value)
+                var exception = Record.Exception(() => clock.Pulse(TimeSpan.Zero));
+                Assert.Null(exception);
+
+                // The animation should continue running (using neutral value as fallback)
+                clock.Pulse(TimeSpan.FromSeconds(0.5));
+                Assert.False(animationTask.IsCompleted);
+
+                // Animation completes after its full duration
+                clock.Pulse(TimeSpan.FromSeconds(1));
+                Assert.True(animationTask.IsCompleted);
+            }
+        }
+
+        [Fact]
+        public void Animation_With_Unresolved_Binding_Does_Not_Throw_NullReferenceException()
+        {
+            // Additional test to verify the null reference fix for animator first keyframe value
+
+            var clock = new MockGlobalClock();
+            var services = new TestServices(globalClock: clock);
+
+            using (UnitTestApplication.Start(services))
+            {
+                // Binding to a property that doesn't exist - will evaluate to null
+                var binding = new Binding("MissingProperty");
+
+                var animation = new Animation
+                {
+                    Duration = TimeSpan.FromSeconds(1),
+                    IterationCount = new IterationCount(1),
+                    Children =
+                    {
+                        new KeyFrame
+                        {
+                            Cue = new Cue(0d),
+                            Setters = { new Setter(Layoutable.WidthProperty, binding) }
+                        },
+                        new KeyFrame
+                        {
+                            Cue = new Cue(1d),
+                            Setters = { new Setter(Layoutable.WidthProperty, 300d) }
+                        }
+                    }
+                };
+
+                var control = new Border { Width = 50d };
+                var root = new TestRoot(control);
+                root.LayoutManager.ExecuteInitialLayoutPass();
+
+                // Start animation - the first keyframe value will be null due to unresolved binding
+                var task = animation.RunAsync(control, clock, TestContext.Current.CancellationToken);
+
+                // The fix ensures this doesn't throw NullReferenceException
+                // Animation falls back to neutral value and continues
+                clock.Pulse(TimeSpan.Zero);
+                clock.Pulse(TimeSpan.FromSeconds(0.1));
+
+                // Animation should still be running (uses neutral value as fallback)
+                Assert.False(task.IsCompleted);
+
+                // Animation completes after its full duration
+                clock.Pulse(TimeSpan.FromSeconds(1));
+                Assert.True(task.IsCompleted);
+            }
+        }
+
+        [Fact]
+        public void Animation_Can_Set_IsVisible_True_On_Invisible_Control()
+        {
+            // Reproduces a bug where an expand animation tries to make a collapsed
+            // (invisible) control visible at Cue 0.0, but the animation system pauses
+            // animations on invisible controls, creating a deadlock where the animation
+            // can't run to set IsVisible=true because the control is already invisible.
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(0.3),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(0.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, true) }
+                    },
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(1.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, true) }
+                    }
+                }
+            };
+
+            // Control starts invisible (collapsed state).
+            var border = new Border() { IsVisible = false };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            // Kick off the animation.
+            clock.Step(TimeSpan.Zero);
+
+            // The Cue 0.0 keyframe should have set IsVisible = true,
+            // even though the control started invisible.
+            Assert.True(border.IsVisible);
+
+            // Animation should progress to completion.
+            clock.Step(TimeSpan.FromSeconds(0.3));
+            Assert.True(animationRun.IsCompleted);
+        }
+
+        [Fact]
+        public void Width_Animation_Resumes_After_IsVisible_Set_True_On_Invisible_Control()
+        {
+            // Tests the expand scenario with OnlyIfVisible: the control starts invisible
+            // and the animation is paused. Once IsVisible is set to true externally,
+            // the animation resumes and completes.
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(0.3),
+                Easing = new LinearEasing(),
+                FillMode = FillMode.Forward,
+                PlaybackBehavior = PlaybackBehavior.OnlyIfVisible,
+                Children =
+                {
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(0.0),
+                        Setters = { new Setter(Layoutable.WidthProperty, 0d) }
+                    },
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(1.0),
+                        Setters = { new Setter(Layoutable.WidthProperty, 100d) }
+                    }
+                }
+            };
+
+            // Control starts invisible (collapsed state).
+            var border = new Border() { Width = 0d, IsVisible = false };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            // Animation is paused because control is invisible.
+            clock.Step(TimeSpan.Zero);
+            Assert.Equal(0d, border.Width);
+            Assert.False(animationRun.IsCompleted);
+
+            // Simulate what the expand handler does: set IsVisible = true externally.
+            border.IsVisible = true;
+
+            // The animation should now resume and complete.
+            clock.Step(TimeSpan.FromSeconds(0.3));
+            Assert.True(animationRun.IsCompleted);
+            Assert.Equal(100d, border.Width);
+        }
+
+        [Fact]
+        public void Animation_Can_Set_IsVisible_False_At_End_Without_Pausing_Itself()
+        {
+            // An animation that sets IsVisible=false at Cue 1.0 should complete normally.
+            // The visibility change at the final keyframe should not cause the animation
+            // to pause before it can report completion.
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(0.3),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(0.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, true) }
+                    },
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(1.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, false) }
+                    }
+                }
+            };
+
+            // Control starts visible (expanded state).
+            var border = new Border() { IsVisible = true };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.True(border.IsVisible);
+
+            // Step to the end: animation sets IsVisible=false.
+            clock.Step(TimeSpan.FromSeconds(0.3));
+
+            // Animation should have completed and the final value should hold.
+            Assert.True(animationRun.IsCompleted);
+            Assert.False(border.IsVisible);
+        }
+
+        [Fact]
+        public async Task Cancelling_Expand_Animation_Mid_Flight_Then_Collapsing_Works()
+        {
+            // Reproduces the scenario where a user rapidly toggles expand/collapse:
+            // the first animation is cancelled and a new one starts in the opposite direction.
+            // Uses single-property animations to isolate the visibility behavior.
+            var expandAnimation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(0.3),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(0.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, true) }
+                    },
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(1.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, true) }
+                    }
+                }
+            };
+
+            var collapseAnimation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(0.3),
+                FillMode = FillMode.Forward,
+                Children =
+                {
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(0.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, true) }
+                    },
+                    new KeyFrame()
+                    {
+                        Cue = new Cue(1.0),
+                        Setters = { new Setter(Visual.IsVisibleProperty, false) }
+                    }
+                }
+            };
+
+            var border = new Border() { IsVisible = false };
+
+            // Start expand.
+            var cts1 = new CancellationTokenSource();
+            var clock1 = new TestClock();
+            var expandRun = expandAnimation.RunAsync(border, clock1, cts1.Token);
+
+            clock1.Step(TimeSpan.Zero);
+            Assert.True(border.IsVisible);
+
+            // Partially through expand, cancel and start collapse.
+            clock1.Step(TimeSpan.FromSeconds(0.15));
+            cts1.Cancel();
+            await expandRun;
+
+            var cts2 = new CancellationTokenSource();
+            var clock2 = new TestClock();
+            var collapseRun = collapseAnimation.RunAsync(border, clock2, cts2.Token);
+
+            clock2.Step(TimeSpan.Zero);
+            clock2.Step(TimeSpan.FromSeconds(0.3));
+
+            Assert.True(collapseRun.IsCompleted);
+            Assert.False(border.IsVisible);
+        }
+
+        [Fact]
+        public void Auto_Pauses_On_Invisible_When_Started_From_Style()
+        {
+            // When started via Apply (the style path), Auto resolves to OnlyIfVisible.
+            // The animation should pause when the control becomes invisible.
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d) }, Cue = new Cue(0d)
+            };
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d) }, Cue = new Cue(1d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(3),
+                IterationCount = new IterationCount(1),
+                Children = { keyframe1, keyframe2 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 50d };
+
+            var clock = new TestClock();
+            var completed = false;
+
+            // Apply (not RunAsync), this is the style-applied path.
+            var disposable = animation.Apply(border, clock, Observable.Return(true), () => completed = true);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.Equal(100d, border.Width);
+
+            // Hide the control, animation should pause under Auto.
+            border.IsVisible = false;
+
+            clock.Step(TimeSpan.FromSeconds(1.5));
+            // Width should not have advanced while invisible.
+            Assert.Equal(100d, border.Width);
+
+            // Show the control, animation resumes.
+            border.IsVisible = true;
+
+            clock.Step(TimeSpan.FromSeconds(4.5));
+            Assert.True(completed);
+
+            disposable.Dispose();
+        }
+
+        [Fact]
+        public void Auto_Does_Not_Pause_On_Invisible_When_Started_Manually()
+        {
+            // When started via RunAsync (manual), Auto resolves to Always.
+            // The animation should NOT pause when the control becomes invisible.
+            var keyframe1 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d) }, Cue = new Cue(0d)
+            };
+            var keyframe2 = new KeyFrame()
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 200d) }, Cue = new Cue(1d)
+            };
+
+            var animation = new Animation()
+            {
+                Duration = TimeSpan.FromSeconds(3),
+                IterationCount = new IterationCount(1),
+                Easing = new LinearEasing(),
+                FillMode = FillMode.Forward,
+                Children = { keyframe1, keyframe2 }
+            };
+
+            var border = new Border() { Height = 100d, Width = 50d };
+
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.Equal(100d, border.Width);
+
+            // Hide the control, animation should keep running under Auto + manual.
+            border.IsVisible = false;
+
+            // Width should advance while invisible (not paused).
+            clock.Step(TimeSpan.FromSeconds(1.5));
+            Assert.Equal(150d, border.Width);
+            Assert.False(animationRun.IsCompleted);
+
+            clock.Step(TimeSpan.FromSeconds(3));
+            Assert.True(animationRun.IsCompleted);
+            Assert.Equal(200d, border.Width);
+        }
+
+        [Fact]
+        public void FillMode_Applies_Final_Value_When_Visual_Detached_During_Animation()
+        {
+            var keyframe1 = new KeyFrame
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 100d) },
+                Cue = new Cue(0d)
+            };
+            var keyframe2 = new KeyFrame
+            {
+                Setters = { new Setter(Layoutable.WidthProperty, 300d) },
+                Cue = new Cue(1d)
+            };
+
+            var animation = new Animation
+            {
+                Duration = TimeSpan.FromSeconds(5),
+                IterationCount = new IterationCount(1),
+                FillMode = FillMode.Forward,
+                Children = { keyframe1, keyframe2 }
+            };
+
+            var border = new Border { Height = 100d, Width = 50d };
+            var root = new TestRoot(border);
+            var clock = new TestClock();
+            var animationRun = animation.RunAsync(border, clock, TestContext.Current.CancellationToken);
+
+            clock.Step(TimeSpan.Zero);
+            Assert.Equal(100d, border.Width);
+
+            // Detach from visual tree immediately
+            root.Child = null;
+
+            // The final value should be applied
+            Assert.True(animationRun.IsCompleted);
+            Assert.Equal(300d, border.Width);
+        }
+
+        private sealed class FakeAnimator : InterpolatingAnimator<double>
+        {
+            public double LastProgress { get; set; } = double.NaN;
+
+            public int CallCount { get; set; }
+
+            public override double Interpolate(double progress, double oldValue, double newValue)
+            {
+                ++CallCount;
+                LastProgress = progress;
+                return newValue;
+            }
+        }
+    }
+}

@@ -1,0 +1,160 @@
+<UserControl x:Class="DaisyOS.Shell.Controls.QuickSettingTile"
+             x:Name="Root"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             Width="96">
+  <UserControl.Styles>
+    <Style Selector="ToggleButton.QuickActionSingle">
+      <Setter Property="Width" Value="96"/>
+      <Setter Property="Height" Value="{DynamicResource QuickSettingsControlHeight}"/>
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="ToggleButton.QuickActionSplit">
+      <Setter Property="Width" Value="68"/>
+      <Setter Property="Height" Value="{DynamicResource QuickSettingsControlHeight}"/>
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurfaceLeft}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+    <Style Selector="Button.QuickSettingDetails">
+      <Setter Property="Width" Value="28"/>
+      <Setter Property="Height" Value="{DynamicResource QuickSettingsControlHeight}"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurfaceRight}"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
+    <!-- Smooth tactile material transitions -->
+    <Style Selector="ToggleButton.QuickSetting /template/ ContentPresenter#PART_ContentPresenter, Button.QuickSettingDetails /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <!-- A split pair is one control. The chevron deliberately uses the exact same inactive
+         and disabled material as the toggle beside it, rather than the platform button state. -->
+    <Style Selector="Button.QuickSettingDetails:not(.Active)">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Button.QuickSettingDetails:disabled">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}"/>
+    </Style>
+    <!-- Disabled split pairs fade as a single control. Each half is deliberately reset to
+         full local opacity so platform disabled styles cannot make the chevron differ. -->
+    <Style Selector="Grid.QuickSettingSplitPair.Disabled">
+      <Setter Property="Opacity" Value="0.48"/>
+    </Style>
+    <Style Selector="Grid.QuickSettingSplitPair.Disabled ToggleButton.QuickSetting:disabled, Grid.QuickSettingSplitPair.Disabled Button.QuickSettingDetails:disabled">
+      <Setter Property="Opacity" Value="1"/>
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="Button.QuickSettingDetails:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+    </Style>
+    <Style Selector="UserControl:disabled Border.QuickSettingSplitDivider, UserControl:disabled TextBlock.QuickSettingLabel">
+      <Setter Property="Opacity" Value="0.48"/>
+    </Style>
+
+    <!-- Controller focus must be as explicit as pointer hover. -->
+    <Style Selector="ToggleButton.QuickSetting:focus-visible /template/ ContentPresenter#PART_ContentPresenter, Button.QuickSettingDetails:focus-visible /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryBrush}"/>
+      <Setter Property="BorderThickness" Value="2"/>
+    </Style>
+    <Style Selector="Border.QuickSettingSplitDivider">
+      <Setter Property="Background" Value="{DynamicResource StrokeDefaultBrush}"/>
+    </Style>
+
+    <Style Selector="TextBlock.QuickSettingLabel">
+      <Setter Property="FontSize" Value="11.5"/>
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="TextAlignment" Value="Center"/>
+      <Setter Property="FontWeight" Value="Normal"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="controls|DaisyIcon.QuickSettingIcon">
+      <Setter Property="Size" Value="18"/>
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:checked controls|DaisyIcon.QuickSettingIcon, Button.QuickSettingDetails.Active controls|DaisyIcon.QuickSettingIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Spacing="5" Width="96" HorizontalAlignment="Center">
+    <!-- Single Action Tile -->
+    <Grid IsVisible="{Binding !HasDetails, ElementName=Root}" Width="96" Height="{DynamicResource QuickSettingsControlHeight}">
+      <ToggleButton x:Name="SingleToggle"
+                    Classes="ShellButton QuickActionSingle QuickSetting"
+                    Classes.Active="{Binding IsChecked, ElementName=Root}"
+                    IsChecked="{Binding IsChecked, ElementName=Root, Mode=TwoWay}"
+                    Click="OnSingleToggleClick">
+        <ToolTip.Tip><TextBlock Text="{Binding ToolTipText, ElementName=Root}" Foreground="{DynamicResource ContentPrimaryBrush}" FontWeight="Normal"/></ToolTip.Tip>
+        <controls:DaisyIcon Classes="QuickSettingIcon"
+                            Icon="{Binding Icon, ElementName=Root}"/>
+      </ToggleButton>
+    </Grid>
+
+    <!-- Split Tile (Action + Divider + Details Chevron) -->
+    <Grid Classes="QuickSettingSplitPair"
+          Classes.Disabled="{Binding !IsEnabled, ElementName=Root}"
+          IsVisible="{Binding HasDetails, ElementName=Root}" Height="{DynamicResource QuickSettingsControlHeight}" Width="96" ColumnDefinitions="68,28">
+        <ToggleButton x:Name="SplitToggle"
+                      Classes="ShellButton QuickActionSplit QuickSetting"
+                      Classes.Active="{Binding IsChecked, ElementName=Root}"
+                      IsChecked="{Binding IsChecked, ElementName=Root, Mode=TwoWay}"
+                      Click="OnSplitToggleClick">
+        <ToolTip.Tip><TextBlock Text="{Binding ToolTipText, ElementName=Root}" Foreground="{DynamicResource ContentPrimaryBrush}" FontWeight="Normal"/></ToolTip.Tip>
+          <controls:DaisyIcon Classes="QuickSettingIcon"
+                              Icon="{Binding Icon, ElementName=Root}"/>
+        </ToggleButton>
+
+        <Button x:Name="DetailsButton"
+                Grid.Column="1"
+                Classes="ShellButton QuickSettingDetails"
+                Classes.Active="{Binding IsChecked, ElementName=Root}"
+                Click="OnDetailsButtonClick">
+        <ToolTip.Tip><TextBlock Text="{Binding DetailsToolTipText, ElementName=Root}" Foreground="{DynamicResource ContentPrimaryBrush}" FontWeight="Normal"/></ToolTip.Tip>
+          <controls:DaisyIcon Classes="QuickSettingIcon" Icon="caret-right" Size="{DynamicResource IconSizeStandard}"/>
+        </Button>
+
+        <Border x:Name="SplitDivider"
+                Grid.Column="1"
+                Classes="QuickSettingSplitDivider"
+                Width="1"
+                Height="20"
+                HorizontalAlignment="Left"
+                VerticalAlignment="Center"
+                IsHitTestVisible="False"/>
+    </Grid>
+
+    <!-- Labels retain the same typography and color in every active state. -->
+    <TextBlock Classes="QuickSettingLabel"
+               Text="{Binding Label, ElementName=Root}"/>
+  </StackPanel>
+</UserControl>

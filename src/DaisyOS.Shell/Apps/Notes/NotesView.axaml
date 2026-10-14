@@ -1,0 +1,245 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Apps.Notes.NotesView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:notes="clr-namespace:DaisyOS.Shell.Apps.Notes"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    xmlns:rich="clr-namespace:DaisyOS.Shell.Apps.Notes.Editor.Rich"
+    xmlns:code="clr-namespace:DaisyOS.Shell.Apps.Notes.Editor.Code"
+    KeyDown="OnViewKeyDown">
+
+  <UserControl.KeyBindings>
+    <KeyBinding Gesture="Ctrl+S" Command="{Binding SaveNoteCommand}" />
+    <KeyBinding Gesture="Ctrl+N" Command="{Binding AddNoteCommand}" />
+  </UserControl.KeyBindings>
+
+  <UserControl.Styles>
+    <!-- Sidebar navigation button layout - 100% identical to Settings app -->
+    <Style Selector="Button.SettingsNavItem">
+      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="12,0" />
+    </Style>
+
+    <Style Selector="controls|DaisyIcon.NavIcon">
+      <Setter Property="Size" Value="20" />
+      <Setter Property="Width" Value="24" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.NavLabel">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="12,0,0,0" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.Active TextBlock.NavLabel">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.Active TextBlock.SecondaryText">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.Active TextBlock.AccentText">
+      <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+
+    <!-- Seamless Editor TextBoxes -->
+    <Style Selector="TextBox.EditorTextBox">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="TextBox.EditorTextBox:focus /template/ Border#PART_BorderElement">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.EditorTextBox:pointerover /template/ Border#PART_BorderElement">
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid ColumnDefinitions="240,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
+    <!-- Full-height navigation uses the Settings inset surface. -->
+    <Border x:Name="NavigationSidebar" Grid.Column="0" Background="{DynamicResource SurfaceRaisedSubtleBrush}" Padding="12,12,8,12">
+      <Grid RowDefinitions="Auto,Auto,*">
+        <!-- Search Bar -->
+        <controls:SearchBar x:Name="NotesSearch" Grid.Row="0"
+                            Text="{Binding SearchQuery, Mode=TwoWay}"
+                            Height="{DynamicResource SearchHeightStandard}"
+                            Margin="0,0,0,12"
+                            HorizontalAlignment="Stretch"
+                            PlaceholderText="{DynamicResource Loc_6E7A2179A38E}" />
+
+        <!-- Action Buttons -->
+        <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,0,0,12">
+          <!-- New Note Button -->
+          <Button Grid.Column="0" Classes="Large SettingsNavItem"
+                  Margin="0,0,4,0"
+                  Command="{Binding AddNoteCommand}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="plus" Classes="NavIcon" />
+              <TextBlock Text="{DynamicResource Loc_18FDD549B2ED}" Classes="NavLabel" FontWeight="SemiBold" />
+            </StackPanel>
+          </Button>
+          
+          <!-- Open File Button -->
+          <Button Grid.Column="1" Classes="Large SettingsNavItem"
+                  Margin="4,0,0,0"
+                  Click="OnOpenFileClick">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="folder-open" Classes="NavIcon" />
+              <TextBlock Text="{DynamicResource Loc_ED077F3D8125}" Classes="NavLabel" FontWeight="SemiBold" />
+            </StackPanel>
+          </Button>
+        </Grid>
+
+        <!-- Scrollable List of Notes -->
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+          <StackPanel Spacing="6">
+            <ItemsControl ItemsSource="{Binding FilteredNotes}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                  <VirtualizingStackPanel />
+                </ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+              <ItemsControl.ItemTemplate>
+                <DataTemplate DataType="{x:Type notes:NoteItem}">
+                  <StackPanel>
+                    <Button Classes="Large SettingsNavItem"
+                            HorizontalContentAlignment="Stretch"
+                            Classes.Active="{Binding IsSelected}"
+                            Command="{Binding $parent[UserControl].DataContext.SelectNoteCommand}"
+                            CommandParameter="{Binding}">
+                      <Button.ContextMenu>
+                        <ContextMenu>
+                          <MenuItem Header="{DynamicResource Loc_6EB15B6A3198}" IsVisible="{Binding IsRichNote}" Click="OnRenameNoteClicked">
+                            <MenuItem.Icon><controls:DaisyIcon Icon="pencil-simple" Classes="MenuIcon" /></MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_B14D110592DB}" Command="{Binding $parent[UserControl].DataContext.PinNoteCommand}" CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                              <controls:DaisyIcon Icon="push-pin" Classes="MenuIcon"/>
+                            </MenuItem.Icon>
+                          </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_02CDAABFCA80}" Command="{Binding $parent[UserControl].DataContext.DuplicateNoteCommand}" CommandParameter="{Binding}">
+                            <MenuItem.Icon>
+                              <controls:DaisyIcon Icon="copy" Classes="MenuIcon"/>
+                            </MenuItem.Icon>
+                          </MenuItem>
+                          <Separator/>
+                          <MenuItem Header="{DynamicResource Loc_2CE712F39103}"
+                                    Classes="Danger"
+                                    Click="OnDeleteNoteClicked">
+                            <MenuItem.Icon>
+                              <controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon"/>
+                            </MenuItem.Icon>
+                          </MenuItem>
+                        </ContextMenu>
+                      </Button.ContextMenu>
+                      <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
+                        <Grid RowDefinitions="Auto,Auto" HorizontalAlignment="Left" Margin="12,0,24,0">
+                          <Panel Grid.Row="0">
+                            <TextBlock Text="{DynamicResource Loc_B763C5EA3C57}" Classes="NavLabel" Margin="0" TextTrimming="CharacterEllipsis" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                            <TextBlock Text="{Binding Title}" Classes="NavLabel" Margin="0" TextTrimming="CharacterEllipsis" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                          </Panel>
+                          <TextBlock Grid.Row="1" Text="{Binding LastModified, StringFormat='MMM d, yyyy  HH:mm'}" FontSize="{DynamicResource TypeSizeCaption}" Classes="SecondaryText" Margin="0,2,0,0" />
+                        </Grid>
+                        <Ellipse Width="4" Height="4" Fill="{DynamicResource ContentSecondaryBrush}"
+                                 HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,24,0"
+                                 IsVisible="{Binding IsDirty}" ToolTip.Tip="{DynamicResource Loc_A710C2B90913}" />
+                        <controls:DaisyIcon Icon="push-pin" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ActionPrimaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="{Binding IsPinned}" />
+                      </Grid>
+                    </Button>
+                    <Rectangle Height="1" Fill="{DynamicResource StrokeDefaultBrush}" Margin="12,4,12,4" IsVisible="{Binding ShowDivider}" />
+                  </StackPanel>
+                </DataTemplate>
+              </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <TextBlock Text="{Binding EmptyListMessage}" IsVisible="{Binding !HasFilteredNotes}"
+                       Classes="Muted" TextWrapping="Wrap" TextAlignment="Center" Margin="12,20" />
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+
+    <!-- Main Content Area -->
+    <Grid x:Name="MainPaneLayout" Grid.Column="1" RowDefinitions="Auto,*">
+      <controls:AppWindowTitleBar x:Name="AppTitleBar" />
+      <Grid Grid.Row="1" RowDefinitions="Auto,*">
+    <Border Grid.Row="0" IsVisible="{Binding HasError}" Background="{DynamicResource StatusDangerContainerBrush}" Padding="16,12">
+      <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+        <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" VerticalAlignment="Center"
+                   Foreground="{DynamicResource ContentPrimaryBrush}" />
+        <Button Grid.Column="1" Classes="Subtle" Content="{DynamicResource Loc_71FDFA790E50}" Command="{Binding RetrySaveCommand}" IsVisible="{Binding HasSaveError}" />
+      </Grid>
+    </Border>
+      <Grid Grid.Row="1">
+      <!-- Empty State Placeholder (Visible when no note is selected) -->
+      <StackPanel HorizontalAlignment="Center"
+                  VerticalAlignment="Center"
+                  Spacing="16"
+                  IsVisible="{Binding SelectedNote, Converter={x:Static ObjectConverters.IsNull}}">
+        <controls:DaisyIcon Icon="note-pencil"
+                            Size="{DynamicResource IconSizeHero}"
+                            Foreground="{DynamicResource ContentSecondaryBrush}"
+                            Opacity="0.5"
+                            HorizontalAlignment="Center" />
+        <TextBlock Text="{DynamicResource Loc_A13DFB32375A}"
+                   FontSize="{DynamicResource TypeSizeBodyLarge}"
+                   FontWeight="Medium"
+                   Foreground="{DynamicResource ContentSecondaryBrush}"
+                   Opacity="0.7"
+                   TextAlignment="Center" />
+      </StackPanel>
+      
+      <!-- Rich Editor Area (Visible when a rich note is selected) -->
+      <rich:RichEditorView x:Name="RichEditor"
+                           IsVisible="{Binding SelectedNote.IsRichNote, FallbackValue=False}" />
+
+      <!-- Code / Plain Text Editor Area (Visible when code or plain text note is selected) -->
+      <Grid IsVisible="{Binding !SelectedNote.IsRichNote, FallbackValue=False}"
+            RowDefinitions="Auto,*">
+        <!-- Convert to Rich Note banner for .txt notes -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                BorderBrush="{DynamicResource StrokeDefaultBrush}"
+                BorderThickness="0,0,0,1"
+                Padding="16,8"
+                IsVisible="{Binding !SelectedNote.IsRichNote, FallbackValue=False}">
+          <Grid ColumnDefinitions="*,Auto">
+            <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="info" Size="{DynamicResource IconSizeSmall}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding SelectedNote.FormatLabel}"
+                         FontSize="{DynamicResource TypeSizeCaption}"
+                         Foreground="{DynamicResource ContentSecondaryBrush}"
+                         VerticalAlignment="Center" />
+            </StackPanel>
+            <Button Grid.Column="1"
+                    Classes="Large SettingsNavItem"
+                    Height="{DynamicResource ControlHeightStandard}"
+                    Padding="10,0"
+                    Click="OnConvertNoteClicked"
+                    IsVisible="{Binding SelectedNote.CanConvertToRichNote, FallbackValue=False}">
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <controls:DaisyIcon Icon="sparkle" Size="{DynamicResource IconSizeSmall}" Foreground="{DynamicResource ActionPrimaryBrush}" />
+                <TextBlock Text="{DynamicResource Loc_FF270F80278A}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+          </Grid>
+        </Border>
+
+        <!-- Code Editor -->
+        <code:CodeEditorControl Grid.Row="1"
+                                x:Name="CodeEditor"
+                                IsVisible="{Binding !SelectedNote.IsRichNote, FallbackValue=False}" />
+      </Grid>
+      </Grid>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

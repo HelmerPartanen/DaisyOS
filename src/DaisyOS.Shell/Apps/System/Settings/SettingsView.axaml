@@ -1,0 +1,704 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Apps.System.Settings.SettingsView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:typography="clr-namespace:DaisyOS.Shell.Services.Theming"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    KeyDown="OnSettingsKeyDown">
+  <UserControl.Styles>
+    <!-- Sidebar navigation button layout -->
+    <Style Selector="Button.SettingsNavItem">
+      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    </Style>
+    <Style Selector="Button.SettingsNavItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.SettingsNavItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <!-- Selection is a quiet Files-style surface; accent is reserved for actions and focus. -->
+
+    <Style Selector="controls|DaisyIcon.NavIcon">
+      <Setter Property="Size" Value="20" />
+      <Setter Property="Width" Value="24" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="TextBlock.NavLabel">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+      <Setter Property="FontWeight" Value="Regular" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="12,0,0,0" />
+    </Style>
+    <Style Selector="Button.SettingsNavItem.Active controls|DaisyIcon.NavIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.SettingsNavItem.Active TextBlock.NavLabel">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+    <!-- List item button layout -->
+    <Style Selector="Button.SettingsListItem">
+      <Setter Property="MinHeight" Value="56" />
+      <Setter Property="typography:ThemeTransitionPolicy.Enabled" Value="False" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="16,12" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    </Style>
+    <Style Selector="Button.SettingsListItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
+    </Style>
+    <Style Selector="Button.SettingsListItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Button.SettingsGroupAction">
+      <Setter Property="MinHeight" Value="56" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="16,12" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    </Style>
+
+    <Style Selector="Border.SettingsGroupCard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+      <Setter Property="ClipToBounds" Value="True" />
+    </Style>
+    <Style Selector="Border.SettingsGroupRow">
+      <Setter Property="Padding" Value="20,12" />
+      <Setter Property="MinHeight" Value="60" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <!-- Semantic row icons are intentionally bare glyphs: they assist scanning without creating
+         another competing card or badge layer. -->
+    <Style Selector="controls|DaisyIcon.SettingsRowIcon">
+      <Setter Property="Size" Value="20" />
+      <Setter Property="Width" Value="24" />
+      <Setter Property="Margin" Value="0,0,14,0" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <!-- Sidebar structure comes from quiet labels and breathing room, not dividing lines. -->
+    <Style Selector="TextBlock.SettingsNavGroupHeader, TextBlock.SettingsSearchHeader">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" />
+      <Setter Property="FontWeight" Value="Regular" />
+      <Setter Property="LetterSpacing" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="Margin" Value="12,12,0,4" />
+    </Style>
+    <Style Selector="Button.SettingsSearchResult">
+      <Setter Property="MinHeight" Value="52" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    </Style>
+    <Style Selector="Button.SettingsSearchResult:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.SettingsSearchResult:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+    <!-- The Settings app uses a single content width at every window size so pages
+         remain comfortably readable instead of stretching across a full display. -->
+    <Style Selector="TextBlock.SettingsPageTitle">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.SettingsSectionTitle">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.SettingsLabel">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+      <Setter Property="FontWeight" Value="Regular" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="TextBlock.SettingsDescription">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+
+    <!-- Breadcrumb button style -->
+    <Style Selector="Button.BreadcrumbItem">
+      <Setter Property="Padding" Value="6,4" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.BreadcrumbItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.BreadcrumbItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Button.BreadcrumbItem:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+    <!-- Picker-specific geometry; appearance is shared globally. -->
+    <Style Selector="ComboBox.ThemeModePicker"><Setter Property="Width" Value="144" /></Style>
+    <Style Selector="ComboBox.WallpaperTypePicker">
+      <Setter Property="Width" Value="160" />
+    </Style>
+    <Style Selector="ComboBox.KeyboardLayoutPicker /template/ Border#PopupBorder">
+      <Setter Property="Width" Value="280" />
+    </Style>
+    <Style Selector="ComboBoxItem.KeyboardLayoutOption">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+    </Style>
+    <Style Selector="Button.AccentSwatch">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="32" />
+      <Setter Property="MinHeight" Value="32" />
+      <Setter Property="MinWidth" Value="32" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="16" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Grid>
+            <Border x:Name="SelectionRing" CornerRadius="16"
+                    BorderThickness="2" BorderBrush="{DynamicResource FocusRingBrush}"
+                    IsVisible="False" IsHitTestVisible="False" />
+            <ContentPresenter x:Name="SwatchFill" Width="24" Height="24"
+                              HorizontalAlignment="Center" VerticalAlignment="Center" Background="{TemplateBinding Background}"
+                              BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                              CornerRadius="12" Content="{TemplateBinding Content}" />
+          </Grid>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+    <Style Selector="Button.AccentSwatch:pointerover /template/ ContentPresenter#SwatchFill">
+      <Setter Property="Opacity" Value="0.9" />
+    </Style>
+    <Style Selector="Button.AccentSwatch:pressed /template/ ContentPresenter#SwatchFill">
+      <Setter Property="Opacity" Value="0.8" />
+    </Style>
+    <Style Selector="Button.AccentSwatch.Selected /template/ Border#SelectionRing">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="Button.SolidWallpaperColorSwatch">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+    <Style Selector="Button.SolidWallpaperColorSwatch:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Opacity" Value="0.76" />
+    </Style>
+    <Style Selector="Button.SolidWallpaperColorSwatch:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="Button.SolidWallpaperColorSwatch.Selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+      <Setter Property="BorderThickness" Value="3" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid x:Name="SettingsLayout" ColumnDefinitions="260,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
+    <!-- Familiar persistent navigation: account, search, then settings categories. -->
+    <Border x:Name="NavigationSidebar" Grid.Column="0"
+            Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+            BorderBrush="{DynamicResource StrokeSubtleBrush}"
+            BorderThickness="0,0,1,0"
+            Padding="0">
+      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="16" Margin="0,16,0,0">
+
+        <controls:SearchBar x:Name="NavigationSearch" Grid.Row="1" Margin="18,0" Height="{DynamicResource SearchHeightStandard}" PlaceholderText="{DynamicResource Loc_49C266BAAAA7}" KeyDown="OnNavigationSearchKeyDown" />
+
+        <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel Spacing="8" Margin="18,0,18,16">
+          <StackPanel x:Name="NavigationSearchResultsPanel" IsVisible="False" Spacing="2">
+            <TextBlock Text="{DynamicResource Loc_F5BEE024BA38}" Classes="SettingsSearchHeader" />
+            <StackPanel x:Name="NavigationSearchResults" Spacing="2" />
+          </StackPanel>
+          <StackPanel x:Name="NavigationItems" Spacing="{DynamicResource SidebarItemGap}">
+          <Button x:Name="NavSystem" Classes="Large SettingsNavItem Active" Click="OnNavCategoryClicked" Tag="System">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="hard-drive" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_6725E7BBCD28}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavDisplays" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Displays">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="monitor" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_5A3452EB50BC}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavSound" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Sound">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="speaker-high" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_46124E023603}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavNetwork" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Network">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="wifi-02" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_337253F2E8D4}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavEthernet" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Ethernet">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="Ethernet" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_681E12098D28}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavBluetooth" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Bluetooth">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="bluetooth" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_8BB29098B369}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavAppearance" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Appearance">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="palette" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_3907FA7F8072}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavNotifications" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Notifications">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="bell" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_788011833A5A}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavApps" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Apps">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="squares-four" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_89DD748442C1}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavStorage" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Storage">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="hard-drives" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_A69C4DECE144}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavAccessibility" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Accessibility">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="person-arms-spread" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_D3368CBFFE23}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavInput" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Input">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="keyboard" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_595D74BA3B2F}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavDateTime" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="DateTime">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="clock" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_2459EA42894C}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="NavAbout" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="About">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="info" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_4EFCA0D10C5F}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+          </StackPanel>
+          </StackPanel>
+        </ScrollViewer>
+      </Grid>
+    </Border>
+
+    <!-- Main Content Area -->
+    <!-- Scroll viewers fill this panel; only their readable content is inset and width-capped. -->
+    <Grid x:Name="MainPaneLayout" Grid.Column="1" RowDefinitions="Auto,*">
+      <controls:AppWindowTitleBar x:Name="AppTitleBar" />
+    <Grid Grid.Row="1" x:Name="ContentArea" Background="Transparent" HorizontalAlignment="Stretch">
+      <!-- SYSTEM CATEGORY MAIN LIST -->
+      <ScrollViewer x:Name="SystemListView" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalAlignment="Stretch">
+        <StackPanel Spacing="20" HorizontalAlignment="Center" MaxWidth="900" Margin="36,30,52,30">
+          <!-- Page Header -->
+          <Border Height="40" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <Button Classes="BreadcrumbItem" IsHitTestVisible="False">
+                <TextBlock Text="{DynamicResource Loc_6725E7BBCD28}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              </Button>
+            </StackPanel>
+          </Border>
+
+          <!-- System Settings List -->
+          <StackPanel Spacing="8" HorizontalAlignment="Stretch">
+            <!-- Power & Battery Card -->
+            <Button Classes="SettingsListItem" Click="OnSystemSettingItemClicked" Tag="Power">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <controls:DaisyIcon Icon="battery-charging" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="0,0,14,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{DynamicResource Loc_28778E1F199F}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                </StackPanel>
+                <controls:DaisyIcon Grid.Column="2" Icon="caret-right" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" Foreground="{DynamicResource ContentTertiaryBrush}" Margin="12,0,0,0" />
+              </Grid>
+            </Button>
+
+            <!-- Multitasking & Workspaces Card -->
+            <Button Classes="SettingsListItem" Click="OnSystemSettingItemClicked" Tag="Multitasking">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <controls:DaisyIcon Icon="squares-four" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="0,0,14,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{DynamicResource Loc_597C17D52FB1}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                </StackPanel>
+                <controls:DaisyIcon Grid.Column="2" Icon="caret-right" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" Foreground="{DynamicResource ContentTertiaryBrush}" Margin="12,0,0,0" />
+              </Grid>
+            </Button>
+
+            <!-- System Performance Card -->
+            <Button Classes="SettingsListItem" Click="OnSystemSettingItemClicked" Tag="Performance">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <controls:DaisyIcon Icon="gauge" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="0,0,14,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{DynamicResource Loc_F529922E0394}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                </StackPanel>
+                <controls:DaisyIcon Grid.Column="2" Icon="caret-right" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" Foreground="{DynamicResource ContentTertiaryBrush}" Margin="12,0,0,0" />
+              </Grid>
+            </Button>
+
+            <!-- Recovery & Maintenance Card -->
+            <Button Classes="SettingsListItem" Click="OnSystemSettingItemClicked" Tag="Recovery">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <controls:DaisyIcon Icon="arrow-counter-clockwise" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="0,0,14,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{DynamicResource Loc_46790783C9CD}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                </StackPanel>
+                <controls:DaisyIcon Grid.Column="2" Icon="caret-right" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" Foreground="{DynamicResource ContentTertiaryBrush}" Margin="12,0,0,0" />
+              </Grid>
+            </Button>
+
+            <!-- Clipboard & History Card -->
+            <Button Classes="SettingsListItem" Click="OnSystemSettingItemClicked" Tag="Clipboard">
+              <Grid ColumnDefinitions="Auto,*,Auto">
+                <controls:DaisyIcon Icon="clipboard-text" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="0,0,14,0" />
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                  <TextBlock Text="{DynamicResource Loc_FC67AB055E7D}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                </StackPanel>
+                <controls:DaisyIcon Grid.Column="2" Icon="caret-right" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" Foreground="{DynamicResource ContentTertiaryBrush}" Margin="12,0,0,0" />
+              </Grid>
+            </Button>
+          </StackPanel>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- SYSTEM SUB-PAGE DETAIL VIEW -->
+      <ScrollViewer x:Name="SystemDetailView" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalAlignment="Stretch">
+        <StackPanel Spacing="20" HorizontalAlignment="Center" MaxWidth="900" Margin="36,30,52,30">
+          <!-- Breadcrumb Navigation Bar -->
+          <Border Height="40" VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="2">
+              <Button Classes="BreadcrumbItem" Click="OnBackToSystemListClicked">
+                <TextBlock Text="{DynamicResource Loc_6725E7BBCD28}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="Regular" Foreground="{DynamicResource ContentSecondaryBrush}" />
+              </Button>
+              <controls:DaisyIcon Icon="caret-right" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="2,0" />
+              <TextBlock x:Name="DetailTitleText" Text="{DynamicResource Loc_28778E1F199F}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="Regular" VerticalAlignment="Center" Foreground="{DynamicResource ContentPrimaryBrush}" Margin="4,0,0,0" />
+            </StackPanel>
+          </Border>
+        </StackPanel>
+      </ScrollViewer>
+
+      <!-- Every category except Appearance is composed into this shared surface at runtime. Keeping
+           the page shell here ensures the same compact hierarchy, spacing and focus behavior. -->
+      <ScrollViewer x:Name="CategoryView" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalAlignment="Stretch">
+        <Grid>
+          <StackPanel x:Name="CategoryContent" Spacing="24" HorizontalAlignment="Center" Width="800" Margin="0,24,0,32" />
+        </Grid>
+      </ScrollViewer>
+
+      <!-- APPEARANCE -->
+      <ScrollViewer x:Name="AppearanceView" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalAlignment="Stretch">
+        <Grid>
+          <StackPanel x:Name="AppearanceContent" Spacing="24" HorizontalAlignment="Center" Width="800" Margin="0,24,0,32">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{DynamicResource Loc_3907FA7F8072}" Classes="SettingsPageTitle" />
+              <TextBlock Text="{DynamicResource Loc_B97AE0D63D0F}" Classes="SettingsDescription" />
+            </StackPanel>
+            <StackPanel Spacing="12">
+              <TextBlock Text="{DynamicResource Loc_A7ACC4EBAE2C}" Classes="SettingsSectionTitle" />
+              <Border Classes="SettingsGroupCard">
+                <Border Padding="20,16">
+                  <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+                    <Border Width="64" Height="64" CornerRadius="32" Background="{DynamicResource SurfaceRaisedBrush}">
+                      <Grid>
+                        <controls:DaisyIcon Icon="user" IsVisible="{DynamicResource ProfilePictureMissing}" Size="24"
+                                            HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                        <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
+                      </Grid>
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_0801F6D62820}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                      <WrapPanel>
+                        <Button x:Name="ChooseProfilePictureButton" Classes="Secondary Compact" Margin="0,0,8,0" Click="OnChooseProfilePictureClicked" Content="{DynamicResource Loc_6C638DC57DAA}" />
+                        <Button x:Name="RemoveProfilePictureButton" Classes="Secondary Compact" Click="OnRemoveProfilePictureClicked" Content="{DynamicResource Loc_1BC6F23B5304}" />
+                      </WrapPanel>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </Border>
+            </StackPanel>
+            <TextBlock Text="{DynamicResource Loc_EA2B8A878841}" Classes="SettingsSectionTitle" Margin="0,4,0,-12" />
+
+            <Border Classes="SettingsGroupCard">
+              <StackPanel>
+                <Border Classes="SettingsGroupRow">
+                  <Grid ColumnDefinitions="*,Auto" ColumnSpacing="16">
+                    <StackPanel Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_A7F173CDAAE4}" Classes="SettingsLabel" />
+                      <TextBlock Text="{DynamicResource Loc_F5EC89B7A87D}" Classes="SettingsDescription" />
+                    </StackPanel>
+                    <ComboBox x:Name="WallpaperTypePicker" Grid.Column="1" Classes="ThemeModePicker WallpaperTypePicker" VerticalAlignment="Center" SelectionChanged="OnWallpaperTypeSelectionChanged">
+                      <ComboBoxItem Classes="ThemeModeOption" Tag="Picture" Content="{DynamicResource Loc_9A1C54F55E7C}" />
+                      <ComboBoxItem Classes="ThemeModeOption" Tag="Video" Content="{DynamicResource Loc_D534BE829E32}" />
+                      <ComboBoxItem Classes="ThemeModeOption" Tag="Solid" Content="{DynamicResource Loc_35FBB291ABC4}" />
+                    </ComboBox>
+                  </Grid>
+                </Border>
+                <Border Height="1" Margin="20,0" Background="{DynamicResource StrokeDefaultBrush}" />
+                <Border Padding="20,16">
+                  <Grid x:Name="WallpaperLayout" ColumnDefinitions="200,*" ColumnSpacing="20" RowSpacing="16">
+                    <Border Width="200" Height="120" HorizontalAlignment="Left"
+                            ClipToBounds="True"
+                            Padding="0" Background="{DynamicResource SurfaceRaisedBrush}"
+                            BorderThickness="0"
+                            CornerRadius="{DynamicResource RoundedMD}">
+                      <Grid ClipToBounds="True">
+                        <Border x:Name="SolidWallpaperPreview" IsVisible="False" Background="{DynamicResource SurfaceBaseBrush}" CornerRadius="{DynamicResource RadiusControlInner}" />
+                        <Image x:Name="WallpaperPreviewImage" Stretch="UniformToFill"
+                               RenderOptions.BitmapInterpolationMode="HighQuality" />
+                      </Grid>
+                    </Border>
+
+                    <StackPanel x:Name="WallpaperActions" Grid.Column="1" Spacing="12" VerticalAlignment="Center">
+                      <Border x:Name="WallpaperBrowseRow">
+                        <TextBlock x:Name="WallpaperChooserLabel" Text="{DynamicResource Loc_0025862BE14D}" Classes="SettingsDescription" />
+                      </Border>
+                      <Button x:Name="WallpaperBrowseButton" Classes="Secondary Compact" HorizontalAlignment="Left" Click="OnPickWallpaperClicked">
+                        <TextBlock x:Name="WallpaperBrowseButtonText" Text="{DynamicResource Loc_5CD3F2FBF7F9}" />
+                      </Button>
+                      <Border x:Name="SolidWallpaperOptions" Padding="0" IsVisible="False">
+                        <StackPanel Spacing="10">
+                          <TextBlock Text="{DynamicResource Loc_6799C465C790}" FontSize="{DynamicResource TypeSizeBody}" />
+                          <WrapPanel ItemWidth="44" ItemHeight="44">
+                            <Button x:Name="SolidColorBlackButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperBlackColor}" Background="{DynamicResource WallpaperBlackBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_C6CFE6E4F129}" />
+                            <Button x:Name="SolidColorGraphiteButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperGraphiteColor}" Background="{DynamicResource WallpaperGraphiteBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_1D261A8554D2}" />
+                            <Button x:Name="SolidColorSlateButton" Classes="SolidWallpaperColorSwatch Selected" Tag="{DynamicResource WallpaperSlateColor}" Background="{DynamicResource WallpaperSlateBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_10AD4C387363}" />
+                            <Button x:Name="SolidColorMidnightButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperMidnightColor}" Background="{DynamicResource WallpaperMidnightBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_AA996CF21F0D}" />
+                            <Button x:Name="SolidColorOceanButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperOceanColor}" Background="{DynamicResource WallpaperOceanBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_FED12611D2D8}" />
+                            <Button x:Name="SolidColorTealButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperTealColor}" Background="{DynamicResource WallpaperTealBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_27886025CC7C}" />
+                            <Button x:Name="SolidColorForestButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperForestColor}" Background="{DynamicResource WallpaperForestBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_EED88B3AFE90}" />
+                            <Button x:Name="SolidColorPlumButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperPlumColor}" Background="{DynamicResource WallpaperPlumBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_C8B2FAE9F5DC}" />
+                            <Button x:Name="SolidColorClayButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperClayColor}" Background="{DynamicResource WallpaperClayBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_05947B7BDBAD}" />
+                            <Button x:Name="SolidColorSandButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperSandColor}" Background="{DynamicResource WallpaperSandBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_7341835CE771}" />
+                            <Button x:Name="SolidColorMistButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperMistColor}" Background="{DynamicResource WallpaperMistBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_3D3FAE4E0929}" />
+                            <Button x:Name="SolidColorWhiteButton" Classes="SolidWallpaperColorSwatch" Tag="{DynamicResource WallpaperWhiteColor}" Background="{DynamicResource WallpaperWhiteBrush}" Click="OnSolidWallpaperColorClicked" ToolTip.Tip="{DynamicResource Loc_3495E757855A}" />
+                          </WrapPanel>
+                        </StackPanel>
+                      </Border>
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </Border>
+
+            <StackPanel Spacing="12">
+              <StackPanel Spacing="6">
+                <TextBlock Text="{DynamicResource Loc_07BC589AFE54}" Classes="SettingsSectionTitle" />
+                <TextBlock Text="{DynamicResource Loc_4279B29E7899}" Classes="SettingsDescription" TextWrapping="Wrap" />
+              </StackPanel>
+              <Border Classes="SettingsGroupCard">
+                <StackPanel>
+                  <Border Classes="SettingsGroupRow">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <controls:DaisyIcon Icon="dock" Classes="SettingsRowIcon" />
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Loc_366F0E927D5C}" Classes="SettingsLabel" />
+                        <TextBlock Text="{DynamicResource Loc_07A462DB4BC4}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ComboBox x:Name="TaskbarVisibilityPicker" Grid.Column="2" Classes="ThemeModePicker" VerticalAlignment="Center" SelectionChanged="OnTaskbarVisibilitySelectionChanged">
+                        <ComboBoxItem Tag="Always" Content="{DynamicResource Loc_BC42910F32AA}" />
+                        <ComboBoxItem Tag="AutoHide" Content="{DynamicResource Loc_EA736CCEBBFF}" />
+                      </ComboBox>
+                    </Grid>
+                  </Border>
+                  <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
+                  <Border Classes="SettingsGroupRow">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <controls:DaisyIcon Icon="notification-01" Classes="SettingsRowIcon" />
+                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Loc_2BD578683CEE}" Classes="SettingsLabel" />
+                        <TextBlock Text="{DynamicResource Loc_F20EE17A58F8}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                      </StackPanel>
+                      <ComboBox x:Name="SystemBarVisibilityPicker" Grid.Column="2" Classes="ThemeModePicker" VerticalAlignment="Center" SelectionChanged="OnSystemBarVisibilitySelectionChanged">
+                        <ComboBoxItem Tag="Always" Content="{DynamicResource Loc_BC42910F32AA}" />
+                        <ComboBoxItem Tag="AutoHide" Content="{DynamicResource Loc_EA736CCEBBFF}" />
+                      </ComboBox>
+                    </Grid>
+                  </Border>
+                  <Border Margin="16,2,16,16" Padding="16,12" CornerRadius="{DynamicResource RoundedMD}" Background="{DynamicResource SurfaceSunkenBrush}">
+                    <TextBlock Text="{DynamicResource Loc_77065E4B7150}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                  </Border>
+                </StackPanel>
+              </Border>
+            </StackPanel>
+
+            <TextBlock Text="{DynamicResource Loc_88C45D9E526C}" Classes="SettingsSectionTitle" Margin="0,4,0,-12" />
+            <Border Classes="SettingsGroupCard">
+              <StackPanel>
+                <Border Classes="SettingsGroupRow">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="0">
+                    <controls:DaisyIcon Icon="moon" Classes="SettingsRowIcon" />
+                    <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_EFB52E7172B7}" Classes="SettingsLabel" />
+                      <TextBlock x:Name="AutomaticThemeInfo" IsVisible="False" Classes="SettingsDescription" />
+                    </StackPanel>
+                    <ComboBox x:Name="ThemeModePicker" Grid.Column="2" Classes="ThemeModePicker" VerticalAlignment="Center" SelectionChanged="OnThemeModeSelectionChanged">
+                      <ComboBoxItem Classes="ThemeModeOption" Tag="Light" Content="{DynamicResource Loc_DBCD5E7BB7A0}" />
+                      <ComboBoxItem Classes="ThemeModeOption" Tag="Dark" Content="{DynamicResource Loc_60ACC53F13A5}" />
+                      <ComboBoxItem Classes="ThemeModeOption" Tag="Automatic" Content="{DynamicResource Loc_D461A493A375}" />
+                    </ComboBox>
+                  </Grid>
+                </Border>
+                <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
+                <Border Classes="SettingsGroupRow">
+                  <Grid x:Name="AccentLayout" ColumnDefinitions="Auto,*,Auto" RowSpacing="12">
+                    <controls:DaisyIcon Icon="paintbrush" Classes="SettingsRowIcon" />
+                    <TextBlock Grid.Column="1" Text="{DynamicResource Loc_BAEEFBAD50A3}" Classes="SettingsLabel" VerticalAlignment="Center" />
+                    <WrapPanel Grid.Column="2" VerticalAlignment="Center" MaxWidth="288" ItemWidth="32" ItemHeight="32">
+                      <Button x:Name="AccentDefaultButton" Classes="AccentSwatch" Tag="Default" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionDefaultBrush}" ToolTip.Tip="{DynamicResource Loc_21B111CBFE6E}" />
+                      <Button x:Name="AccentPurpleButton" Classes="AccentSwatch" Tag="Purple" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionPurpleBrush}" ToolTip.Tip="{DynamicResource Loc_7D465FB9B931}" />
+                      <Button x:Name="AccentPinkButton" Classes="AccentSwatch" Tag="Pink" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionPinkBrush}" ToolTip.Tip="{DynamicResource Loc_BD38ED773240}" />
+                      <Button x:Name="AccentRedButton" Classes="AccentSwatch" Tag="Red" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionRedBrush}" ToolTip.Tip="{DynamicResource Loc_BA19E9C3D5F4}" />
+                      <Button x:Name="AccentOrangeButton" Classes="AccentSwatch" Tag="Orange" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionOrangeBrush}" ToolTip.Tip="{DynamicResource Loc_78E7771B8B46}" />
+                      <Button x:Name="AccentGreenButton" Classes="AccentSwatch" Tag="Green" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionGreenBrush}" ToolTip.Tip="{DynamicResource Loc_D486DFBD5FB5}" />
+                      <Button x:Name="AccentGrayButton" Classes="AccentSwatch" Tag="Gray" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionGrayBrush}" ToolTip.Tip="{DynamicResource Loc_0D5ADDA3CDCC}" />
+                      <Button x:Name="AccentWhiteButton" Classes="AccentSwatch" Tag="White" Click="OnAccentColorClicked" Background="{DynamicResource AccentOptionWhiteBrush}" ToolTip.Tip="{DynamicResource Loc_3495E757855A}" />
+                    </WrapPanel>
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="{DynamicResource Loc_71988C4D8E08}" Classes="SettingsSectionTitle" Margin="0,4,0,-12" />
+            <Border Classes="SettingsGroupCard">
+              <StackPanel>
+                <Border Padding="20,14">
+                  <Grid RowDefinitions="Auto,Auto" RowSpacing="12">
+                    <Grid x:Name="FontHeaderLayout" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" RowSpacing="12">
+                      <controls:DaisyIcon Icon="text-aa" Classes="SettingsRowIcon" />
+                      <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Loc_A6E7CD03E301}" Classes="SettingsLabel" />
+                        <TextBlock Text="{DynamicResource Loc_0E7CFF0576B3}" Classes="SettingsDescription" />
+                      </StackPanel>
+                      <Button x:Name="RestoreDefaultFontButton" Grid.Column="2" Classes="Secondary"
+                              Click="OnRestoreDefaultFontClicked" Content="{DynamicResource Loc_19D66A2331B5}" />
+                      <Button Grid.Column="3" Classes="Secondary" Click="OnAddFontClicked" Content="{DynamicResource Loc_7CBF964F5B18}" />
+                    </Grid>
+                    <Grid x:Name="FontPickerLayout" Grid.Row="1" Margin="38,0,0,0" ColumnDefinitions="*">
+                      <ComboBox x:Name="SystemFontPicker" HorizontalAlignment="Stretch"
+                                SelectionChanged="OnSystemFontSelectionChanged">
+                        <controls:DropdownSearch.Header>
+                          <controls:SearchBar x:Name="FontSearchBar" Margin="6" PlaceholderText="{DynamicResource Loc_09B385D06385}" />
+                        </controls:DropdownSearch.Header>
+                      </ComboBox>
+                    </Grid>
+                  </Grid>
+                </Border>
+                <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
+                <Border Classes="SettingsGroupRow">
+                  <Grid x:Name="TextSizeLayout" ColumnDefinitions="Auto,*,200" RowSpacing="12">
+                    <controls:DaisyIcon Icon="text-aa" Classes="SettingsRowIcon" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="{DynamicResource Loc_D68761CC1EB2}" Classes="SettingsLabel" />
+                      <TextBlock Text="{DynamicResource Loc_49723E45999E}" Classes="SettingsDescription" />
+                    </StackPanel>
+                    <ComboBox x:Name="TextScalePicker" Grid.Column="2" SelectionChanged="OnTextScaleSelectionChanged">
+                      <ComboBoxItem Tag="90" Content="{DynamicResource Loc_2920C721C9C3}" />
+                      <ComboBoxItem Tag="100" Content="{DynamicResource Loc_029CAAE71E75}" />
+                      <ComboBoxItem Tag="110" Content="{DynamicResource Loc_F6225DA7BE18}" />
+                      <ComboBoxItem Tag="125" Content="{DynamicResource Loc_969B61D5E959}" />
+                      <ComboBoxItem Tag="150" Content="{DynamicResource Loc_1AA3893E1FD3}" />
+                    </ComboBox>
+                  </Grid>
+                </Border>
+                <Border Margin="16,10,16,16" Padding="16" CornerRadius="{DynamicResource RoundedMD}"
+                        Background="{DynamicResource SurfaceSunkenBrush}">
+                  <StackPanel Spacing="3">
+                    <TextBlock Text="{DynamicResource Loc_5CAC4F980FED}" TextWrapping="Wrap" FontSize="{DynamicResource TypographyTitleSize}" FontWeight="SemiBold" />
+                    <TextBlock Text="{DynamicResource Loc_4509EC0D7EB4}" TextWrapping="Wrap" FontSize="{DynamicResource TypographyBodySize}" />
+                    <TextBlock Text="{DynamicResource Loc_8301049FF7D1}" TextWrapping="Wrap" FontSize="{DynamicResource TypographyCaptionSize}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </Border>
+
+            <TextBlock Text="{DynamicResource Loc_040D4645676F}" Classes="SettingsSectionTitle" Margin="0,4,0,-12" />
+            <Border Classes="SettingsGroupCard">
+              <StackPanel>
+                <Border Classes="SettingsGroupRow">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <controls:DaisyIcon Icon="pause-circle" Classes="SettingsRowIcon" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="{DynamicResource Loc_297EF4C79B4B}" Classes="SettingsLabel" />
+                      <TextBlock Text="{DynamicResource Loc_7E1F2EFE8D8A}" Classes="SettingsDescription" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="ReduceMotionToggle" Grid.Column="2" VerticalAlignment="Center" Click="OnReduceMotionToggled" />
+                  </Grid>
+                </Border>
+                <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
+                <Border Classes="SettingsGroupRow">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <controls:DaisyIcon Icon="circle-half" Classes="SettingsRowIcon" />
+                    <StackPanel Grid.Column="1" Spacing="2">
+                      <TextBlock Text="{DynamicResource Loc_415A8336713E}" Classes="SettingsLabel" />
+                      <TextBlock Text="{DynamicResource Loc_A701565DF2C5}" Classes="SettingsDescription" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="HighContrastToggle" Grid.Column="2" VerticalAlignment="Center" Click="OnHighContrastToggled" />
+                  </Grid>
+                </Border>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+    </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

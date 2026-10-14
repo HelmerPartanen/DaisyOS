@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kcfg xmlns="http://www.kde.org/standards/kcfg/1.0"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.kde.org/standards/kcfg/1.0 http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
+  <kcfgfile />
+  <!-- SceneEffect supplies Effect-<plugin id> as the configuration root. -->
+  <group name="">
+    <entry name="SurfaceBase" type="Color"><default>#e61a1a1d</default></entry>
+    <entry name="SurfaceRaised" type="Color"><default>#f0222226</default></entry>
+    <entry name="ContentPrimary" type="Color"><default>#fff5f5f7</default></entry>
+    <entry name="ContentDisabled" type="Color"><default>#ff98989f</default></entry>
+    <entry name="ContentOnAction" type="Color"><default>#ffffffff</default></entry>
+    <entry name="ContentSecondary" type="Color"><default>#ffb3b3ba</default></entry>
+    <entry name="StatusDanger" type="Color"><default>#ffff383c</default></entry>
+    <entry name="FrameOuter" type="Color"><default>#99000000</default></entry>
+    <entry name="FrameInner" type="Color"><default>#26ffffff</default></entry>
+    <entry name="CornerRadius" type="Double"><default>16</default></entry>
+    <entry name="TitleBarHeight" type="Double"><default>32</default></entry>
+    <entry name="CaptionButtonWidth" type="Double"><default>46</default></entry>
+    <entry name="CaptionGlyphSize" type="Double"><default>10</default></entry>
+    <entry name="TitleFontPixels" type="Double"><default>13</default></entry>
+    <entry name="TitleFontFamily" type="String"><default>Inter</default></entry>
+    <entry name="TileSpacing" type="Double"><default>20</default></entry>
+    <entry name="OuterPadding" type="Double"><default>48</default></entry>
+    <entry name="MaxPreviewScale" type="Double"><default>1</default></entry>
+    <entry name="HoverScale" type="Double"><default>1.012</default></entry>
+    <entry name="AnimationDuration" type="Int"><default>280</default></entry>
+  </group>
+</kcfg>

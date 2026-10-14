@@ -1,0 +1,12 @@
+<linker>
+  <assembly fullname="DaisyOS.Shell">
+    <type fullname="*" />
+  </assembly>
+  <assembly fullname="DaisyOS.Core">
+    <type fullname="*" />
+  </assembly>
+  <assembly fullname="DaisyOS.System">
+    <type fullname="*" />
+  </assembly>
+</linker>
+

@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+publish_dir="$repo_root/publish/linux-x64"
+publish_mode_file="${publish_dir}.publish-mode"
+iso_shell_dir="$repo_root/os/archiso/DaisyOS/airootfs/opt/DaisyOS/shell"
+
+if [[ ! -d "$publish_dir" ]]; then
+  echo "Missing publish output at $publish_dir. Run scripts/publish-shell.sh first."
+  exit 1
+fi
+
+if [[ ! -f "$publish_mode_file" ]] || [[ "$(<"$publish_mode_file")" != "production" ]]; then
+  echo "This shell build is for local testing and cannot be copied into an ISO."
+  echo "Run scripts/publish-shell.sh without --fast, then try again."
+  exit 1
+fi
+
+for application in Files Notes Settings DiskManager; do
+  if [[ ! -x "$publish_dir/apps/$application/DaisyOS.$application" ]]; then
+    echo "Standalone $application is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
+    exit 1
+  fi
+done
+
+if [[ ! -x "$publish_dir/daisy-launch" ]]; then
+  echo "DaisyLaunch is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
+  exit 1
+fi
+
+if [[ ! -f "$publish_dir/daisyos-busy-cursor-v1.so" ]]; then
+  echo "Native busy cursor is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
+  exit 1
+fi
+
+[[ -d "$publish_dir/cursor-themes/DaisyOS-Dark/cursors" ]] || { echo "Cursor themes are missing. Publish again." >&2; exit 1; }
+
+mkdir -p "$iso_shell_dir"
+find "$iso_shell_dir" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+cp -a "$publish_dir"/. "$iso_shell_dir"/
+
+# Install a normal desktop launcher and on-demand file-manager bus activation.
+iso_root="$repo_root/os/archiso/DaisyOS/airootfs"
+mkdir -p "$iso_root/usr/local/bin" "$iso_root/usr/share/applications" "$iso_root/usr/share/dbus-1/services"
+for application in Files Notes Settings DiskManager; do
+  lower="${application,,}"
+  printf '#!/usr/bin/env bash\nset -euo pipefail\nexec /opt/DaisyOS/shell/apps/%s/DaisyOS.%s "$@"\n' "$application" "$application" > "$iso_root/usr/local/bin/daisyos-$lower"
+  chmod +x "$iso_root/usr/local/bin/daisyos-$lower" "$iso_shell_dir/apps/$application/DaisyOS.$application"
+  cp "$repo_root/src/native/daisy_window_decoration/applications/org.daisyos.$lower.desktop" "$iso_root/usr/share/applications/"
+done
+printf '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec=/opt/DaisyOS/shell/apps/Files/DaisyOS.Files\n' > "$iso_root/usr/share/dbus-1/services/org.freedesktop.FileManager1.service"
+
+# Persistent standards-aware launch service and supported one-shot fallback.
+mkdir -p "$iso_root/usr/lib/systemd/user/graphical-session.target.wants"
+printf '#!/usr/bin/env bash\nexec /opt/DaisyOS/shell/daisy-launch "$@"\n' > "$iso_root/usr/local/bin/daisy-launch"
+chmod 755 "$iso_root/usr/local/bin/daisy-launch" "$iso_shell_dir/daisy-launch"
+sed 's|^ExecStart=.*|ExecStart=/opt/DaisyOS/shell/daisy-launch|' "$repo_root/packaging/systemd/daisy-launch.service" > "$iso_root/usr/lib/systemd/user/daisy-launch.service"
+printf '[D-BUS Service]\nName=org.daisyos.Launcher1\nExec=/opt/DaisyOS/shell/daisy-launch\nSystemdService=daisy-launch.service\n' > "$iso_root/usr/share/dbus-1/services/org.daisyos.Launcher1.service"
+ln -sfn ../daisy-launch.service "$iso_root/usr/lib/systemd/user/graphical-session.target.wants/daisy-launch.service"
+
+# Native Xcursor themes are consumed by KWin, GTK, Qt and XWayland.
+mkdir -p "$iso_root/usr/share/icons" "$iso_root/etc/xdg"
+cp -a "$publish_dir/cursor-themes/"DaisyOS-* "$iso_root/usr/share/icons/"
+kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorTheme DaisyOS-Dark
+kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorSize 32
+
+# KWin discovers this native effect through its system Qt plugin directory.
+# Build/publish against the same KWin ABI as the target ISO.
+install -d "$iso_root/usr/lib/qt6/plugins/kwin/effects/plugins" "$iso_root/etc/xdg"
+install -m755 "$publish_dir/daisyos-busy-cursor-v1.so" "$iso_root/usr/lib/qt6/plugins/kwin/effects/plugins/"
+kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key daisyos-busy-cursor-v1Enabled --type bool true
+kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key startupfeedbackEnabled --type bool true
+kwriteconfig6 --file "$iso_root/etc/xdg/klaunchrc" --group FeedbackStyle --key BusyCursor --type bool false
+
+for runtime_executable in DaisyOS.Shell createdump; do
+  if [[ -f "$iso_shell_dir/$runtime_executable" ]]; then
+    chmod 755 "$iso_shell_dir/$runtime_executable"
+  fi
+done
+
+source_fingerprint="$("$repo_root/scripts/source-fingerprint.sh")"
+source_revision="$(git -C "$repo_root" rev-parse --short=12 HEAD 2>/dev/null || printf 'unknown')"
+shell_sha256="$(sha256sum "$iso_shell_dir/DaisyOS.Shell" | awk '{print $1}')"
+payload_sha256="$("$repo_root/scripts/payload-fingerprint.sh" "$iso_shell_dir")"
+cat > "$iso_shell_dir/.daisyos-build-provenance" <<EOF
+source_fingerprint=$source_fingerprint
+source_revision=$source_revision
+shell_sha256=$shell_sha256
+payload_sha256=$payload_sha256
+publish_mode=production
+EOF
+
+echo "Copied shell to $iso_shell_dir"

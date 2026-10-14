@@ -1,0 +1,17 @@
+<Solution>
+  <Folder Name="/Samples/">
+    <Project Path="samples/Atspi2TestApp/Atspi2TestApp.csproj" />
+    <Project Path="samples\SourceGenHelloWorld\SourceGenHelloWorld.csproj" />
+  </Folder>
+  <Folder Name="/Tests/">
+    <Project Path="tests/Avalonia.DBus.Tests/Avalonia.DBus.Tests.csproj" />
+    <Project Path="tests/Avalonia.DBus.SourceGen.Tests/Avalonia.DBus.SourceGen.Tests.csproj" />
+    <Project Path="tests/Avalonia.DBus.Testing/Avalonia.DBus.Testing.csproj" />
+    <Project Path="tests/NDesk.DBus.Tests/NDesk.DBus.Tests.csproj" />
+    <Project Path="tests/Avalonia.DBus.Interop.Tests/Avalonia.DBus.Interop.Tests.csproj" />
+    <Project Path="tests/Avalonia.DBus.WireMarshalling.Tests/Avalonia.DBus.WireMarshalling.Tests.csproj" />
+  </Folder>
+  <Project Path="src/Avalonia.DBus/Avalonia.DBus.csproj" />
+  <Project Path="src/Avalonia.DBus.SourceGen/Avalonia.DBus.SourceGen.csproj" />
+  <Project Path="tools/Avalonia.DBus.PublicApiExtractor/Avalonia.DBus.PublicApiExtractor.csproj" />
+</Solution>

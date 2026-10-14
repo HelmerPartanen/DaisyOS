@@ -1,0 +1,22 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.Components.Wallpaper.WallpaperLayer"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    ClipToBounds="True"
+    IsHitTestVisible="False">
+  <Grid>
+    <Border x:Name="SolidColorBackground" Background="Transparent" />
+    <!-- Layout overscan, rather than a scale transform, keeps the image continuous during parallax. -->
+    <Image x:Name="WallpaperImage"
+           Stretch="UniformToFill"
+           HorizontalAlignment="Center"
+           VerticalAlignment="Center"
+           RenderTransformOrigin="0.5,0.5">
+      <Image.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Image.Transitions>
+    </Image>
+  </Grid>
+</UserControl>

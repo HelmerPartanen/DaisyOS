@@ -1,0 +1,67 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.DesktopWidgets.CalendarWidget"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
+  <controls:WidgetContainer x:Name="Container"
+                            ColumnSpan="4"
+                            RowSpan="2"
+                            Padding="14,10,12,10">
+
+    <Grid x:Name="CalendarLayoutGrid" ColumnDefinitions="105,*" RowDefinitions="Auto,*" Margin="2,0">
+      <!-- Top Row: Headers at the exact same level -->
+      <TextBlock x:Name="DayOfWeekText"
+                 Grid.Row="0"
+                 Grid.Column="0"
+                 Text="{DynamicResource Loc_BF9D9BF7FC75}"
+                 FontSize="{DynamicResource TypeSizeCaption}"
+                 FontWeight="SemiBold"
+                 LetterSpacing="0.8"
+                 Foreground="{DynamicResource RedSwatchBrush}"
+                 VerticalAlignment="Top" />
+
+      <TextBlock x:Name="MonthHeaderText"
+                 Grid.Row="0"
+                 Grid.Column="1"
+                 Text="{DynamicResource Loc_3787CEB2C552}"
+                 FontSize="{DynamicResource TypeSizeCaption}"
+                 FontWeight="SemiBold"
+                 LetterSpacing="0.8"
+                 Foreground="{DynamicResource RedSwatchBrush}"
+                 VerticalAlignment="Top"
+                 Margin="4,0,0,0" />
+
+      <!-- Left Column Content: Day Number and Events Summary -->
+      <Grid x:Name="LeftColumnContent" Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,8,0" VerticalAlignment="Stretch">
+        <TextBlock x:Name="DayNumberText"
+                   Grid.Row="0"
+                   Text="27"
+                   FontSize="{DynamicResource TypeSizeDisplayLarge}"
+                   FontWeight="Normal"
+                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                   Margin="0,-4,0,0" />
+
+        <TextBlock x:Name="EventsSummaryText"
+                   Grid.Row="1"
+                   Text="{DynamicResource Loc_4797023B76BE}"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource ContentDisabledBrush}"
+                   TextWrapping="Wrap"
+                   VerticalAlignment="Center"
+                   Margin="0,2,0,0" />
+      </Grid>
+
+      <!-- Right Column Content: Weekday Headers + Days Grid filling all available space -->
+      <Grid x:Name="MonthCalendarContent" Grid.Row="1" Grid.Column="1" RowDefinitions="Auto,*" Margin="4,3,0,0">
+        <!-- Days of Week (Mo Tu We Th Fr Sa Su) -->
+        <UniformGrid x:Name="WeekdayHeaders" Grid.Row="0" Columns="7" Margin="0,0,0,3" />
+
+        <!-- Dynamic Days Grid automatically distributed across 6 rows -->
+        <UniformGrid x:Name="DaysGrid" Grid.Row="1" Columns="7" Rows="6" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" />
+      </Grid>
+    </Grid>
+  </controls:WidgetContainer>
+</UserControl>
+
+

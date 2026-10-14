@@ -1,0 +1,216 @@
+<Application
+    x:Class="DaisyOS.Shell.App"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    RequestedThemeVariant="Dark">
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/DaisyTheme.axaml" />
+        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/ToggleSwitchTheme.axaml" />
+        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/SelectionControlThemes.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+
+      <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch" BasedOn="{StaticResource DaisyToggleSwitchTheme}" />
+
+      <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox" BasedOn="{StaticResource DaisyCheckBoxTheme}" />
+      <ControlTheme x:Key="{x:Type RadioButton}" TargetType="RadioButton" BasedOn="{StaticResource DaisyRadioButtonTheme}" />
+
+      <FontFamily x:Key="ShellFontFamily">avares://DaisyOS.Shell/Assets/fonts#Inter</FontFamily>
+      <!-- Compatibility aliases. New code consumes the canonical TypeSize* resources. -->
+      <StaticResource x:Key="TypographyCaptionSize" ResourceKey="TypeSizeCaption" />
+      <StaticResource x:Key="TypographyBodySize" ResourceKey="TypeSizeBodySmall" />
+      <StaticResource x:Key="TypographySubtitleSize" ResourceKey="TypeSizeBodyLarge" />
+      <StaticResource x:Key="TypographyTitleSize" ResourceKey="TypeSizeTitle" />
+      <StaticResource x:Key="TypographyDisplaySize" ResourceKey="TypeSizeDisplay" />
+
+      <!-- Reusable Widget Container with Taskbar 3-tier perimeter hierarchy -->
+      <ControlTheme x:Key="{x:Type controls:WidgetContainer}" TargetType="controls:WidgetContainer">
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
+        <Setter Property="VerticalAlignment" Value="Stretch" />
+        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+        <Setter Property="VerticalContentAlignment" Value="Stretch" />
+        <Setter Property="Background" Value="{DynamicResource SurfaceBaseBrush}" />
+        <Setter Property="Template">
+          <ControlTemplate>
+            <Border Name="OuterFrame"
+                    Margin="4"
+                    HorizontalAlignment="Stretch"
+                    VerticalAlignment="Stretch"
+                    Padding="1"
+                    Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                    CornerRadius="{DynamicResource RoundedXXL}">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" Easing="QuadraticEaseOut" />
+                  <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+                </Transitions>
+              </Border.Transitions>
+              <Panel>
+                <Border Name="InnerSurface"
+                        Margin="1"
+                        Background="{TemplateBinding Background}"
+                        CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
+                        ClipToBounds="True">
+                  <ContentPresenter Name="PART_ContentPresenter"
+                                    Content="{TemplateBinding Content}"
+                                    ContentTemplate="{TemplateBinding ContentTemplate}"
+                                    Padding="{TemplateBinding Padding}"
+                                    HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                    VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+                </Border>
+                <Border Background="Transparent"
+                        BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                        BorderThickness="1"
+                        CornerRadius="{DynamicResource RoundedXXLInset}"
+                        IsHitTestVisible="False" />
+              </Panel>
+            </Border>
+          </ControlTemplate>
+        </Setter>
+      </ControlTheme>
+
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme DensityStyle="Normal" />
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/RenderingStyles.axaml" />
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/DropdownMenuStyles.axaml" />
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/ComponentStyles.axaml" />
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/ScrollBarStyles.axaml" />
+
+
+    <!--
+      Reusable conic perimeter for the selected shell surfaces. Keep this
+      opt-in: ordinary controls, flyouts, and owned app windows retain their
+      existing borders.
+    -->
+    <Style Selector="Border.DiagonalShellBorder">
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+    </Style>
+
+    <!-- Settings List Items (Main panel subcategory cards) -->
+    <Style Selector="Button.SettingsListItem">
+      <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="12,8" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.SettingsListItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.SettingsListItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+    <Style Selector="Button.ShellButton:not(.Active):not(.QuickSetting):not(.QuickAction):not(.QuickSettingDetails):pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.ShellButton:not(.Active):not(.QuickSetting):not(.QuickAction):not(.QuickSettingDetails):pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.SettingsNavItem:not(.Active):pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.BackButton:not(.Active):pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.SubtleLink:not(.Active):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.ShellButton:not(.Active):not(.QuickSetting):not(.QuickAction):not(.QuickSettingDetails):pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.ShellButton:not(.Active):not(.QuickSetting):not(.QuickAction):not(.QuickSettingDetails):pressed /template/ ContentPresenter#PART_ContentPresenter, Button.SettingsNavItem:not(.Active):pressed /template/ ContentPresenter#PART_ContentPresenter, Button.BackButton:not(.Active):pressed /template/ ContentPresenter#PART_ContentPresenter, Button.SubtleLink:not(.Active):pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <!-- Flyout triggers stay visibly active for the duration of their open surface. -->
+    <Style Selector="Button.ShellButton.ShellButtonActive /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+
+    <!-- Disabled ghost buttons should remain transparent but dimmed, overriding Avalonia's default grey disabled background -->
+    <Style Selector="Button.ShellButton:disabled /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.ShellButton:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.ShellButton:disabled, ToggleButton.ShellButton:disabled">
+      <Setter Property="Opacity" Value="0.4" />
+    </Style>
+
+    <!-- Reusable Material You Quick Settings container buttons. -->
+    <Style Selector="ToggleButton.QuickSetting, Button.QuickSettingDetails">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:not(:checked):not(.Active), Button.QuickSettingDetails:not(.Active)">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:not(:checked):not(.Active):pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.QuickSettingDetails:not(.Active):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:not(:checked):not(.Active):pressed /template/ ContentPresenter#PART_ContentPresenter, Button.QuickSettingDetails:not(.Active):pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryPressedBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting controls|DaisyIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:disabled">
+      <Setter Property="Opacity" Value="0.48" />
+    </Style>
+
+    <!-- This is intentionally application-scoped. In the native Wayland
+         shell Quick Settings is re-parented from SystemBarView into a
+         dedicated overlay window, so SystemBarView-local styles no longer
+         apply to its output-device split button. -->
+    <Style Selector="Button.VolumeOutputDetails">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurfaceInner}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.VolumeOutputDetails /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurfaceInner}" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.VolumeOutputDetails:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.VolumeOutputDetails:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+    <!-- Global Normalized Active / Pill Button states for QuickSettings. -->
+    <Style Selector="ToggleButton.QuickSetting:checked /template/ ContentPresenter#PART_ContentPresenter, Button.QuickSettingDetails.Active /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource QuickSettingActiveSurfaceBrush}" />
+    </Style>
+    <!-- Active Quick Settings content retains the neutral System Bar foreground. -->
+    <Style Selector="ToggleButton.QuickSetting:checked TextBlock, Button.QuickSettingDetails.Active TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:checked TextBlock.SecondaryText, Button.QuickSettingDetails.Active TextBlock.SecondaryText">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:checked TextBlock.AccentText, Button.QuickSettingDetails.Active TextBlock.AccentText">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.SecondaryText">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.AccentText">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="ToggleButton.QuickSetting:checked controls|DaisyIcon.QuickSettingIcon, Button.QuickSettingDetails.Active controls|DaisyIcon.QuickSettingIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.QuickSettingDetails.Active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource QuickSettingActiveSurfaceHoverBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:checked:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.QuickSettingDetails.Active:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource QuickSettingActiveSurfacePressedBrush}" />
+    </Style>
+  </Application.Styles>
+</Application>

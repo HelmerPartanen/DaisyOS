@@ -1,0 +1,16 @@
+{
+  "KPackageStructure": "KWin/Script",
+  "KPlugin": {
+    "Authors": [
+      {
+        "Email": "hello@daisyos.dev",
+        "Name": "DaisyOS"
+      }
+    ],
+    "Description": "Publishes compositor window lifecycle to the DaisyOS shell",
+    "Id": "daisyos-window-bridge",
+    "License": "MIT",
+    "Name": "DaisyOS Window Bridge",
+    "Version": "1.0"
+  }
+}

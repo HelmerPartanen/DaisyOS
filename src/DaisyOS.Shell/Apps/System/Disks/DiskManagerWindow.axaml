@@ -1,0 +1,59 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:disks="clr-namespace:DaisyOS.Shell.Apps.System.Disks"
+        x:Class="DaisyOS.Shell.Apps.System.Disks.DiskManagerWindow" Title="Disk Manager"
+        Width="1080" Height="720" MinWidth="820" MinHeight="560" WindowStartupLocation="CenterScreen"
+        WindowDecorations="None" Classes="SidebarAppWindow" Background="{DynamicResource SurfaceBaseSolidBrush}">
+  <Window.Styles>
+    <Style Selector="ListBox.DeviceList"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
+    <!-- ListBox retains keyboard navigation; the shared Files buttons own all visual states. -->
+    <Style Selector="ListBox.DeviceList ListBoxItem">
+      <Setter Property="MinHeight" Value="0"/><Setter Property="Padding" Value="0"/>
+      <Setter Property="Margin" Value="0"/><Setter Property="Background" Value="Transparent"/>
+      <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+    </Style>
+    <Style Selector="ListBox.DeviceList ListBoxItem /template/ ContentPresenter">
+      <Setter Property="Background" Value="Transparent"/>
+    </Style>
+  </Window.Styles>
+  <Grid ColumnDefinitions="260,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
+    <Border Background="{DynamicResource SurfaceRaisedSubtleBrush}" Padding="12,20,8,12">
+      <Grid RowDefinitions="Auto,*,Auto">
+        <TextBlock Grid.Row="0" Text="Devices" Margin="12,0,0,8" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+        <ListBox x:Name="DeviceList" Grid.Row="1" Classes="DeviceList" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemsPanel>
+            <ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate>
+          </ListBox.ItemsPanel>
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="disks:DiskItem">
+              <Button Classes="Large SettingsNavItem" Classes.Active="{Binding $parent[ListBoxItem].IsSelected}"
+                      HorizontalContentAlignment="Stretch" Margin="{Binding Indent}" Click="OnDeviceClicked" ToolTip.Tip="{Binding Summary}">
+                <Grid ColumnDefinitions="24,*">
+                  <controls:DaisyIcon Icon="{Binding Icon}" Size="{DynamicResource IconSizeMedium}" Width="24" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+                  <TextBlock Grid.Column="1" Text="{Binding Name}" Margin="10,0,0,0" TextTrimming="CharacterEllipsis"
+                             FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium" VerticalAlignment="Center"/>
+                </Grid>
+              </Button>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <TextBlock Grid.Row="2" Text="Physical disks and volumes" Margin="12,12,0,0" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
+      </Grid>
+    </Border>
+    <Grid x:Name="MainPaneLayout" Grid.Column="1" RowDefinitions="Auto,Auto,*,Auto">
+      <controls:AppWindowTitleBar x:Name="AppTitleBar"/>
+      <Border Grid.Row="1" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,0,0,1" Padding="24,12">
+        <WrapPanel x:Name="ActionToolbar" ItemSpacing="8" LineSpacing="8"/>
+      </Border>
+      <ScrollViewer x:Name="DetailsScroll" Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="DeviceDetails" Spacing="24" Margin="28,24" MaxWidth="860" HorizontalAlignment="Stretch"/>
+      </ScrollViewer>
+      <Border Grid.Row="3" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,1,0,0" Padding="24,14">
+        <StackPanel Spacing="8">
+          <ProgressBar x:Name="OperationProgress" IsVisible="False" IsIndeterminate="True" Height="4"/>
+          <TextBlock x:Name="OperationStatus" Text="Loading disks…" TextWrapping="Wrap" MaxHeight="72" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+        </StackPanel>
+      </Border>
+    </Grid>
+  </Grid>
+</Window>

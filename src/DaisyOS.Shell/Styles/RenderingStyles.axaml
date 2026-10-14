@@ -1,0 +1,12 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <!-- Round layout in device pixels, including fractional display scales.
+       Keep SVGs as vectors; image filtering applies to bitmap assets.
+       Grayscale text antialiasing also works on transparent glass surfaces
+       without depending on the display's RGB subpixel arrangement. -->
+  <Style Selector=":is(Control)">
+    <Setter Property="UseLayoutRounding" Value="True" />
+    <Setter Property="controls:RenderingQuality.Enabled" Value="True" />
+  </Style>
+</Styles>

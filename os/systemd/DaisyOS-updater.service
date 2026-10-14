@@ -1,0 +1,7 @@
+[Unit]
+Description=DaisyOS Updater Placeholder
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+

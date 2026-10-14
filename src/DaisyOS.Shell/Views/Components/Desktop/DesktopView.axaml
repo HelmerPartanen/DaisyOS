@@ -1,0 +1,173 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.Components.Desktop.DesktopView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="clr-namespace:DaisyOS.Shell.ViewModels"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    xmlns:widgets="clr-namespace:DaisyOS.Shell.Views.Components.Widgets">
+
+
+  <Grid
+      x:Name="InteractionSurface"
+      Focusable="True"
+      DragDrop.AllowDrop="True"
+      ClipToBounds="False"
+      Background="Transparent">
+
+    <!-- Context Menu for Empty Desktop Space -->
+    <Grid.ContextMenu>
+      <ContextMenu>
+        <!-- + New Submenu -->
+        <MenuItem Header="{DynamicResource Loc_18FDD549B2ED}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="plus" Classes="MenuIcon"/></MenuItem.Icon>
+          <MenuItem Header="{DynamicResource Loc_CF28F49EC597}" Click="OnNewFolderClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="folder-plus" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+          <MenuItem Header="{DynamicResource Loc_BACA9AAE8199}" Click="OnNewTextDocumentClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="file-text" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+        </MenuItem>
+
+        <!-- Widgets (Placeholder / future library entry) -->
+        <MenuItem Header="{DynamicResource Loc_1FDA79FFB659}" Click="OnAddWidgetsClicked">
+          <MenuItem.Icon><controls:DaisyIcon Icon="squares-four" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Paste -->
+        <MenuItem Header="{DynamicResource Loc_F3380F7B44BD}" Click="OnPasteClicked">
+          <MenuItem.Icon><controls:DaisyIcon Icon="clipboard-text" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Sort by Submenu -->
+        <MenuItem Header="{DynamicResource Loc_C9129025BD3F}">
+          <MenuItem.Icon><controls:DaisyIcon Icon="arrows-down-up" Classes="MenuIcon"/></MenuItem.Icon>
+          <MenuItem Header="{DynamicResource Loc_DCD1D5223F73}" Click="OnSortByNameClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="sort-ascending" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+          <MenuItem Header="{DynamicResource Loc_EB5E7A5E3D68}" Click="OnSortByDateClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="calendar" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+          <MenuItem Header="{DynamicResource Loc_1AF851907331}" Click="OnSortBySizeClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="arrows-out-line-vertical" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+          <MenuItem Header="{DynamicResource Loc_BAADDF70FB5D}" Click="OnSortByTypeClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="file" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+          <Separator />
+          <MenuItem Header="{DynamicResource Loc_5DC4BE32067A}" Click="OnAutoArrangeClicked">
+            <MenuItem.Icon><controls:DaisyIcon Icon="grid-four" Classes="MenuIcon"/></MenuItem.Icon>
+          </MenuItem>
+        </MenuItem>
+
+        <Separator />
+
+        <!-- Change Wallpaper -->
+        <MenuItem Header="{DynamicResource Loc_4B963B6675C7}" Click="OnChangeWallpaperClicked">
+          <MenuItem.Icon><controls:DaisyIcon Icon="image" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Open in Files -->
+        <MenuItem Header="{DynamicResource Loc_E1D250D03DF0}" Click="OnOpenInFilesClicked">
+          <MenuItem.Icon><controls:DaisyIcon Icon="folder" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <!-- Open Terminal -->
+        <MenuItem Header="{DynamicResource Loc_AE088E141617}" Click="OnOpenTerminalClicked">
+          <MenuItem.Icon><controls:DaisyIcon Icon="terminal-window" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+
+        <Separator />
+
+        <!-- Desktop Settings -->
+        <MenuItem Header="{DynamicResource Loc_4A38195D3F65}" Click="OnDesktopSettingsClicked">
+          <MenuItem.Icon><controls:DaisyIcon Icon="gear-six" Classes="MenuIcon"/></MenuItem.Icon>
+        </MenuItem>
+      </ContextMenu>
+    </Grid.ContextMenu>
+
+    <controls:WidgetSnapOutline x:Name="WidgetSnapOutline" IsHitTestVisible="False" />
+
+    <!-- Items Layer -->
+    <ItemsControl
+        x:Name="ItemsControl"
+        ClipToBounds="False"
+        ItemsSource="{Binding Items}">
+      <ItemsControl.Styles>
+        <Style Selector="ItemsControl > ContentPresenter">
+          <Setter Property="ClipToBounds" Value="False" />
+          <Setter Property="Transitions">
+            <Transitions>
+              <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+            </Transitions>
+          </Setter>
+        </Style>
+      </ItemsControl.Styles>
+      <ItemsControl.ItemsPanel>
+        <ItemsPanelTemplate>
+          <controls:DesktopReorderPanel
+              x:Name="ItemsPanel"
+              Metrics="{Binding $parent[UserControl].CurrentMetrics}"
+              ViewModel="{Binding $parent[UserControl].ViewModel}" />
+        </ItemsPanelTemplate>
+      </ItemsControl.ItemsPanel>
+      <ItemsControl.ItemTemplate>
+        <DataTemplate DataType="{x:Type vm:DesktopItemViewModel}">
+          <controls:DesktopItemView />
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <!-- Widget Library Floating Modal Overlay -->
+    <widgets:WidgetLibraryOverlay
+        x:Name="WidgetLibrary"
+        ZIndex="400"
+        IsVisible="False" />
+
+    <!-- Detached into the native system-flyout surface at runtime. Keeping
+         this menu on a separate Wayland surface lets KWin blur desktop
+         widgets underneath it, rather than only the wallpaper. -->
+    <controls:ShellFrameBorder x:Name="DesktopWidgetContextMenuHost"
+            IsVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top"
+            ZIndex="500" MinWidth="200" Padding="1"
+            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            CornerRadius="{DynamicResource RoundedLG}"
+            BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+      <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+              CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
+        <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                CornerRadius="{DynamicResource RoundedMD}" Padding="4">
+          <StackPanel>
+            <UniformGrid Rows="1" Height="42">
+              <Button Classes="WidgetSizeButton" Classes.Active="{Binding IsSizeSmall}"
+                      IsVisible="{Binding SupportsSmallSize}" Click="OnOverlaySizeSmallClicked" ToolTip.Tip="{DynamicResource Loc_5263293FC202}">
+                <controls:DaisyIcon Icon="widget_small" Classes="WidgetSizeIcon" Width="18" Height="18" />
+              </Button>
+              <Button Classes="WidgetSizeButton" Classes.Active="{Binding IsSizeMedium}"
+                      IsVisible="{Binding SupportsMediumSize}" Click="OnOverlaySizeMediumClicked" ToolTip.Tip="{DynamicResource Loc_8E588CD18774}">
+                <controls:DaisyIcon Icon="widget_medium" Classes="WidgetSizeIcon" Width="18" Height="18" />
+              </Button>
+              <Button Classes="WidgetSizeButton" Classes.Active="{Binding IsSizeLarge}"
+                      IsVisible="{Binding SupportsLargeSize}" Click="OnOverlaySizeLargeClicked" ToolTip.Tip="{DynamicResource Loc_AB80540D98D2}">
+                <controls:DaisyIcon Icon="widget_large" Classes="WidgetSizeIcon" Width="26" Height="18" />
+              </Button>
+              <Button Classes="WidgetSizeButton" Classes.Active="{Binding IsSizeExtraLarge}"
+                      IsVisible="{Binding SupportsExtraLargeSize}" Click="OnOverlaySizeExtraLargeClicked" ToolTip.Tip="{DynamicResource Loc_F44F24C71F1F}">
+                <controls:DaisyIcon Icon="widget_extralarge" Classes="WidgetSizeIcon" Width="18" Height="18" />
+              </Button>
+            </UniformGrid>
+            <Separator />
+            <MenuItem Header="{DynamicResource Loc_12690E79F16F}" IsVisible="{Binding IsMediaWidget}" Click="OnOverlayMoveToBottomShelfClicked">
+              <MenuItem.Icon><controls:DaisyIcon Icon="arrow-down-left" Classes="MenuIcon" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Loc_DDB2E1E865AA}" IsVisible="{Binding IsImageWidget}" Click="OnOverlayChoosePhotosClicked">
+              <MenuItem.Icon><controls:DaisyIcon Icon="image" Classes="MenuIcon" /></MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Loc_66DC00642E56}" Classes="Danger" Click="OnOverlayRemoveWidgetClicked">
+              <MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon" /></MenuItem.Icon>
+            </MenuItem>
+          </StackPanel>
+        </Border>
+      </controls:ShellFrameBorder>
+    </controls:ShellFrameBorder>
+  </Grid>
+</UserControl>

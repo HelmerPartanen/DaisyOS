@@ -1,0 +1,104 @@
+<UserControl x:Class="DaisyOS.Shell.Controls.ConsolePillSlider"
+             x:Name="Root"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             Focusable="True"
+             ClipToBounds="False">
+
+  <UserControl.Styles>
+    <Style Selector="controls|DaisyIcon.SliderIcon">
+      <Setter Property="Size" Value="20" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Button.ArrowBtn">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurfaceInner}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Content="{TemplateBinding Content}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center"
+                              Margin="0,0,0,0" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="controls|DaisyIcon.ArrowIcon">
+      <Setter Property="Size" Value="20" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Button.ArrowBtn:pointerover">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+
+    <Style Selector="UserControl:focus Border#FocusBorder">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </UserControl.Styles>
+
+  <Panel ClipToBounds="False" HorizontalAlignment="Stretch" VerticalAlignment="Center">
+    <!-- White Focus Capsule Outline around the Pill Slider (Matching Normal Action Buttons) -->
+    <Border x:Name="FocusBorder"
+            BorderBrush="{DynamicResource ActionPrimaryBrush}"
+            BorderThickness="2.5"
+            CornerRadius="{DynamicResource RadiusPill}"
+            Margin="-5"
+            IsVisible="False"
+            ClipToBounds="False" />
+
+    <!-- Container Pill Background (Height 42, CornerRadius 21) -->
+    <Border Background="Transparent"
+            CornerRadius="{DynamicResource RadiusSurface}"
+            Height="42"
+            Padding="12,0"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Center">
+      <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+        <!-- Icon e.g. volume_up or mic -->
+        <controls:DaisyIcon x:Name="IconTextBlock" Grid.Column="0" Icon="speaker-high" Classes="SliderIcon" Margin="0,0,4,0" />
+
+        <!-- Decrement Arrow Button < -->
+        <Button x:Name="DecrementBtn" Grid.Column="1" Classes="ArrowBtn" Click="OnDecrementClicked">
+          <controls:DaisyIcon Icon="caret-left" Classes="ArrowIcon" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="-2,0,0,0" />
+        </Button>
+
+        <!-- 10 Pill Segment Stack -->
+        <UniformGrid x:Name="PillContainer" Grid.Column="2" Columns="10" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="8,0">
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource ContentPrimaryBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource ContentPrimaryBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource ContentPrimaryBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource ContentPrimaryBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource ContentPrimaryBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource StrokeDefaultBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource StrokeDefaultBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource StrokeDefaultBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource StrokeDefaultBrush}" />
+          <Border Height="7" CornerRadius="{DynamicResource RadiusSmall}" Margin="2,0" Background="{DynamicResource StrokeDefaultBrush}" />
+        </UniformGrid>
+
+        <!-- Increment Arrow Button > -->
+        <Button x:Name="IncrementBtn" Grid.Column="3" Classes="ArrowBtn" Click="OnIncrementClicked">
+          <controls:DaisyIcon Icon="caret-right" Classes="ArrowIcon" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="2,0,0,0" />
+        </Button>
+
+        <!-- Percentage Value Text e.g. 50% -->
+        <TextBlock x:Name="ValueText" Grid.Column="4" Text="50%" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" Width="44" TextAlignment="Right" VerticalAlignment="Center" />
+      </Grid>
+    </Border>
+  </Panel>
+
+</UserControl>

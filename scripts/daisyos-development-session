@@ -1,0 +1,190 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# This launcher is installed in /usr/local/bin by
+# scripts/install-development-session.sh. This is deliberately the windowed
+# prototype entry, not the production DaisyOS layer-shell session.
+config_file="${DAISYOS_DEVELOPMENT_CONFIG:-/etc/daisyos/daisyos-development-session.conf}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/DaisyOS"
+session_log="$state_dir/development-session.log"
+
+if [[ -r "$config_file" ]]; then
+  # The configuration file is administrator-owned and contains only the source
+  # checkout path written by the installer.
+  # shellcheck disable=SC1090
+  source "$config_file"
+fi
+
+source_root="${DAISYOS_DEVELOPMENT_ROOT:-}"
+
+log_message() {
+  local message="$1"
+  mkdir -p "$state_dir"
+  printf '%s %s\n' "$(date --iso-8601=seconds)" "$message" >> "$session_log"
+  printf '%s\n' "$message" >&2
+}
+
+resolve_source_root() {
+  if [[ -z "$source_root" || ! -d "$source_root/src/DaisyOS.Shell" ]]; then
+    log_message "DaisyOS development source is unavailable. Expected a checkout containing src/DaisyOS.Shell."
+    exit 1
+  fi
+
+  source_root="$(cd "$source_root" && pwd -P)"
+}
+
+publish_session_environment() {
+  # Import only the managed locale values, never execute user configuration.
+  daisy_language_file="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d/90-daisyos-language.conf"
+  if [[ -f "$daisy_language_file" ]]; then
+    while IFS='=' read -r daisy_locale_key daisy_locale_value; do
+      case "$daisy_locale_key:$daisy_locale_value" in
+        LANG:en_US.UTF-8|LANG:fi_FI.UTF-8|LANG:C.UTF-8|LC_MESSAGES:en_US.UTF-8|LC_MESSAGES:fi_FI.UTF-8|LC_MESSAGES:C.UTF-8|LANGUAGE:en|LANGUAGE:fi:en|LC_ALL:)
+          export "$daisy_locale_key=$daisy_locale_value" ;;
+      esac
+    done < "$daisy_language_file"
+  fi
+
+  export DAISYOS_SHELL_SERVICES=real
+  export DESKTOP_SESSION=daisyos-development
+  export XDG_CURRENT_DESKTOP=DaisyOS
+  export XDG_SESSION_DESKTOP=DaisyOS
+  export XDG_SESSION_TYPE=wayland
+  if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd \
+      DISPLAY WAYLAND_DISPLAY XAUTHORITY LANG LANGUAGE LC_MESSAGES LC_ALL \
+      XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_MENU_PREFIX QT_QPA_PLATFORMTHEME >/dev/null 2>&1 || true
+  fi
+}
+
+start_user_services() {
+  systemctl --user --no-block start \
+    pipewire.service \
+    pipewire-pulse.service \
+    wireplumber.service \
+    plasma-polkit-agent.service \
+    xdg-desktop-portal.service \
+    plasma-xdg-desktop-portal-kde.service >/dev/null 2>&1 || true
+}
+
+run_shell() {
+  resolve_source_root
+  publish_session_environment
+  start_user_services
+
+  if ! command -v dotnet >/dev/null 2>&1; then
+    log_message "The .NET SDK is required for DaisyOS (Windowed Prototype), but dotnet was not found."
+    exit 1
+  fi
+
+  log_message "Starting the DaisyOS Windowed Prototype from $source_root."
+  dotnet run --project "$source_root/src/DaisyOS.Shell" -- --real-services --windowed-prototype >>"$session_log" 2>&1
+}
+
+install_kwin_bridge() {
+  if [[ ! -x "$source_root/scripts/install-kwin-window-bridge.sh" ]]; then
+    log_message "DaisyOS KWin bridge installer is missing from the checkout."
+    return 1
+  fi
+
+  "$source_root/scripts/install-kwin-window-bridge.sh" >>"$session_log" 2>&1 || {
+    log_message "DaisyOS KWin bridge could not be installed. The session cannot provide a compositor-backed taskbar."
+    return 1
+  }
+}
+
+wait_for_wayland_socket() {
+  local deadline=$((SECONDS + 30))
+  local runtime_dir="${XDG_RUNTIME_DIR:-}"
+  while (( SECONDS < deadline )); do
+    if [[ -n "$runtime_dir" ]]; then
+      local socket
+      for socket in "$runtime_dir"/wayland-*; do
+        if [[ -S "$socket" ]]; then
+          export WAYLAND_DISPLAY="${socket##*/}"
+          return 0
+        fi
+      done
+    fi
+    sleep 0.1
+  done
+
+  return 1
+}
+
+refresh_desktop_service_cache() {
+  resolve_source_root
+  publish_session_environment
+  refresh_desktop_service_cache
+  if ! command -v kwin_wayland >/dev/null 2>&1; then
+    log_message "KWin Wayland is required for DaisyOS (Windowed Prototype), but kwin_wayland was not found."
+    exit 1
+  fi
+
+  log_message "Starting the KWin Wayland session for the DaisyOS Windowed Prototype."
+  export KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1
+  local kwin_pid=$!
+
+  if ! wait_for_wayland_socket; then
+    log_message "KWin did not create a Wayland socket within 30 seconds."
+    kill "$kwin_pid" 2>/dev/null || true
+    wait "$kwin_pid" 2>/dev/null || true
+    exit 1
+  fi
+
+  publish_session_environment
+  start_user_services
+  if ! install_kwin_bridge; then
+    kill "$kwin_pid" 2>/dev/null || true
+    wait "$kwin_pid" 2>/dev/null || true
+    exit 1
+  fi
+
+  local attempts=0
+  while (( attempts < 2 )); do
+    if run_shell; then
+      break
+    fi
+    attempts=$((attempts + 1))
+    log_message "DaisyOS stopped unexpectedly (attempt $attempts of 2)."
+    if (( attempts < 2 )); then
+      sleep 1
+    fi
+  done
+
+  log_message "Ending the DaisyOS Windowed Prototype after shell exit; KWin stayed alive until this controlled session shutdown."
+  kill "$kwin_pid" 2>/dev/null || true
+  wait "$kwin_pid" 2>/dev/null || true
+}
+
+case "${1:-}" in
+  --run-shell)
+    shift
+    run_shell "$@"
+    ;;
+  --help|-h)
+    cat <<'EOF'
+Usage: daisyos-development-session [--run-shell]
+
+Starts the DaisyOS development checkout as a standalone KWin Wayland session.
+The display manager invokes this launcher without arguments.
+EOF
+    ;;
+  "")
+    # A display manager normally owns the user session bus. Create one only for
+    # direct launcher invocation, so portal and authentication services retain
+    # the display manager's normal session scope.
+    if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
+      start_compositor_and_shell
+    else
+      exec dbus-run-session -- "$0" --session-bus-ready
+    fi
+    ;;
+  --session-bus-ready)
+    start_compositor_and_shell
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    exit 2
+    ;;
+esac

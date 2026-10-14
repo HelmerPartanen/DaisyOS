@@ -1,0 +1,182 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Controls.ShellMetricsPanel"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    HorizontalAlignment="Right"
+    VerticalAlignment="Stretch"
+    Margin="0,36,16,16"
+    ZIndex="950">
+
+  <UserControl.Styles>
+    <Style Selector="Border.MetricsPanelCard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceOverlayBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+      <Setter Property="Padding" Value="18" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ElevationDialogShadow}" />
+    </Style>
+
+    <Style Selector="Border.SummaryTile">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <Style Selector="controls|DaisyIcon.IconSymbol">
+      <Setter Property="Size" Value="18" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+    </Style>
+
+    <Style Selector="Button.HeaderButton">
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedPill}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.HeaderButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.HeaderButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+    <Style Selector="Button.SortChip">
+      <Setter Property="Padding" Value="10,4" />
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedPill}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.SortChip.Active">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="Foreground" Value="White" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid Name="RootContainer">
+    <Border Classes="MetricsPanelCard" Width="420" MaxHeight="800">
+      <Grid RowDefinitions="Auto,Auto,Auto,*,Auto">
+
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="0,0,0,16">
+          <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+            <Border Background="{DynamicResource ActionPrimaryBrush}" CornerRadius="{DynamicResource RoundedMD}" Padding="8">
+              <controls:DaisyIcon Icon="gauge" Classes="IconSymbol" Foreground="White" Size="{DynamicResource IconSizeMedium}" />
+            </Border>
+            <StackPanel Spacing="2">
+              <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                <TextBlock Text="{DynamicResource Loc_1E097D35B89E}" FontWeight="Bold" FontSize="{DynamicResource TypeSizeBodyLarge}" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                <Border Background="{DynamicResource SurfaceSunkenBrush}" CornerRadius="{DynamicResource RoundedXS}" Padding="5,2" VerticalAlignment="Center">
+                  <TextBlock Name="TxtPid" Text="{DynamicResource Loc_5FB87FBC64FC}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                </Border>
+              </StackPanel>
+              <TextBlock Text="{DynamicResource Loc_914E6196BD03}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" />
+            </StackPanel>
+          </StackPanel>
+
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalAlignment="Top">
+            <Border Background="{DynamicResource SurfaceSunkenBrush}" CornerRadius="{DynamicResource RoundedPill}" Padding="8,4" VerticalAlignment="Center" Margin="0,0,4,0">
+              <TextBlock Text="{DynamicResource Loc_8BEBDC4E7A8B}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold" Foreground="{DynamicResource ActionPrimaryBrush}" />
+            </Border>
+            <Button Classes="HeaderButton" Click="OnCloseClicked" ToolTip.Tip="{DynamicResource Loc_C5DD7BE678EA}">
+              <controls:DaisyIcon Icon="x" Classes="IconSymbol" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+
+        <!-- Process Overall Summary Cards Grid -->
+        <Grid Grid.Row="1" RowDefinitions="Auto,Auto" ColumnDefinitions="*,*" Margin="0,0,0,16">
+          <!-- CPU -->
+          <Border Grid.Row="0" Grid.Column="0" Classes="SummaryTile" Margin="0,0,4,4">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <controls:DaisyIcon Name="IconCpu" Icon="gauge" Classes="IconSymbol" Foreground="{DynamicResource StatusSuccessBrush}" Size="{DynamicResource IconSizeStandard}" />
+                <TextBlock Text="{DynamicResource Loc_78138ECB7CB2}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Name="TxtShellCpu" Text="0.0%" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+
+          <!-- RAM -->
+          <Border Grid.Row="0" Grid.Column="1" Classes="SummaryTile" Margin="4,0,0,4">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <controls:DaisyIcon Icon="memory" Classes="IconSymbol" Foreground="{DynamicResource StatusInfoBrush}" Size="{DynamicResource IconSizeStandard}" />
+                <TextBlock Text="{DynamicResource Loc_9EE11232B3CC}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Bottom">
+                <TextBlock Name="TxtGcRam" Text="{DynamicResource Loc_ADC353D548C8}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                <TextBlock Name="TxtWorkingSet" Text="{DynamicResource Loc_7A4A6E2AABC5}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Threads & Handles -->
+          <Border Grid.Row="1" Grid.Column="0" Classes="SummaryTile" Margin="0,4,4,0">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <controls:DaisyIcon Icon="tree-structure" Classes="IconSymbol" Foreground="{DynamicResource StatusWarningBrush}" Size="{DynamicResource IconSizeStandard}" />
+                <TextBlock Text="{DynamicResource Loc_859AE5CC3273}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <TextBlock Name="TxtThreads" Text="{DynamicResource Loc_C048425D6BD9}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                <TextBlock Text="/" Foreground="{DynamicResource ContentTertiaryBrush}" />
+                <TextBlock Name="TxtHandles" Text="{DynamicResource Loc_FBB996655FE9}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              </StackPanel>
+            </StackPanel>
+          </Border>
+
+          <!-- Uptime -->
+          <Border Grid.Row="1" Grid.Column="1" Classes="SummaryTile" Margin="4,4,0,0">
+            <StackPanel Spacing="4">
+              <StackPanel Orientation="Horizontal" Spacing="6">
+                <controls:DaisyIcon Icon="timer" Classes="IconSymbol" Foreground="{DynamicResource StatusInfoBrush}" Size="{DynamicResource IconSizeStandard}" />
+                <TextBlock Text="{DynamicResource Loc_B555DFCCFB13}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+              </StackPanel>
+              <TextBlock Name="TxtUptime" Text="00:00:00" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <!-- Component Ranking Header & Sort Bar -->
+        <Grid Grid.Row="2" ColumnDefinitions="*,Auto" Margin="0,4,0,10">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+            <controls:DaisyIcon Icon="chart-pie" Classes="IconSymbol" Foreground="{DynamicResource ContentSecondaryBrush}" Size="{DynamicResource IconSizeStandard}" />
+            <TextBlock Text="{DynamicResource Loc_50E517A16057}" FontWeight="SemiBold" FontSize="{DynamicResource TypeSizeBodySmall}" Foreground="{DynamicResource ContentPrimaryBrush}" />
+          </StackPanel>
+
+          <!-- Sort Selector -->
+          <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+            <Button Name="BtnSortCpu" Classes="SortChip Active" Click="OnSortCpuClicked" Content="{DynamicResource Loc_DB9A4C7D4C19}" />
+            <Button Name="BtnSortMemory" Classes="SortChip" Click="OnSortMemoryClicked" Content="{DynamicResource Loc_BF4B0C03C646}" />
+            <Button Name="BtnSortComplexity" Classes="SortChip" Click="OnSortComplexityClicked" Content="{DynamicResource Loc_E1FF7A906103}" />
+          </StackPanel>
+        </Grid>
+
+        <!-- Components Scrollable List -->
+        <ScrollViewer Grid.Row="3" VerticalScrollBarVisibility="Auto" Margin="0,0,0,12">
+          <StackPanel Name="ComponentsContainer" Spacing="8" />
+        </ScrollViewer>
+
+        <!-- Footer Notice -->
+        <Border Grid.Row="4" Background="{DynamicResource SurfaceSunkenBrush}" CornerRadius="{DynamicResource RoundedSM}" Padding="10,6">
+          <Grid ColumnDefinitions="Auto,*">
+            <controls:DaisyIcon Icon="shield-check" Classes="IconSymbol" Foreground="{DynamicResource StatusSuccessBrush}" Size="{DynamicResource IconSizeStandard}" Margin="0,0,8,0" />
+            <TextBlock Grid.Column="1" Text="{DynamicResource Loc_51F4885568FA}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

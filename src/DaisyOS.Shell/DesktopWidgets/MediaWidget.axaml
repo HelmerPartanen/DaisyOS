@@ -1,0 +1,234 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             xmlns:desktopWidgets="clr-namespace:DaisyOS.Shell.DesktopWidgets"
+             x:Class="DaisyOS.Shell.DesktopWidgets.MediaWidget"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
+
+  <UserControl.Styles>
+    <Style Selector="desktopWidgets|MediaWidget">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.spectrumBar">
+      <Setter Property="Background" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="Button.MediaBtn">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.MediaBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <!-- Artwork controls use the dark subtle-button material in either theme. -->
+    <Style Selector="Button.MediaBtn.MediumMediaBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#24FFFFFF" />
+    </Style>
+    <Style Selector="Button.MediaBtn.MediumMediaBtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="#33FFFFFF" />
+    </Style>
+    <Style Selector="Button.MediaBtn:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.90)" />
+    </Style>
+
+    <!-- Both pointer and keyboard interaction reveal the same transport controls. -->
+    <Style Selector="Grid#MediumLayout Border#MediumHoverScrim">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Grid#MediumLayout:pointerover Border#MediumHoverScrim, Grid#MediumLayout:focus-within Border#MediumHoverScrim">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Grid#MediumLayout Grid#MediumInfoHost">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="RenderTransform" Value="translate(0, 0)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Grid#MediumLayout:pointerover Grid#MediumInfoHost, Grid#MediumLayout:focus-within Grid#MediumInfoHost">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="RenderTransform" Value="translate(0, -6px)" />
+    </Style>
+
+    <Style Selector="Grid#MediumLayout StackPanel#MediumControlsStack">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="RenderTransform" Value="translate(0, 6px)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Grid#MediumLayout:pointerover StackPanel#MediumControlsStack, Grid#MediumLayout:focus-within StackPanel#MediumControlsStack">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+      <Setter Property="RenderTransform" Value="translate(0, 0)" />
+    </Style>
+  </UserControl.Styles>
+
+  <controls:WidgetContainer x:Name="Container"
+                            ColumnSpan="5"
+                            RowSpan="2"
+                            Padding="0">
+    <Grid>
+      <!-- Adaptive Artwork Tint Overlay -->
+      <Border x:Name="ArtworkTint" Background="Transparent" IsHitTestVisible="False">
+        <Border.Transitions>
+          <Transitions>
+            <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationEnter}" Easing="CubicEaseOut" />
+          </Transitions>
+        </Border.Transitions>
+      </Border>
+
+      <!-- ================================================================= -->
+      <!-- 1. MEDIUM VARIATION (3x2) - Full-Bleed Cover + Transport Reveal -->
+      <!-- ================================================================= -->
+      <Grid x:Name="MediumLayout" IsVisible="False" ClipToBounds="True" Background="Transparent">
+        <!-- Full-Bleed Artwork Cover -->
+        <Image x:Name="MediumArtwork" Stretch="UniformToFill" IsVisible="False"
+               RenderOptions.BitmapInterpolationMode="HighQuality" />
+        <Border x:Name="MediumFallback" Background="{DynamicResource StateHoverBrush}">
+          <Grid>
+            <Image x:Name="MediumSourceIcon" Width="48" Height="48" IsVisible="False"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <controls:DaisyIcon x:Name="MediumSourceGlyph" Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeHero}"
+                                Foreground="{DynamicResource ContentTertiaryBrush}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Grid>
+        </Border>
+
+        <!-- Base Bottom-to-Top Gradient Scrim for Idle State -->
+        <Border x:Name="MediumBaseScrim" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" IsHitTestVisible="False">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+              <GradientStop Color="#99000000" Offset="0.0" />
+              <GradientStop Color="#45000000" Offset="0.35" />
+              <GradientStop Color="#10000000" Offset="0.65" />
+              <GradientStop Color="#00000000" Offset="0.9" />
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+
+        <!-- A light local scrim keeps the transport readable without obscuring the cover. -->
+        <Border x:Name="MediumHoverScrim" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" IsHitTestVisible="False">
+          <Border.Background>
+            <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+              <GradientStop Color="#38000000" Offset="0.0" />
+              <GradientStop Color="#18000000" Offset="0.5" />
+              <GradientStop Color="#00000000" Offset="1.0" />
+            </LinearGradientBrush>
+          </Border.Background>
+        </Border>
+
+        <!-- Full-width metadata leaves room for longer song titles. -->
+        <Grid x:Name="MediumInfoHost" VerticalAlignment="Bottom" Margin="16,14">
+          <StackPanel Spacing="2" VerticalAlignment="Center">
+            <TextBlock x:Name="MediumTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
+                       Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1" />
+            <TextBlock x:Name="MediumArtist" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Normal"
+                       Foreground="#D8FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" />
+          </StackPanel>
+        </Grid>
+
+        <!-- Transport shares button geometry, glyphs and styling with the large layout. -->
+        <StackPanel x:Name="MediumControlsStack" Orientation="Horizontal" Spacing="{DynamicResource Space2}"
+                    HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,14">
+          <Button Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+            <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="#F2F2F2" />
+          </Button>
+          <Button x:Name="MediumPlayPauseButton" Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+            <controls:DaisyIcon x:Name="MediumPlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="#F2F2F2" />
+          </Button>
+          <Button Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+            <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="#F2F2F2" />
+          </Button>
+        </StackPanel>
+      </Grid>
+
+      <!-- ================================================================= -->
+      <!-- 2. LARGE VARIATION (5x2) - 2-Column Side-by-Side                 -->
+      <!-- ================================================================= -->
+      <Grid x:Name="LargeLayout" IsVisible="True" Margin="16" ColumnDefinitions="Auto,*">
+        <!-- Left: Square Album Artwork that dynamically takes the exact same width as the widget height -->
+        <Border Grid.Column="0"
+                Width="{Binding $self.Bounds.Height}"
+                VerticalAlignment="Stretch"
+                HorizontalAlignment="Left"
+                CornerRadius="{DynamicResource RoundedLG}"
+                ClipToBounds="True">
+          <Grid>
+            <Image x:Name="LargeArtwork" Stretch="UniformToFill" IsVisible="False"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <Border x:Name="LargeFallback" Background="{DynamicResource StateHoverBrush}">
+              <Grid>
+                <Image x:Name="LargeSourceIcon" Width="36" Height="36" IsVisible="False"
+                       RenderOptions.BitmapInterpolationMode="HighQuality" />
+                <controls:DaisyIcon x:Name="LargeSourceGlyph" Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeHero}"
+                                    Foreground="{DynamicResource ContentTertiaryBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+          </Grid>
+        </Border>
+
+        <!-- Right: Top-Right Spectrum, Center Title/Artist, Bottom Transport Controls -->
+        <Grid Grid.Column="1" Margin="16,0,0,0" RowDefinitions="Auto,*,Auto">
+          <!-- Top-Right: Spectrum Visualizer -->
+          <Canvas Grid.Row="0" x:Name="LargeSpectrumCanvas" Width="28" Height="28"
+                  VerticalAlignment="Top" HorizontalAlignment="Right" IsHitTestVisible="False" />
+
+          <!-- Center: Title & Artist -->
+          <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2">
+            <TextBlock x:Name="LargeTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
+                       Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                       TextAlignment="Center" HorizontalAlignment="Center" />
+            <TextBlock x:Name="LargeArtist" FontSize="{DynamicResource TypeSizeCaption}"
+                       Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                       TextAlignment="Center" HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Bottom: Equal button spacing balances the transport beneath the metadata. -->
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource Space2}" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+            <Button Classes="MediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+              <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentTertiaryBrush}" />
+            </Button>
+            <Button x:Name="LargePlayPauseButton" Classes="MediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+              <controls:DaisyIcon x:Name="LargePlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentTertiaryBrush}" />
+            </Button>
+            <Button Classes="MediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+              <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentTertiaryBrush}" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Grid>
+
+    </Grid>
+  </controls:WidgetContainer>
+</UserControl>

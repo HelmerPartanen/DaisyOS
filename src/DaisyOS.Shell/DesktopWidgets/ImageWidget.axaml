@@ -1,0 +1,224 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             xmlns:desktopWidgets="clr-namespace:DaisyOS.Shell.DesktopWidgets"
+             x:Class="DaisyOS.Shell.DesktopWidgets.ImageWidget"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
+
+  <UserControl.Styles>
+    <Style Selector="desktopWidgets|ImageWidget">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+
+    <Style Selector="desktopWidgets|ImageWidget:pointerover Border#HoverScrim">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="desktopWidgets|ImageWidget:pointerover Grid#ControlsOverlay">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+    <Style Selector="desktopWidgets|ImageWidget:focus-within Grid#ControlsOverlay">
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="IsHitTestVisible" Value="True" />
+    </Style>
+
+    <!-- Glass Button Style -->
+    <Style Selector="Button.ImageWidgetBtn">
+      <Setter Property="Background" Value="{DynamicResource BlackAlpha40Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WhiteAlpha27Brush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="8,4" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationBase}" />
+          <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionDurationBase}" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ImageWidgetBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource BlackAlpha60Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WhiteAlpha53Brush}" />
+    </Style>
+    <Style Selector="Button.ImageWidgetBtn:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.94)" />
+    </Style>
+
+    <!-- Nav Circle Button Style -->
+    <Style Selector="Button.ImageWidgetNavBtn">
+      <Setter Property="Background" Value="{DynamicResource BlackAlpha40Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WhiteAlpha20Brush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurfaceInner}" />
+      <Setter Property="Width" Value="28" />
+      <Setter Property="Height" Value="28" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ImageWidgetNavBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource BlackAlpha60Brush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource WhiteAlpha40Brush}" />
+    </Style>
+    <Style Selector="Button.ImageWidgetNavBtn:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.92)" />
+    </Style>
+  </UserControl.Styles>
+
+  <controls:WidgetContainer x:Name="Container"
+                            ColumnSpan="3"
+                            RowSpan="2"
+                            Padding="0">
+    <Grid x:Name="RootGrid" ClipToBounds="True" Background="{DynamicResource SurfaceRaisedBrush}">
+
+      <!-- Layer A Image for Smooth Crossfade -->
+      <Image x:Name="ImageLayerA"
+             Stretch="UniformToFill"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             RenderOptions.BitmapInterpolationMode="HighQuality"
+             Opacity="0">
+        <Image.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseInOut" />
+          </Transitions>
+        </Image.Transitions>
+      </Image>
+
+      <!-- Layer B Image for Smooth Crossfade -->
+      <Image x:Name="ImageLayerB"
+             Stretch="UniformToFill"
+             HorizontalAlignment="Center"
+             VerticalAlignment="Center"
+             RenderOptions.BitmapInterpolationMode="HighQuality"
+             Opacity="0">
+        <Image.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseInOut" />
+          </Transitions>
+        </Image.Transitions>
+      </Image>
+
+      <!-- Placeholder View when no photos selected -->
+      <Border x:Name="PlaceholderView"
+              Background="{DynamicResource SurfaceRaisedBrush}"
+              IsVisible="False"
+              Cursor="Hand"
+              PointerPressed="OnPlaceholderPressed">
+        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+          <Border Width="48" Height="48" CornerRadius="{DynamicResource RadiusSurface}"
+                  Background="{DynamicResource StateHoverBrush}"
+                  HorizontalAlignment="Center">
+            <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeLarge}"
+                                Foreground="{DynamicResource ContentSecondaryBrush}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center" />
+          </Border>
+          <TextBlock Text="{DynamicResource Loc_A0B2E04C34AC}"
+                     FontSize="{DynamicResource TypeSizeBody}"
+                     FontWeight="SemiBold"
+                     Foreground="{DynamicResource ContentPrimaryBrush}"
+                     HorizontalAlignment="Center" />
+          <TextBlock Text="{DynamicResource Loc_0815F9237511}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     Foreground="{DynamicResource ContentSecondaryBrush}"
+                     HorizontalAlignment="Center" />
+        </StackPanel>
+      </Border>
+
+      <!-- Top & Bottom Gradient Scrim on Hover -->
+      <Border x:Name="HoverScrim" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" IsHitTestVisible="False" Opacity="0">
+        <Border.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+          </Transitions>
+        </Border.Transitions>
+        <Grid RowDefinitions="Auto,*,Auto">
+          <Border Grid.Row="0" Height="48">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+                <GradientStop Color="{DynamicResource BlackAlpha50Color}" Offset="0" />
+                <GradientStop Color="{DynamicResource TransparentColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+          <Border Grid.Row="2" Height="52">
+            <Border.Background>
+              <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
+                <GradientStop Color="{DynamicResource BlackAlpha56Color}" Offset="0" />
+                <GradientStop Color="{DynamicResource TransparentColor}" Offset="1" />
+              </LinearGradientBrush>
+            </Border.Background>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Interactive Controls Overlay on Hover -->
+      <Grid x:Name="ControlsOverlay" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" Opacity="0" IsHitTestVisible="False">
+        <Grid.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+          </Transitions>
+        </Grid.Transitions>
+
+        <!-- Top Right: Choose Photos Button -->
+        <Border VerticalAlignment="Top" HorizontalAlignment="Right" Margin="10">
+          <Button x:Name="ChoosePhotosButton"
+                  Classes="ImageWidgetBtn"
+                  Click="OnChoosePhotosClicked"
+                  ToolTip.Tip="{DynamicResource Loc_ABC1DFD6F9BF}">
+            <StackPanel Orientation="Horizontal" Spacing="5">
+              <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeSmall}" Foreground="White" />
+              <TextBlock Text="{DynamicResource Loc_ABC1DFD6F9BF}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="White" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+        </Border>
+
+        <!-- Bottom Row: Navigation Arrows & Index Pill (Visible only when multiple images) -->
+        <Border x:Name="MultipleImagesBar"
+                VerticalAlignment="Bottom"
+                HorizontalAlignment="Center"
+                Margin="0,0,0,10"
+                Background="{DynamicResource BlackAlpha53Brush}"
+                CornerRadius="{DynamicResource RadiusSurfaceInner}"
+                Padding="4"
+                BorderBrush="{DynamicResource WhiteAlpha20Brush}"
+                BorderThickness="1"
+                IsVisible="False">
+          <StackPanel Orientation="Horizontal" Spacing="4">
+            <Button Classes="ImageWidgetNavBtn"
+                    Click="OnPreviousClicked"
+                    ToolTip.Tip="{DynamicResource Loc_2F55863E032E}">
+              <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeSmall}" Foreground="White" />
+            </Button>
+
+            <Border Background="{DynamicResource BlackAlpha27Brush}" CornerRadius="{DynamicResource RadiusControl}" Padding="{DynamicResource SpaceInset2}" VerticalAlignment="Center">
+              <TextBlock x:Name="CounterText" Text="1 / 1" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="White" />
+            </Border>
+
+            <Button Classes="ImageWidgetNavBtn"
+                    Click="OnNextClicked"
+                    ToolTip.Tip="{DynamicResource Loc_894BB2B7AC07}">
+              <controls:DaisyIcon Icon="caret-right" Size="{DynamicResource IconSizeSmall}" Foreground="White" />
+            </Button>
+          </StackPanel>
+        </Border>
+
+      </Grid>
+
+    </Grid>
+  </controls:WidgetContainer>
+</UserControl>

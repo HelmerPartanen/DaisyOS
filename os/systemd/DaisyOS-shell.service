@@ -1,0 +1,24 @@
+[Unit]
+Description=DaisyOS Avalonia Shell
+After=systemd-user-sessions.service network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=30
+StartLimitBurst=3
+
+[Service]
+User=daisyos
+WorkingDirectory=/opt/DaisyOS/shell
+Environment=DISPLAY=:0
+Environment=HOME=/home/daisyos
+ExecStart=/usr/bin/xinit /usr/local/bin/daisyos-session -- :0 -nolisten tcp
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=10
+NoNewPrivileges=true
+Slice=daisyos-core.slice
+MemoryMin=256M
+MemoryLow=384M
+ManagedOOMMemoryPressure=avoid
+
+[Install]
+WantedBy=multi-user.target

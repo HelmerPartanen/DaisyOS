@@ -1,0 +1,38 @@
+diff --git a/src/WindowManager.cpp b/src/WindowManager.cpp
+index 96d4dbc..dbbadc1 100644
+--- a/src/WindowManager.cpp
++++ b/src/WindowManager.cpp
+@@ -78,6 +78,16 @@ bool ShapeCorners::WindowManager::addWindow(const EffectWindow *kwindow)
+         return false;
+     }
+ 
++    // DaisyOS layer-shell surfaces and normal in-process application windows
++    // share the DaisyOS.Shell process class. Layer surfaces have no xdg
++    // caption, while Settings, Notes, Calendar, Calculator, and other normal
++    // toplevels always publish one. Keep shell overlays out of this effect
++    // without excluding every native DaisyOS application.
++    if (kwindow->windowClass().contains(QStringLiteral("DaisyOS.Shell"), Qt::CaseInsensitive)
++        && kwindow->caption().trimmed().isEmpty()) {
++        return false;
++    }
++
+     // Ignore hardcoded exceptions (KWin, lockscreen, etc.)
+     const QSet hardExceptions{
+             QStringLiteral("kwin"),         QStringLiteral("kwin_x11"),
+diff --git a/src/Window.cpp b/src/Window.cpp
+index 235ae01..78ff153 100644
+--- a/src/Window.cpp
++++ b/src/Window.cpp
+@@ -69,6 +69,12 @@ void ShapeCorners::Window::configChanged()
+     isExcluded = false;
+     isIncluded = false;
+     for (auto &exclusion: Config::exclusions()) {
++        // Preserve the safe process-wide fallback for old plugin builds while
++        // treating titled DaisyOS application toplevels like third-party apps.
++        if (exclusion.compare(QStringLiteral("DaisyOS.Shell"), Qt::CaseInsensitive) == 0
++            && !w->caption().trimmed().isEmpty()) {
++            continue;
++        }
+         if (w->windowClass().contains(exclusion, Qt::CaseInsensitive) ||
+             captionAfterDash().contains(exclusion, Qt::CaseInsensitive)) {
+             isExcluded = true;

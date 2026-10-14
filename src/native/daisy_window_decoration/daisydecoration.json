@@ -1,0 +1,12 @@
+{
+  "KPlugin": {
+    "Id": "org.daisyos.decoration",
+    "Name": "DaisyOS",
+    "Description": "DaisyOS server-side window decoration"
+  },
+  "org.kde.kdecoration3": {
+    "blur": false,
+    "recommendedBorderSize": "None",
+    "styles": ["shadow", "titled"]
+  }
+}

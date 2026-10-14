@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsAotCompatible>true</IsAotCompatible>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <!-- Keep the LocalSend framework reference restorable on Arch systems
+         where ASP.NET pruning metadata is packaged separately. -->
+    <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.1" />
+    <ProjectReference Include="../DaisyOS.Core/DaisyOS.Core.csproj" />
+    <None Update="Power/SessionLogout.sh" Link="daisyos-session-logout" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- LocalSend is a LAN HTTPS service.  Kestrel is part of the installed
+         .NET runtime, so this adds no third-party network stack. -->
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+</Project>

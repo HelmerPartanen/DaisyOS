@@ -1,0 +1,8 @@
+<Window x:Class="DaisyOS.Shell.Apps.AppStore.AppStoreWindow"
+        xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:store="clr-namespace:DaisyOS.Shell.Apps.AppStore"
+        Title="{DynamicResource Loc_C4424D160BCA}" Width="1120" Height="760" MinWidth="800" MinHeight="540"
+        CanResize="True" WindowStartupLocation="CenterScreen" WindowDecorations="None" Classes="SidebarAppWindow"
+        TextOptions.TextRenderingMode="Antialias" Background="{DynamicResource SurfaceBaseSolidBrush}">
+  <store:AppStoreView x:Name="StoreView" />
+</Window>

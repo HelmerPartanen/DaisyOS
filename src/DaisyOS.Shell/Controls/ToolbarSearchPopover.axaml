@@ -1,0 +1,73 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Controls.ToolbarSearchPopover"
+             Width="32" Height="32">
+  <UserControl.Styles>
+    <Style Selector="Button#OpenButton.Active /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button#OpenButton.Active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <Grid>
+    <Button x:Name="OpenButton" Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}"
+            CornerRadius="{DynamicResource RadiusControlInner}" ToolTip.Tip="{DynamicResource Loc_86326F17936B}" AutomationProperties.Name="{DynamicResource Loc_86326F17936B}">
+      <controls:DaisyIcon Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}" />
+    </Button>
+
+    <!-- Keep Files search in the window overlay. Its compact opaque material
+         does not need compositor blur and cannot leak blur outside the shape. -->
+    <Popup x:Name="SearchPopup"
+           PlacementTarget="{Binding #OpenButton}"
+           Placement="AnchorAndGravity"
+           PlacementAnchor="Bottom"
+           PlacementGravity="Bottom"
+           VerticalOffset="-8"
+           IsLightDismissEnabled="True"
+           WindowManagerAddShadowHint="False"
+           ShouldUseOverlayLayer="True"
+           InheritsTransform="True">
+      <controls:CartoucheBorder Width="280" Height="50" Margin="16"
+                                TailHeight="6" TailOnTop="True" CornerRadius="{DynamicResource RadiusSurfaceInnerValue}" Padding="0"
+                                Background="{DynamicResource SurfaceOverlayBrush}">
+              <Grid ColumnDefinitions="18,*,26" ColumnSpacing="7" Margin="12,0,8,0">
+                <controls:DaisyIcon Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}"
+                                    Foreground="{DynamicResource ContentSecondaryBrush}"
+                                    VerticalAlignment="Center" />
+                <TextBox x:Name="SearchInput" Grid.Column="1"
+                         AutomationProperties.Name="{DynamicResource Loc_86326F17936B}"
+                         MinWidth="0" MinHeight="0" Padding="0"
+                         PlaceholderText="{DynamicResource Loc_49C266BAAAA7}"
+                         PlaceholderForeground="{DynamicResource ContentSecondaryBrush}"
+                         Background="Transparent" BorderBrush="Transparent" BorderThickness="0"
+                         Foreground="{DynamicResource ContentPrimaryBrush}"
+                         CaretBrush="{DynamicResource ContentPrimaryBrush}"
+                         SelectionBrush="{DynamicResource ActionPrimaryBrush}"
+                         SelectionForegroundBrush="{DynamicResource ContentOnActionBrush}"
+                         VerticalContentAlignment="Center" FontSize="{DynamicResource TypeSizeBodySmall}">
+                  <TextBox.Styles>
+                    <Style Selector="TextBox /template/ Border#PART_BorderElement">
+                      <Setter Property="Background" Value="Transparent" />
+                      <Setter Property="BorderBrush" Value="Transparent" />
+                      <Setter Property="BorderThickness" Value="0" />
+                      <Setter Property="CornerRadius" Value="{DynamicResource RadiusNone}" />
+                    </Style>
+                    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+                      <Setter Property="Background" Value="Transparent" />
+                      <Setter Property="BorderBrush" Value="Transparent" />
+                      <Setter Property="BorderThickness" Value="0" />
+                    </Style>
+                  </TextBox.Styles>
+                </TextBox>
+                <Button x:Name="ClearButton" Grid.Column="2" Classes="ShellButton"
+                        Width="24" Height="24" Padding="0" CornerRadius="{DynamicResource RadiusControlInner}"
+                        IsVisible="False" ToolTip.Tip="{DynamicResource Loc_3B7EA51793E9}" AutomationProperties.Name="{DynamicResource Loc_3B7EA51793E9}">
+                  <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeSmall}" />
+                </Button>
+              </Grid>
+      </controls:CartoucheBorder>
+    </Popup>
+  </Grid>
+</UserControl>

@@ -1,0 +1,255 @@
+using Avalonia;
+using Avalonia.Media;
+using Avalonia.Styling;
+using System.Diagnostics;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace DaisyOS.Shell.Services.Theming;
+
+/// <summary>
+/// Exports DaisyOS's resolved semantic window-chrome roles for KWin's native
+/// KDecoration plugin. The plugin never parses Avalonia XAML; this bridge is
+/// the single runtime contract between the shell and compositor process.
+/// </summary>
+public sealed class WindowDecorationThemeService
+{
+    private const string ConfigFileName = "daisyos-window-decorationrc";
+    private readonly SemaphoreSlim _exportGate = new(1, 1);
+
+    public void Export(Application application) => _ = ExportAsync(application);
+
+    public async Task ExportAsync(Application application)
+    {
+        ArgumentNullException.ThrowIfNull(application);
+
+        await _exportGate.WaitAsync();
+        try
+        {
+            // Snapshot both palettes together after previous writes finish, so an
+            // older startup/theme export cannot overwrite a newer preference.
+            (string, IReadOnlyList<KeyValuePair<string, string>>, IReadOnlyList<KeyValuePair<string, string>>) CaptureTheme() =>
+                (BuildConfig(application), BuildOverviewConfig(application), BuildFrameEffectConfig(application));
+            var (content, overviewValues, frameValues) = Avalonia.Threading.Dispatcher.UIThread.CheckAccess()
+                ? CaptureTheme()
+                : await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(CaptureTheme);
+
+            var directory = GetConfigDirectory();
+            // File I/O and qdbus6 process spawn run on the thread pool to avoid
+            // blocking the UI thread during startup or theme changes.
+            await Task.Run(() =>
+            {
+                Directory.CreateDirectory(directory);
+                var destination = Path.Combine(directory, ConfigFileName);
+                var temporary = Path.Combine(directory, $".{ConfigFileName}.{Environment.ProcessId}.tmp");
+                File.WriteAllText(temporary, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
+                File.Move(temporary, destination, overwrite: true);
+                ExportKWinConfig(overviewValues);
+                ExportKWinConfig(frameValues, "Round-Corners");
+                RequestKWinReconfigure();
+            }).ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Decoration export must not be able to degrade shell startup or a
+            // theme change. KWin uses its most recent valid palette instead.
+            Console.Error.WriteLine($"[daisy-decoration] Failed to export the KWin decoration theme: {ex.Message}");
+        }
+        finally
+        {
+            _exportGate.Release();
+        }
+    }
+
+    internal static string BuildConfig(Application application)
+    {
+        var theme = application.ActualThemeVariant;
+        var values = new (string Key, string Value)[]
+        {
+            ("SurfaceBase", ToArgb(Opaque(ResolveColor(application, theme, "SurfaceBaseSolidBrush", "SurfaceBaseColorSolid",
+                ToArgb(ResolveColor(application, theme, "SurfaceBaseBrush", "SurfaceBaseColor", "#FF121214")))))),
+            ("SurfaceRaised", ToArgb(Opaque(ResolveColor(application, theme, "SurfaceRaisedBrush", "SurfaceRaisedColor", "#FF1A1A1D")))),
+            ("ShellFrameOuterEdge", ToArgb(ResolveColor(application, theme, "ShellFrameOuterEdgeBrush", "ShellFrameOuterEdgeColor", "#99000000"))),
+            ("ShellFrameInnerHighlight", ToArgb(ResolveColor(application, theme, "ShellFrameInnerHighlightBrush", "ShellFrameInnerHighlightColor", "#26FFFFFF"))),
+            ("ContentPrimary", ToArgb(ResolveColor(application, theme, "ContentPrimaryBrush", "ContentPrimaryColor", "#FFF5F5F7"))),
+            ("ContentDisabled", ToArgb(ResolveColor(application, theme, "ContentDisabledBrush", "ContentDisabledColor", "#FF98989F"))),
+            ("StateHover", ToArgb(ResolveColor(application, theme, "StateHoverBrush", "StateHoverColor", "#14FFFFFF"))),
+            ("StatePressed", ToArgb(ResolveColor(application, theme, "StatePressedBrush", "StatePressedColor", "#24FFFFFF"))),
+            ("StatusDanger", ToArgb(ResolveColor(application, theme, "ActionDangerHoverBrush", "ActionDangerHoverColor", "#FFB8212C"))),
+            ("ContentOnAction", ToArgb(ResolveColor(application, theme, "ContentOnActionBrush", "ContentOnActionColor", "#FFFFFFFF"))),
+            ("TitleBarHeight", ResolveDouble(application, theme, "KWinDecorationTitleBarHeight", 32).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("CaptionButtonWidth", ResolveDouble(application, theme, "KWinDecorationCaptionButtonWidth", 46).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("CaptionButtonHeight", ResolveDouble(application, theme, "KWinDecorationCaptionButtonHeight", 32).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("CaptionGlyphSize", ResolveDouble(application, theme, "KWinDecorationCaptionGlyphSize", 10).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("TitleFontFamily", ResolveString(application, theme, "SystemFontFamilyName", "Inter")),
+            ("TitleFontPixels", ResolveDouble(application, theme, "KWinDecorationTitleFontPixels", 13).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("ActionPrimary", ToArgb(ResolveColor(application, theme, "ActionPrimaryBrush", "ActionPrimaryColor", theme == ThemeVariant.Light ? "#FF1598FF" : "#FF148BE8"))),
+            ("ReduceMotion", application is App app && app.ReduceMotionEnabled ? "true" : "false"),
+            ("CornerRadius", ResolveDouble(application, theme, "AppWindowCornerRadiusValue", 16).ToString(global::System.Globalization.CultureInfo.InvariantCulture))
+        };
+
+        var builder = new StringBuilder("[Decoration]\n");
+        foreach (var (key, value) in values)
+        {
+            builder.Append(key).Append('=').Append(value).Append('\n');
+        }
+
+        return builder.ToString();
+    }
+
+    internal static IReadOnlyList<KeyValuePair<string, string>> BuildOverviewConfig(Application application)
+    {
+        var theme = application.ActualThemeVariant;
+        return
+        [
+            new("SurfaceBase", ToArgb(Opaque(ResolveColor(application, theme, "SurfaceBaseSolidBrush", "SurfaceBaseColorSolid",
+                ToArgb(ResolveColor(application, theme, "SurfaceBaseBrush", "SurfaceBaseColor", "#FF121214")))))),
+            new("SurfaceRaised", ToArgb(Opaque(ResolveColor(application, theme, "SurfaceRaisedBrush", "SurfaceRaisedColor", "#FF1A1A1D")))),
+            new("ContentPrimary", ToArgb(ResolveColor(application, theme, "ContentPrimaryBrush", "ContentPrimaryColor", "#FFF5F5F7"))),
+            new("ContentDisabled", ToArgb(ResolveColor(application, theme, "ContentDisabledBrush", "ContentDisabledColor", "#FF98989F"))),
+            new("ContentOnAction", ToArgb(ResolveColor(application, theme, "ContentOnActionBrush", "ContentOnActionColor", "#FFFFFFFF"))),
+            new("ContentSecondary", ToArgb(ResolveColor(application, theme, "ContentSecondaryBrush", "ContentSecondaryColor", "#FFB3B3BA"))),
+            new("StatusDanger", ToArgb(ResolveColor(application, theme, "ActionDangerHoverBrush", "ActionDangerHoverColor", "#FFB8212C"))),
+            new("FrameOuter", ToArgb(ResolveColor(application, theme, "ShellFrameOuterEdgeBrush", "ShellFrameOuterEdgeColor", "#99000000"))),
+            new("FrameInner", ToArgb(ResolveColor(application, theme, "ShellFrameInnerHighlightBrush", "ShellFrameInnerHighlightColor", "#26FFFFFF"))),
+            new("CornerRadius", ResolveDouble(application, theme, "AppWindowCornerRadiusValue", 16).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("TitleBarHeight", ResolveDouble(application, theme, "KWinDecorationTitleBarHeight", 32).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("CaptionButtonWidth", ResolveDouble(application, theme, "KWinDecorationCaptionButtonWidth", 46).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("CaptionGlyphSize", ResolveDouble(application, theme, "KWinDecorationCaptionGlyphSize", 10).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("TitleFontFamily", ResolveString(application, theme, "SystemFontFamilyName", "Inter")),
+            new("TitleFontPixels", ResolveDouble(application, theme, "KWinDecorationTitleFontPixels", 13).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("TileSpacing", "20"),
+            new("OuterPadding", "48"),
+            new("MaxPreviewScale", "1"),
+            new("HoverScale", "1.012"),
+            new("AnimationDuration", "280"),
+            new("ReduceMotion", application is App app && app.ReduceMotionEnabled ? "true" : "false")
+        ];
+    }
+
+    internal static IReadOnlyList<KeyValuePair<string, string>> BuildFrameEffectConfig(Application application)
+    {
+        var theme = application.ActualThemeVariant;
+        var outer = ResolveColor(application, theme, "ShellFrameOuterEdgeBrush", "ShellFrameOuterEdgeColor", "#99000000");
+        var inner = ResolveColor(application, theme, "ShellFrameInnerHighlightBrush", "ShellFrameInnerHighlightColor", "#1AFFFFFF");
+        static string Rgb(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
+        return
+        [
+            new("OutlineColor", Rgb(outer)),
+            new("InactiveOutlineColor", Rgb(outer)),
+            new("ActiveOutlineAlpha", outer.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("InactiveOutlineAlpha", outer.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("SecondOutlineColor", Rgb(inner)),
+            new("InactiveSecondOutlineColor", Rgb(inner)),
+            new("ActiveSecondOutlineAlpha", inner.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("InactiveSecondOutlineAlpha", inner.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture))
+        ];
+    }
+
+    private static Color ResolveColor(Application application, ThemeVariant? theme, string brushKey, string colorKey, string fallback)
+    {
+        if (application.TryGetResource(brushKey, theme, out var brushValue) && brushValue is ISolidColorBrush brush)
+        {
+            return brush.Color;
+        }
+
+        if (application.TryGetResource(colorKey, theme, out var colorValue) && colorValue is Color color)
+        {
+            return color;
+        }
+
+        return Color.Parse(fallback);
+    }
+
+    private static double ResolveDouble(Application application, ThemeVariant? theme, string key, double fallback) =>
+        application.TryGetResource(key, theme, out var value) && value is double number ? number : fallback;
+
+    private static string ResolveString(Application application, ThemeVariant? theme, string key, string fallback) =>
+        application.TryGetResource(key, theme, out var value) && value is string text && !string.IsNullOrWhiteSpace(text)
+            ? text.Replace('\n', ' ').Replace('\r', ' ').Trim()
+            : fallback;
+
+    private static string ToArgb(Color color) => $"#{color.A:X2}{color.R:X2}{color.G:X2}{color.B:X2}";
+    private static Color Opaque(Color color) => Color.FromArgb(255, color.R, color.G, color.B);
+
+    private static string GetConfigDirectory() =>
+        Environment.GetEnvironmentVariable("XDG_CONFIG_HOME")
+        ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config");
+
+    private static void ExportKWinConfig(IReadOnlyList<KeyValuePair<string, string>> values, string? group = null)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+
+        foreach (var (key, value) in values)
+        {
+            try
+            {
+                using var process = Process.Start(new ProcessStartInfo
+                {
+                    FileName = "kwriteconfig6",
+                    ArgumentList =
+                    {
+                        "--file", "kwinrc",
+                        "--group", group ?? (key == "ReduceMotion" ? "Effect-daisyos-window-motion" : "Effect-daisyos-task-overview-v15"),
+                        "--key", key,
+                        value
+                    },
+                    CreateNoWindow = true,
+                    UseShellExecute = false
+                });
+                process?.WaitForExit(2000);
+            }
+            catch
+            {
+                // The package defaults remain usable in stripped-down sessions.
+            }
+        }
+    }
+
+    private static void RequestKWinReconfigure()
+    {
+        if (!string.Equals(Environment.GetEnvironmentVariable("DAISYOS_SHELL_SESSION"), "1", StringComparison.Ordinal))
+        {
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "qdbus6",
+                ArgumentList = { "org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure" },
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "qdbus6",
+                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-window-motion" },
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "qdbus6",
+                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "kwin4_effect_shapecorners" },
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
+            // KWin.reconfigure discovers enabled effects; it does not reload a
+            // running SceneEffect's KConfigPropertyMap. Refresh its palette too.
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "qdbus6",
+                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-task-overview-v15" },
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
+        }
+        catch
+        {
+            // The file watcher in the decoration catches this path if qdbus6
+            // is unavailable in a minimal native development session.
+        }
+    }
+}

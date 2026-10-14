@@ -1,0 +1,19 @@
+# ninja log v7
+5	413	1790168519974062943	daisy_window_decoration_autogen/timestamp	e265ec86036c43b0
+5	413	1790168519974062943	daisy_window_decoration_autogen/mocs_compilation.cpp	e265ec86036c43b0
+5	413	1790168519974062943	/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/daisy_window_decoration_autogen/timestamp	e265ec86036c43b0
+5	413	1790168519974062943	/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/daisy_window_decoration_autogen/mocs_compilation.cpp	e265ec86036c43b0
+414	4380	1790168519993013523	CMakeFiles/daisy_window_decoration.dir/daisy_window_decoration_autogen/mocs_compilation.cpp.o	67639d444fb9056
+414	5761	1790168519993309527	CMakeFiles/daisy_window_decoration.dir/daisydecoration.cpp.o	30d5ddd38a044650
+8460	8695	1790168528037975073	org.daisyos.decoration.so	a0d90a12633450d5
+36	3715	1790346068971688108	build.ninja	1d2d3c7a6f35ff0c
+36	3715	1790346068963435919	/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/cmake_install.cmake	1d2d3c7a6f35ff0c
+4380	8460	1790168523958019271	CMakeFiles/daisy_window_decoration.dir/daisyframestyle.cpp.o	57b9118bc9640c72
+35	537	1790346069532372575	daisy_window_decoration_autogen/timestamp	147169c8eb4e0b23
+35	537	1790346069532372575	daisy_window_decoration_autogen/mocs_compilation.cpp	147169c8eb4e0b23
+35	537	1790346069532372575	/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/daisy_window_decoration_autogen/timestamp	147169c8eb4e0b23
+35	537	1790346069532372575	/home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/daisy_window_decoration_autogen/mocs_compilation.cpp	147169c8eb4e0b23
+537	4773	1790346069551372441	CMakeFiles/daisy_window_decoration.dir/daisy_window_decoration_autogen/mocs_compilation.cpp.o	6c7523fae552fb34
+538	5086	1790346069553095331	CMakeFiles/daisy_window_decoration.dir/daisyframestyle.cpp.o	aca28fee8c8662c7
+537	6354	1790346069552843575	CMakeFiles/daisy_window_decoration.dir/daisydecoration.cpp.o	bf09c75163921801
+6354	6559	1790346075368332008	org.daisyos.decoration.so	141d98042c08313a

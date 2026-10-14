@@ -1,0 +1,132 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.Components.Console.ConsoleMediaWidget"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    Height="48"
+    HorizontalAlignment="Left"
+    VerticalAlignment="Center">
+  <UserControl.Styles>
+    <Style Selector="Border.spectrumBar">
+      <Setter Property="Background" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    
+    <!-- Focusable Console Media Buttons -->
+    <Style Selector="Button.ConsoleMediaIconBtn">
+      <Setter Property="Width" Value="32" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurfaceInner}" />
+      <Setter Property="ClipToBounds" Value="False" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Panel ClipToBounds="False">
+            <Border x:Name="PART_FocusRing"
+                    BorderBrush="{DynamicResource ActionPrimaryBrush}"
+                    BorderThickness="2"
+                    CornerRadius="{DynamicResource RadiusSurface}"
+                    Margin="-5"
+                    Opacity="0"
+                    ClipToBounds="False">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Background="{TemplateBinding Background}"
+                              BorderBrush="{TemplateBinding BorderBrush}"
+                              BorderThickness="{TemplateBinding BorderThickness}"
+                              CornerRadius="{TemplateBinding CornerRadius}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              ClipToBounds="True">
+              <ContentPresenter.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </ContentPresenter.Transitions>
+            </ContentPresenter>
+          </Panel>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="Button.ConsoleMediaIconBtn:focus /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.ConsoleMediaIconBtn:pointerover /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.ConsoleMediaIconBtn controls|DaisyIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.ConsoleMediaIconBtn:focus controls|DaisyIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.ConsoleMediaIconBtn:pointerover controls|DaisyIcon">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Border x:Name="MediaFrame"
+          Height="48"
+          Background="Transparent"
+          ClipToBounds="False">
+    <Grid Margin="0,0,16,0" ColumnDefinitions="40,*,Auto,Auto">
+      <!-- Artwork -->
+      <Border Grid.Column="0" Width="40" Height="40" CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" VerticalAlignment="Center">
+        <Grid>
+          <Image x:Name="Artwork" theming:ThemeTransitionPolicy.Enabled="False" Stretch="UniformToFill" IsVisible="False" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+          <Border x:Name="SourceFallback" Background="{DynamicResource StateHoverBrush}">
+            <Grid>
+              <Image x:Name="SourceIcon" theming:ThemeTransitionPolicy.Enabled="False" Width="20" Height="20" IsVisible="False" RenderOptions.BitmapInterpolationMode="HighQuality"/>
+              <controls:DaisyIcon x:Name="SourceGlyph" Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeMedium}"
+                                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Grid>
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Track Info -->
+      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" Margin="12,0,16,0">
+        <TextBlock x:Name="MediaTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+        <TextBlock x:Name="MediaArtist" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+      </StackPanel>
+
+      <!-- Buttons -->
+      <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="12" VerticalAlignment="Center" ClipToBounds="False">
+        <Button x:Name="PreviousButton" Classes="ConsoleMediaIconBtn" Focusable="True" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+          <controls:DaisyIcon x:Name="PreviousGlyph" Icon="rewind" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}"/>
+        </Button>
+        <Button x:Name="PlayPauseButton" Classes="ConsoleMediaIconBtn" Focusable="True" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+          <controls:DaisyIcon x:Name="PlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}"/>
+        </Button>
+        <Button x:Name="NextButton" Classes="ConsoleMediaIconBtn" Focusable="True" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+          <controls:DaisyIcon x:Name="NextGlyph" Icon="fast-forward" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}"/>
+        </Button>
+      </StackPanel>
+
+      <!-- Spectrum -->
+      <Canvas x:Name="SpectrumCanvas" Grid.Column="3" Width="36" Height="24" Margin="12,0,0,0"
+              VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False"/>
+    </Grid>
+  </Border>
+</UserControl>

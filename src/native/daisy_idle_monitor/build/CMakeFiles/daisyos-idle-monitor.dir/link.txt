@@ -1,0 +1,1 @@
+/usr/bin/cc -Wl,--dependency-file=CMakeFiles/daisyos-idle-monitor.dir/link.d "CMakeFiles/daisyos-idle-monitor.dir/daisy_idle.c.o" "CMakeFiles/daisyos-idle-monitor.dir/ext-idle-notify-v1-protocol.c.o" -o daisyos-idle-monitor  -lwayland-client -lm -lpthread

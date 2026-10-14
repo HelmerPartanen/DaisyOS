@@ -1,0 +1,957 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.Components.Console.ConsoleSettingsOverlay"
+    x:Name="Root"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    IsVisible="False"
+    IsHitTestVisible="False"
+    Opacity="0"
+    ZIndex="700"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch">
+
+  <UserControl.Transitions>
+    <Transitions>
+      <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+    </Transitions>
+  </UserControl.Transitions>
+
+  <UserControl.Styles>
+
+    <Style Selector="controls|DaisyIcon.SettingsIcon">
+      <Setter Property="Size" Value="20" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <!-- Top Header Navigation Icon Button (Chevron Back) -->
+    <Style Selector="Button.ConsoleHeaderNavIcon">
+      <Setter Property="Width" Value="36" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+      <Setter Property="ClipToBounds" Value="False" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Panel ClipToBounds="False">
+            <Border x:Name="PART_FocusRing"
+                    BorderBrush="{DynamicResource ActionPrimaryBrush}"
+                    BorderThickness="2"
+                    CornerRadius="{DynamicResource RadiusSurface}"
+                    Margin="-5"
+                    Opacity="0"
+                    ClipToBounds="False">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Background="{TemplateBinding Background}"
+                              BorderBrush="{TemplateBinding BorderBrush}"
+                              BorderThickness="{TemplateBinding BorderThickness}"
+                              CornerRadius="{TemplateBinding CornerRadius}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              ClipToBounds="True">
+              <ContentPresenter.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </ContentPresenter.Transitions>
+            </ContentPresenter>
+          </Panel>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="Button.ConsoleHeaderNavIcon:focus /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.ConsoleHeaderNavIcon:pointerover /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <!-- Sidebar Category Tab Buttons -->
+    <Style Selector="Button.SettingsCategoryBtn">
+      <Setter Property="Height" Value="46" />
+      <Setter Property="Padding" Value="16,0" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="ClipToBounds" Value="False" />
+
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Panel ClipToBounds="False">
+            <Border x:Name="PART_FocusRing"
+                    BorderBrush="{DynamicResource ActionPrimaryBrush}"
+                    BorderThickness="2"
+                    CornerRadius="{DynamicResource RadiusPill}"
+                    Margin="-4"
+                    Opacity="0"
+                    ClipToBounds="False">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Background="{TemplateBinding Background}"
+                              BorderBrush="{TemplateBinding BorderBrush}"
+                              BorderThickness="{TemplateBinding BorderThickness}"
+                              CornerRadius="{TemplateBinding CornerRadius}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              ClipToBounds="True">
+              <ContentPresenter.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </ContentPresenter.Transitions>
+            </ContentPresenter>
+          </Panel>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="Button.SettingsCategoryBtn.Active /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.SettingsCategoryBtn.Active TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
+    <Style Selector="Button.SettingsCategoryBtn:focus /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.SettingsCategoryBtn:pointerover:not(.Active) /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.SettingsCategoryBtn:focus TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.SettingsCategoryBtn.Active:focus TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+      <Setter Property="FontWeight" Value="Bold" />
+    </Style>
+
+    <!-- Settings Row Fully Rounded Capsule Button Container with Offset Focus Ring -->
+    <Style Selector="Button.ConsoleSettingRow">
+      <Setter Property="Height" Value="60" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+      <Setter Property="Padding" Value="28,0" />
+      <Setter Property="Margin" Value="6,6" />
+      <Setter Property="MaxWidth" Value="1080" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="ClipToBounds" Value="False" />
+
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Panel ClipToBounds="False">
+            <!-- White Offset Capsule Focus Ring -->
+            <Border x:Name="PART_FocusRing"
+                    BorderBrush="{DynamicResource ActionPrimaryBrush}"
+                    BorderThickness="2"
+                    CornerRadius="{DynamicResource RadiusPill}"
+                    Margin="-5"
+                    Opacity="0"
+                    ClipToBounds="False">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+
+            <ContentPresenter x:Name="PART_ContentPresenter"
+                              Background="{TemplateBinding Background}"
+                              BorderBrush="{TemplateBinding BorderBrush}"
+                              BorderThickness="{TemplateBinding BorderThickness}"
+                              CornerRadius="{TemplateBinding CornerRadius}"
+                              Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              Padding="{TemplateBinding Padding}"
+                              HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                              ClipToBounds="True">
+              <ContentPresenter.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+                </Transitions>
+              </ContentPresenter.Transitions>
+            </ContentPresenter>
+          </Panel>
+        </ControlTemplate>
+      </Setter>
+    </Style>
+
+    <Style Selector="Button.ConsoleSettingRow:focus /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <Style Selector="Button.ConsoleSettingRow:pointerover /template/ Border#PART_FocusRing">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+    <!-- Inner Device Picker Pill -->
+    <Style Selector="Border.ConsoleDevicePill">
+      <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+      <Setter Property="Padding" Value="24,8" />
+      <Setter Property="MinWidth" Value="180" />
+    </Style>
+
+    <Style Selector="StackPanel.SettingsTabPanel">
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+
+    <Style Selector="StackPanel.SettingsTabPanel.ActiveTab">
+      <Setter Property="IsHitTestVisible" Value="True" />
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+
+  </UserControl.Styles>
+
+  <!-- Fullscreen Main Canvas -->
+  <Grid Background="{DynamicResource SurfaceCanvasBrush}"
+        HorizontalAlignment="Stretch"
+        VerticalAlignment="Stretch"
+        RowDefinitions="Auto,*,Auto">
+
+    <!-- Top Header Row -->
+    <Grid Grid.Row="0"
+          Margin="32,36,36,24"
+          ColumnDefinitions="Auto,*,Auto"
+          VerticalAlignment="Center">
+
+      <StackPanel Grid.Column="0"
+                  Orientation="Horizontal"
+                  Spacing="8"
+                  VerticalAlignment="Center">
+
+        <Button x:Name="BackButton"
+                Click="OnCloseClicked"
+                Classes="ConsoleHeaderNavIcon"
+                ToolTip.Tip="{DynamicResource Loc_76900F1BFD16}">
+          <controls:DaisyIcon Icon="arrow-left"
+                     Classes="SettingsIcon"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     Foreground="{DynamicResource ContentPrimaryBrush}" />
+        </Button>
+
+        <TextBlock Text="{DynamicResource Loc_74A883A037BC}"
+                   FontSize="{DynamicResource TypeSizeHeading}"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                   VerticalAlignment="Center"
+                   Margin="8,0,0,0" />
+
+      </StackPanel>
+
+      <TextBlock Grid.Column="2"
+                 x:Name="ClockText"
+                 Text="20:20"
+                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                 FontWeight="SemiBold"
+                 Foreground="{DynamicResource ContentSecondaryBrush}"
+                 VerticalAlignment="Center" />
+    </Grid>
+
+    <!-- Main Section Grid (Full Height Sidebar + Settings Content Area) -->
+    <Grid Grid.Row="1"
+          ColumnDefinitions="240,*"
+          Margin="32,4,36,12"
+          VerticalAlignment="Stretch"
+          HorizontalAlignment="Stretch"
+          ClipToBounds="False">
+
+      <!-- Full Height Categories Sidebar -->
+      <Border Grid.Column="0"
+              Background="{DynamicResource SurfaceBaseBrush}"
+              CornerRadius="{DynamicResource RadiusPill}"
+              BorderBrush="{DynamicResource StrokeDefaultBrush}"
+              BorderThickness="1"
+              Padding="12,16"
+              VerticalAlignment="Top"
+              ClipToBounds="False">
+
+        <StackPanel Spacing="6" ClipToBounds="False">
+
+          <TextBlock Text="{DynamicResource Loc_B4F5059032FA}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     FontWeight="Bold"
+                     Foreground="{DynamicResource ContentDisabledBrush}"
+                     Margin="12,4,0,10"
+                     LetterSpacing="1" />
+
+          <Button x:Name="TabAudioBtn"
+                  Classes="SettingsCategoryBtn Active"
+                  Click="OnTabClicked"
+                  Tag="Audio">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="speaker-high" Classes="SettingsIcon" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_46124E023603}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="TabNetworkBtn"
+                  Classes="SettingsCategoryBtn"
+                  Click="OnTabClicked"
+                  Tag="Network">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="wifi-high" Classes="SettingsIcon" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_1744B96470B5}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="TabBluetoothBtn"
+                  Classes="SettingsCategoryBtn"
+                  Click="OnTabClicked"
+                  Tag="Bluetooth">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="bluetooth" Classes="SettingsIcon" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_8BB29098B369}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="TabDisplayBtn"
+                  Classes="SettingsCategoryBtn"
+                  Click="OnTabClicked"
+                  Tag="Display">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="desktop" Classes="SettingsIcon" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_34E108C0896D}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="TabControlsBtn"
+                  Classes="SettingsCategoryBtn"
+                  Click="OnTabClicked"
+                  Tag="Controls">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="game-controller" Classes="SettingsIcon" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_31DF66DC9F06}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+          <Button x:Name="TabSystemBtn"
+                  Classes="SettingsCategoryBtn"
+                  Click="OnTabClicked"
+                  Tag="System">
+            <StackPanel Orientation="Horizontal" Spacing="12" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="sliders-horizontal" Classes="SettingsIcon" VerticalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_6725E7BBCD28}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold" VerticalAlignment="Center" />
+            </StackPanel>
+          </Button>
+
+        </StackPanel>
+      </Border>
+
+      <!-- Main Content Area (Right Column) -->
+      <Grid Grid.Column="1"
+            Margin="36,0,0,0"
+            RowDefinitions="Auto,*"
+            VerticalAlignment="Stretch"
+            ClipToBounds="False">
+
+        <TextBlock x:Name="CategoryTitleText"
+                   Grid.Row="0"
+                   Text="{DynamicResource Loc_BC1B88907D3B}"
+                   FontSize="{DynamicResource TypeSizeDisplayLarge}"
+                   FontWeight="Bold"
+                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                   Margin="0,0,0,24" />
+
+        <ScrollViewer Grid.Row="1"
+                      HorizontalScrollBarVisibility="Disabled"
+                      VerticalScrollBarVisibility="Hidden">
+
+          <Panel ClipToBounds="False" Margin="0,0,0,40">
+
+            <Grid ClipToBounds="False">
+
+              <!-- PANEL 1: SOUND / AUDIO -->
+              <StackPanel x:Name="AudioPanel"
+                          Spacing="8"
+                          Classes="SettingsTabPanel"
+                          ClipToBounds="False">
+
+                <!-- Row 1: Volume -->
+                <Button x:Name="VolumeRowBtn" Classes="ConsoleSettingRow">
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Loc_B10FB966D720}"
+                               FontSize="{DynamicResource TypeSizeBodyLarge}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <controls:ConsolePillSlider Grid.Column="1"
+                                                x:Name="MasterVolumePillSlider"
+                                                Icon="speaker-high"
+                                                Value="50"
+                                                Width="360"
+                                                ValueChanged="OnMasterVolumePillChanged" />
+                  </Grid>
+                </Button>
+
+                <!-- Row 2: Mic level -->
+                <Button x:Name="MicRowBtn" Classes="ConsoleSettingRow">
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Loc_085F1DDC797C}"
+                               FontSize="{DynamicResource TypeSizeBodyLarge}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <controls:ConsolePillSlider Grid.Column="1"
+                                                x:Name="MicVolumePillSlider"
+                                                Icon="microphone"
+                                                Value="50"
+                                                Width="360"
+                                                ValueChanged="OnMicVolumePillChanged" />
+                  </Grid>
+                </Button>
+
+                <!-- Subtle 1px Divider -->
+                <Border Height="1"
+                        Background="{DynamicResource StrokeDefaultBrush}"
+                        Margin="6,6,6,6"
+                        MaxWidth="1080"
+                        HorizontalAlignment="Stretch" />
+
+                <!-- Row 3: Output device -->
+                <Button x:Name="OutputDeviceRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnToggleOutputDeviceClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <TextBlock Text="{DynamicResource Loc_B2FAD20F557E}"
+                               FontSize="{DynamicResource TypeSizeBodyLarge}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <Border Grid.Column="1" Classes="ConsoleDevicePill">
+                      <TextBlock x:Name="OutputDeviceText"
+                                 Text="{DynamicResource Loc_21B111CBFE6E}"
+                                 FontSize="{DynamicResource TypeSizeBody}"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+
+                  </Grid>
+                </Button>
+
+                <!-- Row 4: Input device -->
+                <Button x:Name="InputDeviceRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnToggleInputDeviceClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <TextBlock Text="{DynamicResource Loc_42B6A9E8964A}"
+                               FontSize="{DynamicResource TypeSizeBodyLarge}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <Border Grid.Column="1" Classes="ConsoleDevicePill">
+                      <TextBlock x:Name="InputDeviceText"
+                                 Text="{DynamicResource Loc_21B111CBFE6E}"
+                                 FontSize="{DynamicResource TypeSizeBody}"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+
+                  </Grid>
+                </Button>
+
+              </StackPanel>
+
+              <!-- PANEL 2: NETWORK -->
+              <StackPanel x:Name="NetworkPanel"
+                          Spacing="8"
+                          Classes="SettingsTabPanel"
+                          ClipToBounds="False">
+
+                <Button x:Name="WifiRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnRefreshWifiClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{DynamicResource Loc_4B3685200606}"
+                                 FontSize="{DynamicResource TypeSizeBodyLarge}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+                      <TextBlock x:Name="NetworkStatusText"
+                                 Text="{DynamicResource Loc_E91B12B8D780}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 Foreground="{DynamicResource ContentSecondaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="12"
+                                VerticalAlignment="Center">
+
+                      <ToggleSwitch x:Name="WifiToggleSwitch"
+                                    IsChecked="True"
+                                    VerticalAlignment="Center" />
+
+                      <Border Classes="ConsoleDevicePill">
+                        <TextBlock Text="{DynamicResource Loc_6ABBE217D4D2}"
+                                   FontSize="{DynamicResource TypeSizeBodySmall}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                      </Border>
+
+                    </StackPanel>
+
+                  </Grid>
+                </Button>
+
+                <StackPanel x:Name="WifiListStack" Spacing="8" />
+
+              </StackPanel>
+
+              <!-- PANEL 3: BLUETOOTH -->
+              <StackPanel x:Name="BluetoothPanel"
+                          Spacing="8"
+                          Classes="SettingsTabPanel"
+                          ClipToBounds="False">
+
+                <Button x:Name="BluetoothRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnRefreshBluetoothClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <StackPanel Spacing="4">
+                      <TextBlock Text="{DynamicResource Loc_C750568FB9A0}"
+                                 FontSize="{DynamicResource TypeSizeBodyLarge}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+                      <TextBlock x:Name="BluetoothStatusText"
+                                 Text="{DynamicResource Loc_7FD87C63D104}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 Foreground="{DynamicResource ContentSecondaryBrush}" />
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1"
+                                Orientation="Horizontal"
+                                Spacing="12"
+                                VerticalAlignment="Center">
+
+                      <ToggleSwitch x:Name="BluetoothToggleSwitch"
+                                    IsChecked="True"
+                                    VerticalAlignment="Center" />
+
+                      <Border Classes="ConsoleDevicePill">
+                        <TextBlock Text="{DynamicResource Loc_ABECE0D35B17}"
+                                   FontSize="{DynamicResource TypeSizeBodySmall}"
+                                   FontWeight="SemiBold"
+                                   Foreground="{DynamicResource ContentPrimaryBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center" />
+                      </Border>
+
+                    </StackPanel>
+
+                  </Grid>
+                </Button>
+
+                <StackPanel x:Name="BluetoothListStack" Spacing="8" />
+
+              </StackPanel>
+
+              <!-- PANEL 4: DISPLAY -->
+              <StackPanel x:Name="DisplayPanel"
+                          Spacing="8"
+                          Classes="SettingsTabPanel"
+                          ClipToBounds="False">
+
+                <Button x:Name="BrightnessRowBtn" Classes="ConsoleSettingRow">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <TextBlock Text="{DynamicResource Loc_EC811D30A89C}"
+                               FontSize="{DynamicResource TypeSizeBodyLarge}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <controls:ConsolePillSlider Grid.Column="1"
+                                                x:Name="BrightnessPillSlider"
+                                                Icon="sun"
+                                                Value="100"
+                                                Width="360" />
+
+                  </Grid>
+                </Button>
+
+                <Button x:Name="ResolutionRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnToggleResolutionClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <TextBlock Text="{DynamicResource Loc_D4055FAFA379}"
+                               FontSize="{DynamicResource TypeSizeBodyLarge}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               VerticalAlignment="Center" />
+
+                    <Border Grid.Column="1" Classes="ConsoleDevicePill">
+                      <TextBlock x:Name="ResolutionText"
+                                 Text="{DynamicResource Loc_B885A510FC82}"
+                                 FontSize="{DynamicResource TypeSizeBody}"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+                    </Border>
+
+                  </Grid>
+                </Button>
+
+              </StackPanel>
+
+              <!-- PANEL 5: CONTROLLER & KEYBINDINGS -->
+              <StackPanel x:Name="ControlsPanel"
+                          Spacing="8"
+                          Classes="SettingsTabPanel"
+                          ClipToBounds="False">
+
+                <Button x:Name="RemapInfoRowBtn" Classes="ConsoleSettingRow">
+                  <StackPanel Spacing="6">
+
+                    <TextBlock Text="{DynamicResource Loc_D67FEAC83ECB}"
+                               FontSize="{DynamicResource TypeSizeBodyLarge}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+                    <TextBlock Text="{DynamicResource Loc_DFBC965B0779}"
+                               FontSize="{DynamicResource TypeSizeBodySmall}"
+                               Foreground="{DynamicResource ContentSecondaryBrush}" />
+
+                  </StackPanel>
+                </Button>
+
+                <StackPanel x:Name="KeybindingsListStack" Spacing="8" />
+
+                <Border Classes="ConsoleSettingRow"
+                        Background="{DynamicResource SurfaceBaseBrush}"
+                        MaxWidth="1080"
+                        Margin="6,6">
+
+                  <StackPanel Spacing="6">
+
+                    <TextBlock Text="{DynamicResource Loc_5B8F8A5AA9EA}"
+                               FontSize="{DynamicResource TypeSizeCaption}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               LetterSpacing="1" />
+
+                    <TextBlock x:Name="LiveTestFeedText"
+                               Text="{DynamicResource Loc_6398612A422C}"
+                               FontSize="{DynamicResource TypeSizeBodySmall}"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource ContentSecondaryBrush}"
+                               TextWrapping="Wrap" />
+
+                  </StackPanel>
+                </Border>
+
+                <Button x:Name="ResetKeybindingsRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnResetKeybindingsClicked">
+
+                  <TextBlock Text="{DynamicResource Loc_91B15CD6C53C}"
+                             FontSize="{DynamicResource TypeSizeBodyLarge}"
+                             FontWeight="Bold"
+                             Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+                </Button>
+
+              </StackPanel>
+
+              <!-- PANEL 6: SYSTEM & POWER -->
+              <StackPanel x:Name="SystemPanel"
+                          Spacing="8"
+                          Classes="SettingsTabPanel"
+                          ClipToBounds="False">
+
+                <Button x:Name="ReturnDesktopRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnReturnToDesktopClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <StackPanel Spacing="4">
+
+                      <TextBlock Text="{DynamicResource Loc_EAAC2B1A8F5F}"
+                                 FontSize="{DynamicResource TypeSizeBodyLarge}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+                      <TextBlock Text="{DynamicResource Loc_F59003F9CC6D}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 Foreground="{DynamicResource ContentSecondaryBrush}" />
+
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Classes="ConsoleDevicePill">
+
+                      <TextBlock Text="{DynamicResource Loc_9E79E595C1EB}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+
+                    </Border>
+
+                  </Grid>
+                </Button>
+
+                <Button x:Name="RestartRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnRestartClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <StackPanel Spacing="4">
+
+                      <TextBlock Text="{DynamicResource Loc_F9D3416A6E4F}"
+                                 FontSize="{DynamicResource TypeSizeBodyLarge}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+                      <TextBlock Text="{DynamicResource Loc_F6C15276AD14}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 Foreground="{DynamicResource ContentSecondaryBrush}" />
+
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Classes="ConsoleDevicePill">
+
+                      <TextBlock Text="{DynamicResource Loc_6B983A81E5E8}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+
+                    </Border>
+
+                  </Grid>
+                </Button>
+
+                <Button x:Name="ShutdownRowBtn"
+                        Classes="ConsoleSettingRow"
+                        Click="OnShutdownClicked">
+
+                  <Grid ColumnDefinitions="*,Auto" VerticalAlignment="Center">
+
+                    <StackPanel Spacing="4">
+
+                      <TextBlock Text="{DynamicResource Loc_2C8D5531091C}"
+                                 FontSize="{DynamicResource TypeSizeBodyLarge}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+                      <TextBlock Text="{DynamicResource Loc_D67E0C9113FA}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 Foreground="{DynamicResource ContentSecondaryBrush}" />
+
+                    </StackPanel>
+
+                    <Border Grid.Column="1" Classes="ConsoleDevicePill">
+
+                      <TextBlock Text="{DynamicResource Loc_2C8D5531091C}"
+                                 FontSize="{DynamicResource TypeSizeBodySmall}"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+
+                    </Border>
+
+                  </Grid>
+                </Button>
+
+              </StackPanel>
+
+            </Grid>
+
+          </Panel>
+
+        </ScrollViewer>
+
+      </Grid>
+
+    </Grid>
+
+    <!-- Bottom Footer Row (Hints Only) -->
+    <Border Grid.Row="2"
+            Padding="32,8,36,20"
+            Background="Transparent"
+            VerticalAlignment="Bottom">
+
+      <Grid RenderOptions.BitmapInterpolationMode="HighQuality">
+
+        <StackPanel Orientation="Horizontal"
+                    Spacing="24"
+                    VerticalAlignment="Center">
+
+          <!-- LB / RB Switch Tab -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+
+            <Border Background="{DynamicResource StrokeDefaultBrush}"
+                    CornerRadius="{DynamicResource RadiusControlInner}"
+                    Padding="6,2">
+
+              <TextBlock Text="{DynamicResource Loc_6F9A285614EF}"
+                         FontSize="{DynamicResource TypeSizeCaption}"
+                         FontWeight="Bold"
+                         Foreground="{DynamicResource ContentPrimaryBrush}" />
+
+            </Border>
+
+            <TextBlock Text="{DynamicResource Loc_4161C11E08DE}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource ContentSecondaryBrush}"
+                       VerticalAlignment="Center" />
+
+          </StackPanel>
+
+          <!-- D-Pad Navigate -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+
+            <Image x:Name="HintDpadImage"
+                   Width="18"
+                   Height="18"
+                   VerticalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+            <TextBlock Text="{DynamicResource Loc_5EA5FBE811DB}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource ContentSecondaryBrush}"
+                       VerticalAlignment="Center" />
+
+          </StackPanel>
+
+          <!-- Select -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+
+            <Image x:Name="HintConfirmImage"
+                   Width="18"
+                   Height="18"
+                   VerticalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+            <TextBlock Text="{DynamicResource Loc_2A78025DE6AA}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource ContentSecondaryBrush}"
+                       VerticalAlignment="Center" />
+
+          </StackPanel>
+
+          <!-- Details -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+
+            <Image x:Name="HintDetailsImage"
+                   Width="18"
+                   Height="18"
+                   VerticalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+            <TextBlock Text="{DynamicResource Loc_45989DE49FB7}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource ContentSecondaryBrush}"
+                       VerticalAlignment="Center" />
+
+          </StackPanel>
+
+          <!-- Back -->
+          <StackPanel Orientation="Horizontal"
+                      Spacing="8"
+                      VerticalAlignment="Center">
+
+            <Image x:Name="HintBackImage"
+                   Width="18"
+                   Height="18"
+                   VerticalAlignment="Center"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+            <TextBlock Text="{DynamicResource Loc_76900F1BFD16}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource ContentSecondaryBrush}"
+                       VerticalAlignment="Center" />
+
+          </StackPanel>
+
+        </StackPanel>
+      </Grid>
+    </Border>
+
+  </Grid>
+
+</UserControl>

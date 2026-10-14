@@ -1,0 +1,110 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        x:Class="DaisyOS.Shell.Views.Components.Clipboard.ClipboardHistoryWindow"
+        Title="{DynamicResource Loc_7F62794169A7}"
+        Width="440"
+        Height="540"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        ShowInTaskbar="False"
+        Topmost="True">
+
+  <controls:ShellFrameBorder Margin="16"
+          Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+          CornerRadius="{DynamicResource RoundedLG}"
+          Padding="1"
+          BoxShadow="{DynamicResource ElevationDialogShadow}">
+    <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+            CornerRadius="{DynamicResource RoundedLGInset}"
+            Padding="1">
+      <Border Background="{DynamicResource SurfaceBaseBrush}"
+              CornerRadius="{DynamicResource RoundedMD}"
+              Padding="18">
+        <Grid RowDefinitions="Auto,Auto,*,Auto">
+          <!-- Header -->
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,12">
+            <Border Grid.Column="0"
+                    Width="36"
+                    Height="36"
+                    CornerRadius="{DynamicResource RadiusSurface}"
+                    Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                    Margin="0,0,12,0">
+              <controls:DaisyIcon Icon="clipboard-text"
+                                 Foreground="{DynamicResource ActionPrimaryBrush}"
+                                 Size="{DynamicResource IconSizeMedium}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock Text="{DynamicResource Loc_7F62794169A7}"
+                         FontSize="{DynamicResource TypeSizeBodyLarge}"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Text="{DynamicResource Loc_98781F451D9B}"
+                         FontSize="{DynamicResource TypeSizeCaption}"
+                         Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="2"
+                    x:Name="ClearAllButton"
+                    Content="{DynamicResource Loc_DDCEB7ADFDB8}"
+                    Classes="SettingsActionButton"
+                    Height="28"
+                    Padding="10,0"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center" />
+            <Button Grid.Column="3"
+                    x:Name="CloseButton"
+                    Classes="GhostButton"
+                    Width="28"
+                    Height="28"
+                    Padding="0"
+                    VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </Button>
+          </Grid>
+
+          <!-- Search Filter -->
+          <Border Grid.Row="1" Margin="0,0,0,10">
+            <controls:SearchBar x:Name="SearchBox"
+                     PlaceholderText="{DynamicResource Loc_A5C27CFF4B1A}"
+                     Height="42" />
+          </Border>
+
+          <!-- Clipboard Items List -->
+          <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+            <StackPanel x:Name="ItemsContainer" Spacing="6" />
+          </ScrollViewer>
+
+          <!-- Empty State -->
+          <StackPanel x:Name="EmptyState" Classes="EmptyState"
+                      Grid.Row="2"
+                      IsVisible="False">
+            <controls:DaisyIcon Icon="clipboard"
+                                />
+            <TextBlock Text="{DynamicResource Loc_C9BE0EE3B9EF}"
+                       FontSize="{DynamicResource TypeSizeBody}"
+                       FontWeight="Medium"
+                       Foreground="{DynamicResource ContentSecondaryBrush}"
+                       HorizontalAlignment="Center" />
+            <TextBlock Text="{DynamicResource Loc_36F87046253C}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       Foreground="{DynamicResource ContentTertiaryBrush}"
+                       HorizontalAlignment="Center" />
+          </StackPanel>
+
+          <!-- Footer status -->
+          <Border Grid.Row="3" Margin="0,10,0,0" Padding="0,6,0,0" BorderBrush="{DynamicResource StrokeDefaultBrush}" BorderThickness="0,1,0,0">
+            <TextBlock x:Name="StatusText"
+                       Text="{DynamicResource Loc_0FA426680466}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       Foreground="{DynamicResource ContentTertiaryBrush}" />
+          </Border>
+        </Grid>
+      </Border>
+    </controls:ShellFrameBorder>
+  </controls:ShellFrameBorder>
+</Window>

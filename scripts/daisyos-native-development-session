@@ -1,0 +1,708 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+# Display-manager entry point for the real layer-shell development workflow.
+# Unlike daisyos-development-session, this never creates the fullscreen
+# xdg_toplevel prototype. KWin owns normal windows; the shell owns only its
+# layer surfaces and can be restarted without ending the compositor session.
+config_file="${DAISYOS_NATIVE_DEVELOPMENT_CONFIG:-/etc/daisyos/daisyos-native-development.conf}"
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/DaisyOS"
+session_log="$state_dir/native-development-session.log"
+runtime_root=""
+source_root=""
+kwin_pid=""
+shell_pid=""
+socket_name=""
+decoration_previous_library=""
+decoration_previous_no_plugin=""
+memory_total_mib=""
+memory_reserve_mib=""
+memory_core_min_mib=""
+memory_apps_high_mib=""
+memory_policy_active="${DAISYOS_MEMORY_POLICY_ACTIVE:-0}"
+
+if [[ -r "$config_file" ]]; then
+  # The installed configuration is administrator-owned and contains only the
+  # checkout path written by the installer.
+  # shellcheck disable=SC1090
+  source "$config_file"
+fi
+
+source_root="${DAISYOS_NATIVE_DEVELOPMENT_ROOT:-}"
+
+log_message() {
+  local message="$1"
+  local record
+  mkdir -p "$state_dir"
+  record="$(date --iso-8601=seconds) $message"
+  printf '%s\n' "$record" >> "$session_log"
+  if command -v systemd-cat >/dev/null 2>&1; then
+    printf '%s\n' "$record" | systemd-cat -t daisyos-native-development-session || true
+  fi
+  printf '%s\n' "$message" >&2
+}
+
+write_runtime_value() {
+  local name="$1"
+  local value="$2"
+  umask 077
+  printf '%s\n' "$value" > "$runtime_root/$name.tmp.$$"
+  mv -f "$runtime_root/$name.tmp.$$" "$runtime_root/$name"
+}
+
+remove_runtime_value() {
+  rm -f "$runtime_root/$1"
+}
+
+resolve_source_root() {
+  if [[ -z "$source_root" || ! -d "$source_root/src/DaisyOS.Shell" ]]; then
+    log_message "DaisyOS development source is unavailable. Expected a checkout containing src/DaisyOS.Shell."
+    exit 1
+  fi
+
+  source_root="$(cd "$source_root" && pwd -P)"
+}
+
+memory_policy_value() {
+  local key="$1"
+  "$source_root/scripts/daisyos-memory-policy.sh" "$key"
+}
+
+prepare_memory_policy() {
+  if [[ ! -x "$source_root/scripts/daisyos-memory-policy.sh" ]]; then
+    log_message "DaisyOS memory policy is missing from the checkout. The native session cannot safely start without it."
+    return 1
+  fi
+
+  if [[ "$(stat -fc %T /sys/fs/cgroup 2>/dev/null || true)" != "cgroup2fs" ]]; then
+    log_message "DaisyOS memory protection requires the unified cgroup v2 hierarchy. The native session will not start without memory protection."
+    return 1
+  fi
+
+  memory_total_mib="$(memory_policy_value total-mib)"
+  memory_reserve_mib="$(memory_policy_value reserve-mib)"
+  memory_core_min_mib="$(memory_policy_value core-min-mib)"
+  memory_apps_high_mib="$(memory_policy_value apps-high-mib)"
+}
+
+start_memory_protected_session() {
+  resolve_source_root
+  prepare_memory_policy || return 1
+
+  if [[ "$memory_policy_active" == "1" ]]; then
+    start_compositor_and_shell
+    return
+  fi
+
+  if ! command -v systemd-run >/dev/null 2>&1 || ! systemctl --user show-environment >/dev/null 2>&1; then
+    log_message "DaisyOS memory protection requires a running systemd user manager. The native session will not start without its protected memory cgroup."
+    return 1
+  fi
+
+  log_message "Starting DaisyOS with ${memory_reserve_mib} MiB reserved headroom (${memory_core_min_mib} MiB hard protection for KWin and the shell)."
+  exec systemd-run --user --quiet --wait --collect \
+    --unit="daisyos-native-development-memory-${UID}" \
+    --property="MemoryAccounting=yes" \
+    --property="MemoryLow=${memory_reserve_mib}M" \
+    --property="MemoryMin=${memory_core_min_mib}M" \
+    --property="ManagedOOMPreference=avoid" \
+    --setenv=DAISYOS_MEMORY_POLICY_ACTIVE=1 \
+    --setenv=DAISYOS_MEMORY_TOTAL_MIB="$memory_total_mib" \
+    --setenv=DAISYOS_MEMORY_RESERVE_MIB="$memory_reserve_mib" \
+    --setenv=DAISYOS_MEMORY_CORE_MIN_MIB="$memory_core_min_mib" \
+    --setenv=DAISYOS_MEMORY_APPS_HIGH_MIB="$memory_apps_high_mib" \
+    "$0" --memory-protected
+}
+
+prepare_runtime_directory() {
+  if [[ -z "${XDG_RUNTIME_DIR:-}" || ! -d "${XDG_RUNTIME_DIR:-}" ]]; then
+    log_message "A display-manager Wayland runtime directory is required for DaisyOS Native Development."
+    exit 1
+  fi
+
+  runtime_root="$XDG_RUNTIME_DIR/daisyos-native-development"
+  umask 077
+  mkdir -p "$runtime_root"
+  chmod 0700 "$runtime_root"
+  if [[ "$(stat -c '%u' "$runtime_root")" != "$UID" ]]; then
+    log_message "The native development runtime directory is not owned by the current user."
+    exit 1
+  fi
+
+  rm -f "$runtime_root/restart.request" "$runtime_root/shell.pid" \
+    "$runtime_root/kwin.pid" "$runtime_root/wayland-display" "$runtime_root/last-status" \
+    "$runtime_root/decoration.previous-library" "$runtime_root/decoration.previous-no-plugin" \
+    "$runtime_root/memory.total-mib" "$runtime_root/memory.reserve-mib" \
+    "$runtime_root/memory.core-min-mib" "$runtime_root/memory.apps-high-mib"
+  write_runtime_value supervisor.pid "$$"
+}
+
+publish_session_environment() {
+  # Import only the managed locale values, never execute user configuration.
+  daisy_language_file="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d/90-daisyos-language.conf"
+  if [[ -f "$daisy_language_file" ]]; then
+    while IFS='=' read -r daisy_locale_key daisy_locale_value; do
+      case "$daisy_locale_key:$daisy_locale_value" in
+        LANG:en_US.UTF-8|LANG:fi_FI.UTF-8|LANG:C.UTF-8|LC_MESSAGES:en_US.UTF-8|LC_MESSAGES:fi_FI.UTF-8|LC_MESSAGES:C.UTF-8|LANGUAGE:en|LANGUAGE:fi:en|LC_ALL:)
+          export "$daisy_locale_key=$daisy_locale_value" ;;
+      esac
+    done < "$daisy_language_file"
+  fi
+
+  export DAISYOS_SHELL_SERVICES=real
+  export DESKTOP_SESSION=daisyos-native-development
+  export XDG_CURRENT_DESKTOP=DaisyOS
+  export XDG_SESSION_DESKTOP=DaisyOS
+  export XDG_SESSION_TYPE=wayland
+  export DAISYOS_MEMORY_APP_SLICE=daisyos-apps.slice
+  # KDE Frameworks services (like KWin's screenshot authorization trader)
+  # require XDG_MENU_PREFIX to find plasma-applications.menu on Arch/KDE systems.
+  export XDG_MENU_PREFIX="${XDG_MENU_PREFIX:-plasma-}"
+  # Make Qt applications load the KDE platform integration, whose portal
+  # appearance setting is updated whenever DaisyOS changes theme. Respect an
+  # explicit user override for developer diagnostics or custom integrations.
+  export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-kde}"
+  export XCURSOR_THEME="$(kreadconfig6 --file kcminputrc --group Mouse --key cursorTheme --default DaisyOS-Dark)"
+  export XCURSOR_SIZE="$(kreadconfig6 --file kcminputrc --group Mouse --key cursorSize --default 32)"
+  if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+    dbus-update-activation-environment --systemd \
+      DISPLAY WAYLAND_DISPLAY XAUTHORITY XCURSOR_THEME XCURSOR_SIZE LANG LANGUAGE LC_MESSAGES LC_ALL \
+      XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_MENU_PREFIX QT_QPA_PLATFORMTHEME >/dev/null 2>&1 || true
+  fi
+}
+
+refresh_desktop_service_cache() {
+  if ! command -v kbuildsycoca6 >/dev/null 2>&1; then
+    return 0
+  fi
+  XDG_MENU_PREFIX="${XDG_MENU_PREFIX:-plasma-}" kbuildsycoca6 --noincremental >/dev/null 2>&1 || true
+}
+
+configure_app_memory_boundary() {
+  if ! systemctl --user start daisyos-apps.slice >/dev/null 2>&1; then
+    log_message "DaisyOS could not create the application memory cgroup. The native session cannot safely start."
+    return 1
+  fi
+
+  if ! systemctl --user set-property --runtime daisyos-apps.slice \
+    "MemoryAccounting=yes" \
+    "MemoryHigh=${memory_apps_high_mib}M" \
+    "ManagedOOMMemoryPressure=kill" \
+    "ManagedOOMMemoryPressureLimit=60%" >/dev/null; then
+    log_message "DaisyOS could not configure its application memory boundary. The native session cannot safely start."
+    return 1
+  fi
+
+  write_runtime_value memory.total-mib "$memory_total_mib"
+  write_runtime_value memory.reserve-mib "$memory_reserve_mib"
+  write_runtime_value memory.core-min-mib "$memory_core_min_mib"
+  write_runtime_value memory.apps-high-mib "$memory_apps_high_mib"
+  if systemctl is-active --quiet systemd-oomd.service 2>/dev/null; then
+    log_message "Application memory boundary: ${memory_apps_high_mib} MiB; systemd-oomd is active for early recovery."
+  else
+    log_message "Application memory boundary: ${memory_apps_high_mib} MiB. systemd-oomd is inactive, so apps will throttle at the boundary but cannot receive early OOM recovery."
+  fi
+}
+
+clear_app_memory_boundary() {
+  timeout --kill-after=1 3 systemctl --user revert daisyos-apps.slice >/dev/null 2>&1 || true
+}
+
+start_user_services() {
+  systemctl --user --no-block start \
+    pipewire.service \
+    pipewire-pulse.service \
+    wireplumber.service \
+    plasma-polkit-agent.service \
+    xdg-desktop-portal.service \
+    plasma-xdg-desktop-portal-kde.service >/dev/null 2>&1 || true
+}
+
+configure_kwin_for_daisyos() {
+  if ! command -v kwriteconfig6 > /dev/null 2>&1; then
+    log_message "kwriteconfig6 is unavailable; KWin's built-in overview shortcuts could not be disabled."
+    return 0
+  fi
+
+  # KWin remains the compositor, but its Plasma workspace UI must never leak
+  # into the DaisyOS session. Disable the effects and their entry points before
+  # KWin starts so its overview never attempts to render a separate wallpaper.
+  kwriteconfig6 --file kwinrc --group Plugins --key overviewEnabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key windowviewEnabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overviewEnabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v2Enabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v3Enabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v14Enabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v15Enabled true
+  kwriteconfig6 --file kwinrc --group Plugins --key screenshotEnabled true
+  # ext_background_effect_v1 only defines the requested regions. KWin's Blur
+  # effect performs the actual sampling, so it must be enabled before the
+  # compositor starts or every Daisy glass surface becomes a flat tint after
+  # a fresh login/reboot.
+  kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
+  kwriteconfig6 --file kwinrc --group Plugins --key forceblurEnabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key shakecursorEnabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key shakeCursorEnabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shakecursorEnabled false
+  kwriteconfig6 --file kwinrc --group Effect-shakecursor --key ShakeCursor false
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key Overview 'none,none,Toggle Overview'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'Grid View' 'none,none,Toggle Grid View'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'Cycle Overview' 'none,none,Cycle through Overview and Grid View'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'Cycle Overview Opposite' 'none,none,Cycle through Grid View and Overview'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key Expose 'none,none,Toggle Present Windows (Current desktop)'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key ExposeAll 'none,none,Toggle Present Windows (All desktops)'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key ExposeClass 'none,none,Toggle Present Windows (Window class)'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'Show Desktop' 'none,none,Peek at Desktop'
+
+  # Remove stale KWin screenshot shortcut registrations left by older versions
+  # of the DaisyOS window bridge. These ghost entries claimed "Print" for
+  # "DaisyOS Rectangle Screenshot" alongside the correct "DaisyOS Capture
+  # Screen" action, causing KWin to dispatch Print to whichever entry it
+  # encountered first — sometimes neither, sometimes Spectacle's fallback.
+  # Only "DaisyOS Capture Screen" is registered by the current bridge script.
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Full Screenshot' 'none,none,Take a full-screen screenshot'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Rectangle Screenshot' 'none,none,Take a rectangular screenshot'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Window Screenshot' 'none,none,Take an active-window screenshot'
+
+  # Ensure Spectacle has no claim on any Print key so KWin's own registered
+  # "DaisyOS Capture Screen" shortcut is the sole handler for Print Screen.
+  kwriteconfig6 --file kglobalshortcutsrc --group 'services' --key 'org.kde.spectacle.desktop' ''
+  kwriteconfig6 --file kglobalshortcutsrc --group 'services][org.kde.spectacle.desktop' --key 'CurrentMonitorScreenShot' 'none,Print,Take Screenshot of Current Monitor'
+  kwriteconfig6 --file kglobalshortcutsrc --group 'services][org.kde.spectacle.desktop' --key 'FullScreenScreenShot' 'none,Shift+Print,Take Full Screen Screenshot'
+  kwriteconfig6 --file kglobalshortcutsrc --group 'services][org.kde.spectacle.desktop' --key 'RectangularRegionScreenShot' 'none,Meta+Print,Take Rectangular Region Screenshot'
+  kwriteconfig6 --file kglobalshortcutsrc --group 'services][org.kde.spectacle.desktop' --key 'ActiveWindowScreenShot' 'none,Meta+Print,Take Active Window Screenshot'
+  kwriteconfig6 --file kglobalshortcutsrc --group 'services][org.kde.spectacle.desktop' --key 'OpenWithoutScreenshot' 'none,none,Launch Spectacle'
+
+  # Evict KWin's built-in session lock shortcut so kscreenlocker_greet does not intercept Meta+L
+  kwriteconfig6 --file kglobalshortcutsrc --group ksmserver --key 'Lock Session' 'none,none,Lock Session'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Lock Screen' 'Meta+L,none,Lock the session with DaisyOS Lock Screen'
+
+  # Evict Plasma's application launcher so it does not intercept the Meta/Super key
+  kwriteconfig6 --file kglobalshortcutsrc --group plasmashell --key 'activate application launcher' 'none,none,Activate Application Launcher'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Task Overview' 'Meta+Tab,Meta+Tab,Toggle DaisyOS Task Overview'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Task Overview Alt' 'none,none,Toggle DaisyOS Task Overview'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Launcher' 'Meta,Meta,Toggle DaisyOS Launcher'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'Walk Through Windows' 'Alt+Tab,Alt+Tab,Walk Through Windows'
+  kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta ''
+
+  # Evict KWin's built-in automatic screen lock so kscreenlocker does not lock the screen on idle
+  kwriteconfig6 --file kscreenlockerrc --group Daemon --key Autolock false
+  kwriteconfig6 --file kscreenlockerrc --group Daemon --key Timeout 0
+  kwriteconfig6 --file kscreenlockerrc --group Daemon --key LockOnResume false
+
+  configure_window_decoration
+}
+
+window_decoration_plugin_path() {
+  local configured_path=""
+  local manifest="/etc/daisyos/kwin-window-decoration.conf"
+  local user_plugin="$HOME/.local/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so"
+
+  # Native Development adds ~/.local/lib/qt6/plugins to KWin's search path.
+  # Prefer a valid per-user recovery/development build over a damaged system
+  # module so one interrupted install cannot silently fall back to Breeze.
+  if [[ -s "$user_plugin" ]] && grep -a -Fq 'org.daisyos.decoration' "$user_plugin"; then
+    printf '%s\n' "$user_plugin"
+    return 0
+  fi
+
+  if [[ -r "$manifest" ]]; then
+    # shellcheck disable=SC1090
+    source "$manifest"
+    configured_path="${DAISYOS_KWIN_DECORATION_PATH:-}"
+  fi
+
+  if [[ -n "$configured_path" && -s "$configured_path" ]]; then
+    printf '%s\n' "$configured_path"
+    return 0
+  fi
+
+  local candidate
+  for candidate in \
+    /usr/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so \
+    /usr/lib64/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so; do
+    if [[ -s "$candidate" ]]; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+
+  return 1
+}
+
+configure_window_decoration() {
+  local disabled_marker="${XDG_CONFIG_HOME:-$HOME/.config}/DaisyOS/disable-kwin-window-decoration"
+  if [[ -e "$disabled_marker" ]]; then
+    log_message "DaisyOS KWin window decoration is disabled by the user. Keeping the previous KWin decoration."
+    return 0
+  fi
+
+  local plugin_path
+  if ! plugin_path="$(window_decoration_plugin_path)"; then
+    log_message "DaisyOS KWin window decoration is not installed. Keeping the previous KWin decoration."
+    return 0
+  fi
+
+  if ! grep -a -Fq 'org.daisyos.decoration' "$plugin_path"; then
+    log_message "DaisyOS KWin window decoration metadata is invalid. Keeping the previous KWin decoration."
+    return 0
+  fi
+
+  decoration_previous_library="$(kreadconfig6 --file kwinrc --group org.kde.kdecoration2 --key library --default org.kde.breeze 2>/dev/null || printf '%s' org.kde.breeze)"
+  decoration_previous_no_plugin="$(kreadconfig6 --file kwinrc --group org.kde.kdecoration2 --key NoPlugin --default false 2>/dev/null || printf '%s' false)"
+  write_runtime_value decoration.previous-library "$decoration_previous_library"
+  write_runtime_value decoration.previous-no-plugin "$decoration_previous_no_plugin"
+  kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key library org.daisyos.decoration
+  kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key NoPlugin false
+  log_message "Enabled DaisyOS KWin window decoration for this Native Development session."
+}
+
+restore_window_decoration() {
+  [[ -n "$decoration_previous_library" ]] || return 0
+  command -v kwriteconfig6 >/dev/null 2>&1 || return 0
+  kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key library "$decoration_previous_library" || true
+  kwriteconfig6 --file kwinrc --group org.kde.kdecoration2 --key NoPlugin "${decoration_previous_no_plugin:-false}" || true
+  log_message "Restored the KWin window decoration selected before Native Development."
+}
+
+wait_for_exact_wayland_socket() {
+  local socket_path="$XDG_RUNTIME_DIR/$socket_name"
+  local deadline=$((SECONDS + 30))
+  while (( SECONDS < deadline )); do
+    if [[ -S "$socket_path" ]]; then
+      export WAYLAND_DISPLAY="$socket_name"
+      write_runtime_value wayland-display "$socket_name"
+      return 0
+    fi
+    if ! kill -0 "$kwin_pid" 2>/dev/null; then
+      return 1
+    fi
+    sleep 0.1
+  done
+
+  return 1
+}
+
+install_kwin_bridge() {
+  if [[ ! -x "$source_root/scripts/install-kwin-window-bridge.sh" ]]; then
+    log_message "DaisyOS KWin bridge installer is missing from the checkout."
+    return 1
+  fi
+
+  "$source_root/scripts/install-kwin-window-bridge.sh" >> "$session_log" 2>&1 || {
+    log_message "DaisyOS KWin bridge could not be installed. The native session cannot provide a compositor-backed taskbar."
+    return 1
+  }
+}
+
+ensure_idle_monitor() {
+  local idle_lib="$source_root/src/native/daisy_idle_monitor/build/libdaisy_idle.so"
+  if [[ ! -f "$idle_lib" ]]; then
+    log_message "Building native idle monitor..."
+    bash "$source_root/scripts/build-native-idle-monitor.sh" >> "$session_log" 2>&1 || true
+  fi
+}
+
+ensure_shell_binary() {
+  export DAISYOS_APP_CONFIGURATION="${DAISYOS_APP_CONFIGURATION:-Release}"
+  ensure_idle_monitor
+  local shell_binary
+  shell_binary="$(native_shell_binary)"
+  if [[ -x "$shell_binary" ]]; then
+    # Login must reach a usable desktop from the last successful build. Source
+    # edits are applied deliberately with `daisyos-native-development restart`,
+    # which keeps the full build off the interactive boot path.
+    if verify_shell_binary; then
+      for application in Files Notes Settings DiskManager; do
+        if [[ ! -x "$source_root/src/DaisyOS.$application/bin/${DAISYOS_APP_CONFIGURATION:-Release}/net10.0/DaisyOS.$application" ]]; then
+          dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --disable-build-servers -m:1 -v:minimal >> "$session_log" 2>&1 || return 1
+        fi
+      done
+      "$source_root/scripts/install-system-apps.sh" >> "$session_log" 2>&1 || return 1
+      log_message "Using the existing DaisyOS build for fast native-session startup."
+      return 0
+    fi
+
+    if repair_shell_build && verify_shell_binary; then
+      for application in Files Notes Settings DiskManager; do
+        dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --disable-build-servers -m:1 -v:minimal >> "$session_log" 2>&1 || return 1
+      done
+      "$source_root/scripts/install-system-apps.sh" >> "$session_log" 2>&1 || return 1
+      log_message "Repaired the DaisyOS build and verified its compiled resources."
+      return 0
+    fi
+
+    log_message "DaisyOS could not repair its compiled UI resources."
+    return 1
+  fi
+
+  if ! command -v dotnet >/dev/null 2>&1; then
+    log_message "The .NET SDK is required for DaisyOS Native Development, but dotnet was not found."
+    return 1
+  fi
+
+  log_message "Building DaisyOS Native Development from $source_root."
+  for application in Files Notes Settings DiskManager; do
+    dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --disable-build-servers -m:1 -v:minimal >> "$session_log" 2>&1 || return 1
+  done
+  "$source_root/scripts/install-system-apps.sh" >> "$session_log" 2>&1
+}
+
+native_shell_binary() {
+  printf '%s\n' "${DAISYOS_NATIVE_DEVELOPMENT_SHELL_BINARY:-$source_root/src/DaisyOS.Shell/bin/Debug/net10.0/DaisyOS.Shell}"
+}
+
+verify_shell_binary() {
+  local shell_binary
+  shell_binary="$(native_shell_binary)"
+  [[ -x "$shell_binary" ]] || return 1
+
+  "$shell_binary" --verify-app-resources >> "$session_log" 2>&1
+}
+
+repair_shell_build() {
+  log_message "The existing DaisyOS build is incomplete; rebuilding its Avalonia resources."
+  dotnet build "$source_root/src/DaisyOS.Shell/DaisyOS.Shell.csproj" \
+    --no-restore --maxcpucount:1 -t:Rebuild -v:minimal >> "$session_log" 2>&1
+}
+
+consume_controlled_restart_request() {
+  local exited_pid="$1"
+  local request="$runtime_root/restart.request"
+  [[ -f "$request" ]] || return 1
+  if grep -Fxq "pid=$exited_pid" "$request"; then
+    rm -f "$request"
+    return 0
+  fi
+
+  log_message "Discarded a stale DaisyOS restart request."
+  rm -f "$request"
+  return 1
+}
+
+run_shell_supervisor() {
+  local shell_binary
+  shell_binary="$(native_shell_binary)"
+  if [[ ! -x "$shell_binary" ]]; then
+    log_message "DaisyOS Native Development build completed without an executable shell at $shell_binary."
+    return 1
+  fi
+
+  local unexpected_exits=0
+  local started_at restart_delay
+  while :; do
+    if ! kill -0 "$kwin_pid" 2>/dev/null; then
+      log_message "KWin stopped before DaisyOS could start. Returning to the display manager."
+      return 1
+    fi
+
+    log_message "Starting native DaisyOS layer-shell process."
+    write_runtime_value last-status "starting"
+    started_at=$SECONDS
+    DAISYOS_SHELL_SESSION=1 DAISYOS_SESSION_SUPERVISOR_PID=$$ \
+      "$shell_binary" --real-services --shell-session >> "$session_log" 2>&1 &
+    shell_pid=$!
+    write_runtime_value shell.pid "$shell_pid"
+
+    set +e
+    wait "$shell_pid"
+    local shell_status=$?
+    set -e
+    remove_runtime_value shell.pid
+
+    if consume_controlled_restart_request "$shell_pid"; then
+      log_message "DaisyOS native shell restart requested after a successful build."
+      write_runtime_value last-status "controlled restart"
+      shell_pid=""
+      continue
+    fi
+
+    shell_pid=""
+    # Logout stops this supervisor explicitly. A desktop process exit, even
+    # status zero or a user-requested kill, must not terminate application windows.
+    if (( SECONDS - started_at >= 60 )); then
+      unexpected_exits=0
+    fi
+    unexpected_exits=$((unexpected_exits + 1))
+    restart_delay=$((unexpected_exits < 5 ? 1 << (unexpected_exits - 1) : 15))
+    log_message "DaisyOS desktop stopped with status $shell_status; recovering in ${restart_delay}s (failure $unexpected_exits)."
+    write_runtime_value last-status "recovering after exit $shell_status; retry in ${restart_delay}s"
+    sleep "$restart_delay"
+  done
+}
+
+stop_session_child() {
+  local child_pid="$1" child_name="$2"
+  [[ -n "$child_pid" ]] && kill -0 "$child_pid" 2>/dev/null || return 0
+  kill -TERM "$child_pid" 2>/dev/null || true
+  local deadline=$((SECONDS + 3))
+  while kill -0 "$child_pid" 2>/dev/null && (( SECONDS < deadline )); do sleep 0.1; done
+  if kill -0 "$child_pid" 2>/dev/null; then
+    log_message "$child_name did not finish shutdown; stopping the session-owned process."
+    kill -KILL "$child_pid" 2>/dev/null || true
+    deadline=$((SECONDS + 1))
+    while kill -0 "$child_pid" 2>/dev/null && (( SECONDS < deadline )); do sleep 0.1; done
+  fi
+  # A process stuck in kernel I/O can outlive SIGKILL. Never make logout
+  # wait indefinitely for it; the display manager still owns session cleanup.
+  if ! kill -0 "$child_pid" 2>/dev/null; then wait "$child_pid" 2>/dev/null || true; fi
+}
+
+cleanup() {
+  local status="$?"
+  trap '' HUP INT TERM
+  stop_session_child "$shell_pid" "DaisyOS shell"
+  stop_session_child "$kwin_pid" "KWin"
+  restore_window_decoration
+  clear_app_memory_boundary
+  if [[ -n "$runtime_root" && -d "$runtime_root" ]]; then
+    rm -f "$runtime_root/restart.request" "$runtime_root/shell.pid" \
+      "$runtime_root/kwin.pid" "$runtime_root/wayland-display" "$runtime_root/supervisor.pid" \
+      "$runtime_root/decoration.previous-library" "$runtime_root/decoration.previous-no-plugin" \
+      "$runtime_root/memory.total-mib" "$runtime_root/memory.reserve-mib" \
+      "$runtime_root/memory.core-min-mib" "$runtime_root/memory.apps-high-mib"
+  fi
+  exit "$status"
+}
+
+start_compositor_and_shell() {
+  resolve_source_root
+  prepare_runtime_directory
+  publish_session_environment
+  if ! configure_app_memory_boundary; then
+    return 1
+  fi
+
+  local kwin_binary="${DAISYOS_KWIN_BINARY:-}"
+  local -a kwin_arguments
+  if [[ -z "$kwin_binary" ]]; then
+    kwin_binary="$(command -v kwin_wayland || true)"
+  fi
+
+  if [[ -z "$kwin_binary" || ! -x "$kwin_binary" ]]; then
+    log_message "KWin Wayland is required for DaisyOS Native Development, but kwin_wayland was not found."
+    return 1
+  fi
+
+  socket_name="daisyos-native-${UID}-$$"
+  kwin_arguments=(--drm --xwayland --locale1 --socket "$socket_name")
+  # Check the installed KWin binary before passing its optional lock-screen
+  # switch; unsupported arguments make the compositor exit before startup.
+  if "$kwin_binary" --help 2>&1 | grep -Fq -- '--no-lockscreen'; then
+    kwin_arguments+=(--no-lockscreen)
+  fi
+
+  "$source_root/scripts/install-cursor-themes.sh" >> "$session_log" 2>&1 || log_message "Native cursor theme installation failed."
+  if ! "$source_root/scripts/install-busy-cursor.sh" >> "$session_log" 2>&1; then
+    log_message "Native busy cursor installation failed; retaining the existing launch feedback configuration."
+  fi
+  configure_kwin_for_daisyos
+  refresh_desktop_service_cache
+  log_message "Starting KWin Wayland for DaisyOS Native Development on socket $socket_name."
+  # KWIN_SCREENSHOT_NO_PERMISSION_CHECKS bypasses KWin's desktop-file authorization
+  # check which always fails in the DaisyOS session (XDG_CURRENT_DESKTOP=DaisyOS, not KDE).
+  export KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1
+  # KWin only scans Qt plugin paths when it starts. The DaisyOS frame effect
+  # lives in the per-user plugin tree so it can be installed without replacing
+  # distribution files.
+  daisy_effect_plugin_root="$HOME/.local/lib/qt6/plugins"
+  if [[ -d "$daisy_effect_plugin_root" ]]; then
+    export QT_PLUGIN_PATH="$daisy_effect_plugin_root${QT_PLUGIN_PATH:+:$QT_PLUGIN_PATH}"
+  fi
+  "$kwin_binary" "${kwin_arguments[@]}" >> "$session_log" 2>&1 &
+  kwin_pid=$!
+
+  write_runtime_value kwin.pid "$kwin_pid"
+
+  if ! wait_for_exact_wayland_socket; then
+    log_message "KWin did not create the expected Wayland socket $socket_name within 30 seconds."
+    return 1
+  fi
+
+  publish_session_environment
+  start_user_services
+  if ! install_kwin_bridge; then
+    return 1
+  fi
+  evict_spectacle_shortcuts
+  evict_kwin_lock_shortcuts
+  if ! ensure_shell_binary; then
+    log_message "DaisyOS could not build for the native development session. Returning to the display manager."
+    return 1
+  fi
+
+  run_shell_supervisor
+}
+
+# Spectacle registers its shortcuts with kglobalaccel at D-Bus activation time,
+# overwriting whatever kglobalshortcutsrc says. Config-file changes are ignored
+# by the already-running daemon. Calling cleanUp via D-Bus removes the component
+# entirely, which frees "Print" for KWin's DaisyOS Capture Screen shortcut.
+# The component path uses underscores because D-Bus object paths cannot contain
+# dots or hyphens (org.kde.spectacle.desktop → org_kde_spectacle_desktop).
+evict_spectacle_shortcuts() {
+  if ! command -v busctl > /dev/null 2>&1; then
+    log_message "busctl is unavailable; could not evict Spectacle shortcuts from kglobalaccel."
+    return 0
+  fi
+
+  local retries=0
+  while (( retries < 10 )); do
+    if busctl --user call org.kde.kglobalaccel /component/org_kde_spectacle_desktop \
+        org.kde.kglobalaccel.Component cleanUp > /dev/null 2>&1; then
+      log_message "Evicted Spectacle shortcuts from the kglobalaccel daemon. Print Screen is now owned only by DaisyOS."
+      return 0
+    fi
+    sleep 0.5
+    retries=$((retries + 1))
+  done
+
+  log_message "Spectacle shortcut eviction timed out; the component may not have registered yet."
+  return 0
+}
+
+evict_kwin_lock_shortcuts() {
+  if ! command -v busctl > /dev/null 2>&1; then
+    return 0
+  fi
+
+  if busctl --user call org.kde.kglobalaccel /kglobalaccel org.kde.KGlobalAccel unregister ss "ksmserver" "Lock Session" > /dev/null 2>&1; then
+    log_message "Evicted ksmserver Lock Session shortcut from kglobalaccel. Meta+L is now owned by DaisyOS."
+  fi
+  return 0
+}
+
+trap cleanup EXIT
+trap 'exit 0' HUP INT TERM
+
+case "${1:-}" in
+  --help|-h)
+    cat <<'EOF'
+Usage: daisyos-native-development-session
+
+Starts a native DaisyOS layer-shell session under KWin Wayland. The display
+manager invokes this command directly; use daisyos-native-development restart
+from inside the session after rebuilding source changes.
+EOF
+    exit 0
+    ;;
+  "")
+    # A graphical display manager normally owns the user bus. Retain direct
+    # invocation for diagnostics without changing display-manager behavior.
+    if [[ -n "${DBUS_SESSION_BUS_ADDRESS:-}" ]]; then
+      start_memory_protected_session
+    else
+      exec dbus-run-session -- "$0" --session-bus-ready
+    fi
+    ;;
+  --session-bus-ready)
+    start_memory_protected_session
+    ;;
+  --memory-protected)
+    start_memory_protected_session
+    ;;
+  *)
+    echo "Unknown option: $1" >&2
+    exit 2
+    ;;
+esac

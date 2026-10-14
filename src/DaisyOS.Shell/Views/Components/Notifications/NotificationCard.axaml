@@ -1,0 +1,54 @@
+<UserControl x:Class="DaisyOS.Shell.Views.Components.Notifications.NotificationCard"
+ xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:converters="clr-namespace:DaisyOS.Shell.Converters"
+ CornerRadius="{DynamicResource RoundedXXL}">
+ <UserControl.Resources>
+  <converters:NotificationIconValueConverter x:Key="AppIcon" />
+  <converters:NotificationPreviewValueConverter x:Key="Preview" />
+ </UserControl.Resources>
+ <Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType=UserControl}}"
+         CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=UserControl}}" Padding="16" ClipToBounds="True">
+  <StackPanel x:Name="MotionContent" Spacing="8">
+   <Grid ColumnDefinitions="32,*,Auto,32" ColumnSpacing="8">
+    <Panel Width="32" Height="32">
+     <Image Source="{Binding Converter={StaticResource AppIcon}}" Stretch="Uniform"
+            IsVisible="{Binding Converter={StaticResource AppIcon}, ConverterParameter=Visible}"
+            RenderOptions.BitmapInterpolationMode="HighQuality" />
+     <controls:DaisyIcon Icon="{Binding EffectiveSystemIconGlyph}" Size="{DynamicResource IconSizeLarge}"
+             IsVisible="{Binding Converter={StaticResource AppIcon}, ConverterParameter=FallbackVisible}"
+             Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+    </Panel>
+    <TextBlock Grid.Column="1" Text="{Binding DisplaySource}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"
+               FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" />
+    <TextBlock Grid.Column="2" Text="{Binding CreatedAt.LocalDateTime, StringFormat='{}{0:HH:mm}'}" VerticalAlignment="Center"
+               FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" />
+    <Button Grid.Column="3" Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Padding="0"
+            ToolTip.Tip="{DynamicResource Loc_B7BB3F342402}" AutomationProperties.Name="{DynamicResource Loc_B7BB3F342402}" Click="OnDismissClicked">
+     <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+    </Button>
+   </Grid>
+   <StackPanel Spacing="4">
+    <TextBlock Text="{Binding Title}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
+               Foreground="{DynamicResource ContentPrimaryBrush}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+    <TextBlock Text="{Binding Body}" FontSize="{DynamicResource TypeSizeBodySmall}"
+               Foreground="{DynamicResource ContentSecondaryBrush}" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis"
+               IsVisible="{Binding Body, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+   </StackPanel>
+   <Border IsVisible="{Binding PreviewImage, Converter={StaticResource Preview}, ConverterParameter=Visible}"
+           CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" Height="96">
+    <Image Source="{Binding PreviewImage, Converter={StaticResource Preview}}" Stretch="UniformToFill"
+           RenderOptions.BitmapInterpolationMode="HighQuality" />
+   </Border>
+   <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding HasActions}">
+    <Button x:Name="PrimaryAction" Classes="Secondary" Height="{DynamicResource ControlHeightStandard}" Padding="12,0" Click="OnPrimaryClicked"
+            IsVisible="{Binding ActionLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+     <TextBlock Text="{Binding ActionLabel}" TextTrimming="CharacterEllipsis" />
+    </Button>
+    <Button Grid.Column="1" Classes="Secondary" Height="{DynamicResource ControlHeightStandard}" Padding="12,0" Click="OnSecondaryClicked"
+            IsVisible="{Binding SecondaryActionLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+     <TextBlock Text="{Binding SecondaryActionLabel}" TextTrimming="CharacterEllipsis" />
+    </Button>
+   </Grid>
+  </StackPanel>
+ </Border>
+</UserControl>

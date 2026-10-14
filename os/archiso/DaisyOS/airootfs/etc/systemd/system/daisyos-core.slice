@@ -1,0 +1,11 @@
+[Unit]
+Description=DaisyOS Core Desktop Services Slice
+Documentation=https://github.com/DaisyOS
+Before=slices.target
+
+[Slice]
+# Hard guarantees for Shell & Compositor memory headroom
+MemoryMin=256M
+MemoryLow=384M
+ManagedOOMMemoryPressure=avoid
+

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Settings
+Name[fi]=Asetukset
+Comment=Configure DaisyOS
+Comment[fi]=Muokkaa DaisyOS:n asetuksia
+Exec=daisyos-settings
+Icon=org.daisyos.settings
+StartupWMClass=org.daisyos.settings
+Categories=Settings;

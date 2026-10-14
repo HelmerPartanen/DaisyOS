@@ -1,0 +1,15 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <ProvisioningType>manual</ProvisioningType>
+    <TargetFramework>$(AvsCurrentIOSTargetFramework)</TargetFramework>
+    <SupportedOSPlatformVersion>$(AvsMinSupportedIOSVersion)</SupportedOSPlatformVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/iOS/Avalonia.iOS/Avalonia.iOS.csproj" />
+    <ProjectReference Include="../ControlCatalog/ControlCatalog.csproj" />
+  </ItemGroup>
+
+</Project>

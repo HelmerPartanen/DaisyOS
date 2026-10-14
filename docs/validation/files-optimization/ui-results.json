@@ -1,0 +1,293 @@
+[
+  {
+    "path": "/tmp/daisy-files-benchmarks/100k",
+    "entries": 100000,
+    "firstRenderedFrameMs": 2001.0399,
+    "acceptanceRunMs": 13706.6514,
+    "allocated": 1246311584,
+    "containers": [
+      {
+        "mode": "list",
+        "position": "top",
+        "count": 14
+      },
+      {
+        "mode": "list",
+        "position": "middle",
+        "count": 14
+      },
+      {
+        "mode": "grid",
+        "position": "top",
+        "count": 37
+      },
+      {
+        "mode": "grid",
+        "position": "middle",
+        "count": 42
+      },
+      {
+        "mode": "grid",
+        "position": "search",
+        "count": 36
+      }
+    ],
+    "maxPending": 38,
+    "workers": 2,
+    "thumbnailsScheduled": 0,
+    "timings": {
+      "Projection": 149.3796,
+      "Sort": 168.3765,
+      "Delta application": 4.2097,
+      "Thumbnail/icon loading": 10.1727,
+      "Filter": 7.4462,
+      "Enumeration": 855.3726,
+      "VM creation": 498.4631,
+      "UI collection replacement": 40.6858,
+      "First frame": 2001.0399
+    }
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/1k",
+    "entries": 1000,
+    "firstRenderedFrameMs": 699.9867,
+    "acceptanceRunMs": 11097.1235,
+    "allocated": 1082595208,
+    "containers": [
+      {
+        "mode": "list",
+        "position": "top",
+        "count": 14
+      },
+      {
+        "mode": "list",
+        "position": "middle",
+        "count": 14
+      },
+      {
+        "mode": "grid",
+        "position": "top",
+        "count": 37
+      },
+      {
+        "mode": "grid",
+        "position": "middle",
+        "count": 42
+      },
+      {
+        "mode": "grid",
+        "position": "search",
+        "count": 1
+      }
+    ],
+    "maxPending": 38,
+    "workers": 2,
+    "thumbnailsScheduled": 0,
+    "timings": {
+      "Reconciliation enumeration": 10.5668,
+      "Projection": 1.3606,
+      "Create mutation": 106.2499,
+      "Sort": 0.8047,
+      "Watcher application": 60.511,
+      "Delta application": 0.009,
+      "Thumbnail/icon loading": 0.0725,
+      "Filter": 0.1621,
+      "Enumeration": 90.6351,
+      "VM creation": 3.3002,
+      "UI collection replacement": 0.9013,
+      "First frame": 699.9867
+    }
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/25k",
+    "entries": 25000,
+    "firstRenderedFrameMs": 897.2739,
+    "acceptanceRunMs": 10730.8912,
+    "allocated": 1132069832,
+    "containers": [
+      {
+        "mode": "list",
+        "position": "top",
+        "count": 14
+      },
+      {
+        "mode": "list",
+        "position": "middle",
+        "count": 14
+      },
+      {
+        "mode": "grid",
+        "position": "top",
+        "count": 37
+      },
+      {
+        "mode": "grid",
+        "position": "middle",
+        "count": 42
+      },
+      {
+        "mode": "grid",
+        "position": "search",
+        "count": 35
+      }
+    ],
+    "maxPending": 38,
+    "workers": 2,
+    "thumbnailsScheduled": 0,
+    "timings": {
+      "Projection": 38.802,
+      "Sort": 27.2938,
+      "Delta application": 0.4051,
+      "Thumbnail/icon loading": 25.0991,
+      "Filter": 3.3181,
+      "Enumeration": 150.1849,
+      "VM creation": 159.4821,
+      "UI collection replacement": 18.9153,
+      "First frame": 897.2739
+    }
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/5k",
+    "entries": 5000,
+    "firstRenderedFrameMs": 727.7129,
+    "acceptanceRunMs": 10066.0005,
+    "allocated": 1033604264,
+    "containers": [
+      {
+        "mode": "list",
+        "position": "top",
+        "count": 14
+      },
+      {
+        "mode": "list",
+        "position": "middle",
+        "count": 14
+      },
+      {
+        "mode": "grid",
+        "position": "top",
+        "count": 37
+      },
+      {
+        "mode": "grid",
+        "position": "middle",
+        "count": 42
+      },
+      {
+        "mode": "grid",
+        "position": "search",
+        "count": 15
+      }
+    ],
+    "maxPending": 38,
+    "workers": 2,
+    "thumbnailsScheduled": 0,
+    "timings": {
+      "Projection": 4.8807,
+      "Sort": 4.031,
+      "Delta application": 0.4218,
+      "Thumbnail/icon loading": 25.3075,
+      "Filter": 0.5112,
+      "Enumeration": 110.1317,
+      "VM creation": 6.5668,
+      "UI collection replacement": 6.7317,
+      "First frame": 727.7129
+    }
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/images",
+    "entries": 5000,
+    "firstRenderedFrameMs": 690.6742,
+    "acceptanceRunMs": 17006.9342,
+    "allocated": 1015213504,
+    "containers": [
+      {
+        "mode": "list",
+        "position": "top",
+        "count": 14
+      },
+      {
+        "mode": "list",
+        "position": "middle",
+        "count": 14
+      },
+      {
+        "mode": "grid",
+        "position": "top",
+        "count": 37
+      },
+      {
+        "mode": "grid",
+        "position": "middle",
+        "count": 42
+      },
+      {
+        "mode": "grid",
+        "position": "search",
+        "count": 15
+      }
+    ],
+    "maxPending": 38,
+    "workers": 2,
+    "thumbnailsScheduled": 146,
+    "timings": {
+      "Projection": 7.4933,
+      "Sort": 6.1365,
+      "Delta application": 0.328,
+      "Thumbnail/icon loading": 157.7846,
+      "Filter": 0.666,
+      "Enumeration": 100.1144,
+      "VM creation": 21.408,
+      "UI collection replacement": 10.6271,
+      "First frame": 690.6742
+    }
+  },
+  {
+    "path": "/tmp/daisy-files-benchmarks/mixed",
+    "entries": 5000,
+    "firstRenderedFrameMs": 1896.2595,
+    "acceptanceRunMs": 15417.936,
+    "allocated": 1060017640,
+    "containers": [
+      {
+        "mode": "list",
+        "position": "top",
+        "count": 14
+      },
+      {
+        "mode": "list",
+        "position": "middle",
+        "count": 14
+      },
+      {
+        "mode": "grid",
+        "position": "top",
+        "count": 37
+      },
+      {
+        "mode": "grid",
+        "position": "middle",
+        "count": 42
+      },
+      {
+        "mode": "grid",
+        "position": "search",
+        "count": 15
+      }
+    ],
+    "maxPending": 38,
+    "workers": 2,
+    "thumbnailsScheduled": 22,
+    "timings": {
+      "Projection": 9.3947,
+      "Sort": 4.0245,
+      "Delta application": 0.3501,
+      "Thumbnail/icon loading": 27.6823,
+      "Filter": 0.6223,
+      "Enumeration": 305.8916,
+      "VM creation": 83.7654,
+      "UI collection replacement": 13.2027,
+      "First frame": 1896.2595
+    }
+  }
+]

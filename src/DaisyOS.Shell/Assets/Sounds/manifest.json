@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "soundTheme": "DaisyOS",
+  "events": {
+    "startup": "StartupSound.mp3",
+    "notification": null,
+    "warning": null,
+    "error": null,
+    "deviceConnected": null,
+    "deviceDisconnected": null
+  },
+  "note": "Null entries are reserved event names. Do not substitute unrelated third-party sounds."
+}

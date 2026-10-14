@@ -1,0 +1,50 @@
+<UserControl x:Class="DaisyOS.Shell.Views.Components.Notifications.NotificationCenterView"
+ xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+ xmlns:notifications="clr-namespace:DaisyOS.Shell.Views.Components.Notifications"
+ Width="340" MaxHeight="600" ClipToBounds="False">
+ <controls:ShellFrameBorder x:Name="MaterialFrame" Padding="1" Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+         BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}" CornerRadius="{DynamicResource RoundedXXL}">
+  <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+           BackgroundSizing="InnerBorderEdge" BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+   <Border Padding="16" Background="{DynamicResource SurfaceBaseBrush}"
+           CornerRadius="{DynamicResource RoundedXXLDoubleInset}" ClipToBounds="True">
+    <Grid x:Name="MotionContent" RowDefinitions="Auto,*" RowSpacing="16">
+     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+       <TextBlock Text="{DynamicResource Loc_788011833A5A}" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="SemiBold"
+                  Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+       <Border x:Name="UnreadBadge" Background="{DynamicResource ActionPrimaryBrush}"
+               CornerRadius="{DynamicResource RoundedXS}" Padding="6,2" VerticalAlignment="Center">
+        <TextBlock x:Name="UnreadCountText" Text="0" FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource ContentOnActionBrush}" />
+       </Border>
+      </StackPanel>
+      <Button Grid.Column="1" x:Name="ClearAllButton" Classes="ShellButton" Height="{DynamicResource ControlHeightStandard}" Padding="8,0"
+              MinHeight="{DynamicResource ControlHeightStandard}" VerticalContentAlignment="Center" HorizontalContentAlignment="Center"
+              ToolTip.Tip="{DynamicResource Loc_517880CABE63}" Click="OnClearAllClicked">
+       <TextBlock Text="{DynamicResource Loc_29A390F9237E}" VerticalAlignment="Center" FontSize="{DynamicResource TypeSizeBodySmall}" />
+      </Button>
+     </Grid>
+     <Border Grid.Row="1" x:Name="EmptyStateHost" Padding="16,32">
+      <StackPanel Spacing="12" HorizontalAlignment="Center">
+       <controls:DaisyIcon Icon="check-circle" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Center" />
+       <TextBlock Text="{DynamicResource Loc_2F485B9971DF}" FontSize="{DynamicResource TypeSizeBodySmall}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}" />
+      </StackPanel>
+     </Border>
+     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <ItemsControl x:Name="NotificationList" IsVisible="False">
+       <ItemsControl.ItemTemplate>
+        <DataTemplate>
+         <notifications:NotificationCard Background="{DynamicResource SurfaceSunkenBrush}" Margin="0,0,0,8"
+                  DismissRequested="OnDismissCard" PrimaryActionRequested="OnPrimaryCard" SecondaryActionRequested="OnSecondaryCard" />
+        </DataTemplate>
+       </ItemsControl.ItemTemplate>
+      </ItemsControl>
+     </ScrollViewer>
+    </Grid>
+   </Border>
+  </controls:ShellFrameBorder>
+ </controls:ShellFrameBorder>
+</UserControl>

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Calculator
+Name[fi]=Laskin
+Comment=Perform calculations
+Comment[fi]=Tee laskutoimituksia
+Exec=daisyos-shell --open-app=calculator
+Icon=org.daisyos.calculator
+StartupWMClass=org.daisyos.calculator
+Categories=Utility;Calculator;

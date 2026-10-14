@@ -1,0 +1,106 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Controls.SearchBar"
+             Height="{DynamicResource SearchHeightStandard}" MinHeight="{DynamicResource HitTargetStandard}" UseLayoutRounding="True">
+  <UserControl.Styles>
+    <Style Selector="Border#SearchFrame">
+      <Setter Property="Background" Value="{DynamicResource SearchFieldBackgroundBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ShellFrameOuterEdgeBrush}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+    </Style>
+    <Style Selector="Border#FocusedFrame">
+      <Setter Property="Opacity" Value="0" />
+    </Style>
+    <Style Selector="controls|SearchBar:focus-within Border#FocusedFrame">
+      <Setter Property="Opacity" Value="1" />
+    </Style>
+    <Style Selector="Button.SearchClear">
+      <Setter Property="Width" Value="{DynamicResource HitTargetCompact}" />
+      <Setter Property="Height" Value="{DynamicResource HitTargetCompact}" />
+      <Setter Property="Padding" Value="{DynamicResource SpaceInsetNone}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.SearchClear:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.SearchClear:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <Grid ClipToBounds="True">
+    <Border x:Name="SearchFrame"
+            CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=controls:SearchBar}}"
+            ClipToBounds="True">
+      <Border Margin="1"
+              BorderBrush="{DynamicResource ShellFrameInnerHighlightBrush}"
+              BorderThickness="{DynamicResource BorderThicknessDefault}"
+              CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=controls:SearchBar}}"
+              Padding="11,0,7,0">
+      <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
+        <controls:DaisyIcon Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}"
+                            Foreground="{DynamicResource ContentSecondaryBrush}"
+                            VerticalAlignment="Center" />
+        <TextBox x:Name="SearchInput" Classes="SearchInput" Grid.Column="1" MinWidth="0" Height="{DynamicResource ControlHeightStandard}" Padding="0"
+                 Text="{Binding Text, RelativeSource={RelativeSource AncestorType=controls:SearchBar}, Mode=TwoWay}"
+                 PlaceholderText="{Binding PlaceholderText, RelativeSource={RelativeSource AncestorType=controls:SearchBar}}"
+                 AutomationProperties.Name="{Binding PlaceholderText, RelativeSource={RelativeSource AncestorType=controls:SearchBar}}"
+                 PlaceholderForeground="{DynamicResource ContentSecondaryBrush}"
+                 Background="Transparent" BorderBrush="Transparent" BorderThickness="0"
+                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                 CaretBrush="{DynamicResource ContentPrimaryBrush}"
+                 SelectionBrush="{DynamicResource ActionPrimaryBrush}"
+                 SelectionForegroundBrush="{DynamicResource ContentOnActionBrush}"
+                 VerticalAlignment="Center" VerticalContentAlignment="Center" FontSize="{DynamicResource TypeSizeBodySmall}" TextBlock.LineHeight="{DynamicResource TypeLineBodySmall}">
+          <TextBox.Resources>
+            <x:Double x:Key="TextControlPlaceholderOpacity">1</x:Double>
+          </TextBox.Resources>
+          <TextBox.Styles>
+            <Style Selector="TextBox.SearchInput /template/ Border#PART_BorderElement">
+              <Setter Property="Background" Value="Transparent" />
+              <Setter Property="BorderBrush" Value="Transparent" />
+              <Setter Property="BorderThickness" Value="0" />
+              <Setter Property="CornerRadius" Value="{DynamicResource RadiusNone}" />
+            </Style>
+            <Style Selector="TextBox.SearchInput:pointerover /template/ Border#PART_BorderElement">
+              <Setter Property="Background" Value="Transparent" />
+              <Setter Property="BorderBrush" Value="Transparent" />
+              <Setter Property="BorderThickness" Value="0" />
+            </Style>
+            <Style Selector="TextBox.SearchInput:focus /template/ Border#PART_BorderElement">
+              <Setter Property="Background" Value="Transparent" />
+              <Setter Property="BorderBrush" Value="Transparent" />
+              <Setter Property="BorderThickness" Value="0" />
+            </Style>
+            <Style Selector="TextBox.SearchInput:focus-within /template/ Border#PART_BorderElement">
+              <Setter Property="Background" Value="Transparent" />
+              <Setter Property="BorderBrush" Value="Transparent" />
+              <Setter Property="BorderThickness" Value="0" />
+            </Style>
+          </TextBox.Styles>
+        </TextBox>
+        <Button x:Name="ClearButton" Grid.Column="2" Classes="SearchClear"
+                IsVisible="False" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Loc_3B7EA51793E9}"
+                AutomationProperties.Name="{DynamicResource Loc_3B7EA51793E9}">
+          <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeSmall}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+        </Button>
+      </Grid>
+      </Border>
+    </Border>
+    <Border x:Name="FocusedFrame"
+            BorderBrush="{DynamicResource FocusRingBrush}"
+            BorderThickness="{DynamicResource BorderThicknessFocus}"
+            CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=controls:SearchBar}}"
+            IsHitTestVisible="False">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Border.Transitions>
+    </Border>
+  </Grid>
+</UserControl>

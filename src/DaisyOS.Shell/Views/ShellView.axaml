@@ -1,0 +1,87 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.ShellView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:desktop="clr-namespace:DaisyOS.Shell.Views.Components.Desktop"
+    xmlns:launcher="clr-namespace:DaisyOS.Shell.Views.Components.Launcher"
+    xmlns:widgets="clr-namespace:DaisyOS.Shell.Views.Components.Widgets"
+    xmlns:taskbar="clr-namespace:DaisyOS.Shell.Views.Components.Taskbar"
+    xmlns:systembar="clr-namespace:DaisyOS.Shell.Views.Components.SystemBar"
+    xmlns:console="clr-namespace:DaisyOS.Shell.Views.Components.Console"
+    xmlns:wallpaper="clr-namespace:DaisyOS.Shell.Views.Components.Wallpaper"
+    xmlns:notifications="clr-namespace:DaisyOS.Shell.Views.Components.Notifications"
+    xmlns:screenshot="clr-namespace:DaisyOS.Shell.Views.Components.Screenshot"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    xmlns:views="clr-namespace:DaisyOS.Shell.Views">
+    <Grid>
+        <wallpaper:WallpaperLayer x:Name="ShellWallpaper" />
+        <notifications:NotificationToastHost x:Name="NotificationToastOverlay" />
+
+        <Grid x:Name="DesktopExperience">
+            <desktop:DesktopView x:Name="Desktop" />
+
+            <!-- In-window bottom chrome: no native surface or compositor blur region. -->
+            <widgets:MediaWidget x:Name="MediaWidgetContent"
+                                 HorizontalAlignment="Left"
+                                 VerticalAlignment="Bottom" />
+            <taskbar:TaskbarView x:Name="TaskbarContent"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Bottom" />
+            <systembar:SystemBarView x:Name="SystemBarContent"
+                                     HorizontalAlignment="Right"
+                                     VerticalAlignment="Bottom" />
+            <launcher:LauncherView x:Name="LauncherContent"
+                                   IsVisible="False"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Bottom"
+                                   Margin="0,0,0,3"
+                                   ZIndex="20" />
+
+            <Border x:Name="FeedbackHost" ZIndex="100" IsVisible="False"
+                    HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,24,0,0"
+                    Padding="16,10" Background="{DynamicResource SurfaceRaisedBrush}"
+                    BorderBrush="{DynamicResource StrokeDefaultBrush}" BorderThickness="1" CornerRadius="{DynamicResource RoundedMD}">
+                <TextBlock x:Name="FeedbackText" MaxWidth="440" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"/>
+            </Border>
+        </Grid>
+
+        <!-- This is intentionally an in-process shell mode, not a separate compositor/session. -->
+        <console:ConsoleHomeView x:Name="ConsoleHome" IsVisible="False" ZIndex="500" />
+
+        <Border x:Name="ConsoleFeedbackHost" ZIndex="650" IsVisible="False"
+                HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,32"
+                Padding="24,12" Background="{DynamicResource SurfaceBaseBrush}"
+                BorderBrush="{DynamicResource StrokeDefaultBrush}" BorderThickness="1" CornerRadius="{DynamicResource RadiusPill}">
+            <TextBlock x:Name="ConsoleFeedbackText" MaxWidth="440" TextWrapping="Wrap" AutomationProperties.LiveSetting="Polite"
+                       Foreground="{DynamicResource ContentPrimaryBrush}" FontWeight="Medium" FontSize="{DynamicResource TypeSizeBodyLarge}" />
+        </Border>
+
+        <!-- Console Mode Fullscreen Settings Overlay -->
+        <console:ConsoleSettingsOverlay x:Name="ConsoleSettings" IsVisible="False" ZIndex="700" />
+
+        <!-- A fully opaque transition makes desktop dismissal and console loading visually atomic. -->
+        <Border x:Name="ConsoleTransition" ZIndex="600" IsVisible="False" Opacity="0" Background="{DynamicResource SurfaceCanvasBrush}"
+                AutomationProperties.LiveSetting="Polite">
+            <Border.Transitions>
+                <Transitions>
+                    <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseInOut" />
+                </Transitions>
+            </Border.Transitions>
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+                <controls:DaisyIcon Icon="game-controller" Size="{DynamicResource IconSizeHero}" Foreground="White" HorizontalAlignment="Center" />
+                <StackPanel Spacing="6" HorizontalAlignment="Center">
+                    <TextBlock x:Name="ConsoleTransitionTitle" Text="{DynamicResource Loc_72438D7B288C}"
+                               FontSize="{DynamicResource TypeSizeHeading}" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center" />
+                    <TextBlock x:Name="ConsoleTransitionDetail" Text="{DynamicResource Loc_C6172C066C79}"
+                               FontSize="{DynamicResource TypeSizeBody}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
+                </StackPanel>
+            </StackPanel>
+        </Border>
+
+        <!-- DaisyOS Shell Metrics Monitoring Panel Overlay -->
+        <controls:ShellMetricsPanel x:Name="MetricsPanel" IsVisible="False" ZIndex="950" />
+
+        <!-- DaisyOS Native Screenshot Tool Overlay -->
+        <screenshot:ScreenshotOverlay x:Name="ScreenshotOverlayContent" IsVisible="False" ZIndex="960" />
+    </Grid>
+</UserControl>

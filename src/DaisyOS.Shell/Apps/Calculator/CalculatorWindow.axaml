@@ -1,0 +1,16 @@
+<Window
+    x:Class="DaisyOS.Shell.Apps.Calculator.CalculatorWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:calculator="clr-namespace:DaisyOS.Shell.Apps.Calculator"
+    Title="{DynamicResource Loc_668B80455FDB}"
+    Width="360"
+    Height="560"
+    CanResize="False"
+    WindowStartupLocation="CenterScreen"
+    WindowDecorations="Full"
+    TextOptions.TextRenderingMode="Antialias"
+    Background="{DynamicResource SurfaceBaseBrush}"
+    PointerPressed="OnWindowPointerPressed">
+  <calculator:CalculatorView DataContext="{Binding}" />
+</Window>

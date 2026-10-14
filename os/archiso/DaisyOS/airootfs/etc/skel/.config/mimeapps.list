@@ -1,0 +1,30 @@
+[Default Applications]
+text/html=google-chrome.desktop
+x-scheme-handler/http=google-chrome.desktop
+x-scheme-handler/https=google-chrome.desktop
+x-scheme-handler/about=google-chrome.desktop
+x-scheme-handler/unknown=google-chrome.desktop
+image/jpeg=org.gnome.Loupe.desktop;loupe.desktop
+image/png=org.gnome.Loupe.desktop;loupe.desktop
+image/webp=org.gnome.Loupe.desktop;loupe.desktop
+image/gif=org.gnome.Loupe.desktop;loupe.desktop
+image/svg+xml=org.gnome.Loupe.desktop;loupe.desktop
+video/mp4=mpv.desktop
+video/mkv=mpv.desktop
+video/webm=mpv.desktop
+video/x-matroska=mpv.desktop
+audio/mpeg=mpv.desktop
+audio/flac=mpv.desktop
+audio/ogg=mpv.desktop
+inode/directory=org.daisyos.files.desktop
+application/zip=org.daisyos.files.desktop
+application/x-tar=org.daisyos.files.desktop
+application/x-compressed-tar=org.daisyos.files.desktop
+application/x-7z-compressed=org.daisyos.files.desktop
+application/pdf=google-chrome.desktop
+
+[Added Associations]
+text/html=google-chrome.desktop;
+x-scheme-handler/http=google-chrome.desktop;
+x-scheme-handler/https=google-chrome.desktop;
+

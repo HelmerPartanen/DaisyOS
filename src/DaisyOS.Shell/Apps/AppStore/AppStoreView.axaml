@@ -1,0 +1,248 @@
+<UserControl x:Class="DaisyOS.Shell.Apps.AppStore.AppStoreView"
+             xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:store="clr-namespace:DaisyOS.Shell.Apps.AppStore" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             >
+  <UserControl.Resources>
+    <DataTemplate x:Key="AppCardTemplate" DataType="store:AppStoreCardViewModel">
+      <Border Classes="StoreCard" PointerPressed="OnCardPointerPressed" Margin="{DynamicResource SpaceInset2}">
+        <Grid RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="{DynamicResource Space2}">
+          <Button Classes="Ghost StoreCardLink" Click="OnDetailsClicked" HorizontalContentAlignment="Stretch" AutomationProperties.Name="{Binding Name}">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space4}">
+              <Panel Width="{DynamicResource Space10}" Height="{DynamicResource Space10}">
+                <controls:DaisyIcon Icon="{Binding IconGlyph}" IsVisible="{Binding !HasImage, ElementName=AppIconImage}" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <controls:AsyncImage x:Name="AppIconImage" Location="{Binding IconPath}" DecodeWidth="128" Stretch="Uniform" />
+              </Panel>
+              <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="{DynamicResource Space1}">
+                <TextBlock Text="{Binding Name}" Classes="StoreAppName" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}" />
+                <TextBlock Text="{Binding Publisher}" Classes="Muted" FontSize="{DynamicResource TypeSizeCaption}" TextTrimming="CharacterEllipsis" />
+              </StackPanel>
+            </Grid>
+          </Button>
+          <TextBlock Grid.Row="1" Text="{Binding Summary}" TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis"
+                     MinHeight="{DynamicResource Space8}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+          <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space2}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="check-circle" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding IsVerified}" Foreground="{DynamicResource StatusSuccessBrush}" ToolTip.Tip="{DynamicResource Loc_B14AFEAD375A}" />
+              <TextBlock Text="{Binding StatusText}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+            </StackPanel>
+            <Button Grid.Column="1" Classes="Compact" Classes.Primary="{Binding CanOpen}" Classes.Secondary="{Binding !CanOpen}" Content="{Binding ActionText}" AutomationProperties.Name="{Binding ActionAccessibilityLabel}" IsEnabled="{Binding !IsBusy}" Click="OnActionButtonClicked" MinWidth="88" />
+          </Grid>
+          <ProgressBar Grid.Row="3" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
+          <TextBlock Grid.Row="3" IsVisible="{Binding HasError}" Text="{Binding ErrorMessage}" Foreground="{DynamicResource StatusDangerBrush}" TextWrapping="Wrap" FontSize="{DynamicResource TypeSizeCaption}" />
+        </Grid>
+      </Border>
+    </DataTemplate>
+    <DataTemplate x:Key="NavigationTemplate" DataType="store:AppCategoryItem">
+      <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsSelected}" Click="OnCategoryClicked">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space3}">
+          <controls:DaisyIcon Icon="{Binding Icon}" Size="{DynamicResource IconSizeMedium}" Width="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+          <TextBlock Text="{Binding Name}" VerticalAlignment="Center" />
+        </StackPanel>
+      </Button>
+    </DataTemplate>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="Button.SettingsNavItem">
+      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Padding" Value="{DynamicResource ControlPaddingHorizontal}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    </Style>
+    <Style Selector="Border.StoreCard">
+      <Setter Property="Padding" Value="{DynamicResource SpaceInset3}" />
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Transitions"><Transitions><BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" /></Transitions></Setter>
+    </Style>
+    <Style Selector="Border.StoreCard:pointerover"><Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" /></Style>
+    <Style Selector="Border.StoreCard:pressed"><Setter Property="Background" Value="{DynamicResource ActionSecondaryPressedBrush}" /></Style>
+    <Style Selector="Button.StoreCardLink">
+      <Setter Property="Padding" Value="0" /><Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" /><Setter Property="Height" Value="NaN" />
+      <Setter Property="MinHeight" Value="0" />
+    </Style>
+    <Style Selector="Button.StoreCardLink, Button.StoreCardLink:pointerover, Button.StoreCardLink:pressed"><Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" /></Style>
+    <Style Selector="Button.StoreCardLink /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="Transparent" /></Style>
+    <Style Selector="TextBlock.StoreAppName"><Setter Property="FontSize" Value="{DynamicResource TypeSizeBodyLarge}" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.StoreHeading"><Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" /><Setter Property="FontWeight" Value="SemiBold" /></Style>
+    <Style Selector="TextBlock.StoreLabel"><Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" /><Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" /></Style>
+  </UserControl.Styles>
+  <Grid ColumnDefinitions="260,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
+    <Border x:Name="NavigationSidebar" Background="{DynamicResource SurfaceRaisedSubtleBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,0,1,0" Padding="{DynamicResource SpaceInset4}">
+      <Grid RowDefinitions="Auto,*,Auto,Auto" RowSpacing="{DynamicResource Space4}">
+        <controls:SearchBar x:Name="StoreSearch" Text="{Binding SearchQuery, Mode=TwoWay}" Height="{DynamicResource SearchHeightStandard}" PlaceholderText="{DynamicResource Loc_874477240D69}" />
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding Categories}" ItemTemplate="{StaticResource NavigationTemplate}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </ScrollViewer>
+        <StackPanel Grid.Row="2" Spacing="{DynamicResource Space2}">
+          <Separator />
+          <TextBlock Text="{DynamicResource Loc_B723ED1334F5}" Classes="StoreLabel" Margin="12,0" />
+          <ItemsControl ItemsSource="{Binding LibraryCategories}" ItemTemplate="{StaticResource NavigationTemplate}">
+              <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+            </ItemsControl>
+        </StackPanel>
+        <StackPanel Grid.Row="3" IsVisible="{Binding HasActiveOperations}" Spacing="{DynamicResource Space2}">
+          <ProgressBar Height="3" IsIndeterminate="True" IsVisible="{Binding HasActiveOperations}" />
+          <TextBlock IsVisible="{Binding HasActiveOperations}" Text="{Binding OperationStatus}" Classes="StoreLabel" TextWrapping="Wrap" Margin="4,0" />
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Grid x:Name="MainPaneLayout" Grid.Column="1" RowDefinitions="Auto,*">
+      <controls:AppWindowTitleBar x:Name="AppTitleBar" />
+      <Grid x:Name="StorePages" Grid.Row="1">
+        <Grid IsVisible="{Binding !IsDetailMode}" RowDefinitions="Auto,Auto,Auto,*">
+          <Border Padding="{DynamicResource SpaceInset6}">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space4}">
+              <StackPanel Spacing="{DynamicResource Space2}">
+                <TextBlock Text="{Binding PageTitle}" Classes="StoreHeading" />
+                <TextBlock Text="{Binding PageDescription}" Foreground="{DynamicResource ContentSecondaryBrush}" TextWrapping="Wrap" />
+              </StackPanel>
+              <Button Grid.Column="1" Classes="IconButton Subtle" Command="{Binding RefreshCatalogCommand}" ToolTip.Tip="{DynamicResource Loc_FAE75018276A}" AutomationProperties.Name="{DynamicResource Loc_FAE75018276A}" VerticalAlignment="Top">
+                <controls:DaisyIcon Icon="arrows-clockwise" Size="{DynamicResource IconSizeMedium}" />
+              </Button>
+            </Grid>
+          </Border>
+          <Border Grid.Row="1" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,0,0,1" Padding="24,0,24,16">
+            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource Space4}">
+              <CheckBox Content="{DynamicResource Loc_2002C7D2BF96}" IsChecked="{Binding VerifiedOnly}" VerticalAlignment="Center" IsVisible="{Binding !IsLibrary}" />
+              <Button Grid.Column="0" Content="{DynamicResource Loc_95E50255E771}" Classes="Primary" Command="{Binding UpdateAllCommand}" IsVisible="{Binding ShowUpdateAll}" HorizontalAlignment="Left" IsEnabled="{Binding !HasActiveOperations}" />
+              <TextBlock Grid.Column="1" Text="{Binding ResultsLabel}" Classes="StoreLabel" VerticalAlignment="Center" />
+              <ComboBox Grid.Column="2" ItemsSource="{Binding SortOptions}" SelectedIndex="{Binding SortIndex}" MinWidth="150" AutomationProperties.Name="{DynamicResource Loc_4F5D128F3AA8}" />
+            </Grid>
+          </Border>
+          <Border Grid.Row="2" IsVisible="{Binding HasCatalogWarning}" Padding="{DynamicResource SpaceInset4}" Background="{DynamicResource StatusWarningContainerBrush}">
+            <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+          </Border>
+          <Grid Grid.Row="3">
+            <ScrollViewer x:Name="AppsScroller" ClipToBounds="True" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasResults}">
+              <StackPanel x:Name="CardCollections" Margin="{DynamicResource SpaceInset4}" Spacing="{DynamicResource Space4}" MaxWidth="{Binding CardContentWidth, RelativeSource={RelativeSource AncestorType=store:AppStoreView}}">
+                <StackPanel IsVisible="{Binding IsDiscoverMode}">
+                  <controls:SectionHeader Title="{DynamicResource Loc_FEB5EBB27E2A}" Margin="{DynamicResource SpaceInset2}" />
+                  <ItemsControl ItemsSource="{Binding FeaturedApps}" ItemTemplate="{StaticResource AppCardTemplate}">
+                    <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="{Binding FeaturedColumns, RelativeSource={RelativeSource AncestorType=store:AppStoreView}}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  </ItemsControl>
+                </StackPanel>
+                <controls:SectionHeader Title="{Binding CollectionTitle}" Margin="{DynamicResource SpaceInset2}" />
+                <ItemsControl ItemsSource="{Binding Apps}" ItemTemplate="{StaticResource AppCardTemplate}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="{Binding CardColumns, RelativeSource={RelativeSource AncestorType=store:AppStoreView}}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                </ItemsControl>
+                <Button Content="{DynamicResource Loc_732B7B585FD7}" Command="{Binding LoadMoreCommand}" Classes="Secondary" IsVisible="{Binding HasMore}" HorizontalAlignment="Center" Margin="{DynamicResource SpaceInset4}" />
+              </StackPanel>
+            </ScrollViewer>
+            <StackPanel IsVisible="{Binding IsLoading}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{DynamicResource Space4}">
+              <ProgressBar Width="180" IsIndeterminate="True" /><TextBlock Text="{DynamicResource Loc_50037E25E1F4}" Classes="Muted" TextAlignment="Center" />
+            </StackPanel>
+            <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{DynamicResource Space4}" MaxWidth="360" Margin="{DynamicResource SpaceInset6}">
+              <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
+              <TextBlock Text="{Binding EmptyStateTitle}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
+              <TextBlock Text="{Binding EmptyStateDescription}" Classes="Muted" TextAlignment="Center" TextWrapping="Wrap" />
+              <Button Content="{DynamicResource Loc_0E9161011702}" Command="{Binding RetryCommand}" Classes="Secondary" HorizontalAlignment="Center" />
+            </StackPanel>
+            <StackPanel IsVisible="{Binding HasError}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{DynamicResource Space4}" MaxWidth="360" Margin="{DynamicResource SpaceInset6}">
+              <controls:DaisyIcon Icon="wifi-none" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
+              <TextBlock Text="{DynamicResource Loc_D05B445F308C}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" TextAlignment="Center" />
+              <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" TextAlignment="Center" Classes="Muted" />
+              <Button Content="{DynamicResource Loc_D8B8392E2C54}" Command="{Binding RetryCommand}" Classes="Primary" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+        </Grid>
+        <Grid IsVisible="{Binding IsDetailMode}" RowDefinitions="Auto,*">
+          <Button Classes="Subtle" Command="{Binding BackCommand}" HorizontalAlignment="Left" Margin="{DynamicResource SpaceInset4}">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}"><controls:DaisyIcon Icon="arrow-left" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" /><TextBlock Text="{DynamicResource Loc_494219FD4CD7}" /></StackPanel>
+          </Button>
+          <ScrollViewer x:Name="DetailScroller" Grid.Row="1" Padding="{DynamicResource SpaceInset6}" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel DataContext="{Binding SelectedApp}" Spacing="{DynamicResource Space6}">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space5}">
+                <Panel Width="{DynamicResource Space16}" Height="{DynamicResource Space16}">
+                  <controls:DaisyIcon Icon="{Binding IconGlyph}" IsVisible="{Binding !HasImage, ElementName=SelectedAppIconImage}" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                  <controls:AsyncImage x:Name="SelectedAppIconImage" Location="{Binding IconPath}" DecodeWidth="256" Stretch="Uniform" />
+                </Panel>
+                <StackPanel Grid.Column="1" Spacing="{DynamicResource Space2}">
+                  <TextBlock Text="{Binding Name}" Classes="StoreHeading" TextWrapping="Wrap" />
+                  <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}">
+                    <TextBlock Text="{Binding Publisher}" Classes="Muted" />
+                    <controls:DaisyIcon Icon="check-circle" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource StatusSuccessBrush}" IsVisible="{Binding IsVerified}" VerticalAlignment="Center" ToolTip.Tip="{DynamicResource Loc_B14AFEAD375A}" />
+                  </StackPanel>
+                  <TextBlock Text="{Binding Summary}" TextWrapping="Wrap" Classes="Muted" />
+                </StackPanel>
+              </Grid>
+              <WrapPanel Orientation="Horizontal">
+                <Button Content="{Binding ActionText}" AutomationProperties.Name="{Binding ActionAccessibilityLabel}" Classes="Primary" Click="OnActionButtonClicked" IsEnabled="{Binding !IsBusy}" MinWidth="120" Margin="0,0,8,8" />
+                <Button Content="{DynamicResource Loc_ED077F3D8125}" Classes="Primary" Click="OnOpenClicked" IsVisible="{Binding CanUpdate}" Margin="0,0,8,8" />
+                <Button Content="{DynamicResource Loc_708D25234A50}" Classes="Subtle" Click="OnUninstallButtonClicked" IsVisible="{Binding CanUninstall}" Margin="0,0,8,8" />
+                <Button Content="{DynamicResource Loc_19766ED6CCB2}" Classes="Subtle" Click="OnCancelClicked" IsVisible="{Binding IsBusy}" Margin="0,0,8,8" />
+              </WrapPanel>
+              <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+              <Border IsVisible="{Binding HasError}" Background="{DynamicResource StatusDangerContainerBrush}" CornerRadius="{DynamicResource RoundedMD}" Padding="{DynamicResource SpaceInset4}">
+                <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
+              </Border>
+              <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" IsVisible="{Binding HasScreenshots}">
+                <ItemsControl ItemsSource="{Binding Screenshots}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space4}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate><DataTemplate>
+                    <Button Classes="Ghost ScreenshotThumbnail" Width="480" Height="280" Padding="0" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Click="OnScreenshotClicked" AutomationProperties.Name="{DynamicResource Loc_0CF794172126}">
+                    <Border CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True">
+                      <controls:AsyncImage Location="{Binding}" DecodeWidth="960" Stretch="Uniform" />
+                    </Border>
+                    </Button>
+                  </DataTemplate></ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </ScrollViewer>
+              <TextBlock Text="{DynamicResource Loc_14AD45188CD8}" IsVisible="{Binding IsPackageInfoLoading}" Classes="StoreLabel" />
+              <Border Classes="StoreCard" IsVisible="{Binding HasPackageInfo}">
+                <StackPanel Spacing="{DynamicResource Space4}">
+                  <UniformGrid Columns="2">
+                    <StackPanel Spacing="{DynamicResource Space2}"><TextBlock Text="{DynamicResource Loc_40FBF12DB506}" Classes="StoreLabel" /><TextBlock Text="{Binding DownloadSize}" /></StackPanel>
+                    <StackPanel Spacing="{DynamicResource Space2}"><TextBlock Text="{DynamicResource Loc_B9391AD3451B}" Classes="StoreLabel" /><TextBlock Text="{Binding InstalledSize}" /></StackPanel>
+                  </UniformGrid>
+                  <TextBlock Text="{Binding RuntimeSizeNote}" IsVisible="{Binding HasRuntimeSize}" Classes="StoreLabel" TextWrapping="Wrap" />
+                  <StackPanel IsVisible="{Binding HasPermissions}" Spacing="{DynamicResource Space2}">
+                    <TextBlock Text="{DynamicResource Loc_16C4BC057245}" Classes="StoreLabel" />
+                    <ItemsControl ItemsSource="{Binding Permissions}"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Text="{Binding}" TextWrapping="Wrap" /></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+                  </StackPanel>
+                  <TextBlock Text="{DynamicResource Loc_B2D2C25E0ED8}" IsVisible="{Binding RuntimeEndOfLife}" TextWrapping="Wrap" Foreground="{DynamicResource StatusWarningBrush}" />
+                </StackPanel>
+              </Border>
+              <StackPanel Spacing="{DynamicResource Space3}" IsVisible="{Binding HasDescription}">
+                <controls:SectionHeader Title="{DynamicResource Loc_913F7AD2BDAA}" />
+                <TextBlock Text="{Binding Description}" TextWrapping="Wrap" Foreground="{DynamicResource ContentSecondaryBrush}" />
+              </StackPanel>
+              <Border Classes="StoreCard">
+                <UniformGrid Columns="2" Rows="2">
+                  <StackPanel Spacing="{DynamicResource Space2}" Margin="{DynamicResource SpaceInset2}"><TextBlock Text="{DynamicResource Loc_7B60B8E351CB}" Classes="StoreLabel" /><TextBlock Text="{Binding Version}" TextWrapping="Wrap" /></StackPanel>
+                  <StackPanel Spacing="{DynamicResource Space2}" Margin="{DynamicResource SpaceInset2}"><TextBlock Text="{DynamicResource Loc_C693279643B8}" Classes="StoreLabel" /><TextBlock Text="{Binding License}" TextWrapping="Wrap" /></StackPanel>
+                  <StackPanel Spacing="{DynamicResource Space2}" Margin="{DynamicResource SpaceInset2}"><TextBlock Text="{DynamicResource Loc_D3731E1F1030}" Classes="StoreLabel" /><TextBlock Text="{Binding InstallLocation}" /></StackPanel>
+                </UniformGrid>
+              </Border>
+              <StackPanel Spacing="{DynamicResource Space3}" IsVisible="{Binding HasReleaseNotes}"><controls:SectionHeader Title="{DynamicResource Loc_135E912E8905}" /><TextBlock Text="{Binding ReleaseNotes}" TextWrapping="Wrap" Classes="Muted" /></StackPanel>
+              <WrapPanel>
+                <Button Content="{DynamicResource Loc_3A19C4D31909}" Classes="Subtle" Click="OnWebsiteClicked" IsVisible="{Binding HasHomepage}" />
+              </WrapPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Grid>
+    </Grid>
+      <Grid x:Name="ScreenshotOverlay" Grid.ColumnSpan="2" Margin="0,32,0,0" IsVisible="False" Background="{DynamicResource OverlayScrimBrush}" PointerPressed="OnScreenshotBackdropPressed">
+        <Grid x:Name="ScreenshotDialog" Width="960" Height="600" HorizontalAlignment="Center" VerticalAlignment="Center" RowDefinitions="Auto,*" RowSpacing="{DynamicResource Space4}">
+          <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="{DynamicResource Space4}">
+            <TextBlock x:Name="ScreenshotTitle" Foreground="{DynamicResource ContentPrimaryBrush}" FontWeight="SemiBold" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+            <TextBlock x:Name="ScreenshotCounter" Grid.Column="1" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+            <Button x:Name="CloseScreenshotButton" Grid.Column="2" Classes="Subtle" Click="OnCloseScreenshotClicked" Content="{DynamicResource Loc_7D9EB7ACB13E}" />
+          </Grid>
+          <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space4}">
+            <Button x:Name="PreviousScreenshotButton" Classes="Subtle" Click="OnPreviousScreenshotClicked" VerticalAlignment="Center" AutomationProperties.Name="{DynamicResource Loc_AF9BE11778E9}" ToolTip.Tip="{DynamicResource Loc_AF9BE11778E9}"><controls:DaisyIcon Icon="arrow-left" Size="{DynamicResource IconSizeStandard}" /></Button>
+            <Border x:Name="ScreenshotImageFrame" Grid.Column="1" CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True"><controls:AsyncImage x:Name="ScreenshotPreview" DecodeWidth="1600" Stretch="Uniform" /></Border>
+            <Button x:Name="NextScreenshotButton" Grid.Column="2" Classes="Subtle" Click="OnNextScreenshotClicked" VerticalAlignment="Center" AutomationProperties.Name="{DynamicResource Loc_FD250FD6F59C}" ToolTip.Tip="{DynamicResource Loc_FD250FD6F59C}"><controls:DaisyIcon Icon="arrow-right" Size="{DynamicResource IconSizeStandard}" /></Button>
+          </Grid>
+        </Grid>
+      </Grid>
+  </Grid>
+</UserControl>

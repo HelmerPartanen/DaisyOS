@@ -1,0 +1,133 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    xmlns:diag="clr-namespace:DaisyOS.Shell.Apps.System.Diagnostics"
+    x:DataType="diag:TaskManagerViewModel">
+
+  <Grid RowDefinitions="Auto,Auto,*" Margin="20" RowSpacing="16">
+    <!-- Top Summary Metrics Cards -->
+    <Grid Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="12">
+      <!-- CPU Card -->
+      <Border Grid.Column="0"
+              Background="{DynamicResource SurfaceRaisedBrush}"
+              BorderBrush="{DynamicResource StrokeSubtleBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedMD}"
+              Padding="14,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <controls:DaisyIcon Icon="gauge" Size="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource ActionPrimaryBrush}" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="{DynamicResource Loc_A87CAC97F749}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding CpuUsage}" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Memory Card -->
+      <Border Grid.Column="1"
+              Background="{DynamicResource SurfaceRaisedBrush}"
+              BorderBrush="{DynamicResource StrokeSubtleBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedMD}"
+              Padding="14,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <controls:DaisyIcon Icon="hard-drive" Size="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource AccentOptionBlueBrush}" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="{DynamicResource Loc_C3963AEDAAC6}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding MemoryUsage}" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <!-- Process Count Card -->
+      <Border Grid.Column="2"
+              Background="{DynamicResource SurfaceRaisedBrush}"
+              BorderBrush="{DynamicResource StrokeSubtleBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedMD}"
+              Padding="14,12">
+        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+          <controls:DaisyIcon Icon="cpu" Size="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource AccentOptionPurpleBrush}" VerticalAlignment="Center" />
+          <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2">
+            <TextBlock Text="{DynamicResource Loc_4A81A7BA5358}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" FontWeight="SemiBold" />
+            <TextBlock Text="{Binding ProcessCount}" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </Grid>
+
+    <!-- Search / Filter Bar -->
+    <Grid Grid.Row="1" ColumnDefinitions="*,Auto" ColumnSpacing="12">
+      <controls:SearchBar Text="{Binding SearchFilter, Mode=TwoWay}"
+               PlaceholderText="{DynamicResource Loc_176DE65F3A17}"
+               Height="{DynamicResource SearchHeightStandard}"
+               VerticalAlignment="Center" />
+
+      <Button Grid.Column="1"
+              Content="{DynamicResource Loc_9BB599CC002F}"
+              Classes="Active"
+              Height="{DynamicResource ControlHeightStandard}"
+              Padding="16,0"
+              IsEnabled="{Binding SelectedProcess, Converter={x:Static ObjectConverters.IsNotNull}}"
+              Click="OnEndSelectedProcessClicked" />
+    </Grid>
+
+    <!-- Process Table Card -->
+    <Border Grid.Row="2"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource StrokeSubtleBrush}"
+            BorderThickness="1"
+            CornerRadius="{DynamicResource RoundedMD}"
+            ClipToBounds="True">
+      <Grid RowDefinitions="Auto,*">
+        <!-- Table Header -->
+        <Border Grid.Row="0"
+                Background="{DynamicResource SurfaceSunkenBrush}"
+                Padding="16,10"
+                BorderBrush="{DynamicResource StrokeSubtleBrush}"
+                BorderThickness="0,0,0,1">
+          <Grid ColumnDefinitions="70,*,90,110,90">
+            <TextBlock Grid.Column="0" Text="{DynamicResource Loc_3F302A2A7158}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentTertiaryBrush}" />
+            <TextBlock Grid.Column="1" Text="{DynamicResource Loc_AA88DBCD7B99}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentTertiaryBrush}" />
+            <TextBlock Grid.Column="2" Text="{DynamicResource Loc_DB9A4C7D4C19}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="3" Text="{DynamicResource Loc_C3963AEDAAC6}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Right" />
+            <TextBlock Grid.Column="4" Text="{DynamicResource Loc_64CFF1319D2F}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Right" />
+          </Grid>
+        </Border>
+
+        <!-- Process List -->
+        <ListBox Grid.Row="1"
+                 ItemsSource="{Binding FilteredProcesses}"
+                 SelectedItem="{Binding SelectedProcess, Mode=TwoWay}"
+                 Background="Transparent"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+          <ListBox.ItemTemplate>
+            <DataTemplate x:DataType="diag:ProcessRowViewModel">
+              <Grid ColumnDefinitions="70,*,90,110,90" VerticalAlignment="Center" Height="34">
+                <TextBlock Grid.Column="0" Text="{Binding Pid}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <controls:DaisyIcon Icon="cube" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <TextBlock Grid.Column="2" Text="{Binding CpuText}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <TextBlock Grid.Column="3" Text="{Binding MemoryText}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" />
+                <Button Grid.Column="4"
+                        Classes="SubtleButton"
+                        Height="26"
+                        Padding="8,0"
+                        HorizontalAlignment="Right"
+                        VerticalAlignment="Center"
+                        Tag="{Binding Pid}"
+                        Click="OnEndProcessItemClicked">
+                  <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource StatusDangerBrush}" />
+                </Button>
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+      </Grid>
+    </Border>
+  </Grid>
+</UserControl>

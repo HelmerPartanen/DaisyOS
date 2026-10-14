@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"/home/helmeri/DaisyOS/src/native/daisy_live_wallpaper/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}

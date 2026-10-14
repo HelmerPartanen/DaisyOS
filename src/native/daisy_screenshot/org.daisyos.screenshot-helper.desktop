@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=DaisyOS Screenshot Helper
+Comment=Secure screenshot capture helper for DaisyOS
+Exec=/usr/local/libexec/daisyos/daisy-screenshot-helper
+NoDisplay=true
+Terminal=false
+StartupWMClass=org.daisyos.screenshot-helper
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2
+X-KDE-Wayland-Interfaces=org_kde_plasma_window_management,zkde_screencast_unstable_v1

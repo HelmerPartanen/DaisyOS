@@ -1,0 +1,108 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        x:Class="DaisyOS.Shell.Views.Components.Desktop.DesktopItemPropertiesDialog"
+        Title="{DynamicResource Loc_AE43692B2A31}"
+        Width="380"
+        Height="460"
+        CanResize="False"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        ShowInTaskbar="False"
+        Topmost="True">
+
+
+  <controls:ShellFrameBorder Margin="16"
+          Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+          CornerRadius="{DynamicResource RoundedLG}"
+          Padding="1"
+          BoxShadow="{DynamicResource ElevationDialogShadow}">
+    <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+            CornerRadius="{DynamicResource RoundedLGInset}"
+            Padding="1">
+      <Border Background="{DynamicResource SurfaceBaseBrush}"
+              CornerRadius="{DynamicResource RoundedMD}"
+              Padding="20">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <!-- Header -->
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto" Margin="0,0,0,16">
+            <Border Grid.Column="0" Width="48" Height="48" Margin="0,0,16,0">
+              <Image x:Name="ItemIcon"
+                     RenderOptions.BitmapInterpolationMode="HighQuality" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock x:Name="ItemNameText"
+                         FontSize="{DynamicResource TypeSizeBodyLarge}"
+                         FontWeight="SemiBold"
+                         TextTrimming="CharacterEllipsis"
+                         Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock x:Name="ItemTypeText"
+                         FontSize="{DynamicResource TypeSizeCaption}"
+                         Foreground="{DynamicResource ContentSecondaryBrush}"
+                         Margin="0,2,0,0" />
+            </StackPanel>
+          </Grid>
+
+          <Separator Grid.Row="0" VerticalAlignment="Bottom" Margin="0,0,0,0" />
+
+          <!-- Details -->
+          <ScrollViewer Grid.Row="1" Margin="0,12,0,12">
+            <StackPanel Spacing="12">
+              <!-- Location -->
+              <Grid ColumnDefinitions="90,*">
+                <TextBlock Grid.Column="0" Text="{DynamicResource Loc_BBDFFE25DC7D}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+                <TextBlock Grid.Column="1" x:Name="LocationText" Foreground="{DynamicResource ContentPrimaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" TextWrapping="Wrap" />
+              </Grid>
+
+              <!-- Size -->
+              <Grid ColumnDefinitions="90,*">
+                <TextBlock Grid.Column="0" Text="{DynamicResource Loc_C987F668D963}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+                <TextBlock Grid.Column="1" x:Name="SizeText" Foreground="{DynamicResource ContentPrimaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+              </Grid>
+
+              <Separator Margin="0,4" />
+
+              <!-- Created -->
+              <Grid ColumnDefinitions="90,*">
+                <TextBlock Grid.Column="0" Text="{DynamicResource Loc_22D435A37118}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+                <TextBlock Grid.Column="1" x:Name="CreatedText" Foreground="{DynamicResource ContentPrimaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+              </Grid>
+
+              <!-- Modified -->
+              <Grid ColumnDefinitions="90,*">
+                <TextBlock Grid.Column="0" Text="{DynamicResource Loc_601C718ACAAD}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+                <TextBlock Grid.Column="1" x:Name="ModifiedText" Foreground="{DynamicResource ContentPrimaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+              </Grid>
+
+              <!-- Accessed -->
+              <Grid ColumnDefinitions="90,*">
+                <TextBlock Grid.Column="0" Text="{DynamicResource Loc_9EA47E1C9064}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+                <TextBlock Grid.Column="1" x:Name="AccessedText" Foreground="{DynamicResource ContentPrimaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+              </Grid>
+
+              <Separator Margin="0,4" />
+
+              <!-- Permissions / Attributes -->
+              <Grid ColumnDefinitions="90,*">
+                <TextBlock Grid.Column="0" Text="{DynamicResource Loc_79E3C0331286}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+                <TextBlock Grid.Column="1" x:Name="PermissionsText" Foreground="{DynamicResource ContentPrimaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" />
+              </Grid>
+            </StackPanel>
+          </ScrollViewer>
+
+          <!-- Footer Buttons -->
+          <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="8" Margin="0,8,0,0">
+            <Button x:Name="CloseButton"
+                    Content="{DynamicResource Loc_11A6767D5674}"
+                    Classes="Primary"
+                    MinWidth="80"
+                    HorizontalContentAlignment="Center"
+                    Click="OnCloseClicked" />
+          </StackPanel>
+        </Grid>
+      </Border>
+    </controls:ShellFrameBorder>
+  </controls:ShellFrameBorder>
+</Window>

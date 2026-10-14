@@ -1,0 +1,1 @@
+1. [Fixed] Live wallpapers now pause rendering immediately when an application is fullscreened or maximized (occlusion detection updated in NativeAppWindowTracker and KWin bridge).

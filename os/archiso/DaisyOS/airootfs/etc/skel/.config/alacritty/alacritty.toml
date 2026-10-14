@@ -1,0 +1,38 @@
+[window]
+padding = { x = 12, y = 10 }
+dynamic_padding = true
+decorations = "full"
+opacity = 0.95
+
+[font]
+normal = { family = "Noto Sans Mono", style = "Regular" }
+size = 11.0
+
+[colors.primary]
+background = "#0B0D12"
+foreground = "#E4E4E7"
+
+[colors.cursor]
+text = "#0B0D12"
+cursor = "#3B82F6"
+
+[colors.normal]
+black = "#18181B"
+red = "#EF4444"
+green = "#22C55E"
+yellow = "#EAB308"
+blue = "#3B82F6"
+magenta = "#A855F7"
+cyan = "#06B6D4"
+white = "#D4D4D8"
+
+[colors.bright]
+black = "#27272A"
+red = "#F87171"
+green = "#4ADE80"
+yellow = "#FDE047"
+blue = "#60A5FA"
+magenta = "#C084FC"
+cyan = "#22D3EE"
+white = "#FFFFFF"
+

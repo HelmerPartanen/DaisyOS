@@ -1,0 +1,8 @@
+[Plymouth Theme]
+Name=DaisyOS
+Description=DaisyOS boot-screen placeholder
+ModuleName=script
+
+[script]
+ImageDir=/usr/share/plymouth/themes/daisyos
+ScriptFile=/usr/share/plymouth/themes/daisyos/daisyos.script

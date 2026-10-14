@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <!-- Match the shell's local platform interfaces, including native frame theming. -->
+    <ProjectReference Include="../../external/Avalonia/src/Headless/Avalonia.Headless.XUnit/Avalonia.Headless.XUnit.csproj" />
+    <ProjectReference Include="../../src/DaisyOS.Core/DaisyOS.Core.csproj" />
+    <ProjectReference Include="../../src/DaisyOS.System/DaisyOS.System.csproj" />
+    <ProjectReference Include="../../src/DaisyOS.Shell/DaisyOS.Shell.csproj" />
+    <ProjectReference Include="../../src/DaisyOS.Installer/DaisyOS.Installer.csproj" />
+  </ItemGroup>
+</Project>

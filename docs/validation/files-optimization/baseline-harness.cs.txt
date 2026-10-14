@@ -1,0 +1,32 @@
+using System.Diagnostics;
+using System.Collections.ObjectModel;
+using System.Text.Json;
+using DaisyOS.Shell.Apps.Files;
+var results = new List<object>();
+foreach (var dir in Directory.GetDirectories("/tmp/daisy-files-benchmarks").OrderBy(x => x))
+{
+    var times = new List<object>();
+    for (int run = 0; run < 3; run++)
+    {
+        long allocation = GC.GetAllocatedBytesForCurrentThread();
+        var sw = Stopwatch.StartNew();
+        var paths = Directory.EnumerateFileSystemEntries(dir).ToArray();
+        var enumeration = sw.Elapsed.TotalMilliseconds;
+        sw.Restart();
+        var entries = paths.Select(p => new FileEntryViewModel(p)).ToArray();
+        var vm = sw.Elapsed.TotalMilliseconds;
+        sw.Restart();
+        var sorted = entries.OrderBy(e => !e.IsDirectory).ThenBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+        var sort = sw.Elapsed.TotalMilliseconds;
+        sw.Restart();
+        var visible = new ObservableCollection<FileEntryViewModel>();
+        int events = 0;
+        visible.CollectionChanged += (_, _) => events++;
+        foreach (var e in sorted) visible.Add(e);
+        var ui = sw.Elapsed.TotalMilliseconds;
+        times.Add(new { run, enumeration, vm, sort, collection = ui, events, allocated = GC.GetAllocatedBytesForCurrentThread() - allocation });
+    }
+    results.Add(new { path = dir, runs = times });
+    Console.WriteLine(dir);
+}
+File.WriteAllText("/tmp/daisy-files-baseline/results.json", JsonSerializer.Serialize(results, new JsonSerializerOptions { WriteIndented = true }));

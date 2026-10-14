@@ -1,0 +1,351 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        xmlns:wallpaper="clr-namespace:DaisyOS.Shell.Views.Components.Wallpaper"
+        x:Class="DaisyOS.Shell.Views.Windows.LockScreenWindow"
+        Title="{DynamicResource Loc_1D795D7A7686}"
+        WindowState="FullScreen"
+        WindowDecorations="None"
+        ShowInTaskbar="False"
+        CanResize="False"
+        Topmost="True"
+        Background="{DynamicResource LockScreenCanvasBrush}">
+
+  <Grid x:Name="RootGrid"
+        Opacity="0">
+    <Grid.Transitions>
+      <Transitions>
+        <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+      </Transitions>
+    </Grid.Transitions>
+
+    <Panel x:Name="LockBackground" Background="{DynamicResource LockScreenCanvasBrush}">
+    <!-- Background Wallpaper Layer -->
+    <wallpaper:WallpaperLayer x:Name="LockWallpaper"
+                              IgnoreDesktopOcclusion="True" />
+
+    <!-- Subtle Vignette / Scrim Overlay for Legibility -->
+    <Border IsHitTestVisible="False">
+      <Border.Background>
+        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+          <GradientStop Offset="0.0" Color="{DynamicResource BlackAlpha25Color}" />
+          <GradientStop Offset="0.25" Color="{DynamicResource BlackAlpha08Color}" />
+          <GradientStop Offset="0.65" Color="{DynamicResource BlackAlpha08Color}" />
+          <GradientStop Offset="1.0" Color="{DynamicResource BlackAlpha33Color}" />
+        </LinearGradientBrush>
+      </Border.Background>
+    </Border>
+
+    </Panel>
+
+    <!-- Main Foreground Content Grid -->
+    <Grid RowDefinitions="*,Auto">
+      <ScrollViewer x:Name="LockContentScroll" Grid.Row="0"
+                    HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <Grid x:Name="MainContentGrid" RowDefinitions="Auto,*,Auto" Margin="24,0">
+      <!-- Top Area: Date above Clock -->
+      <StackPanel x:Name="ClockArea"
+                  Grid.Row="0"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Top"
+                  Spacing="4"
+                  Margin="0,72,0,0"
+                  Opacity="0"
+                  RenderTransform="translateY(-14px)">
+        <StackPanel.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+            <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+          </Transitions>
+        </StackPanel.Transitions>
+
+        <TextBlock x:Name="DateText"
+                   Text="{DynamicResource Loc_C2A36ACCB9A4}"
+                   FontSize="{DynamicResource TypeSizeHeading}"
+                   FontWeight="SemiBold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource WhiteAlpha95Brush}"
+                   TextWrapping="Wrap" TextAlignment="Center">
+          <TextBlock.Effect>
+            <DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="3" Color="Black" Opacity="0.35" />
+          </TextBlock.Effect>
+        </TextBlock>
+        <Grid HorizontalAlignment="Center">
+          <TextBlock x:Name="PreviousClockText"
+                     FontSize="{DynamicResource TypeSizeDisplayHero}" FontWeight="Bold"
+                     HorizontalAlignment="Center" Foreground="{DynamicResource LockScreenMutedBrush}"
+                     Opacity="0" IsHitTestVisible="False" />
+          <TextBlock x:Name="ClockText"
+                     Text="9:41"
+                     FontSize="{DynamicResource TypeSizeDisplayHero}"
+                     FontWeight="Bold"
+                     HorizontalAlignment="Center"
+                     Foreground="{DynamicResource LockScreenMutedBrush}" />
+        </Grid>
+      </StackPanel>
+
+      <!-- Center / Lower Area: User Avatar, Username, Password Box, Subtitle -->
+      <StackPanel x:Name="CredentialsPanel"
+                  Grid.Row="2"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Bottom"
+                  Spacing="8"
+                  Margin="0,24,0,24"
+                  Width="320"
+                  Opacity="0"
+                  RenderTransform="translateY(14px)">
+        <StackPanel.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+            <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+          </Transitions>
+        </StackPanel.Transitions>
+
+        <!-- User Avatar with Taskbar Shell Frame Material -->
+        <controls:ShellFrameBorder x:Name="AvatarBorder" Width="48"
+                Height="48"
+                Padding="1"
+                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                CornerRadius="24"
+                HorizontalAlignment="Center">
+          <controls:ShellFrameBorder BorderThickness="1"
+                  BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
+                  Background="Transparent"
+                  CornerRadius="24">
+            <Border Background="{DynamicResource SurfaceBaseBrush}"
+                    CornerRadius="24"
+                    ClipToBounds="True">
+              <Grid>
+                <controls:DaisyIcon Icon="user" IsVisible="{DynamicResource ProfilePictureMissing}"
+                                    Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}"
+                                    HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
+              </Grid>
+            </Border>
+          </controls:ShellFrameBorder>
+        </controls:ShellFrameBorder>
+
+        <!-- Username -->
+        <TextBlock x:Name="UserNameText"
+                   Text="{DynamicResource Loc_63E633B951E0}"
+                   FontSize="{DynamicResource TypeSizeTitle}"
+                   FontWeight="SemiBold"
+                   HorizontalAlignment="Center"
+                   Foreground="{DynamicResource WhiteAlpha95Brush}"
+                   TextWrapping="Wrap" TextAlignment="Center"
+                   Margin="0,2,0,4">
+          <TextBlock.Effect>
+            <DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="3" Color="Black" Opacity="0.35" />
+          </TextBlock.Effect>
+        </TextBlock>
+
+        <!-- Password Pill Container with Taskbar Shell Frame Material -->
+        <controls:ShellFrameBorder x:Name="PasswordPillBorder"
+                MinHeight="40"
+                Padding="1"
+                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                CornerRadius="20"
+                HorizontalAlignment="Center">
+          <controls:ShellFrameBorder BorderThickness="1"
+                  BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
+                  Background="Transparent"
+                  CornerRadius="{Binding CornerRadius, ElementName=PasswordPillBorder}">
+            <Border Background="{DynamicResource SurfaceBaseBrush}"
+                    CornerRadius="{Binding CornerRadius, ElementName=PasswordPillBorder}"
+                    ClipToBounds="True">
+              <Grid ColumnDefinitions="*,Auto,Auto">
+                <TextBox x:Name="PasswordBox"
+                         Grid.Column="0"
+                         PasswordChar="•"
+                         PlaceholderText="{DynamicResource Loc_3D81652794E5}"
+                         FontSize="{DynamicResource TypeSizeBodySmall}"
+                         LetterSpacing="0"
+                         Height="{DynamicResource ControlHeightStandard}"
+                         Padding="16,0,6,0"
+                         VerticalContentAlignment="Center"
+                         Background="Transparent"
+                         Foreground="{DynamicResource ContentPrimaryBrush}"
+                         BorderThickness="0"
+                         CornerRadius="{Binding CornerRadius, ElementName=PasswordPillBorder}"
+                         VerticalAlignment="Center">
+                  <TextBox.Styles>
+                    <Style Selector="TextBox /template/ TextBlock#PART_Placeholder">
+                      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+                      <Setter Property="LetterSpacing" Value="0" />
+                      <Setter Property="VerticalAlignment" Value="Center" />
+                    </Style>
+                    <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+                      <Setter Property="Background" Value="Transparent" />
+                      <Setter Property="BorderBrush" Value="Transparent" />
+                    </Style>
+                    <Style Selector="TextBox:pointerover /template/ Border#PART_BorderElement">
+                      <Setter Property="Background" Value="Transparent" />
+                      <Setter Property="BorderBrush" Value="Transparent" />
+                    </Style>
+                    <Style Selector="TextBox:disabled /template/ Border#PART_BorderElement">
+                      <Setter Property="Background" Value="Transparent" />
+                      <Setter Property="BorderBrush" Value="Transparent" />
+                    </Style>
+                  </TextBox.Styles>
+                </TextBox>
+
+                <!-- Hint Button (?) -->
+                <Button x:Name="HintButton"
+                        Grid.Column="1"
+                        Width="{DynamicResource ControlHeightStandard}"
+                        Height="{DynamicResource ControlHeightStandard}"
+                        CornerRadius="{DynamicResource RadiusControl}"
+                        Background="Transparent"
+                        BorderThickness="0"
+                        Margin="0,0,4,0"
+                        VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        ToolTip.Tip="{DynamicResource Loc_89D40EFBE503}"
+                        Click="OnHintClicked">
+                  <TextBlock Text="?"
+                             FontSize="{DynamicResource TypeSizeCaption}"
+                             FontWeight="Bold"
+                             Foreground="{DynamicResource ContentSecondaryBrush}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center"
+                             Margin="0,-1,0,0" />
+                </Button>
+
+                <!-- Submit Arrow Button -->
+                <Button x:Name="UnlockButton"
+                        Grid.Column="2"
+                        Width="{DynamicResource ControlHeightStandard}"
+                        Height="{DynamicResource ControlHeightStandard}"
+                        CornerRadius="{DynamicResource RadiusSurfaceInner}"
+                        Background="{DynamicResource StateHoverBrush}"
+                        BorderThickness="0"
+                        Margin="0,0,6,0"
+                        VerticalAlignment="Center"
+                        HorizontalContentAlignment="Center"
+                        VerticalContentAlignment="Center"
+                        Click="OnUnlockClicked">
+                  <controls:DaisyIcon x:Name="UnlockArrowIcon"
+                                      Icon="arrow-right"
+                                      Size="{DynamicResource IconSizeSmall}"
+                                      Foreground="{DynamicResource ContentPrimaryBrush}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Button>
+              </Grid>
+            </Border>
+          </controls:ShellFrameBorder>
+        </controls:ShellFrameBorder>
+
+        <!-- Subtitle / Required text -->
+        <TextBlock x:Name="SubtitleText" IsVisible="False"
+                   Text="{DynamicResource Loc_3D19CD89932C}"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource WhiteAlpha85Brush}"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   LineHeight="{DynamicResource TypeLineCaption}"
+                   TextWrapping="Wrap"
+                   Margin="0,6,0,0">
+          <TextBlock.Effect>
+            <DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="3" Color="Black" Opacity="0.3" />
+          </TextBlock.Effect>
+        </TextBlock>
+
+        <!-- Error message -->
+        <TextBlock x:Name="ErrorMessageText"
+                   Text="{DynamicResource Loc_78FA607C01BC}"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource LockScreenDangerBrush}"
+                   HorizontalAlignment="Center"
+                   TextAlignment="Center"
+                   TextWrapping="Wrap"
+                   IsVisible="False"
+                   Margin="0,4,0,0">
+          <TextBlock.Effect>
+            <DropShadowEffect OffsetX="0" OffsetY="1" BlurRadius="4" Color="Black" Opacity="0.4" />
+          </TextBlock.Effect>
+        </TextBlock>
+
+        <!-- Caps lock indicator -->
+        <TextBlock x:Name="CapsLockWarningText"
+                   Text="{DynamicResource Loc_FE5A64D430AE}"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   TextWrapping="Wrap" TextAlignment="Center"
+                   Foreground="{DynamicResource LockScreenWarningBrush}"
+                   HorizontalAlignment="Center"
+                   IsVisible="False"
+                   Margin="0,2,0,0" />
+      </StackPanel>
+      </Grid>
+      </ScrollViewer>
+
+    <!-- Discreet Corner Items: Battery info bottom-left, Power buttons bottom-right -->
+    <Grid x:Name="CornerControlsGrid" Grid.Row="1"
+          VerticalAlignment="Bottom"
+          Margin="24,20"
+          IsHitTestVisible="True"
+          Opacity="0">
+      <Grid.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Grid.Transitions>
+      <TextBlock x:Name="BatteryInfoText"
+                 HorizontalAlignment="Left"
+                 VerticalAlignment="Center"
+                 FontSize="{DynamicResource TypeSizeCaption}"
+                 Foreground="{DynamicResource WhiteAlpha44Brush}" />
+
+      <StackPanel x:Name="PowerControlsPanel"
+                  HorizontalAlignment="Right"
+                  Orientation="Horizontal"
+                  Spacing="8"
+                  VerticalAlignment="Center">
+        <Button Width="{DynamicResource ControlHeightStandard}"
+                Height="{DynamicResource ControlHeightStandard}"
+                CornerRadius="{DynamicResource RadiusSurfaceInner}"
+                Background="{DynamicResource BlackAlpha15Brush}"
+                BorderBrush="{DynamicResource WhiteAlpha08Brush}"
+                BorderThickness="1"
+                ToolTip.Tip="{DynamicResource Loc_D466BCF52EB6}"
+                Click="OnSleepClicked">
+          <controls:DaisyIcon Icon="moon"
+                              Size="{DynamicResource IconSizeStandard}"
+                              Foreground="{DynamicResource WhiteAlpha56Brush}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+        </Button>
+        <Button Width="{DynamicResource ControlHeightStandard}"
+                Height="{DynamicResource ControlHeightStandard}"
+                CornerRadius="{DynamicResource RadiusSurfaceInner}"
+                Background="{DynamicResource BlackAlpha15Brush}"
+                BorderBrush="{DynamicResource WhiteAlpha08Brush}"
+                BorderThickness="1"
+                ToolTip.Tip="{DynamicResource Loc_6B983A81E5E8}"
+                Click="OnRestartClicked">
+          <controls:DaisyIcon Icon="arrow-clockwise"
+                              Size="{DynamicResource IconSizeStandard}"
+                              Foreground="{DynamicResource WhiteAlpha56Brush}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+        </Button>
+        <Button Width="{DynamicResource ControlHeightStandard}"
+                Height="{DynamicResource ControlHeightStandard}"
+                CornerRadius="{DynamicResource RadiusSurfaceInner}"
+                Background="{DynamicResource BlackAlpha15Brush}"
+                BorderBrush="{DynamicResource WhiteAlpha08Brush}"
+                BorderThickness="1"
+                ToolTip.Tip="{DynamicResource Loc_3E45A33D2260}"
+                Click="OnShutdownClicked">
+          <controls:DaisyIcon Icon="power"
+                              Size="{DynamicResource IconSizeStandard}"
+                              Foreground="{DynamicResource WhiteAlpha56Brush}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center" />
+        </Button>
+      </StackPanel>
+    </Grid>
+    </Grid>
+  </Grid>
+</Window>

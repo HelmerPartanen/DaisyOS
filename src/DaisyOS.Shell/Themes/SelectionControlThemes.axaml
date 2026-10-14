@@ -1,0 +1,122 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:typography="clr-namespace:DaisyOS.Shell.Services.Theming">
+  <!-- Shared presentation; the native controls retain input and automation behavior. -->
+  <ControlTheme x:Key="DaisyChoiceBaseTheme" TargetType="ToggleButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="typography:ThemeTransitionPolicy.Enabled" Value="False" />
+    <Setter Property="Transitions"><Transitions /></Setter>
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetCompact}" />
+    <Setter Property="MinWidth" Value="{DynamicResource HitTargetCompact}" />
+    <Setter Property="HorizontalAlignment" Value="Left" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Padding" Value="8,0,0,0" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="FocusAdorner" Value="{x:Null}" />
+    <Style Selector="^:pointerover /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="^:pressed /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#SelectionIndicator, ^:indeterminate /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+    <Style Selector="^:checked:pointerover /template/ Border#SelectionIndicator, ^:indeterminate:pointerover /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="^:checked:pressed /template/ Border#SelectionIndicator, ^:indeterminate:pressed /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+    </Style>
+    <Style Selector="^:checked /template/ :is(Control)#SelectionGlyph">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+    <Style Selector="^:focus-visible /template/ Border#ChoiceFocusOutline">
+      <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    </Style>
+    <Style Selector="^ /template/ ContentPresenter:empty">
+      <Setter Property="IsVisible" Value="False" />
+    </Style>
+    <Style Selector="^:disabled">
+      <Setter Property="Cursor" Value="Arrow" />
+    </Style>
+  </ControlTheme>
+  <ControlTheme x:Key="DaisyCheckBoxTheme" TargetType="CheckBox" BasedOn="{StaticResource DaisyChoiceBaseTheme}">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent" typography:ThemeTransitionPolicy.Enabled="False">
+          <Grid ColumnDefinitions="Auto,*" Background="Transparent" TemplatedControl.IsTemplateFocusTarget="True">
+            <Grid Width="26" MinHeight="{DynamicResource HitTargetCompact}" VerticalAlignment="Center">
+              <Border x:Name="ChoiceFocusOutline" Width="26" Height="26" CornerRadius="8"
+                      BorderThickness="2" BorderBrush="Transparent" typography:ThemeTransitionPolicy.Enabled="False" />
+              <Border x:Name="SelectionIndicator" Width="20" Height="20" CornerRadius="5"
+                      BorderThickness="1" BorderBrush="{DynamicResource ContentTertiaryBrush}"
+                      Background="{DynamicResource SurfaceSunkenBrush}" typography:ThemeTransitionPolicy.Enabled="False">
+                <Border.Transitions>
+                  <Transitions>
+                    <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+                    <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionDurationHover}" />
+                  </Transitions>
+                </Border.Transitions>
+                  <Grid>
+                    <Path x:Name="SelectionGlyph" IsVisible="False" Width="12" Height="12"
+                          Data="M 1,6 L 4.5,9.5 L 11,2.5" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                          Stroke="{DynamicResource ContentOnActionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    <Border x:Name="IndeterminateGlyph" IsVisible="False" Width="10" Height="2" CornerRadius="1"
+                            Background="{DynamicResource ContentOnActionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  </Grid>
+              </Border>
+            </Grid>
+            <ContentPresenter x:Name="PART_ContentPresenter" Grid.Column="1" Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}" Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              RecognizesAccessKey="True" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:indeterminate /template/ Border#IndeterminateGlyph">
+      <Setter Property="IsVisible" Value="True" />
+    </Style>
+  </ControlTheme>
+  <ControlTheme x:Key="DaisyRadioButtonTheme" TargetType="RadioButton" BasedOn="{StaticResource DaisyChoiceBaseTheme}">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Background="Transparent" typography:ThemeTransitionPolicy.Enabled="False">
+          <Grid ColumnDefinitions="Auto,*" Background="Transparent" TemplatedControl.IsTemplateFocusTarget="True">
+            <Grid Width="26" MinHeight="{DynamicResource HitTargetCompact}" VerticalAlignment="Center">
+              <Border x:Name="ChoiceFocusOutline" Width="26" Height="26" CornerRadius="13"
+                      BorderThickness="2" BorderBrush="Transparent" typography:ThemeTransitionPolicy.Enabled="False" />
+              <Border x:Name="SelectionIndicator" Width="20" Height="20" CornerRadius="10"
+                      BorderThickness="1" BorderBrush="{DynamicResource ContentTertiaryBrush}"
+                      Background="{DynamicResource SurfaceSunkenBrush}" typography:ThemeTransitionPolicy.Enabled="False">
+                <Border.Transitions>
+                  <Transitions>
+                    <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+                    <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionDurationHover}" />
+                  </Transitions>
+                </Border.Transitions>
+                  <Border x:Name="SelectionGlyph" IsVisible="False" Width="8" Height="8" CornerRadius="4"
+                          Background="{DynamicResource ContentOnActionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+              </Border>
+            </Grid>
+            <ContentPresenter x:Name="PART_ContentPresenter" Grid.Column="1" Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}" Margin="{TemplateBinding Padding}"
+                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                              RecognizesAccessKey="True" TextWrapping="Wrap" />
+          </Grid>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+</ResourceDictionary>

@@ -1,0 +1,16 @@
+{
+  "KPackageStructure": "KWin/Effect",
+  "KPlugin": {
+    "Id": "daisyos-window-motion",
+    "Name": "DaisyOS Window Motion",
+    "Description": "Subtle, compositor-owned application state transitions",
+    "Version": "1.0",
+    "License": "MIT",
+    "EnabledByDefault": false,
+    "Category": "Appearance",
+    "Authors": [{"Name": "DaisyOS"}]
+  },
+  "X-Plasma-API": "javascript",
+  "X-Plasma-MainScript": "code/main.js",
+  "X-KDE-Ordering": 60
+}

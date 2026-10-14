@@ -1,0 +1,197 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             xmlns:rich="clr-namespace:DaisyOS.Shell.Apps.Notes.Editor.Rich"
+             x:Class="DaisyOS.Shell.Apps.Notes.Editor.Rich.RichEditorView">
+
+  <UserControl.Styles>
+    <Style Selector="StackPanel.DocumentEntering">
+      <Style.Animations>
+        <Animation Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut">
+          <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0.85" /></KeyFrame>
+          <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        </Animation>
+      </Style.Animations>
+    </Style>
+    <Style Selector="Button.ToolbarPill">
+      <Setter Property="Focusable" Value="True" />
+      <Setter Property="MinWidth" Value="{DynamicResource ControlHeightCompact}" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightCompact}" />
+      <Setter Property="Width" Value="{DynamicResource ControlHeightCompact}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.ToolbarPill:pointerover">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.ToolbarPill.Active">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimarySubtleBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid>
+    <ScrollViewer x:Name="DocumentScroll" Background="Transparent"
+                  VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel x:Name="BlocksContainer"
+                  Margin="24,64,24,24" Spacing="0" HorizontalAlignment="Stretch" />
+    </ScrollViewer>
+    <Border x:Name="FloatingToolbar" HorizontalAlignment="Center" VerticalAlignment="Top"
+            Height="{DynamicResource Space10}" Margin="12,12,12,0"
+            CornerRadius="{DynamicResource RoundedMD}" Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+            Padding="{DynamicResource SpaceInset1}">
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button x:Name="ToolbarScrollLeft" Grid.Column="0" Classes="ToolbarPill" IsVisible="False"
+                ToolTip.Tip="{DynamicResource Loc_B8DBA9F25B0A}" Click="OnToolbarScrollLeft">
+          <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeStandard}" />
+        </Button>
+      <ScrollViewer Grid.Column="1" x:Name="FormattingScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
+        <StackPanel x:Name="FormattingContent" Orientation="Horizontal" Spacing="0">
+          <!-- Block Type Selector DropDown -->
+          <ComboBox x:Name="BlockTypeCombo"
+                    Width="110"
+                    AutomationProperties.Name="{DynamicResource Loc_9AA08BE49BDD}"
+                    Height="{DynamicResource ControlHeightCompact}"
+                    MinHeight="{DynamicResource ControlHeightCompact}"
+                    VerticalAlignment="Center"
+                    FontSize="{DynamicResource TypeSizeCaption}"
+                    CornerRadius="{DynamicResource RadiusControlInner}"
+                    SelectionChanged="OnBlockTypeSelectionChanged">
+            <ComboBoxItem Content="{DynamicResource Loc_C3B03DD28595}" Tag="Paragraph" />
+            <ComboBoxItem Content="{DynamicResource Loc_D95E9370EF74}" Tag="Heading1" />
+            <ComboBoxItem Content="{DynamicResource Loc_3291955E9005}" Tag="Heading2" />
+            <ComboBoxItem Content="{DynamicResource Loc_C6845F11C2D3}" Tag="Heading3" />
+            <ComboBoxItem Content="{DynamicResource Loc_546D0F9DD97A}" Tag="BulletedList" />
+            <ComboBoxItem Content="{DynamicResource Loc_2916C317BF4A}" Tag="NumberedList" />
+            <ComboBoxItem Content="{DynamicResource Loc_7346030400BF}" Tag="CheckList" />
+            <ComboBoxItem Content="{DynamicResource Loc_EB4CDEBD82BF}" Tag="Quote" />
+            <ComboBoxItem Content="{DynamicResource Loc_BFDBD4C5FD05}" Tag="Code" />
+          </ComboBox>
+
+          <!-- Font Family Selector -->
+          <ComboBox x:Name="FontFamilyCombo"
+                    Height="{DynamicResource ControlHeightCompact}"
+                    MinHeight="{DynamicResource ControlHeightCompact}"
+                    VerticalAlignment="Center"
+                    Width="92"
+                    FontSize="{DynamicResource TypeSizeCaption}"
+                    CornerRadius="{DynamicResource RadiusControlInner}"
+                    SelectionChanged="OnFontFamilySelectionChanged">
+            <ComboBoxItem Content="{DynamicResource Loc_30A4A5BCA8F4}" />
+            <ComboBoxItem Content="{DynamicResource Loc_26C12A414C33}" />
+            <ComboBoxItem Content="{DynamicResource Loc_96C4069D9BB6}" />
+            <ComboBoxItem Content="{DynamicResource Loc_22C971284F12}" />
+            <ComboBoxItem Content="{DynamicResource Loc_1B5E747E5031}" />
+          </ComboBox>
+
+          <!-- Font Size Stepper -->
+          <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+            <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_303A5795D937}" Click="OnDecreaseFontSizeClicked">
+              <controls:DaisyIcon Icon="minus" Size="{DynamicResource IconSizeSmall}" />
+            </Button>
+            <TextBlock x:Name="FontSizeLabel" Text="16" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" VerticalAlignment="Center" Width="20" TextAlignment="Center" />
+            <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_ECDF43CB43E8}" Click="OnIncreaseFontSizeClicked">
+              <controls:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeSmall}" />
+            </Button>
+          </StackPanel>
+
+          <!-- Formatting Toggles -->
+          <Button x:Name="BoldBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_84787DE4AE3F}" Click="OnBoldClicked">
+            <controls:DaisyIcon Icon="text-bold" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+          <Button x:Name="ItalicBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_CCC60DFF1674}" Click="OnItalicClicked">
+            <controls:DaisyIcon Icon="text-italic" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+          <Button x:Name="UnderlineBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_BBDF501C30F8}" Click="OnUnderlineClicked">
+            <controls:DaisyIcon Icon="text-underline" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+          <Button x:Name="StrikeBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_9AABBCB2C18D}" Click="OnStrikeClicked">
+            <controls:DaisyIcon Icon="text-strikethrough" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+
+          <!-- Color & Highlight Pickers -->
+          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_2EA2323426F3}">
+            <Button.Flyout>
+              <Flyout>
+                <WrapPanel Width="180">
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ContentPrimaryBrush}" Click="OnColorSelected" Tag="" ToolTip.Tip="{DynamicResource Loc_E78B0327D832}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ActionPrimaryBrush}" Click="OnColorSelected" Tag="accent" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#22C55E" Click="OnColorSelected" Tag="#22C55E" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#EAB308" Click="OnColorSelected" Tag="#EAB308" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#EF4444" Click="OnColorSelected" Tag="#EF4444" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#A855F7" Click="OnColorSelected" Tag="#A855F7" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#94A3B8" Click="OnColorSelected" Tag="#94A3B8" CornerRadius="4" />
+                </WrapPanel>
+              </Flyout>
+            </Button.Flyout>
+            <StackPanel Orientation="Horizontal" Spacing="4">
+              <controls:DaisyIcon Icon="palette" Size="{DynamicResource IconSizeSmall}" />
+            </StackPanel>
+          </Button>
+
+          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_48AAE41545CE}">
+            <Button.Flyout>
+              <Flyout>
+                <WrapPanel Width="180">
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#00000000" Click="OnHighlightSelected" Tag="" CornerRadius="4" ToolTip.Tip="{DynamicResource Loc_DC937B598926}">
+                    <TextBlock Text="✕" FontSize="{DynamicResource TypeSizeCaption}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                  </Button>
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#50EAB308" Click="OnHighlightSelected" Tag="#50EAB308" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#5059C7E8" Click="OnHighlightSelected" Tag="#5059C7E8" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#5022C55E" Click="OnHighlightSelected" Tag="#5022C55E" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#50EF4444" Click="OnHighlightSelected" Tag="#50EF4444" CornerRadius="4" />
+                </WrapPanel>
+              </Flyout>
+            </Button.Flyout>
+            <controls:DaisyIcon Icon="highlighter" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+
+          <!-- Insert Divider -->
+          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_8BBA8E6B7138}" Click="OnInsertDividerClicked">
+            <controls:DaisyIcon Icon="rows" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+
+          <!-- Clear Formatting -->
+          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_804CF3352C42}" Click="OnClearFormattingClicked">
+            <controls:DaisyIcon Icon="text-clear" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+          <!-- Insert Image (App.PickImageFilesAsync) -->
+          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_B9B6EDDA8ADD}" Click="OnInsertImageClicked">
+            <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
+
+          <!-- Font Weight Selector -->
+          <ComboBox x:Name="FontWeightCombo"
+                    Height="{DynamicResource ControlHeightCompact}"
+                    MinHeight="{DynamicResource ControlHeightCompact}"
+                    VerticalAlignment="Center"
+                    Width="88"
+                    FontSize="{DynamicResource TypeSizeCaption}"
+                    CornerRadius="{DynamicResource RadiusControlInner}"
+                    SelectionChanged="OnFontWeightSelectionChanged">
+            <ComboBoxItem Content="{DynamicResource Loc_B455784AB530}" Tag="400" />
+            <ComboBoxItem Content="{DynamicResource Loc_8E588CD18774}" Tag="500" />
+            <ComboBoxItem Content="{DynamicResource Loc_FFC5DE721473}" Tag="600" />
+            <ComboBoxItem Content="{DynamicResource Loc_94FEE62E68E2}" Tag="700" />
+            <ComboBoxItem Content="{DynamicResource Loc_F0A0B33594B2}" Tag="800" />
+          </ComboBox>
+
+
+        </StackPanel>
+      </ScrollViewer>
+        <Button x:Name="ToolbarScrollRight" Grid.Column="2" Classes="ToolbarPill" IsVisible="False"
+                ToolTip.Tip="{DynamicResource Loc_E58F65E309FD}" Click="OnToolbarScrollRight">
+          <controls:DaisyIcon Icon="caret-right" Size="{DynamicResource IconSizeStandard}" />
+        </Button>
+      </Grid>
+    </Border>
+    <Border x:Name="ImageImportError" IsVisible="False" VerticalAlignment="Bottom"
+            Background="{DynamicResource StatusDangerContainerBrush}" Padding="{DynamicResource SpaceInset3}">
+      <TextBlock x:Name="ImageImportErrorText" TextWrapping="Wrap" Foreground="{DynamicResource ContentPrimaryBrush}" />
+    </Border>
+  </Grid>
+</UserControl>

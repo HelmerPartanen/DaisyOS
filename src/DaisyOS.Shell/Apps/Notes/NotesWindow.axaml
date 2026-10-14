@@ -1,0 +1,19 @@
+<Window
+    x:Class="DaisyOS.Shell.Apps.Notes.NotesWindow"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:notes="clr-namespace:DaisyOS.Shell.Apps.Notes"
+    Title="{DynamicResource Loc_8A7525B1492F}"
+    Width="960"
+    Height="640"
+    MinWidth="720"
+    MinHeight="480"
+    CanResize="True"
+    WindowStartupLocation="CenterScreen"
+    WindowDecorations="None"
+    Classes="SidebarAppWindow"
+    TextOptions.TextRenderingMode="Antialias"
+    Background="{DynamicResource SurfaceBaseSolidBrush}"
+    >
+  <notes:NotesView x:Name="NotesContent" DataContext="{Binding}" />
+</Window>

@@ -1,0 +1,176 @@
+<Window x:Class="DaisyOS.Shell.Apps.UIKit.UIKitWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        Title="{DynamicResource Loc_940B0A090484}"
+        Width="1120"
+        Height="760"
+        MinWidth="760"
+        MinHeight="560"
+        WindowStartupLocation="CenterScreen"
+        WindowDecorations="Full"
+        TextOptions.TextRenderingMode="Antialias"
+        Background="{DynamicResource SurfaceBaseSolidBrush}">
+
+  <Grid x:Name="CatalogRoot" RowDefinitions="Auto,*" Focusable="True">
+    <Border Grid.Row="0"
+            Padding="28,22"
+            Background="{DynamicResource SurfaceRaisedBrush}"
+            BorderBrush="{DynamicResource StrokeDefaultBrush}"
+            BorderThickness="0,0,0,1">
+      <Grid ColumnDefinitions="*,Auto">
+        <StackPanel Spacing="4">
+          <TextBlock Classes="Display" Text="{DynamicResource Loc_6C5C421BB67F}" />
+          <TextBlock Classes="Body Muted"
+                     Text="{DynamicResource Loc_F2C70E67790D}" />
+        </StackPanel>
+        <Border Grid.Column="1" Classes="Badge" VerticalAlignment="Center">
+          <TextBlock Classes="Caption" Text="{DynamicResource Loc_3D9FA6983815}" />
+        </Border>
+      </Grid>
+    </Border>
+
+    <ScrollViewer x:Name="CatalogScroll" Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+      <StackPanel Margin="28" Spacing="24" MaxWidth="1064" HorizontalAlignment="Stretch">
+
+        <Border Classes="Card">
+          <StackPanel Spacing="18">
+            <controls:SectionHeader Title="{DynamicResource Loc_D452583A74D0}" />
+            <TextBlock Classes="Body Muted"
+                       Text="{DynamicResource Loc_3F57B7C28DC2}" />
+            <WrapPanel Orientation="Horizontal" ItemHeight="40">
+              <Button Classes="Primary" Content="{DynamicResource Loc_EFE10C80EC8A}" Margin="0,0,10,10" />
+              <Button Classes="Subtle" Content="{DynamicResource Loc_3EADECFBD533}" Margin="0,0,10,10" />
+              <Button Classes="Ghost" Content="{DynamicResource Loc_DF1BC4984A05}" Margin="0,0,10,10" />
+              <Button Classes="Danger" Content="{DynamicResource Loc_8412C0700243}" Margin="0,0,10,10" />
+              <Button Classes="Subtle Selected" Content="{DynamicResource Loc_57FD7A0CF33F}" Margin="0,0,10,10" />
+              <Button Classes="Primary Loading" Content="{DynamicResource Loc_BA3BBBE10D8B}" Margin="0,0,10,10" />
+              <Button Classes="Primary" Content="{DynamicResource Loc_75081B593D15}" IsEnabled="False" Margin="0,0,10,10" />
+            </WrapPanel>
+            <WrapPanel Orientation="Horizontal">
+              <Button Classes="Ghost IconButton" ToolTip.Tip="{DynamicResource Loc_49C266BAAAA7}" Margin="0,0,10,0">
+                <controls:DaisyIcon Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}" />
+              </Button>
+              <Button Classes="Subtle IconButton" ToolTip.Tip="{DynamicResource Loc_74A883A037BC}" Margin="0,0,10,0">
+                <controls:DaisyIcon Icon="gear-six" Size="{DynamicResource IconSizeStandard}" />
+              </Button>
+              <ToggleButton Classes="Subtle" Content="{DynamicResource Loc_BCE74CE2D310}" />
+            </WrapPanel>
+            <StackPanel Orientation="Horizontal" Spacing="10">
+              <Button Classes="SettingsNavItem" Content="{DynamicResource Loc_3DB65F8C2A7D}" Padding="12,0" Height="{DynamicResource ControlHeightStandard}" />
+              <Button Classes="SettingsNavItem Active" Content="{DynamicResource Loc_6CD23C4A39F3}" Padding="12,0" Height="{DynamicResource ControlHeightStandard}" />
+              <controls:ToolbarSearchPopover Text="{DynamicResource Loc_68805EEC8FFA}" PlaceholderText="{DynamicResource Loc_3EEE266C5EBF}" />
+            </StackPanel>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="24">
+          <Border Grid.Column="0" Classes="Card">
+            <StackPanel Spacing="16">
+              <controls:SectionHeader Title="{DynamicResource Loc_7ABC49DFA87B}" />
+              <controls:SearchBar PlaceholderText="{DynamicResource Loc_3EEE266C5EBF}" />
+              <TextBox PlaceholderText="{DynamicResource Loc_4610CAD51538}" />
+              <TextBox Classes="Error" Text="{DynamicResource Loc_D3C7D623B5B1}" ToolTip.Tip="{DynamicResource Loc_FAE657853D08}" />
+              <TextBox Text="{DynamicResource Loc_3F9DADB2794D}" IsReadOnly="True" />
+              <TextBox Text="{DynamicResource Loc_A8D9CD4D5533}" IsEnabled="False" />
+              <ComboBox SelectedIndex="0">
+                <ComboBoxItem Content="{DynamicResource Loc_E98CDB115555}" />
+                <ComboBoxItem Content="{DynamicResource Loc_0A3EDD7DB350}" />
+                <ComboBoxItem Content="{DynamicResource Loc_9F7EEDD7C2B3}" />
+              </ComboBox>
+              <CheckBox Content="{DynamicResource Loc_D103A1380B8C}" IsChecked="True" />
+              <RadioButton Content="{DynamicResource Loc_8EFE56FAD474}" IsChecked="True" />
+              <ToggleSwitch Content="{DynamicResource Loc_BE605E35B58B}" IsChecked="True" />
+              <ToggleSwitch Content="{DynamicResource Loc_1A904852BB47}" IsEnabled="False" />
+              <Slider Minimum="0" Maximum="100" Value="64" />
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Column="1" Classes="Card">
+            <StackPanel Spacing="16">
+              <controls:SectionHeader Title="{DynamicResource Loc_D0E7CBA592D0}" />
+              <ProgressBar Minimum="0" Maximum="100" Value="68" Height="6" />
+              <Grid ColumnDefinitions="*,Auto">
+                <TextBlock Classes="Body" Text="{DynamicResource Loc_82BC54DED4BC}" />
+                <TextBlock Grid.Column="1" Classes="Caption" Text="68%" />
+              </Grid>
+              <Border Classes="Card Inset" Padding="14">
+                <Grid ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                  <controls:DaisyIcon Icon="check-circle" Size="{DynamicResource IconSizeMedium}"
+                                      Foreground="{DynamicResource StatusSuccessBrush}" />
+                  <StackPanel Grid.Column="1" Spacing="2">
+                    <TextBlock Classes="Title" Text="{DynamicResource Loc_16BF144AA29F}" />
+                    <TextBlock Classes="Caption" Text="{DynamicResource Loc_8A6B55645049}" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+              <Border Classes="FeedbackState Error">
+                <StackPanel Spacing="4">
+                  <TextBlock Classes="Title" Text="{DynamicResource Loc_DD951FBF3021}" />
+                  <TextBlock Classes="Caption" Text="{DynamicResource Loc_9DCAB8844FBE}" />
+                  <Button Classes="Primary Compact" Content="{DynamicResource Loc_D8B8392E2C54}" HorizontalAlignment="Left" />
+                </StackPanel>
+              </Border>
+              <controls:QuickSettingsSlider Icon="speaker-high" Value="62" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <Border Classes="Card">
+          <StackPanel Spacing="18">
+            <controls:SectionHeader Title="{DynamicResource Loc_08F82A72BFC5}" />
+            <WrapPanel Orientation="Horizontal">
+              <controls:QuickSettingTile Icon="wifi-high" Label="Wi-Fi" IsChecked="True" Margin="0,0,16,12" />
+              <controls:QuickSettingTile Icon="bluetooth" Label="Bluetooth" Margin="0,0,16,12" />
+              <controls:QuickSettingTile Icon="moon" Label="Night light" Margin="0,0,16,12" />
+            </WrapPanel>
+            <Border Classes="Card Inset" Padding="8">
+              <StackPanel Spacing="4">
+                <controls:ShellListItem IconGlyph="palette" Title="{DynamicResource Loc_3907FA7F8072}"
+                                        Subtitle="Theme, color, and material" IsSelected="True" />
+                <controls:ShellListItem IconGlyph="speaker-high" Title="{DynamicResource Loc_46124E023603}"
+                                        Subtitle="Output and volume">
+                  <controls:ShellListItem.RightContent>
+                    <TextBlock Classes="Caption" Text="{DynamicResource Loc_C92A7237EFE6}" />
+                  </controls:ShellListItem.RightContent>
+                </controls:ShellListItem>
+              </StackPanel>
+            </Border>
+          </StackPanel>
+        </Border>
+
+        <Grid ColumnDefinitions="*,*" ColumnSpacing="24">
+          <Border Grid.Column="0" Classes="Card">
+            <StackPanel Spacing="12">
+              <controls:SectionHeader Title="{DynamicResource Loc_CAB94ABA84F9}" />
+              <TextBlock Classes="Display" Text="{DynamicResource Loc_34E108C0896D}" />
+              <TextBlock Classes="Heading" Text="{DynamicResource Loc_B34F17F02ECF}" />
+              <TextBlock Classes="Title" Text="{DynamicResource Loc_7E8CD2056DA7}" />
+              <TextBlock Classes="Body" Text="{DynamicResource Loc_5A6F254B60E5}" TextWrapping="Wrap" />
+              <TextBlock Classes="Caption" Text="{DynamicResource Loc_85FCFA8A3A11}" />
+            </StackPanel>
+          </Border>
+
+          <Border Grid.Column="1" Classes="Card">
+            <StackPanel Spacing="12">
+              <controls:SectionHeader Title="{DynamicResource Loc_F41A1024AE2C}" />
+              <Border Classes="Card Inset" Padding="16">
+                <TextBlock Classes="Body" Text="{DynamicResource Loc_3A2869951CAE}" />
+              </Border>
+              <WrapPanel Orientation="Horizontal">
+                <Border Classes="Badge" Margin="0,0,8,8"><TextBlock Classes="Caption" Text="{DynamicResource Loc_002474E36821}" /></Border>
+                <Border Classes="Badge" Margin="0,0,8,8"><TextBlock Classes="Caption" Text="{DynamicResource Loc_9C11C99C771F}" /></Border>
+                <Border Classes="Badge" Margin="0,0,8,8"><TextBlock Classes="Caption" Text="{DynamicResource Loc_8DED2B384940}" /></Border>
+              </WrapPanel>
+              <TextBlock Classes="Caption"
+                         Text="{DynamicResource Loc_CE470AB19178}" />
+            </StackPanel>
+          </Border>
+        </Grid>
+
+        <TextBlock Classes="Caption" HorizontalAlignment="Center" Margin="0,0,0,12"
+                   Text="{DynamicResource Loc_D90DF7530A0E}" />
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</Window>

@@ -1,0 +1,200 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Apps.Calculator.CalculatorView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:calculator="clr-namespace:DaisyOS.Shell.Apps.Calculator"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <UserControl.Styles>
+    <Style Selector="Button.CalcTile">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodyLarge}" />
+      <Setter Property="Margin" Value="3" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Button.CalcTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.CalcTile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CalcTile.Digit">
+      <Setter Property="Background" Value="{DynamicResource SurfaceSunkenBrush}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" />
+    </Style>
+    <Style Selector="Button.CalcTile.Operator">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" />
+    </Style>
+    <Style Selector="Button.CalcTile.Operator:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CalcTile.Operator:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+    </Style>
+    <!-- Scientific keys are deliberately quieter than the arithmetic keypad. -->
+    <Style Selector="Button.CalcTile.ScientificFunction">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+    </Style>
+    <Style Selector="Button.CalcTile.ScientificFunction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.CalcTile.ScientificFunction:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="Button.EqualsTile">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="VerticalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="FontWeight" Value="Bold" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" />
+      <Setter Property="Margin" Value="3" />
+    </Style>
+    <Style Selector="Button.EqualsTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.EqualsTile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+    </Style>
+    
+    <Style Selector="Button.CalcTile.Operator TextBlock, Button.CalcTile.Operator AccessText, Button.EqualsTile TextBlock, Button.EqualsTile AccessText">
+      <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+    </Style>
+    <Style Selector="Button.HeaderIconButton">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Width" Value="34" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.HeaderIconButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.HeaderIconButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="controls|DaisyIcon.IconSymbol">
+      <Setter Property="Size" Value="18" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid Background="{DynamicResource SurfaceBaseBrush}" RowDefinitions="Auto,Auto,*">
+    <Grid Grid.Row="0" Margin="12,10,12,0" ColumnDefinitions="Auto,Auto,*,Auto">
+      <Button x:Name="ModeToggleButton" Grid.Column="0" Classes="HeaderIconButton" Click="OnToggleModeClicked" ToolTip.Tip="{Binding ModeToggleTip}">
+        <controls:DaisyIcon Icon="{Binding ModeToggleIcon}" Classes="IconSymbol" />
+      </Button>
+      <TextBlock x:Name="ModeTitleText" Grid.Column="1" Text="{Binding ModeTitle}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,0,0">
+        <TextBlock.Transitions>
+          <Transitions>
+            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+          </Transitions>
+        </TextBlock.Transitions>
+      </TextBlock>
+      <Button Grid.Column="3" Classes="HeaderIconButton" ToolTip.Tip="{DynamicResource Loc_0E7696009337}">
+        <controls:DaisyIcon Icon="clock-counter-clockwise" Classes="IconSymbol" />
+      </Button>
+    </Grid>
+
+    <Grid Grid.Row="1" Margin="16,8,16,8" RowDefinitions="Auto,Auto">
+      <TextBlock Text="{Binding Expression}" FontSize="{DynamicResource TypeSizeBodySmall}" Foreground="{DynamicResource ContentSecondaryBrush}"
+                 HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+      <TextBlock Grid.Row="1" Text="{Binding Display}" FontSize="{DynamicResource TypeSizeDisplayLarge}" FontWeight="SemiBold"
+                 HorizontalAlignment="Right" Margin="0,2,0,0" />
+    </Grid>
+
+    <Grid Grid.Row="2" Margin="10,0,10,10">
+      <!-- Standard: the familiar four-column sequence keeps operators on the right. -->
+      <Grid IsVisible="{Binding !IsScientific}" RowDefinitions="*,*,*,*,*" ColumnDefinitions="*,*,*,*">
+        <Button Grid.Row="0" Grid.Column="0" Classes="CalcTile" Click="OnBackspaceClicked" ToolTip.Tip="{DynamicResource Loc_E2D0A54968EA}"><controls:DaisyIcon Icon="backspace" Classes="IconSymbol" /></Button>
+        <Button Grid.Row="0" Grid.Column="1" Content="{DynamicResource Loc_472E73D796E2}" Classes="CalcTile" Click="OnAllClearClicked" ToolTip.Tip="{DynamicResource Loc_008B8761CDE6}" />
+        <Button Grid.Row="0" Grid.Column="2" Content="%" Classes="CalcTile" Click="OnPercentClicked" />
+        <Button Grid.Row="0" Grid.Column="3" Content="÷" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+        <Button Grid.Row="1" Grid.Column="0" Content="7" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="1" Grid.Column="1" Content="8" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="1" Grid.Column="2" Content="9" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="1" Grid.Column="3" Content="×" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+        <Button Grid.Row="2" Grid.Column="0" Content="4" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="2" Grid.Column="1" Content="5" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="2" Grid.Column="2" Content="6" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="2" Grid.Column="3" Content="-" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+        <Button Grid.Row="3" Grid.Column="0" Content="1" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="3" Grid.Column="1" Content="2" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="3" Grid.Column="2" Content="3" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="3" Grid.Column="3" Content="+" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+        <Button Grid.Row="4" Grid.Column="0" Content="+/−" Classes="CalcTile Digit" Click="OnToggleSignClicked" />
+        <Button Grid.Row="4" Grid.Column="1" Content="0" Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="4" Grid.Column="2" Content="." Classes="CalcTile Digit" Click="OnDigitClicked" />
+        <Button Grid.Row="4" Grid.Column="3" Content="=" Classes="CalcTile EqualsTile" Click="OnEqualsClicked" />
+      </Grid>
+
+      <!-- Scientific: dense functions first, then the same familiar arithmetic keypad. -->
+      <Grid IsVisible="{Binding IsScientific}" RowDefinitions="Auto,*">
+        <Grid Grid.Row="0" Height="108" RowDefinitions="*,*,*" ColumnDefinitions="*,*,*,*,*,*">
+          <Button Grid.Row="0" Grid.Column="0" Content="{DynamicResource Loc_CA34AB5C748C}" Classes="CalcTile ScientificFunction" Click="OnMemoryClearClicked" />
+          <Button Grid.Row="0" Grid.Column="1" Content="{DynamicResource Loc_2F98DA7420CF}" Classes="CalcTile ScientificFunction" Click="OnMemoryRecallClicked" />
+          <Button Grid.Row="0" Grid.Column="2" Content="{DynamicResource Loc_CBF3C77956C1}" Classes="CalcTile ScientificFunction" Click="OnMemoryAddClicked" />
+          <Button Grid.Row="0" Grid.Column="3" Content="{DynamicResource Loc_3D65CFB274FE}" Classes="CalcTile ScientificFunction" Click="OnMemorySubtractClicked" />
+          <Button Grid.Row="0" Grid.Column="4" Content="{DynamicResource Loc_4D95E550B47C}" Classes="CalcTile ScientificFunction" Click="OnMemoryStoreClicked" />
+          <Button Grid.Row="0" Grid.Column="5" Content="π" Classes="CalcTile ScientificFunction" Click="OnPiClicked" />
+          <Button Grid.Row="1" Grid.Column="0" Content="{DynamicResource Loc_FB91362C2EFB}" Classes="CalcTile ScientificFunction" Click="OnInvClicked" />
+          <Button Grid.Row="1" Grid.Column="1" Content="{DynamicResource Loc_2CF05A841117}" Classes="CalcTile ScientificFunction" Click="OnHypClicked" />
+          <Button Grid.Row="1" Grid.Column="2" Content="{Binding AngleModeText}" Classes="CalcTile ScientificFunction" Click="OnModeClicked" />
+          <Button Grid.Row="1" Grid.Column="3" Content="{DynamicResource Loc_CCCC68C7928E}" Classes="CalcTile ScientificFunction" Click="OnSinClicked" />
+          <Button Grid.Row="1" Grid.Column="4" Content="{DynamicResource Loc_9BE28BBE03FA}" Classes="CalcTile ScientificFunction" Click="OnCosClicked" />
+          <Button Grid.Row="1" Grid.Column="5" Content="{DynamicResource Loc_0E5123DF1126}" Classes="CalcTile ScientificFunction" Click="OnTanClicked" />
+          <Button Grid.Row="2" Grid.Column="0" Content="{DynamicResource Loc_CF2AE21AD027}" Classes="CalcTile ScientificFunction" Click="OnRecipClicked" />
+          <Button Grid.Row="2" Grid.Column="1" Content="{DynamicResource Loc_F3B5FF1969C6}" Classes="CalcTile ScientificFunction" Click="OnSqrClicked" />
+          <Button Grid.Row="2" Grid.Column="2" Content="{DynamicResource Loc_E13FA52A9F58}" Classes="CalcTile ScientificFunction" Click="OnSqrtClicked" />
+          <Button Grid.Row="2" Grid.Column="3" Content="{DynamicResource Loc_E545C2C24E64}" Classes="CalcTile ScientificFunction" Click="OnLnClicked" />
+          <Button Grid.Row="2" Grid.Column="4" Content="{DynamicResource Loc_836FF184E7B4}" Classes="CalcTile ScientificFunction" Click="OnLogClicked" />
+          <Button Grid.Row="2" Grid.Column="5" Content="{DynamicResource Loc_4038E65DABD8}" Classes="CalcTile ScientificFunction" Click="OnFactClicked" />
+        </Grid>
+        <Grid Grid.Row="1" RowDefinitions="*,*,*,*,*" ColumnDefinitions="*,*,*,*">
+          <Button Grid.Row="0" Grid.Column="0" Classes="CalcTile" Click="OnBackspaceClicked"><controls:DaisyIcon Icon="backspace" Classes="IconSymbol" /></Button>
+          <Button Grid.Row="0" Grid.Column="1" Content="{DynamicResource Loc_472E73D796E2}" Classes="CalcTile" Click="OnAllClearClicked" />
+          <Button Grid.Row="0" Grid.Column="2" Content="%" Classes="CalcTile" Click="OnPercentClicked" />
+          <Button Grid.Row="0" Grid.Column="3" Content="÷" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+          <Button Grid.Row="1" Grid.Column="0" Content="7" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="1" Grid.Column="1" Content="8" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="1" Grid.Column="2" Content="9" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="1" Grid.Column="3" Content="×" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+          <Button Grid.Row="2" Grid.Column="0" Content="4" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="2" Grid.Column="1" Content="5" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="2" Grid.Column="2" Content="6" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="2" Grid.Column="3" Content="-" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+          <Button Grid.Row="3" Grid.Column="0" Content="1" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="3" Grid.Column="1" Content="2" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="3" Grid.Column="2" Content="3" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="3" Grid.Column="3" Content="+" Classes="CalcTile Operator" Click="OnOperatorClicked" />
+          <Button Grid.Row="4" Grid.Column="0" Content="+/−" Classes="CalcTile Digit" Click="OnToggleSignClicked" />
+          <Button Grid.Row="4" Grid.Column="1" Content="0" Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="4" Grid.Column="2" Content="." Classes="CalcTile Digit" Click="OnDigitClicked" />
+          <Button Grid.Row="4" Grid.Column="3" Content="=" Classes="CalcTile EqualsTile" Click="OnEqualsClicked" />
+        </Grid>
+      </Grid>
+    </Grid>
+  </Grid>
+</UserControl>

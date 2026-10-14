@@ -1,0 +1,1 @@
+/usr/bin/cc -fPIC -shared -Wl,--dependency-file=CMakeFiles/daisy_idle.dir/link.d -Wl,-soname,libdaisy_idle.so -o libdaisy_idle.so CMakeFiles/daisy_idle.dir/daisy_idle.c.o "CMakeFiles/daisy_idle.dir/ext-idle-notify-v1-protocol.c.o"  -lwayland-client -lm -lpthread

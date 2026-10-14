@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Files
+Name[fi]=Tiedostot
+Comment=Browse files and folders
+Comment[fi]=Selaa tiedostoja ja kansioita
+Exec=daisyos-files %U
+Icon=org.daisyos.files
+StartupWMClass=org.daisyos.files
+Categories=System;FileTools;
+MimeType=inode/directory;

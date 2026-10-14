@@ -1,0 +1,514 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="using:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Views.Components.Screenshot.ScreenshotOverlay"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch"
+             IsVisible="False"
+             Focusable="True"
+             ClipToBounds="False">
+
+  <UserControl.Styles>
+    <!-- Segmented mode button (sits inside a subtle track) -->
+    <Style Selector="Button.ModeBtn">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="Height" Value="30" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ModeBtn /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.ModeBtn TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.ModeBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+      <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.ModeBtn:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.ModeBtn:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.96)" />
+    </Style>
+    <Style Selector="Button.ModeBtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+    <Style Selector="Button.ModeBtn.Active /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+      <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.ModeBtn.Active TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Option button / toggle (timer, cursor, close) -->
+    <Style Selector="Button.OptionBtn, ToggleButton.OptionBtn">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="8,6" />
+      <Setter Property="MinWidth" Value="34" />
+      <Setter Property="Height" Value="34" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="FontSize" Value="12.5" />
+      <Setter Property="FontWeight" Value="Medium" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.OptionBtn /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.OptionBtn /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+    <Style Selector="Button.OptionBtn TextBlock, ToggleButton.OptionBtn TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.OptionBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.OptionBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+      <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.OptionBtn:pointerover TextBlock, ToggleButton.OptionBtn:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.OptionBtn:pressed, ToggleButton.OptionBtn:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.95)" />
+    </Style>
+    <Style Selector="Button.OptionBtn:pressed /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.OptionBtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+
+    <!-- "On" state for the delay button and the cursor toggle -->
+    <Style Selector="ToggleButton.OptionBtn:checked /template/ ContentPresenter#PART_ContentPresenter, Button.OptionBtn.Active /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+      <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.OptionBtn:checked TextBlock, Button.OptionBtn.Active TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!-- Resize handles: a 22px invisible hit area wrapping a small visible knob.
+         Large target = easy to grab; small knob = doesn't obscure the content. -->
+    <Style Selector="Border.ResizeHandle">
+      <Setter Property="Width" Value="22" />
+      <Setter Property="Height" Value="22" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Border.ResizeHandle > Border.Knob">
+      <Setter Property="Width" Value="10" />
+      <Setter Property="Height" Value="10" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="BorderBrush" Value="White" />
+      <Setter Property="BorderThickness" Value="1.5" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ElevationSelectionHandle}" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <!-- Edge handles are slim bars so they read differently from corners -->
+    <Style Selector="Border.ResizeHandle.EdgeH > Border.Knob">
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Height" Value="6" />
+    </Style>
+    <Style Selector="Border.ResizeHandle.EdgeV > Border.Knob">
+      <Setter Property="Width" Value="6" />
+      <Setter Property="Height" Value="20" />
+    </Style>
+    <!-- Grow in place (RenderTransform keeps the knob centred on its anchor) -->
+    <Style Selector="Border.ResizeHandle:pointerover > Border.Knob">
+      <Setter Property="RenderTransform" Value="scale(1.3)" />
+    </Style>
+  </UserControl.Styles>
+
+  <Grid x:Name="RootLayout"
+        PointerMoved="OnRootPointerMoved"
+        PointerReleased="OnRootPointerReleased">
+
+    <!-- Frozen Desktop Background: captured at the exact instant the tool is opened -->
+    <Image x:Name="FrozenScreenImage"
+           Stretch="Fill"
+           HorizontalAlignment="Stretch"
+           VerticalAlignment="Stretch"
+           IsHitTestVisible="False"
+           IsVisible="False" />
+
+    <!-- Area Selection Canvas -->
+    <Canvas x:Name="SelectionCanvas"
+            Background="Transparent"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            PointerPressed="OnCanvasPointerPressed"
+            Cursor="Cross">
+
+      <!-- Punch-hole dim mask: everything OUTSIDE the selection is darkened -->
+      <Path x:Name="DimMask"
+            Fill="{DynamicResource BlackAlpha40Brush}"
+            IsHitTestVisible="False" />
+
+      <!-- Interactive Selection Border Box (accent edge + faint white inner edge
+           so the outline stays visible on both light and dark content) -->
+      <Border x:Name="SelectionBox"
+              IsVisible="False"
+              BorderBrush="{DynamicResource ActionPrimaryBrush}"
+              BorderThickness="2"
+              Background="Transparent"
+              CornerRadius="{DynamicResource RadiusSmall}"
+              Cursor="SizeAll"
+              PointerPressed="OnSelectionBoxPointerPressed">
+        <Grid>
+          <Border IsHitTestVisible="False"
+                  BorderBrush="#59FFFFFF"
+                  BorderThickness="1" />
+
+          <!-- Dimension Badge (placed below / above / inside from code) -->
+          <Border x:Name="DimensionBadge"
+                  Background="{DynamicResource SurfaceOverlayBrush}"
+                  BorderBrush="{DynamicResource StrokeSubtleBrush}"
+                  BorderThickness="1"
+                  CornerRadius="{DynamicResource RoundedMD}"
+                  Height="24"
+                  Padding="10,0"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Bottom"
+                  Margin="0,0,0,-32"
+                  IsHitTestVisible="False"
+                  BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+            <TextBlock x:Name="DimensionLabel"
+                       Text="0 × 0"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       FontWeight="SemiBold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       TextAlignment="Center"
+                       Foreground="{DynamicResource ContentPrimaryBrush}" />
+          </Border>
+        </Grid>
+      </Border>
+
+      <!-- Resize handles. Edges first, corners last so corners win on small boxes.
+           Positioned from code. -->
+      <Border x:Name="HandleN" Classes="ResizeHandle EdgeH" Tag="N" Cursor="TopSide"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+      <Border x:Name="HandleE" Classes="ResizeHandle EdgeV" Tag="E" Cursor="RightSide"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+      <Border x:Name="HandleS" Classes="ResizeHandle EdgeH" Tag="S" Cursor="BottomSide"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+      <Border x:Name="HandleW" Classes="ResizeHandle EdgeV" Tag="W" Cursor="LeftSide"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+      <Border x:Name="HandleNW" Classes="ResizeHandle" Tag="NW" Cursor="TopLeftCorner"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+      <Border x:Name="HandleNE" Classes="ResizeHandle" Tag="NE" Cursor="TopRightCorner"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+      <Border x:Name="HandleSE" Classes="ResizeHandle" Tag="SE" Cursor="BottomRightCorner"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+      <Border x:Name="HandleSW" Classes="ResizeHandle" Tag="SW" Cursor="BottomLeftCorner"
+              PointerPressed="OnHandlePointerPressed">
+        <Border Classes="Knob" />
+      </Border>
+
+    </Canvas>
+
+    <!-- Full-screen mode: outline the whole screen so it's clear what will be captured -->
+    <Border x:Name="ScreenOutline"
+            IsVisible="False"
+            IsHitTestVisible="False"
+            BorderBrush="{DynamicResource ActionPrimaryBrush}"
+            BorderThickness="3" />
+
+    <!-- Centered guidance card: what to do (Area) or what will be captured (Window / Screen) -->
+    <Border x:Name="ModeHintCard"
+            IsVisible="False"
+            IsHitTestVisible="False"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Background="{DynamicResource SurfaceOverlayBrush}"
+            BorderBrush="{DynamicResource StrokeSubtleBrush}"
+            BorderThickness="1"
+            CornerRadius="{DynamicResource RoundedXLInset}"
+            Padding="20,14"
+            BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+      <StackPanel Orientation="Horizontal" Spacing="14">
+        <Panel VerticalAlignment="Center">
+          <controls:DaisyIcon x:Name="HintIconArea" Icon="crop"
+                              Size="{DynamicResource IconSizeStandard}"
+                              Foreground="{DynamicResource ActionPrimaryBrush}" />
+          <controls:DaisyIcon x:Name="HintIconWindow" Icon="app-window" IsVisible="False"
+                              Size="{DynamicResource IconSizeStandard}"
+                              Foreground="{DynamicResource ActionPrimaryBrush}" />
+          <controls:DaisyIcon x:Name="HintIconScreen" Icon="monitor" IsVisible="False"
+                              Size="{DynamicResource IconSizeStandard}"
+                              Foreground="{DynamicResource ActionPrimaryBrush}" />
+        </Panel>
+        <StackPanel Spacing="2" VerticalAlignment="Center">
+          <TextBlock x:Name="HintTitle"
+                     Text="{DynamicResource Loc_CF38E53CC254}"
+                     FontSize="{DynamicResource TypeSizeBodySmall}"
+                     FontWeight="SemiBold"
+                     Foreground="{DynamicResource ContentPrimaryBrush}" />
+          <TextBlock x:Name="HintSubtitle"
+                     Text="{DynamicResource Loc_8381E9CDA150}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     Foreground="{DynamicResource ContentSecondaryBrush}" />
+        </StackPanel>
+      </StackPanel>
+    </Border>
+
+    <!-- Top shortcut banner: only shown once there is a selection to adjust -->
+    <controls:ShellFrameBorder x:Name="InstructionBanner"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Top"
+            Margin="0,32,0,0"
+            Opacity="0"
+            IsHitTestVisible="False"
+            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            CornerRadius="{DynamicResource RoundedXLInset}"
+            Padding="1"
+            BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Border.Transitions>
+      <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+              CornerRadius="{DynamicResource RoundedXLInset}"
+              Padding="1">
+        <Border Background="{DynamicResource SurfaceOverlayBrush}"
+                CornerRadius="{DynamicResource RoundedXLDoubleInset}"
+                Padding="16,8">
+          <TextBlock x:Name="InstructionText"
+                     Text="{DynamicResource Loc_55E867D1F68F}"
+                     FontSize="{DynamicResource TypeSizeBodySmall}"
+                     FontWeight="Medium"
+                     Foreground="{DynamicResource ContentPrimaryBrush}" />
+        </Border>
+      </controls:ShellFrameBorder>
+    </controls:ShellFrameBorder>
+
+    <!-- Centered countdown: big number plus how to skip / cancel -->
+    <StackPanel x:Name="CountdownBadge"
+                IsVisible="False"
+                Spacing="12"
+                HorizontalAlignment="Center"
+                VerticalAlignment="Center"
+                Cursor="Hand"
+                PointerPressed="OnCountdownBadgeClicked">
+      <controls:ShellFrameBorder Width="88"
+              Height="88"
+              HorizontalAlignment="Center"
+              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+              CornerRadius="{DynamicResource RadiusPill}"
+              Padding="2"
+              BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+        <Border Background="{DynamicResource SurfaceOverlayBrush}"
+                CornerRadius="{DynamicResource RadiusPill}">
+          <TextBlock x:Name="CountdownLabel"
+                     Text="3"
+                     FontSize="{DynamicResource TypeSizeDisplay}"
+                     FontWeight="Bold"
+                     Foreground="{DynamicResource ActionPrimaryBrush}"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center" />
+        </Border>
+      </controls:ShellFrameBorder>
+      <Border Background="{DynamicResource SurfaceOverlayBrush}"
+              BorderBrush="{DynamicResource StrokeSubtleBrush}"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedMD}"
+              Padding="12,5"
+              HorizontalAlignment="Center">
+        <TextBlock Text="{DynamicResource Loc_FB7B2FCDCF55}"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource ContentSecondaryBrush}" />
+      </Border>
+    </StackPanel>
+
+    <!-- Fullscreen Flash on Shutter (Fires cleanly after capture) -->
+    <Border x:Name="FlashOverlay"
+            IsVisible="False"
+            Opacity="0"
+            Background="White"
+            HorizontalAlignment="Stretch"
+            VerticalAlignment="Stretch"
+            IsHitTestVisible="False">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Border.Transitions>
+    </Border>
+
+    <!-- Floating toolbar (movable) -->
+    <controls:ShellFrameBorder x:Name="ToolbarPill"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Bottom"
+            Margin="0,0,0,48"
+            Opacity="0"
+            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            CornerRadius="{DynamicResource RoundedXLInset}"
+            Padding="1"
+            BoxShadow="{DynamicResource ElevationShellDialogShadow}"
+            PointerPressed="OnToolbarPointerPressed">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Border.Transitions>
+      <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+              CornerRadius="{DynamicResource RoundedXLInset}"
+              Padding="1">
+        <Border Background="{DynamicResource SurfaceOverlayBrush}"
+                CornerRadius="{DynamicResource RoundedXLDoubleInset}"
+                Padding="6">
+          <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+
+            <!-- Drag Handle / Grip -->
+            <Border x:Name="ToolbarDragGrip"
+                    Width="16"
+                    Height="34"
+                    Background="Transparent"
+                    Cursor="SizeAll"
+                    PointerPressed="OnToolbarPointerPressed"
+                    ToolTip.Tip="{DynamicResource Loc_C309A05FB853}">
+              <controls:DaisyIcon Icon="dots-six-vertical"
+                                  Size="{DynamicResource IconSizeStandard}"
+                                  Foreground="{DynamicResource ContentTertiaryBrush}"
+                                  HorizontalAlignment="Center"
+                                  VerticalAlignment="Center" />
+            </Border>
+
+            <!-- Mode selector: one segmented control -->
+            <Border Background="{DynamicResource StateHoverBrush}"
+                    CornerRadius="{DynamicResource RoundedMD}"
+                    Padding="2"
+                    VerticalAlignment="Center">
+              <StackPanel Orientation="Horizontal" Spacing="2">
+                <Button x:Name="ModeAreaBtn"
+                        Classes="ModeBtn Active"
+                        Click="OnModeAreaClicked"
+                        ToolTip.Tip="{DynamicResource Loc_1691D13354ED}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <controls:DaisyIcon Icon="crop" Size="{DynamicResource IconSizeStandard}" />
+                    <TextBlock Text="{DynamicResource Loc_024DC204D7BA}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+
+                <Button x:Name="ModeWindowBtn"
+                        Classes="ModeBtn"
+                        Click="OnModeWindowClicked"
+                        ToolTip.Tip="{DynamicResource Loc_971F282E2724}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <controls:DaisyIcon Icon="app-window" Size="{DynamicResource IconSizeStandard}" />
+                    <TextBlock Text="{DynamicResource Loc_19734A1B58CA}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+
+                <Button x:Name="ModeScreenBtn"
+                        Classes="ModeBtn"
+                        Click="OnModeScreenClicked"
+                        ToolTip.Tip="{DynamicResource Loc_C1F645FB2BD5}">
+                  <StackPanel Orientation="Horizontal" Spacing="6">
+                    <controls:DaisyIcon Icon="monitor" Size="{DynamicResource IconSizeStandard}" />
+                    <TextBlock Text="{DynamicResource Loc_6E56137E21D3}" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+              </StackPanel>
+            </Border>
+
+            <!-- Options: icon-only, tooltips explain, highlighted when on -->
+            <Button x:Name="TimerBtn"
+                    Classes="OptionBtn"
+                    Click="OnTimerClicked"
+                    AutomationProperties.Name="{DynamicResource Loc_8506259C4998}"
+                    ToolTip.Tip="{DynamicResource Loc_AFD35D16775D}">
+              <StackPanel Orientation="Horizontal" Spacing="5">
+                <controls:DaisyIcon Icon="timer" Size="{DynamicResource IconSizeStandard}" />
+                <TextBlock x:Name="TimerLabel" Text="{DynamicResource Loc_1E93CC055D0A}" IsVisible="False" VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <ToggleButton x:Name="CursorToggle"
+                          Classes="OptionBtn"
+                          IsCheckedChanged="OnCursorToggleChanged"
+                          AutomationProperties.Name="{DynamicResource Loc_0CFB3EBADE48}"
+                          ToolTip.Tip="{DynamicResource Loc_0CFB3EBADE48}">
+              <controls:DaisyIcon Icon="cursor" Size="{DynamicResource IconSizeStandard}" />
+            </ToggleButton>
+
+            <!-- Divider -->
+            <Border Width="1" Height="20" Background="{DynamicResource StrokeSubtleBrush}" Margin="2,0" />
+
+            <!-- Primary action -->
+            <Button x:Name="CaptureButton"
+                    Classes="Primary"
+                    Click="OnCaptureClicked"
+                    ToolTip.Tip="{DynamicResource Loc_8A47E564AFA2}">
+              <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                <controls:DaisyIcon Icon="camera" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentOnActionBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{DynamicResource Loc_1900B478A586}"
+                           Foreground="{DynamicResource ContentOnActionBrush}"
+                           FontWeight="SemiBold"
+                           FontSize="{DynamicResource TypeSizeBodySmall}"
+                           VerticalAlignment="Center" />
+              </StackPanel>
+            </Button>
+
+            <!-- Close -->
+            <Button Classes="OptionBtn"
+                    Click="OnCancelClicked"
+                    AutomationProperties.Name="{DynamicResource Loc_7D9EB7ACB13E}"
+                    ToolTip.Tip="{DynamicResource Loc_961B2A04403E}">
+              <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeStandard}" />
+            </Button>
+
+          </StackPanel>
+        </Border>
+      </controls:ShellFrameBorder>
+    </controls:ShellFrameBorder>
+  </Grid>
+</UserControl>

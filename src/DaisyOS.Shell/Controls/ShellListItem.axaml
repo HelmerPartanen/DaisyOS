@@ -1,0 +1,39 @@
+<UserControl x:Class="DaisyOS.Shell.Controls.ShellListItem"
+             x:Name="Root"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <Button Classes="ShellButton OutputDeviceItem"
+          Classes.SelectedOutputDevice="{Binding IsSelected, ElementName=Root}"
+          Classes.ConnectedWifiNetwork="{Binding IsSelected, ElementName=Root}"
+          Classes.ConnectedBluetoothDevice="{Binding IsSelected, ElementName=Root}"
+          Click="OnButtonClick">
+    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+      <!-- Left Icon / Glyph -->
+      <controls:DaisyIcon Grid.Column="0"
+                          Icon="{Binding IconGlyph, ElementName=Root}"
+                          Size="{DynamicResource IconSizeStandard}"
+                          VerticalAlignment="Center"
+                          IsVisible="{Binding IconGlyph, ElementName=Root, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+
+      <!-- Text Header & Details -->
+      <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="1">
+        <TextBlock Text="{Binding Title, ElementName=Root}"
+                   FontSize="{DynamicResource TypeSizeBodySmall}"
+                   FontWeight="Medium"
+                   TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource ContentPrimaryBrush}"/>
+        <TextBlock Text="{Binding Subtitle, ElementName=Root}"
+                   FontSize="{DynamicResource TypeSizeCaption}"
+                   Foreground="{DynamicResource ContentSecondaryBrush}"
+                   TextTrimming="CharacterEllipsis"
+                   IsVisible="{Binding Subtitle, ElementName=Root, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+      </StackPanel>
+
+      <!-- Optional Right Content -->
+      <ContentControl Grid.Column="2"
+                      Content="{Binding RightContent, ElementName=Root}"
+                      VerticalAlignment="Center"/>
+    </Grid>
+  </Button>
+</UserControl>

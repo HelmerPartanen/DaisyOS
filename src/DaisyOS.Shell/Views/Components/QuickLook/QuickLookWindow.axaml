@@ -1,0 +1,145 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        x:Class="DaisyOS.Shell.Views.Components.QuickLook.QuickLookWindow"
+        Title="{DynamicResource Loc_371E34282D2A}"
+        Width="640"
+        Height="500"
+        CanResize="True"
+        WindowStartupLocation="CenterScreen"
+        Background="Transparent"
+        TransparencyLevelHint="Transparent"
+        WindowDecorations="None"
+        ShowInTaskbar="False"
+        Topmost="True">
+
+  <controls:ShellFrameBorder Margin="16"
+          Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+          CornerRadius="{DynamicResource RoundedLG}"
+          Padding="1"
+          BoxShadow="{DynamicResource ElevationDialogShadow}">
+    <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+            CornerRadius="{DynamicResource RoundedLGInset}"
+            Padding="1">
+      <Border Background="{DynamicResource SurfaceBaseBrush}"
+              CornerRadius="{DynamicResource RoundedMD}"
+              Padding="18">
+        <Grid RowDefinitions="Auto,*,Auto">
+          <!-- Top Bar -->
+          <Grid Grid.Row="0" ColumnDefinitions="Auto,*,Auto,Auto" Margin="0,0,0,12">
+            <Border Grid.Column="0"
+                    Width="36"
+                    Height="36"
+                    CornerRadius="{DynamicResource RadiusSurface}"
+                    Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                    Margin="0,0,12,0">
+              <controls:DaisyIcon x:Name="HeaderIcon"
+                                 Icon="eye"
+                                 Foreground="{DynamicResource ActionPrimaryBrush}"
+                                 Size="{DynamicResource IconSizeMedium}"
+                                 HorizontalAlignment="Center"
+                                 VerticalAlignment="Center" />
+            </Border>
+            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+              <TextBlock x:Name="FileNameText"
+                         Text="{DynamicResource Loc_324B134F57C7}"
+                         FontSize="{DynamicResource TypeSizeBodyLarge}"
+                         FontWeight="SemiBold"
+                         Foreground="{DynamicResource ContentPrimaryBrush}"
+                         TextTrimming="CharacterEllipsis" />
+              <TextBlock x:Name="FileMetaText"
+                         Text="{DynamicResource Loc_1C55B4B48043}"
+                         FontSize="{DynamicResource TypeSizeCaption}"
+                         Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </StackPanel>
+            <Button Grid.Column="2"
+                    x:Name="OpenWithButton"
+                    Content="{DynamicResource Loc_ED077F3D8125}"
+                    Classes="SettingsActionButton"
+                    Height="28"
+                    Padding="12,0"
+                    Margin="0,0,8,0"
+                    VerticalAlignment="Center" />
+            <Button Grid.Column="3"
+                    x:Name="CloseButton"
+                    Classes="GhostButton"
+                    Width="28"
+                    Height="28"
+                    Padding="0"
+                    VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </Button>
+          </Grid>
+
+          <!-- Preview Content Container -->
+          <Border Grid.Row="1"
+                  Background="{DynamicResource SurfaceSunkenBrush}"
+                  CornerRadius="{DynamicResource RoundedMD}"
+                  ClipToBounds="True"
+                  Padding="8">
+            <Panel x:Name="PreviewContainer">
+              <!-- Image Preview -->
+              <Image x:Name="ImagePreview"
+                     Stretch="Uniform"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Center"
+                     IsVisible="False" />
+
+              <!-- Text/Code Preview -->
+              <ScrollViewer x:Name="TextScroll"
+                            HorizontalScrollBarVisibility="Auto"
+                            VerticalScrollBarVisibility="Auto"
+                            IsVisible="False">
+                <TextBlock x:Name="TextPreview"
+                           FontFamily="Cascadia Code, Fira Code, Consolas, monospace"
+                           FontSize="{DynamicResource TypeSizeCaption}"
+                           Foreground="{DynamicResource ContentPrimaryBrush}"
+                           Margin="8"
+                           TextWrapping="NoWrap" />
+              </ScrollViewer>
+
+              <!-- Generic / Directory Preview -->
+              <StackPanel x:Name="GenericPreview"
+                          VerticalAlignment="Center"
+                          HorizontalAlignment="Center"
+                          Spacing="12"
+                          IsVisible="False">
+                <controls:DaisyIcon x:Name="GenericIcon"
+                                   Icon="file"
+                                   Size="{DynamicResource IconSizeHero}"
+                                   Foreground="{DynamicResource ContentTertiaryBrush}"
+                                   HorizontalAlignment="Center" />
+                <TextBlock x:Name="GenericTitle"
+                           Text="{DynamicResource Loc_E5C083CF41FF}"
+                           FontSize="{DynamicResource TypeSizeBody}"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource ContentSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+                <TextBlock x:Name="GenericDetail"
+                           Text="{DynamicResource Loc_84774B777E85}"
+                           FontSize="{DynamicResource TypeSizeCaption}"
+                           Foreground="{DynamicResource ContentTertiaryBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+            </Panel>
+          </Border>
+
+          <!-- Footer with dismiss hint -->
+          <Grid Grid.Row="2" Margin="0,10,0,0">
+            <TextBlock Text="{DynamicResource Loc_4B36E8457C44}"
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       Foreground="{DynamicResource ContentTertiaryBrush}"
+                       HorizontalAlignment="Left" />
+            <TextBlock x:Name="FilePathText"
+                       Text=""
+                       FontSize="{DynamicResource TypeSizeCaption}"
+                       Foreground="{DynamicResource ContentTertiaryBrush}"
+                       HorizontalAlignment="Right"
+                       TextTrimming="CharacterEllipsis"
+                       MaxWidth="350" />
+          </Grid>
+        </Grid>
+      </Border>
+    </controls:ShellFrameBorder>
+  </controls:ShellFrameBorder>
+</Window>

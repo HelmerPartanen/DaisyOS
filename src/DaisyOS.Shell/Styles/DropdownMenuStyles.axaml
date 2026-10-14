@@ -1,0 +1,625 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming">
+
+  <Style Selector="ComboBox /template/ ItemsPresenter#PART_ItemsPresenter, MenuFlyoutPresenter /template/ ItemsPresenter#PART_ItemsPresenter, ContextMenu /template/ ItemsPresenter#PART_ItemsPresenter">
+    <Setter Property="controls:MotionBehavior.RevealOnAttach" Value="True" />
+  </Style>
+
+  <!--
+    Shared reusable shell menu styles across the entire OS.
+    Uses the same double-stage glass frame as the bottom chrome and LocalSend modal:
+    Outer edge (ShellFrameOuterEdgeBrush) -> Inner highlight (ShellFrameInnerHighlightBrush) ->
+    Surface card (SurfaceOverlayBrush).
+  -->
+
+  <!-- Reusable MenuFlyoutPresenter Style -->
+  <Style Selector="MenuFlyoutPresenter">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+    <Style.Animations>
+      <Animation Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0.0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1.0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="MenuBlurHost"
+                Margin="{DynamicResource SpaceInset4}"
+                MinWidth="{DynamicResource MenuMinWidth}"
+                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                CornerRadius="{DynamicResource RoundedLG}"
+                Padding="{DynamicResource BorderThicknessDefault}"
+                BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+          <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                  CornerRadius="{DynamicResource RoundedLGInset}"
+                  Padding="{DynamicResource BorderThicknessDefault}">
+            <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                    CornerRadius="{DynamicResource RoundedMD}"
+                    Padding="{DynamicResource SpaceInset1}">
+              <ScrollViewer>
+                <ItemsPresenter Name="PART_ItemsPresenter"
+                                ItemsPanel="{TemplateBinding ItemsPanel}"
+                                Margin="{TemplateBinding Padding}"/>
+              </ScrollViewer>
+            </Border>
+          </Border>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <!-- Reusable Global Glass Context Menu Container Style -->
+  <Style Selector="ContextMenu">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+    <Style.Animations>
+      <Animation Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" FillMode="Forward">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="0.0" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="1.0" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="MenuBlurHost"
+                Margin="{DynamicResource SpaceInset4}"
+                MinWidth="{DynamicResource MenuMinWidth}"
+                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                CornerRadius="{DynamicResource RoundedLG}"
+                Padding="{DynamicResource BorderThicknessDefault}"
+                BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+          <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                  CornerRadius="{DynamicResource RoundedLGInset}"
+                  Padding="{DynamicResource BorderThicknessDefault}">
+            <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                    CornerRadius="{DynamicResource RoundedMD}"
+                    Padding="{DynamicResource SpaceInset1}">
+              <ScrollViewer>
+                <ItemsPresenter Name="PART_ItemsPresenter"
+                                ItemsPanel="{TemplateBinding ItemsPanel}"
+                                Margin="{TemplateBinding Padding}"/>
+              </ScrollViewer>
+            </Border>
+          </Border>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <!-- Shared pickers use the same quiet inset surface as other OS inputs. -->
+  <Style Selector="ComboBox">
+    <Setter Property="controls:ComboBoxBehavior.UseAdaptiveWidth" Value="True" />
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="Padding" Value="14,0" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
+    <Setter Property="MaxDropDownHeight" Value="288" />
+    <Setter Property="HorizontalContentAlignment" Value="Left" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Disabled" />
+    <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <DataValidationErrors>
+          <Grid ColumnDefinitions="*,32">
+            <Border x:Name="Background"
+                    Grid.Column="0"
+                    Grid.ColumnSpan="2"
+                    Background="{TemplateBinding Background}"
+                    BorderBrush="{TemplateBinding BorderBrush}"
+                    BorderThickness="{TemplateBinding BorderThickness}"
+                    CornerRadius="{TemplateBinding CornerRadius}">
+              <Border.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
+                  <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionDurationFast}" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+            <TextBlock x:Name="PlaceholderTextBlock"
+                       Grid.Column="0"
+                       HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                       VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                       Opacity="{DynamicResource TextControlPlaceholderOpacity}"
+                       Margin="{TemplateBinding Padding}"
+                       Text="{TemplateBinding PlaceholderText}"
+                       Foreground="{TemplateBinding PlaceholderForeground}">
+              <TextBlock.IsVisible>
+                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                  <Binding Path="SelectionBoxItem" RelativeSource="{RelativeSource TemplatedParent}" Converter="{x:Static ObjectConverters.IsNull}" />
+                  <Binding Path="!IsEditable" RelativeSource="{RelativeSource TemplatedParent}" />
+                </MultiBinding>
+              </TextBlock.IsVisible>
+            </TextBlock>
+            <ContentControl x:Name="ContentPresenter"
+                            Content="{TemplateBinding SelectionBoxItem}"
+                            ClipToBounds="True"
+                            Grid.Column="0"
+                            Margin="{TemplateBinding Padding}"
+                            HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+                            ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                            VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}"
+                            IsVisible="{TemplateBinding IsEditable, Converter={x:Static BoolConverters.Not}}" />
+
+            <TextBox Name="PART_EditableTextBox"
+                     Grid.Column="0"
+                     Padding="{TemplateBinding Padding}"
+                     HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                     VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                     Foreground="{TemplateBinding Foreground}"
+                     Background="Transparent"
+                     Text="{TemplateBinding Text, Mode=TwoWay}"
+                     PlaceholderText="{TemplateBinding PlaceholderText}"
+                     BorderThickness="0"
+                     IsVisible="{TemplateBinding IsEditable}">
+              <TextBox.Resources>
+                <SolidColorBrush x:Key="TextControlBackgroundFocused">Transparent</SolidColorBrush>
+                <SolidColorBrush x:Key="TextControlBackgroundPointerOver">Transparent</SolidColorBrush>
+                <Thickness x:Key="TextControlBorderThemeThicknessFocused">0</Thickness>
+              </TextBox.Resources>
+            </TextBox>
+
+            <Border x:Name="DropDownOverlay"
+                    Grid.Column="1"
+                    Background="Transparent"
+                    Margin="0,1,1,1"
+                    Width="30"
+                    IsVisible="False"
+                    HorizontalAlignment="Right" />
+
+            <PathIcon x:Name="DropDownGlyph"
+                      Grid.Column="1"
+                      UseLayoutRounding="False"
+                      IsHitTestVisible="False"
+                      Height="10"
+                      Width="10"
+                      Margin="0,0,10,0"
+                      HorizontalAlignment="Right"
+                      VerticalAlignment="Center"
+                      Foreground="{DynamicResource ContentSecondaryBrush}"
+                      Data="M1939 486L2029 576L1024 1581L19 576L109 486L1024 1401L1939 486Z"/>
+
+            <Popup Name="PART_Popup"
+                   WindowManagerAddShadowHint="False"
+                   IsOpen="{TemplateBinding IsDropDownOpen, Mode=TwoWay}"
+                   MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
+                   MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                   Placement="BottomEdgeAlignedLeft"
+                   PlacementTarget="Background"
+                   IsLightDismissEnabled="True"
+                   InheritsTransform="True"
+                   ShouldUseOverlayLayer="False"
+                   HorizontalOffset="-16"
+                   VerticalOffset="-12">
+              <Border x:Name="MenuBlurHost"
+                      Margin="16"
+                      MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
+                      HorizontalAlignment="Stretch"
+                      Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                      CornerRadius="{DynamicResource RoundedLG}"
+                      Padding="1"
+                      BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+                <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                        CornerRadius="{DynamicResource RoundedLGInset}"
+                        Padding="1">
+                  <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                          CornerRadius="{DynamicResource RoundedMD}"
+                          Padding="4">
+                    <Grid RowDefinitions="Auto,*">
+                      <ContentPresenter Content="{Binding (controls:DropdownSearch.Header), RelativeSource={RelativeSource TemplatedParent}}" />
+                      <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="{TemplateBinding ScrollViewer.HorizontalScrollBarVisibility}"
+                                    IsScrollChainingEnabled="False"
+                                    VerticalScrollBarVisibility="{TemplateBinding ScrollViewer.VerticalScrollBarVisibility}"
+                                    IsDeferredScrollingEnabled="{TemplateBinding (ScrollViewer.IsDeferredScrollingEnabled)}">
+                        <ItemsPresenter Name="PART_ItemsPresenter"
+                                        ItemsPanel="{TemplateBinding ItemsPanel}" />
+                      </ScrollViewer>
+                    </Grid>
+                  </Border>
+                </Border>
+              </Border>
+            </Popup>
+          </Grid>
+        </DataValidationErrors>
+      </ControlTemplate>
+    </Setter>
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+  </Style>
+
+  <Style Selector="ComboBox:pointerover /template/ Border#Background, ComboBox:dropdownopen /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
+  </Style>
+  <Style Selector="ComboBox:focus-visible /template/ Border#Background">
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessFocus}" />
+  </Style>
+
+  <Style Selector="ComboBox:pressed /template/ Border#Background">
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryPressedBrush}" />
+  </Style>
+
+  <Style Selector="ComboBox:disabled">
+    <Setter Property="Opacity" Value="0.5" />
+  </Style>
+
+  <!-- Reusable Global Glass ComboBoxItem Style -->
+  <Style Selector="ComboBoxItem">
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="FontWeight" Value="Regular" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    <Setter Property="Padding" Value="8,5,10,5" />
+    <Setter Property="MinHeight" Value="30" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+  </Style>
+
+  <Style Selector="ComboBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Transitions">
+      <Transitions>
+        <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
+      </Transitions>
+    </Setter>
+  </Style>
+
+  <Style Selector="ComboBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, ComboBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="ComboBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="ComboBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter, ComboBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="ComboBoxItem:disabled">
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+  <Style Selector="ComboBoxItem:focus-visible">
+    <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessFocus}" />
+  </Style>
+
+  <Style Selector="ComboBox /template/ Border#Background">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    </Style>
+
+  <Style Selector="ComboBox /template/ PathIcon#DropDownGlyph">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
+
+  <Style Selector="ComboBox /template/ Popup#PART_Popup">
+      <Setter Property="ShouldUseOverlayLayer" Value="False" />
+    </Style>
+
+  <!-- Reusable Global Glass Dropdown & Context MenuItem Style -->
+  <Style Selector="MenuItem">
+    <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}" />
+    <Setter Property="FontWeight" Value="Regular" />
+    <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlInner}" />
+    <Setter Property="Padding" Value="{DynamicResource MenuItemPadding}" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetCompact}" />
+    <Setter Property="Margin" Value="0,1" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Panel>
+          <Border Name="PART_LayoutRoot"
+                  Padding="{TemplateBinding Padding}"
+                  Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}"
+                  BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <Border.Transitions>
+              <Transitions>
+                <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
+              </Transitions>
+            </Border.Transitions>
+            <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto">
+              <ContentControl Grid.Column="0"
+                              x:Name="PART_ToggleIconPresenter"
+                              IsVisible="False"
+                              Width="{DynamicResource IconSizeStandard}" Height="{DynamicResource IconSizeStandard}"
+                              Margin="{DynamicResource MenuIconMargin}"
+                              VerticalAlignment="Center" />
+
+              <ContentControl Grid.Column="1"
+                              x:Name="PART_IconPresenter"
+                              Foreground="{TemplateBinding Foreground}"
+                              IsVisible="False"
+                              Width="{DynamicResource IconSizeStandard}" Height="{DynamicResource IconSizeStandard}"
+                              Content="{TemplateBinding Icon}"
+                              Margin="0,0,10,0"
+                              VerticalAlignment="Center" />
+
+              <ContentPresenter Name="PART_HeaderPresenter"
+                                Content="{TemplateBinding Header}"
+                                ContentTemplate="{TemplateBinding HeaderTemplate}"
+                                VerticalAlignment="Center"
+                                HorizontalAlignment="Stretch"
+                                Grid.Column="2"/>
+
+              <TextBlock x:Name="PART_InputGestureText"
+                         Grid.Column="3"
+                         Margin="{DynamicResource MenuGestureMargin}"
+                         Text="{TemplateBinding InputGesture}"
+                         HorizontalAlignment="Right"
+                         VerticalAlignment="Center"
+                         FontSize="{DynamicResource TypeSizeCaption}"
+                         Foreground="{DynamicResource ContentSecondaryBrush}"/>
+
+              <Path Name="PART_ChevronPath"
+                    Stretch="Uniform"
+                    Width="6"
+                    Height="9"
+                    Data="M 1,0 10,10 l -9,10 -1,-1 L 8,10 -0,1 Z"
+                    Fill="{DynamicResource ContentSecondaryBrush}"
+                    Margin="10,0,0,0"
+                    VerticalAlignment="Center"
+                    Grid.Column="4" />
+            </Grid>
+          </Border>
+          <Popup Name="PART_Popup"
+                 WindowManagerAddShadowHint="False"
+                 Placement="RightEdgeAlignedTop"
+                 HorizontalOffset="-12"
+                 VerticalOffset="-17"
+                 IsLightDismissEnabled="False"
+                 IsOpen="{TemplateBinding IsSubMenuOpen, Mode=TwoWay}">
+            <Border x:Name="MenuBlurHost"
+                    Margin="16"
+                    MinWidth="184"
+                    Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                    CornerRadius="{DynamicResource RoundedLG}"
+                    Padding="1"
+                    BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+              <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                      CornerRadius="{DynamicResource RoundedLGInset}"
+                      Padding="1">
+                <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                        CornerRadius="{DynamicResource RoundedMD}"
+                        Padding="4">
+                  <ScrollViewer>
+                    <ItemsPresenter Name="PART_ItemsPresenter"
+                                    ItemsPanel="{TemplateBinding ItemsPanel}"
+                                    Grid.IsSharedSizeScope="True" />
+                  </ScrollViewer>
+                </Border>
+              </Border>
+            </Border>
+          </Popup>
+        </Panel>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <Style Selector="MenuItem:icon /template/ ContentControl#PART_IconPresenter">
+    <Setter Property="IsVisible" Value="True" />
+  </Style>
+
+  <Style Selector="MenuItem:empty /template/ Path#PART_ChevronPath">
+    <Setter Property="IsVisible" Value="False" />
+  </Style>
+
+  <Style Selector="MenuItem:open /template/ Path#PART_ChevronPath">
+    <Setter Property="Fill" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="MenuItem:pointerover /template/ Border#PART_LayoutRoot, MenuItem:selected /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+  </Style>
+  <Style Selector="MenuItem:pointerover /template/ Path#PART_ChevronPath, MenuItem:selected /template/ Path#PART_ChevronPath">
+    <Setter Property="Fill" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+
+  <Style Selector="MenuItem:pressed /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+  </Style>
+
+  <Style Selector="MenuItem:disabled">
+    <Setter Property="Opacity" Value="0.4" />
+  </Style>
+
+  <!-- Destructive / Danger Actions: use theme-aware semantic error text -->
+  <Style Selector="MenuItem.Danger">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+  <Style Selector="MenuItem.Danger /template/ ContentPresenter#PART_HeaderPresenter">
+    <Setter Property="TextBlock.Foreground" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+  <Style Selector="MenuItem.Danger TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+  <Style Selector="MenuItem.Danger controls|DaisyIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+  <Style Selector="MenuItem.Danger controls|DaisyIcon.MenuIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+
+  <Style Selector="MenuItem.Destructive">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+  <Style Selector="MenuItem.Destructive /template/ ContentPresenter#PART_HeaderPresenter">
+    <Setter Property="TextBlock.Foreground" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+  <Style Selector="MenuItem.Destructive TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+  </Style>
+  <Style Selector="MenuItem.Destructive controls|DaisyIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+
+  <Style Selector="controls|DaisyIcon.TrashIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+  <Style Selector="MenuItem controls|DaisyIcon.TrashIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+
+  <Style Selector="MenuItem:separator">
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Separator/>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
+  <!-- Reusable Menu Separator / Divider Style -->
+  <Style Selector="Separator">
+    <Setter Property="Background" Value="{DynamicResource StrokeDefaultBrush}" />
+    <Setter Property="Height" Value="1" />
+    <Setter Property="Margin" Value="4,3" />
+  </Style>
+
+  <!-- Reusable Trigger Button Style (Button.SubtleLink) -->
+  <Style Selector="Button.SubtleLink">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    <Setter Property="Padding" Value="6,4" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.SubtleLink:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.SubtleLink:flyout-open /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+  </Style>
+  <Style Selector="Button.SubtleLink:pressed /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+  </Style>
+
+  <!-- Shared HugeIcons SVG geometry for menu commands: uses primary text color -->
+  <Style Selector="controls|DaisyIcon.MenuIcon">
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="ContentPrimaryBrush" />
+    <Setter Property="Size" Value="15" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="HorizontalAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+  <!-- Popup content is a separate visual root. Keep these reusable styles in
+       the application menu dictionary so widget menus never lose them when
+       Avalonia reparents the ContextMenu into PopupOverlayLayer. -->
+  <Style Selector="MenuItem#WidgetSizesHeader">
+    <Setter Property="Padding" Value="6,4" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="PART_LayoutRoot"
+                Padding="{TemplateBinding Padding}"
+                Background="Transparent"
+                BorderThickness="0"
+                HorizontalAlignment="Stretch">
+          <ContentPresenter Name="PART_HeaderPresenter"
+                            Content="{TemplateBinding Header}"
+                            ContentTemplate="{TemplateBinding HeaderTemplate}"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="MenuItem#WidgetSizesHeader:pointerover /template/ Border#PART_LayoutRoot">
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Button.WidgetSizeButton">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Height" Value="34" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border Name="ButtonBorder"
+                Background="{TemplateBinding Background}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                HorizontalAlignment="Stretch"
+                VerticalAlignment="Stretch">
+          <Border.Transitions>
+            <Transitions>
+              <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
+            </Transitions>
+          </Border.Transitions>
+          <ContentPresenter Content="{TemplateBinding Content}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center" />
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+  <Style Selector="Button.WidgetSizeButton controls|DaisyIcon.WidgetSizeIcon">
+    <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+  </Style>
+  <Style Selector="Button.WidgetSizeButton:pointerover controls|DaisyIcon.WidgetSizeIcon,
+                   Button.WidgetSizeButton.Active controls|DaisyIcon.WidgetSizeIcon">
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.WidgetSizeButton:pointerover /template/ Border#ButtonBorder,
+                   Button.WidgetSizeButton.Active /template/ Border#ButtonBorder">
+    <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+  </Style>
+  <Style Selector="Button.WidgetSizeButton:pressed /template/ Border#ButtonBorder">
+    <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+  </Style>
+  <Style Selector="ContextMenu controls|DaisyIcon">
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="ContentPrimaryBrush" />
+  </Style>
+  <Style Selector="MenuItem controls|DaisyIcon">
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="ContentPrimaryBrush" />
+  </Style>
+  <Style Selector="MenuItem.Danger controls|DaisyIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+  <Style Selector="MenuItem controls|DaisyIcon.TrashIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+  <Style Selector="controls|DaisyIcon.TrashIcon">
+    <Setter Property="Foreground" Value="{DynamicResource StatusDangerBrush}" />
+    <Setter Property="theming:ThemeResourceBrush.ForegroundKey" Value="StatusDangerBrush" />
+  </Style>
+
+</Styles>

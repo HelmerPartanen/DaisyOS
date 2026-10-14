@@ -1,0 +1,244 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.Components.Taskbar.TaskbarView"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    HorizontalAlignment="Center"
+    VerticalAlignment="Bottom"
+    Margin="0,3,0,3"
+    ClipToBounds="False">
+
+  <UserControl.Styles>
+    <Style Selector="Button.TaskbarApp">
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="40"/>
+      <!-- 16 px taskbar radius minus its 2 px border and 4 px inset. -->
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
+      <Setter Property="RenderTransform" Value="none"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.TaskbarApp:not(.TaskbarAppIcon):pressed">
+      <Setter Property="RenderTransform" Value="scale(0.92)"/>
+    </Style>
+    <Style Selector="Button.TaskbarApp.LauncherActive /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.TaskbarApp.WindowGrouped /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}"/>
+    </Style>
+    <Style Selector="Button.TaskbarApp.WindowActive /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.TaskbarApp.ContextMenuActive /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+    </Style>
+    <Style Selector="Button.TaskbarApp.WindowUnresponsive /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatusWarningContainerBrush}"/>
+    </Style>
+
+    <Style Selector="Border.TaskbarWindowIndicator">
+      <Setter Property="Width" Value="0"/>
+      <Setter Property="Height" Value="4"/>
+      <Setter Property="Opacity" Value="0"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Bottom"/>
+      <Setter Property="Margin" Value="0,0,0,1"/>
+      <Setter Property="Background" Value="{DynamicResource ContentTertiaryBrush}"/>
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedPill}"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut"/>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.TaskbarWindowIndicator.WindowRunning">
+      <Setter Property="Width" Value="14"/>
+      <Setter Property="Opacity" Value="1"/>
+      <Setter Property="Background" Value="{DynamicResource ContentTertiaryBrush}"/>
+    </Style>
+    <Style Selector="Border.TaskbarWindowIndicator.WindowMinimized">
+      <Setter Property="Width" Value="4"/>
+      <Setter Property="Opacity" Value="1"/>
+      <Setter Property="Background" Value="{DynamicResource ContentTertiaryBrush}"/>
+    </Style>
+    <Style Selector="Border.TaskbarWindowIndicator.WindowLaunching">
+      <Setter Property="Width" Value="10"/>
+      <Setter Property="Opacity" Value="0.65"/>
+      <Setter Property="Background" Value="{DynamicResource ContentSecondaryBrush}"/>
+    </Style>
+    <Style Selector="Border.TaskbarWindowIndicator.WindowActive">
+      <Setter Property="Width" Value="20"/>
+      <Setter Property="Opacity" Value="1"/>
+      <Setter Property="Background" Value="{DynamicResource ContentSecondaryBrush}"/>
+    </Style>
+    <!-- Back tiles are cut out by the front tile, rather than covered by a fill. -->
+    <Style Selector="Border.TaskbarGroupedIndicator">
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="HorizontalAlignment" Value="Left"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="Margin" Value="6,0,-6,0"/>
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
+      <Setter Property="Background" Value="{Binding Background, RelativeSource={RelativeSource AncestorType=ContentPresenter, Tree=Visual}}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+    </Style>
+
+    <!-- Reorderable app icon. Positioned absolutely inside AppIconsCanvas via Canvas.Left,
+         which is animated in code-behind so items glide into their new slot. -->
+    <Style Selector="Button.TaskbarAppIcon">
+      <Setter Property="Width" Value="40"/>
+      <Setter Property="Height" Value="40"/>
+      <Setter Property="Padding" Value="0"/>
+      <Setter Property="ClipToBounds" Value="False"/>
+      <Setter Property="RenderTransform" Value="none"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Canvas.Left" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut"/>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.TaskbarAppIcon:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.92)"/>
+    </Style>
+    <Style Selector="Button.TaskbarAppIcon.dragging /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid HorizontalAlignment="Center" ClipToBounds="False">
+    <controls:ShellFrameBorder x:Name="TaskbarBody"
+            Height="{DynamicResource ShellChromeHeight}"
+            HorizontalAlignment="Center"
+            VerticalAlignment="Center"
+            Padding="1"
+            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            CornerRadius="{DynamicResource RoundedXL}">
+      <Border.Transitions>
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut"/>
+        </Transitions>
+      </Border.Transitions>
+
+      <controls:ShellFrameBorder x:Name="TaskbarInnerFrame"
+              Background="Transparent"
+              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
+              BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedXLInset}">
+        <!-- The two frame pixels leave the original 4px content inset and 40px controls intact. -->
+        <Border x:Name="TaskbarFill"
+                Background="{DynamicResource SurfaceBaseBrush}"
+                Padding="4"
+                CornerRadius="{DynamicResource RoundedXLDoubleInset}"
+                ClipToBounds="True">
+          <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="4">
+
+      <!-- Start Button -->
+      <Button x:Name="StartButton" Classes="ShellButton TaskbarApp" ToolTip.Tip="{DynamicResource Loc_03029B03191D}">
+        <Border Background="Transparent" CornerRadius="{DynamicResource RoundedMD}">
+          <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+            <Image Classes="AppIcon" Source="{DynamicResource AppIconLauncher}"
+                   RenderOptions.BitmapInterpolationMode="HighQuality"
+                   Width="26" Height="26" Stretch="Uniform" IsHitTestVisible="False" />
+          </Grid>
+        </Border>
+      </Button>
+
+      <!-- Reorderable App Icons Canvas. Width is set from code-behind. -->
+      <Canvas x:Name="AppIconsCanvas" Height="40">
+        <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="calendar" ToolTip.Tip="{DynamicResource Loc_D5D0A30B517E}">
+          <Panel Width="40" Height="40">
+            <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Classes="AppIcon" Source="{DynamicResource AppIconCalendar}"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     Width="26" Height="26" IsHitTestVisible="False" />
+            </Grid>
+            <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
+          </Panel>
+        </Button>
+
+        <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="notes" ToolTip.Tip="{DynamicResource Loc_8A7525B1492F}">
+          <Panel Width="40" Height="40">
+            <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Classes="AppIcon" Source="{DynamicResource AppIconNotes}"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     Width="26" Height="26" IsHitTestVisible="False" />
+            </Grid>
+            <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
+          </Panel>
+        </Button>
+
+        <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="calculator" ToolTip.Tip="{DynamicResource Loc_668B80455FDB}">
+          <Panel Width="40" Height="40">
+            <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Classes="AppIcon" Source="{DynamicResource AppIconCalculator}"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     Width="26" Height="26" IsHitTestVisible="False" />
+            </Grid>
+            <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
+          </Panel>
+        </Button>
+
+        <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="settings" ToolTip.Tip="{DynamicResource Loc_74A883A037BC}">
+          <Panel Width="40" Height="40">
+            <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Classes="AppIcon" Source="{DynamicResource AppIconSettings}"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     Width="26" Height="26" IsHitTestVisible="False" />
+            </Grid>
+            <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
+          </Panel>
+        </Button>
+
+        <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="files" ToolTip.Tip="{DynamicResource Loc_ABC7E9892806}">
+          <Panel Width="40" Height="40">
+            <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Classes="AppIcon" Source="{DynamicResource AppIconFiles}"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     Width="26" Height="26" IsHitTestVisible="False" />
+            </Grid>
+            <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
+          </Panel>
+        </Button>
+
+        <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="appstore" ToolTip.Tip="{DynamicResource Loc_C4424D160BCA}">
+          <Panel Width="40" Height="40">
+            <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Classes="AppIcon" Source="{DynamicResource AppIconStore}"
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     Width="26" Height="26" IsHitTestVisible="False" />
+            </Grid>
+            <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
+          </Panel>
+        </Button>
+      </Canvas>
+
+          </StackPanel>
+        </Border>
+      </controls:ShellFrameBorder>
+    </controls:ShellFrameBorder>
+
+    <!-- Taskbar Context Menu Host (floats above the 56px bottom panel with unified rounded cartouche) -->
+    <controls:CartoucheBorder x:Name="TaskbarContextMenuHost"
+                              IsVisible="False"
+                              HorizontalAlignment="Left"
+                              VerticalAlignment="Bottom"
+                              Margin="0,0,0,55"
+                              ZIndex="200"
+                              MinWidth="180"
+                              MaxWidth="260"
+                              Padding="4"
+                              Background="{DynamicResource ContextMenuBackgroundBrush}"
+                              IsHitTestVisible="True">
+      <StackPanel x:Name="TaskbarContextMenuItems" />
+    </controls:CartoucheBorder>
+
+
+  </Grid>
+</UserControl>

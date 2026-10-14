@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>$(AvsCurrentTargetFramework);$(AvsLegacyTargetFrameworks)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseMicroCom>true</UseMicroCom>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Avalonia.Build.Tasks\Avalonia.Build.Tasks.csproj"
+                      ReferenceOutputAssembly="false"
+                      PrivateAssets="all" />
+  </ItemGroup>
+  <Import Project="..\..\build\MicroCOM.props" />
+  <Import Project="..\..\build\BuildTargets.targets" />
+  <Import Project="..\..\build\TrimmingEnable.props" />
+  <Import Project="..\..\build\NullableEnable.props" />
+</Project>

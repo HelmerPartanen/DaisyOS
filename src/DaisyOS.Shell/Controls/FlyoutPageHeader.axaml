@@ -1,0 +1,24 @@
+<UserControl x:Class="DaisyOS.Shell.Controls.FlyoutPageHeader"
+             x:Name="Root"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <Grid ColumnDefinitions="40,*,40">
+    <Button Grid.Column="0"
+            Classes="ShellButton OutputDevicesButton"
+            Click="OnBackButtonClick"
+            ToolTip.Tip="{DynamicResource Loc_76900F1BFD16}">
+      <controls:DaisyIcon Icon="caret-left"
+                          Size="{DynamicResource IconSizeMedium}"
+                          HorizontalAlignment="Center"
+                          VerticalAlignment="Center"/>
+    </Button>
+    <TextBlock Grid.Column="1"
+               Text="{Binding Title, ElementName=Root}"
+               FontSize="{DynamicResource TypeSizeBodyLarge}"
+               FontWeight="Regular"
+               HorizontalAlignment="Center"
+               VerticalAlignment="Center"/>
+    <Border Grid.Column="2" Width="40" Height="40"/>
+  </Grid>
+</UserControl>

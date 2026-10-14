@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>DaisyOS.PerformanceBenchmark</AssemblyName>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <ShellOutput>$(MSBuildThisFileDirectory)../../src/DaisyOS.Shell/bin/$(Configuration)/net10.0</ShellOutput>
+    <AvaloniaOutput>$(MSBuildThisFileDirectory)../../external/Avalonia/src</AvaloniaOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(ShellOutput)/*.dll" />
+    <Reference Include="$(AvaloniaOutput)/Headless/Avalonia.Headless/bin/$(Configuration)/net10.0/Avalonia.Headless.dll" />
+    <None Include="$(ShellOutput)/runtimes/linux-x64/native/*" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

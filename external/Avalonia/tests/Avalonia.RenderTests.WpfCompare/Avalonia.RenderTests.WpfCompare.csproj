@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>$(AvsCurrentWindowsTargetFramework)</TargetFramework>
+    <OutputType>Exe</OutputType>
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <Nullable>enable</Nullable>
+    <UseWpf>true</UseWpf>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\Avalonia.Base\Avalonia.Base.csproj" />
+    <ProjectReference Include="..\..\src\Avalonia.Controls\Avalonia.Controls.csproj" />
+    <Compile Include="..\Avalonia.RenderTests\CrossUI\CrossUI.cs"/>
+    <Compile Include="..\Avalonia.RenderTests\CrossTests\**\*.cs"/>
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="../Avalonia.RenderTests/**/*.png" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Moq" />
+    <PackageReference Include="SixLabors.ImageSharp" />
+    <PackageReference Include="System.Reactive" />
+    <PackageReference Include="Xunit.StaFact" />
+  </ItemGroup>
+  <Import Project="..\..\build\XUnit.props" />
+  <Import Project="..\..\build\SkiaSharp.props" />
+  <Import Project="..\..\build\SharedVersion.props" />
+</Project>

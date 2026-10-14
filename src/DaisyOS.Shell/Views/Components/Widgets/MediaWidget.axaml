@@ -1,0 +1,143 @@
+<UserControl
+    x:Class="DaisyOS.Shell.Views.Components.Widgets.MediaWidget"
+    xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    xmlns:widgets="clr-namespace:DaisyOS.Shell.Views.Components.Widgets"
+    Width="380"
+    Height="52"
+    HorizontalAlignment="Left"
+    VerticalAlignment="Bottom"
+    Margin="6,6,0,6">
+  <UserControl.Styles>
+    <Style Selector="widgets|MediaWidget">
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.spectrumBar">
+      <Setter Property="Background" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <!-- Click scale effect scoped only to the three media control buttons -->
+    <Style Selector="Border#MediaFrame Button.ShellButton">
+      <Setter Property="RenderTransform" Value="none"/>
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}"/>
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border#MediaFrame Button.ShellButton:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.92)"/>
+    </Style>
+  </UserControl.Styles>
+
+  <Grid ClipToBounds="False">
+    <controls:ShellFrameBorder x:Name="MediaFrame"
+            Height="52"
+            Padding="1"
+            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            CornerRadius="{DynamicResource RoundedXL}"
+            PointerPressed="OnMediaPointerPressed">
+      <controls:ShellFrameBorder Background="Transparent"
+              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge" BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedXLInset}">
+        <Border Background="{DynamicResource SurfaceBaseBrush}"
+                CornerRadius="{DynamicResource RoundedXLDoubleInset}"
+                ClipToBounds="True">
+          <Grid>
+            <!-- The adaptive artwork color sits above the shared System Bar material. -->
+            <Border x:Name="ArtworkTint" Background="Transparent" IsHitTestVisible="False" CornerRadius="{DynamicResource RoundedXLDoubleInset}">
+              <Border.Transitions>
+                <Transitions>
+                  <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+            <Grid Margin="4" ColumnDefinitions="44,*,120,28">
+              <Border Width="44" Height="44" CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True">
+                <Grid>
+                  <Image x:Name="Artwork" theming:ThemeTransitionPolicy.Enabled="False" Stretch="UniformToFill" IsVisible="False"
+                         RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                  <Border x:Name="SourceFallback" Background="{DynamicResource StateHoverBrush}">
+                    <Grid>
+                      <Image x:Name="SourceIcon" theming:ThemeTransitionPolicy.Enabled="False" Width="24" Height="24" IsVisible="False"
+                             RenderOptions.BitmapInterpolationMode="HighQuality"/>
+                      <!-- The idle state deliberately uses the filled music-note asset. -->
+                      <controls:DaisyIcon x:Name="SourceGlyph" Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeMedium}"
+                                          Foreground="{DynamicResource ContentTertiaryBrush}"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                  </Border>
+                </Grid>
+              </Border>
+
+              <StackPanel Grid.Column="1" Margin="10,0,8,0" Spacing="1" VerticalAlignment="Center">
+                <TextBlock x:Name="MediaTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}"
+                           TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                <TextBlock x:Name="MediaArtist" FontSize="{DynamicResource TypeSizeCaption}"
+                           Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+              </StackPanel>
+
+              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Button Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+                  <controls:DaisyIcon x:Name="PreviousGlyph" Icon="rewind" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
+                </Button>
+                <Button x:Name="PlayPauseButton" Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+                  <controls:DaisyIcon x:Name="PlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
+                </Button>
+                <Button Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+                  <controls:DaisyIcon x:Name="NextGlyph" Icon="fast-forward" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
+                </Button>
+              </StackPanel>
+
+              <Canvas x:Name="SpectrumCanvas" Grid.Column="3" Width="28" Height="28"
+                      VerticalAlignment="Center" HorizontalAlignment="Center" IsHitTestVisible="False"/>
+            </Grid>
+          </Grid>
+        </Border>
+      </controls:ShellFrameBorder>
+    </controls:ShellFrameBorder>
+
+    <!-- Bottom Shelf Media Context Menu Host -->
+    <controls:ShellFrameBorder x:Name="MediaContextMenuHost"
+            IsVisible="False"
+            HorizontalAlignment="Left"
+            VerticalAlignment="Bottom"
+            Margin="8,0,0,58"
+            ZIndex="200"
+            MinWidth="184"
+            MaxWidth="240"
+            Padding="1"
+            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            CornerRadius="{DynamicResource RoundedLG}"
+            BoxShadow="{DynamicResource ElevationFlyoutShadow}"
+            IsHitTestVisible="True">
+      <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+              CornerRadius="{DynamicResource RoundedLGInset}"
+              Padding="1">
+        <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                CornerRadius="{DynamicResource RoundedMD}"
+                Padding="4">
+          <StackPanel x:Name="MediaContextMenuItems">
+            <MenuItem Header="{DynamicResource Loc_202FAE49B38C}" Click="OnMoveToDesktopClicked">
+              <MenuItem.Icon>
+                <controls:DaisyIcon Icon="arrow-up-right" Classes="MenuIcon" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <Separator />
+            <MenuItem Header="{DynamicResource Loc_66DC00642E56}" Click="OnRemoveWidgetClicked" Classes="Danger">
+              <MenuItem.Icon>
+                <controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon" />
+              </MenuItem.Icon>
+            </MenuItem>
+          </StackPanel>
+        </Border>
+      </controls:ShellFrameBorder>
+    </controls:ShellFrameBorder>
+  </Grid>
+</UserControl>

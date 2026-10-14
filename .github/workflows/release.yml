@@ -1,0 +1,91 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: SemVer release version
+        required: true
+        default: 0.1.0
+      channel:
+        description: Release channel
+        required: true
+        default: beta
+        type: choice
+        options:
+          - beta
+          - stable
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      channel: ${{ steps.metadata.outputs.channel }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+          cache: true
+          cache-dependency-path: '**/*.csproj'
+
+      - name: Resolve release metadata
+        id: metadata
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          TAG_NAME: ${{ github.ref_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_CHANNEL: ${{ inputs.channel }}
+        run: |
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            version="${TAG_NAME#v}"
+            if [[ "$version" == *-* ]]; then channel="beta"; else channel="stable"; fi
+          else
+            version="$INPUT_VERSION"
+            channel="$INPUT_CHANNEL"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Build release artifact
+        run: scripts/build-release.sh --version "${{ steps.metadata.outputs.version }}" --channel "${{ steps.metadata.outputs.channel }}"
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DaisyOS-Shell-${{ steps.metadata.outputs.version }}-${{ steps.metadata.outputs.channel }}-linux-x64
+          path: artifacts/release/*
+          if-no-files-found: error
+          retention-days: 30
+
+  publish:
+    if: github.event_name == 'push'
+    needs: package
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download release artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: DaisyOS-Shell-${{ needs.package.outputs.version }}-${{ needs.package.outputs.channel }}-linux-x64
+          path: artifacts/release
+
+      - name: Publish tagged GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: artifacts/release/*
+          generate_release_notes: true
+          prerelease: ${{ needs.package.outputs.channel != 'stable' }}

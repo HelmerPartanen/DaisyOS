@@ -1,0 +1,15 @@
+<UserControl x:Class="DaisyOS.Shell.Controls.SectionHeader"
+             x:Name="Root"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Grid ColumnDefinitions="*,Auto">
+    <TextBlock Grid.Column="0"
+               Text="{Binding Title, ElementName=Root}"
+               FontWeight="SemiBold"
+               FontSize="{DynamicResource TypeSizeBody}"
+               VerticalAlignment="Center"/>
+    <ContentControl Grid.Column="1"
+                    Content="{Binding ActionContent, ElementName=Root}"
+                    VerticalAlignment="Center"/>
+  </Grid>
+</UserControl>

@@ -1,0 +1,23 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Views.Components.SystemBar.AppTrayView"
+             ClipToBounds="False">
+  <controls:ShellFrameBorder x:Name="TrayMaterialFrame"
+      Width="280" Padding="1" Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+      CornerRadius="{DynamicResource RoundedXXL}" BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}">
+    <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+        BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+      <Border Background="{DynamicResource SurfaceBaseBrush}" Padding="16" CornerRadius="{DynamicResource RoundedXXLDoubleInset}">
+        <StackPanel x:Name="MotionContent" Spacing="12">
+          <TextBlock Text="{DynamicResource Loc_D15070AD05F6}" FontSize="{DynamicResource FontSizeBody}" Foreground="{DynamicResource ContentPrimaryBrush}"/>
+          <TextBlock x:Name="EmptyMessage" Text="{DynamicResource Loc_655A9EB76CC7}" TextWrapping="Wrap"
+              FontSize="{DynamicResource FontSizeBody}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+          <ScrollViewer MaxHeight="240" HorizontalScrollBarVisibility="Disabled">
+            <WrapPanel x:Name="TrayItems"/>
+          </ScrollViewer>
+        </StackPanel>
+      </Border>
+    </controls:ShellFrameBorder>
+  </controls:ShellFrameBorder>
+</UserControl>

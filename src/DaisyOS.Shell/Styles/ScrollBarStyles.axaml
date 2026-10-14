@@ -1,0 +1,144 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <Styles.Resources>
+  <ControlTheme x:Key="DaisyScrollViewer" TargetType="ScrollViewer">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Grid ColumnDefinitions="*,Auto" RowDefinitions="*,Auto">
+          <ScrollContentPresenter Name="PART_ContentPresenter"
+                                  Grid.Row="0"
+                                  Grid.Column="0"
+                                  Background="{TemplateBinding Background}"
+                                  HorizontalSnapPointsType="{TemplateBinding HorizontalSnapPointsType}"
+                                  VerticalSnapPointsType="{TemplateBinding VerticalSnapPointsType}"
+                                  HorizontalSnapPointsAlignment="{TemplateBinding HorizontalSnapPointsAlignment}"
+                                  VerticalSnapPointsAlignment="{TemplateBinding VerticalSnapPointsAlignment}"
+                                  Padding="{TemplateBinding Padding}"
+                                  ScrollViewer.IsScrollInertiaEnabled="{TemplateBinding IsScrollInertiaEnabled}">
+            <ScrollContentPresenter.GestureRecognizers>
+              <ScrollGestureRecognizer CanHorizontallyScroll="{Binding CanHorizontallyScroll, ElementName=PART_ContentPresenter}"
+                                       CanVerticallyScroll="{Binding CanVerticallyScroll, ElementName=PART_ContentPresenter}"
+                                       IsScrollInertiaEnabled="{Binding (ScrollViewer.IsScrollInertiaEnabled), ElementName=PART_ContentPresenter}"
+                                       Offset="{Binding Offset, ElementName=PART_ContentPresenter}"
+                                       Viewport="{Binding Viewport, ElementName=PART_ContentPresenter}"
+                                       Extent="{Binding Extent, ElementName=PART_ContentPresenter}"/>
+            </ScrollContentPresenter.GestureRecognizers>
+          </ScrollContentPresenter>
+          <ScrollBar Name="PART_HorizontalScrollBar"
+                     Orientation="Horizontal"
+                     Grid.Row="1"/>
+          <ScrollBar Name="PART_VerticalScrollBar"
+                     Orientation="Vertical"
+                     Grid.Column="1"/>
+          <Panel x:Name="PART_ScrollBarsSeparator"
+                 Grid.Row="1"
+                 Grid.Column="1"
+                 Background="Transparent"
+                 Opacity="0">
+            <Panel.Transitions>
+              <Transitions>
+                <DoubleTransition Property="Opacity" Duration="0:0:0.1" />
+              </Transitions>
+            </Panel.Transitions>
+          </Panel>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </ControlTheme>
+
+    <!-- The visual is slim; the transparent outer surface remains easy to grab. -->
+    <ControlTheme x:Key="DaisyScrollThumb" TargetType="Thumb">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Background="{TemplateBinding Background}">
+            <Border x:Name="ThumbVisual" Background="{DynamicResource ContentPrimaryBrush}"
+                    Opacity="0.28" Margin="4" CornerRadius="999">
+              <Border.Transitions>
+                <Transitions>
+                  <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" />
+                  <ThicknessTransition Property="Margin" Duration="{DynamicResource MotionDurationFast}" />
+                </Transitions>
+              </Border.Transitions>
+            </Border>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:pointerover /template/ Border#ThumbVisual">
+        <Setter Property="Opacity" Value="0.48" />
+        <Setter Property="Margin" Value="3" />
+      </Style>
+      <Style Selector="^:pressed /template/ Border#ThumbVisual">
+        <Setter Property="Opacity" Value="0.68" />
+        <Setter Property="Margin" Value="3" />
+      </Style>
+    </ControlTheme>
+    <ControlTheme x:Key="DaisyScrollPageButton" TargetType="RepeatButton">
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Template">
+        <ControlTemplate><Border Background="{TemplateBinding Background}" /></ControlTemplate>
+      </Setter>
+    </ControlTheme>
+    <ControlTheme x:Key="DaisyScrollBar" TargetType="ScrollBar">
+      <Setter Property="controls:ScrollBarInteraction.Enabled" Value="True" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Focusable" Value="False" />
+      <Setter Property="MinWidth" Value="0" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border x:Name="ScrollRail" Background="{TemplateBinding Background}" CornerRadius="999">
+            <Border.Transitions>
+              <Transitions><BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" /></Transitions>
+            </Border.Transitions>
+            <Track x:Name="PART_Track" Minimum="{TemplateBinding Minimum}" Maximum="{TemplateBinding Maximum}"
+                   Value="{TemplateBinding Value, Mode=TwoWay}" ViewportSize="{TemplateBinding ViewportSize}"
+                   Orientation="{TemplateBinding Orientation}"
+                   DeferThumbDrag="{TemplateBinding ScrollViewer.IsDeferredScrollingEnabled}">
+              <Track.DecreaseButton>
+                <RepeatButton x:Name="PART_PageUpButton" Theme="{StaticResource DaisyScrollPageButton}" />
+              </Track.DecreaseButton>
+              <Track.IncreaseButton>
+                <RepeatButton x:Name="PART_PageDownButton" Theme="{StaticResource DaisyScrollPageButton}" />
+              </Track.IncreaseButton>
+              <Track.Thumb><Thumb x:Name="PART_Thumb" Theme="{StaticResource DaisyScrollThumb}" /></Track.Thumb>
+            </Track>
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:vertical">
+        <Setter Property="Width" Value="14" />
+      </Style>
+      <Style Selector="^:horizontal">
+        <Setter Property="Height" Value="14" />
+      </Style>
+      <Style Selector="^:vertical /template/ Track#PART_Track">
+        <Setter Property="IsDirectionReversed" Value="True" />
+      </Style>
+      <Style Selector="^:vertical /template/ Thumb#PART_Thumb">
+        <Setter Property="MinHeight" Value="{DynamicResource Space6}" />
+      </Style>
+      <Style Selector="^:horizontal /template/ Thumb#PART_Thumb">
+        <Setter Property="MinWidth" Value="{DynamicResource Space6}" />
+      </Style>
+      <Style Selector="^:pointerover /template/ Border#ScrollRail">
+        <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+      </Style>
+      <Style Selector="^.thumb-dragging /template/ Border#ScrollRail">
+        <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+      </Style>
+      <Style Selector="^:disabled"><Setter Property="Opacity" Value="0.35" /></Style>
+    </ControlTheme>
+  </Styles.Resources>
+  <!-- Content padding and width limits remain inside the viewport. The shared
+       viewer template reserves a separate row/column regardless of auto-hide. -->
+  <Style Selector="ScrollViewer">
+    <Setter Property="Theme" Value="{StaticResource DaisyScrollViewer}" />
+    <Setter Property="AllowAutoHide" Value="False" />
+  </Style>
+  <!-- One shared theme for native apps, text editors, sidebars and popup menus. -->
+  <Style Selector="ScrollBar"><Setter Property="Theme" Value="{StaticResource DaisyScrollBar}" /></Style>
+</Styles>

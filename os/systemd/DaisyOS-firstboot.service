@@ -1,0 +1,12 @@
+[Unit]
+Description=DaisyOS First Boot Placeholder
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/true
+
+[Install]
+WantedBy=multi-user.target
+
