@@ -72,7 +72,7 @@
     <Color x:Key="ActionPrimaryHoverColor">#FF138CEB</Color>
     <Color x:Key="ActionPrimaryPressedColor">#FF1283DB</Color>
     <Color x:Key="ContentOnActionColor">#FFFFFFFF</Color>
-      <Color x:Key="ContentOnPrimaryActionColor">#FF111113</Color>
+      <Color x:Key="ContentOnPrimaryActionColor">#FFFFFFFF</Color>
     <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
     <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
     <Color x:Key="QuickSettingActiveSurfacePressedColor">#FFECECEF</Color>
@@ -277,7 +277,7 @@
       <Color x:Key="ActionPrimaryHoverColor">#FF2794EA</Color>
       <Color x:Key="ActionPrimaryPressedColor">#FF359BEB</Color>
       <Color x:Key="ContentOnActionColor">#FFFFFFFF</Color>
-      <Color x:Key="ContentOnPrimaryActionColor">#FF111113</Color>
+      <Color x:Key="ContentOnPrimaryActionColor">#FFFFFFFF</Color>
       <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
       <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
       <Color x:Key="QuickSettingActiveSurfacePressedColor">#FFECECEF</Color>

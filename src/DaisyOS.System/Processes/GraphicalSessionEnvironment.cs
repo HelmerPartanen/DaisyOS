@@ -1,4 +1,5 @@
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 
 namespace DaisyOS.System.Processes;
 
@@ -87,9 +88,9 @@ internal static class GraphicalSessionEnvironment
                 using var socket = new Socket(AddressFamily.Unix, SocketType.Stream, ProtocolType.Unspecified);
                 socket.Connect(new UnixDomainSocketEndPoint(path));
                 // Linux SOL_SOCKET / SO_PEERCRED returns pid, uid, gid as native ints.
-                var credentials = new byte[12];
-                socket.GetSocketOption(SocketOptionLevel.Socket, (SocketOptionName)17, credentials);
-                if (BitConverter.ToInt32(credentials, 0) == compositorPid)
+                var credentialSize = 12u;
+                if (GetSocketOption(socket.Handle.ToInt32(), 1, 17, out var credentials, ref credentialSize) == 0
+                    && credentialSize == 12 && credentials.Pid == compositorPid)
                     return new XDisplay($":{number}", null);
             }
             catch (SocketException) { }
@@ -98,5 +99,18 @@ internal static class GraphicalSessionEnvironment
         }
         return null;
     }
+
+
+    [StructLayout(LayoutKind.Sequential)]
+    private struct PeerCredentials
+    {
+        public int Pid;
+        public uint Uid;
+        public uint Gid;
+    }
+
+    [DllImport("libc", EntryPoint = "getsockopt", SetLastError = true)]
+    private static extern int GetSocketOption(int socket, int level, int option,
+        out PeerCredentials credentials, ref uint length);
 
 }

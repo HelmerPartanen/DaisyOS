@@ -58,7 +58,7 @@ public sealed class SelectionControlTests
             Assert.True(Part<Control>(check, "SelectionGlyph").IsVisible);
             await Task.Delay(200);
             using (window.CaptureRenderedFrame()) { }
-            Assert.True(check.TryFindResource("ActionPrimaryBrush", check.ActualThemeVariant, out var accent));
+            Assert.True(check.TryFindResource("ActionSecondaryBrush", check.ActualThemeVariant, out var accent));
             Assert.Equal(((ISolidColorBrush)accent!).Color, ((ISolidColorBrush)Part<Border>(check, "SelectionIndicator").Background!).Color);
             first.Focus();
             Assert.True(check.Focus(NavigationMethod.Tab));
@@ -107,8 +107,8 @@ public sealed class SelectionControlTests
             foreach (var choice in new ToggleButton[] { check, radio })
             {
                 var indicator = Part<Border>(choice, "SelectionIndicator");
-                choice.TryFindResource("SurfaceSunkenBrush", choice.ActualThemeVariant, out var normal);
-                choice.TryFindResource("SurfaceInputHoverBrush", choice.ActualThemeVariant, out var hover);
+                choice.TryFindResource(choice is CheckBox ? "ActionSecondaryBrush" : "SurfaceSunkenBrush", choice.ActualThemeVariant, out var normal);
+                choice.TryFindResource(choice is CheckBox ? "ActionSecondaryHoverBrush" : "SurfaceInputHoverBrush", choice.ActualThemeVariant, out var hover);
                 var a = ((ISolidColorBrush)normal!).Color;
                 var b = ((ISolidColorBrush)hover!).Color;
                 foreach (var over in new[] { true, false, true, false })
@@ -126,6 +126,58 @@ public sealed class SelectionControlTests
                     }
                 }
             }
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task PrimaryLabelsAreWhiteAndCheckboxSurfacesMatchComboBoxes(bool dark)
+    {
+        var primary = new Button { Content = "Open", Classes = { "Primary" } };
+        var check = new CheckBox { Content = "Verified only" };
+        var combo = new ComboBox { ItemsSource = new[] { "All applications" }, SelectedIndex = 0 };
+        var window = new Window
+        {
+            Width = 320, Height = 240,
+            RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light,
+            Content = new StackPanel { Margin = new Thickness(16), Spacing = 12,
+                Children = { primary, check, combo } }
+        };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            Assert.Equal(Colors.White, ((ISolidColorBrush)primary.Foreground!).Color);
+            Assert.Equal(Colors.White, ((ISolidColorBrush)primary.GetVisualDescendants()
+                .OfType<TextBlock>().Single(text => text.Text == "Open").Foreground!).Color);
+            var indicator = Part<Border>(check, "SelectionIndicator");
+            var surface = Part<Border>(combo, "Background");
+            foreach (var selected in new[] { false, true, false })
+            {
+                check.IsChecked = selected;
+                window.MouseMove(new Point(310, 230));
+                await Task.Delay(250);
+                using (window.CaptureRenderedFrame()) { }
+                Assert.Equal(((ISolidColorBrush)surface.Background!).Color, ((ISolidColorBrush)indicator.Background!).Color);
+                Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, ((ISolidColorBrush)indicator.BorderBrush!).Color);
+                Assert.Equal(surface.BorderThickness, indicator.BorderThickness);
+                window.MouseMove(check.TranslatePoint(new Point(12, 16), window)!.Value);
+                await Task.Delay(250);
+                using (window.CaptureRenderedFrame()) { }
+                var hoverBackground = ((ISolidColorBrush)indicator.Background!).Color;
+                var hoverBorder = ((ISolidColorBrush)indicator.BorderBrush!).Color;
+                window.MouseMove(combo.TranslatePoint(new Point(12, 16), window)!.Value);
+                await Task.Delay(250);
+                using (window.CaptureRenderedFrame()) { }
+                Assert.Equal(((ISolidColorBrush)surface.Background!).Color, hoverBackground);
+                Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, hoverBorder);
+            }
+            window.MouseMove(new Point(310, 230));
+            await Task.Delay(250);
+            using var frame = window.CaptureRenderedFrame();
+            frame!.Save($"/tmp/daisy-primary-checkbox-{dark}.png");
         }
         finally { window.Close(); }
     }

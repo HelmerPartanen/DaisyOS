@@ -1,3 +1,4 @@
+using System.Net.Sockets;
 using DaisyOS.System.Processes;
 using Xunit;
 
@@ -48,9 +49,9 @@ public sealed class GraphicalSessionEnvironmentTests
         Directory.CreateDirectory(root);
         try
         {
-            using var listener = new System.Net.Sockets.Socket(System.Net.Sockets.AddressFamily.Unix,
-                System.Net.Sockets.SocketType.Stream, System.Net.Sockets.ProtocolType.Unspecified);
-            listener.Bind(new System.Net.Sockets.UnixDomainSocketEndPoint(Path.Combine(root, "X7")));
+            using var listener = new Socket(AddressFamily.Unix,
+                SocketType.Stream, ProtocolType.Unspecified);
+            listener.Bind(new UnixDomainSocketEndPoint(Path.Combine(root, "X7")));
             listener.Listen(4);
             Assert.Null(GraphicalSessionEnvironment.ResolveListenerDisplay(-1, root));
             Assert.Equal(":7", GraphicalSessionEnvironment.ResolveListenerDisplay(Environment.ProcessId, root)?.Display);
