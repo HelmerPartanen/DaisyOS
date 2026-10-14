@@ -16,6 +16,8 @@
 #include <QDBusPendingReply>
 #include <QDBusVariant>
 #include <QDir>
+#include <QFile>
+#include <QFileInfo>
 #include <QFutureWatcher>
 #include <QGuiApplication>
 #include <QJsonArray>
@@ -31,7 +33,108 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
+
+static QStringList procArgs(const QString &pid) {
+  QFile f("/proc/" + pid + "/cmdline");
+  if (!f.open(QIODevice::ReadOnly))
+    return {};
+  QStringList out;
+  for (const auto &part : f.readAll().split('\0'))
+    if (!part.isEmpty())
+      out << QString::fromLocal8Bit(part);
+  return out;
+}
+
+// Finds the XWayland display owned by the compositor serving WAYLAND_DISPLAY.
+// The user manager environment lacks DISPLAY, and KWin may restart XWayland
+// on another number, so this is resolved per launch.
+static void exportXWaylandDisplay() {
+  const auto wayland = qEnvironmentVariable("WAYLAND_DISPLAY");
+  if (wayland.isEmpty())
+    return;
+  const auto pids =
+      QDir("/proc").entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+  QString compositor;
+  for (const auto &pid : pids) {
+    bool ok = false;
+    pid.toInt(&ok);
+    if (!ok)
+      continue;
+    const auto args = procArgs(pid);
+    if (args.isEmpty() || QFileInfo(args[0]).fileName() != "kwin_wayland")
+      continue;
+    const auto i = args.indexOf("--socket");
+    if (i >= 0 && i + 1 < args.size() && args[i + 1] == wayland) {
+      compositor = pid;
+      break;
+    }
+  }
+  if (compositor.isEmpty())
+    return;
+  QString display, authority;
+  for (const auto &pid : pids) {
+    QFile status("/proc/" + pid + "/status");
+    if (!status.open(QIODevice::ReadOnly))
+      continue;
+    bool child = false;
+    for (const auto &line : status.readAll().split('\n'))
+      if (line.startsWith("PPid:")) {
+        child = line.mid(5).trimmed() == compositor.toLatin1();
+        break;
+      }
+    if (!child)
+      continue;
+    const auto args = procArgs(pid);
+    if (args.size() < 2 || QFileInfo(args[0]).fileName() != "Xwayland")
+      continue;
+    display = args[1];
+    const auto a = args.indexOf("-auth");
+    if (a >= 0 && a + 1 < args.size())
+      authority = args[a + 1];
+    break;
+  }
+  if (display.isEmpty()) {
+    // Lazy XWayland: KWin owns the listener; SO_PEERCRED identifies it.
+    const auto sockets =
+        QDir("/tmp/.X11-unix").entryList({"X*"}, QDir::System);
+    for (const auto &name : sockets) {
+      bool ok = false;
+      const int number = name.mid(1).toInt(&ok);
+      if (!ok)
+        continue;
+      int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+      if (fd < 0)
+        continue;
+      sockaddr_un addr{};
+      addr.sun_family = AF_UNIX;
+      const auto path = ("/tmp/.X11-unix/" + name).toLocal8Bit();
+      qstrncpy(addr.sun_path, path.constData(), sizeof(addr.sun_path));
+      ucred cred{};
+      socklen_t len = sizeof(cred);
+      const bool match =
+          ::connect(fd, reinterpret_cast<sockaddr *>(&addr), sizeof(addr)) ==
+              0 &&
+          ::getsockopt(fd, SOL_SOCKET, SO_PEERCRED, &cred, &len) == 0 &&
+          QString::number(cred.pid) == compositor;
+      ::close(fd);
+      if (match) {
+        display = QStringLiteral(":%1").arg(number);
+        break;
+      }
+    }
+  }
+  if (display.isEmpty())
+    return;
+  qputenv("DISPLAY", display.toLocal8Bit());
+  // An inherited Xauthority may belong to a different session.
+  if (authority.isEmpty())
+    qunsetenv("XAUTHORITY");
+  else
+    qputenv("XAUTHORITY", authority.toLocal8Bit());
+}
 
 static qint64 now() {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
@@ -239,6 +342,7 @@ class Launcher : public QObject, protected QDBusContext {
         w->deleteLater();
       });
     } else {
+      exportXWaylandDisplay();
       auto job = r->action.isEmpty() ? new KIO::ApplicationLauncherJob(app)
                                      : new KIO::ApplicationLauncherJob(action);
       QList<QUrl> urls;
