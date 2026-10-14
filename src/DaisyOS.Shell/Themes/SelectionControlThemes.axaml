@@ -69,9 +69,9 @@
                   <Grid>
                     <Path x:Name="SelectionGlyph" IsVisible="False" Width="12" Height="12"
                           Data="M 1,6 L 4.5,9.5 L 11,2.5" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
-                          Stroke="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                          Stroke="{DynamicResource ContentOnActionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                     <Border x:Name="IndeterminateGlyph" IsVisible="False" Width="10" Height="2" CornerRadius="1"
-                            Background="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                            Background="{DynamicResource ContentOnActionBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
                   </Grid>
               </Border>
             </Grid>
@@ -84,17 +84,25 @@
         </Border>
       </ControlTemplate>
     </Setter>
-    <!-- Match the ComboBox surface in every toggle state; only the glyph changes. -->
-    <Style Selector="^:checked /template/ Border#SelectionIndicator, ^:indeterminate /template/ Border#SelectionIndicator">
-      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
-    </Style>
-    <Style Selector="^:pointerover /template/ Border#SelectionIndicator, ^:checked:pointerover /template/ Border#SelectionIndicator, ^:indeterminate:pointerover /template/ Border#SelectionIndicator">
+    <!-- Unchecked surfaces match ComboBox; selected surfaces retain the blue accent. -->
+    <Style Selector="^:pointerover /template/ Border#SelectionIndicator">
       <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
     </Style>
-    <Style Selector="^:pressed /template/ Border#SelectionIndicator, ^:checked:pressed /template/ Border#SelectionIndicator, ^:indeterminate:pressed /template/ Border#SelectionIndicator">
+    <Style Selector="^:pressed /template/ Border#SelectionIndicator">
       <Setter Property="Background" Value="{DynamicResource ActionSecondaryPressedBrush}" />
+    </Style>
+    <Style Selector="^:checked /template/ Border#SelectionIndicator, ^:indeterminate /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryBrush}" />
+    </Style>
+    <Style Selector="^:checked:pointerover /template/ Border#SelectionIndicator, ^:indeterminate:pointerover /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryHoverBrush}" />
+    </Style>
+    <Style Selector="^:checked:pressed /template/ Border#SelectionIndicator, ^:indeterminate:pressed /template/ Border#SelectionIndicator">
+      <Setter Property="Background" Value="{DynamicResource ActionPrimaryPressedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryPressedBrush}" />
     </Style>
     <Style Selector="^:indeterminate /template/ Border#IndeterminateGlyph">
       <Setter Property="IsVisible" Value="True" />

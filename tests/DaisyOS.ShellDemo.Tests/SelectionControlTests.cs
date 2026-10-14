@@ -58,7 +58,7 @@ public sealed class SelectionControlTests
             Assert.True(Part<Control>(check, "SelectionGlyph").IsVisible);
             await Task.Delay(200);
             using (window.CaptureRenderedFrame()) { }
-            Assert.True(check.TryFindResource("ActionSecondaryBrush", check.ActualThemeVariant, out var accent));
+            Assert.True(check.TryFindResource("ActionPrimaryBrush", check.ActualThemeVariant, out var accent));
             Assert.Equal(((ISolidColorBrush)accent!).Color, ((ISolidColorBrush)Part<Border>(check, "SelectionIndicator").Background!).Color);
             first.Focus();
             Assert.True(check.Focus(NavigationMethod.Tab));
@@ -154,28 +154,28 @@ public sealed class SelectionControlTests
                 .OfType<TextBlock>().Single(text => text.Text == "Open").Foreground!).Color);
             var indicator = Part<Border>(check, "SelectionIndicator");
             var surface = Part<Border>(combo, "Background");
-            foreach (var selected in new[] { false, true, false })
-            {
-                check.IsChecked = selected;
-                window.MouseMove(new Point(310, 230));
-                await Task.Delay(250);
-                using (window.CaptureRenderedFrame()) { }
-                Assert.Equal(((ISolidColorBrush)surface.Background!).Color, ((ISolidColorBrush)indicator.Background!).Color);
-                Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, ((ISolidColorBrush)indicator.BorderBrush!).Color);
-                Assert.Equal(surface.BorderThickness, indicator.BorderThickness);
-                window.MouseMove(check.TranslatePoint(new Point(12, 16), window)!.Value);
-                await Task.Delay(250);
-                using (window.CaptureRenderedFrame()) { }
-                var hoverBackground = ((ISolidColorBrush)indicator.Background!).Color;
-                var hoverBorder = ((ISolidColorBrush)indicator.BorderBrush!).Color;
-                window.MouseMove(combo.TranslatePoint(new Point(12, 16), window)!.Value);
-                await Task.Delay(250);
-                using (window.CaptureRenderedFrame()) { }
-                Assert.Equal(((ISolidColorBrush)surface.Background!).Color, hoverBackground);
-                Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, hoverBorder);
-            }
             window.MouseMove(new Point(310, 230));
             await Task.Delay(250);
+            using (window.CaptureRenderedFrame()) { }
+            Assert.Equal(((ISolidColorBrush)surface.Background!).Color, ((ISolidColorBrush)indicator.Background!).Color);
+            Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, ((ISolidColorBrush)indicator.BorderBrush!).Color);
+            Assert.Equal(surface.BorderThickness, indicator.BorderThickness);
+            window.MouseMove(check.TranslatePoint(new Point(12, 16), window)!.Value);
+            await Task.Delay(250);
+            using (window.CaptureRenderedFrame()) { }
+            var hoverBackground = ((ISolidColorBrush)indicator.Background!).Color;
+            var hoverBorder = ((ISolidColorBrush)indicator.BorderBrush!).Color;
+            window.MouseMove(combo.TranslatePoint(new Point(12, 16), window)!.Value);
+            await Task.Delay(250);
+            using (window.CaptureRenderedFrame()) { }
+            Assert.Equal(((ISolidColorBrush)surface.Background!).Color, hoverBackground);
+            Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, hoverBorder);
+            check.IsChecked = true;
+            window.MouseMove(new Point(310, 230));
+            await Task.Delay(250);
+            using (window.CaptureRenderedFrame()) { }
+            Assert.True(check.TryFindResource("ActionPrimaryBrush", check.ActualThemeVariant, out var accent));
+            Assert.Equal(((ISolidColorBrush)accent!).Color, ((ISolidColorBrush)indicator.Background!).Color);
             using var frame = window.CaptureRenderedFrame();
             frame!.Save($"/tmp/daisy-primary-checkbox-{dark}.png");
         }
