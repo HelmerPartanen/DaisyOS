@@ -69,7 +69,6 @@ internal static class GraphicalSessionEnvironment
                 // SO_PEERCRED still identifies the owner of its lazy X11 listener.
                 if (procRoot == "/proc" && ResolveListenerDisplay(int.Parse(Path.GetFileName(directory))) is { } listener)
                     return listener;
-
             }
         }
         catch (IOException) { }
