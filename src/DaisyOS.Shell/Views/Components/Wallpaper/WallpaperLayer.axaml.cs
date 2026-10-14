@@ -28,6 +28,7 @@ public partial class WallpaperLayer : UserControl
     private const int MaximumPresentationWidth = 7680;
     private const int MaximumPresentationHeight = 4320;
     private const long MaximumPresentationBytes = (long)MaximumPresentationWidth * MaximumPresentationHeight * 4;
+    private readonly DispatcherTimer _dynamicImageTimer = new() { Interval = TimeSpan.FromMinutes(1) };
     private readonly DispatcherTimer _videoFrameTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly TranslateTransform _parallaxTranslation = new();
     private readonly SemaphoreSlim _refreshGate = new(1, 1);
@@ -119,6 +120,8 @@ public partial class WallpaperLayer : UserControl
         Unloaded += OnUnloaded;
         SizeChanged += (_, _) => OnSizeChanged();
         _videoFrameTimer.Tick += OnVideoFrameTick;
+        _dynamicImageTimer.Tick += (_, _) => RefreshDynamicImage();
+        ActualThemeVariantChanged += (_, _) => RefreshDynamicImage();
     }
 
     private Window? _attachedWindow;
@@ -187,6 +190,7 @@ public partial class WallpaperLayer : UserControl
             }
         }
 
+        _dynamicImageTimer.Start();
         PropertyChanged += OnLayerPropertyChanged;
         UpdateVisibilityAndPauseState();
 
@@ -203,6 +207,7 @@ public partial class WallpaperLayer : UserControl
     private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {
         _isLoaded = false;
+        _dynamicImageTimer.Stop();
         Interlocked.Increment(ref _refreshRequestVersion);
         _videoFrameTimer.Stop();
         if (_app is not null)
@@ -334,6 +339,14 @@ public partial class WallpaperLayer : UserControl
         RequestWallpaperRefresh();
     }
 
+    private void RefreshDynamicImage()
+    {
+        if (_loadGate.CurrentCount == 0) return;
+        var source = _presentedWallpaperUri ?? _requestedWallpaperUri;
+        if (_isLoaded && source is not null && WallpaperFileTypes.IsHeic(WallpaperSource.ResolveWallpaperPath(source)) && HasUsablePresentationSize())
+            _ = LoadWallpaperAsync(source);
+    }
+
     private void RequestWallpaperLoad(string wallpaperUri)
     {
         if (string.Equals(_presentedWallpaperUri, wallpaperUri, StringComparison.Ordinal) &&
@@ -451,7 +464,16 @@ public partial class WallpaperLayer : UserControl
                 return;
             }
 
-            var imageCandidate = new WallpaperImageService(wallpaperUri);
+            var imagePath = WallpaperFileTypes.IsHeic(resolvedPath)
+                ? await HeicWallpaper.ResolveFrameAsync(resolvedPath, ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark, DateTimeOffset.Now)
+                : wallpaperUri;
+            if (!_isLoaded || requestVersion != Volatile.Read(ref _refreshRequestVersion)) return;
+            if (_wallpaperImageService?.WallpaperPath == imagePath && _presentedWallpaperUri == wallpaperUri)
+            {
+                CompletePresentation(wallpaperUri, true);
+                return;
+            }
+            var imageCandidate = new WallpaperImageService(imagePath);
             var initialMetrics = GetWallpaperMetrics();
             var bitmap = await imageCandidate.GetWallpaperAsync(initialMetrics);
             if (bitmap is null)

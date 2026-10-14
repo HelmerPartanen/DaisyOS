@@ -6242,4 +6242,8 @@ Used by: DaisyLaunch</comment>
     <value>Kohdetta ei voitu nimetä uudelleen</value>
     <comment>Source: Couldn’t rename that item</comment>
   </data>
+  <data name="Loc_1011E1E878A4" xml:space="preserve">
+    <value>Alareunan mediawidget</value>
+    <comment>Source: Bottom media widget</comment>
+  </data>
 </root>

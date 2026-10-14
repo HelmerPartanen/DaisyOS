@@ -11,13 +11,6 @@
     VerticalAlignment="Bottom"
     Margin="6,6,0,6">
   <UserControl.Styles>
-    <Style Selector="widgets|MediaWidget">
-      <Setter Property="Transitions">
-        <Transitions>
-          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
-        </Transitions>
-      </Setter>
-    </Style>
     <Style Selector="Border.spectrumBar">
       <Setter Property="Background" Value="{DynamicResource ContentPrimaryBrush}" />
       <Setter Property="Opacity" Value="0.6" />

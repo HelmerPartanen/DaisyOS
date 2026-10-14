@@ -99,10 +99,13 @@ public partial class TaskbarView
         _previewShown = true;
     }
 
+    internal bool HasHoverPreview(Control owner) => owner is Button button &&
+        TaskbarPreviewState.IsAvailable && PreviewWindows(button).Length > 0;
+
     private static void RestorePreviewTooltip(Button button)
     {
-        ToolTip.SetShowDelay(button, 400);
-        ToolTip.SetBetweenShowDelay(button, 100);
+        ToolTip.SetShowDelay(button, int.MaxValue);
+        ToolTip.SetBetweenShowDelay(button, -1);
     }
 
     private void HideHoverPreview()

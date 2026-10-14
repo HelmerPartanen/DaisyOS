@@ -59,6 +59,9 @@ internal static class SolarSchedule
     private const double DefaultLatitude = 0;
     private const double DefaultLongitude = 0;
 
+    internal static (double Latitude, double Longitude) LocalCoordinates() =>
+        TryReadZoneLocation(TimeZoneInfo.Local.Id) ?? (DefaultLatitude, DefaultLongitude);
+
     public static SolarDaySchedule ForLocalTimeZone(DateTimeOffset time)
     {
         var zone = TimeZoneInfo.Local;

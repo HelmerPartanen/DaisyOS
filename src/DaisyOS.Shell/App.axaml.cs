@@ -177,6 +177,7 @@ public partial class App : Application
     public bool ReduceMotionEnabled => _appearanceSettings.ReduceMotion;
     public bool TaskbarAutoHideEnabled => _appearanceSettings.TaskbarAutoHide;
     public bool SystemBarAutoHideEnabled => _appearanceSettings.SystemBarAutoHide;
+    public bool MediaWidgetAutoHideEnabled => _appearanceSettings.MediaWidgetAutoHide;
     public string? CurrentCursorThemeId => _appearanceSettings.CursorThemeId;
     public int CurrentCursorSize => _appearanceSettings.CursorSize;
     public string CurrentLanguageTag => SystemLanguages.Resolve(_appearanceSettings.LanguageTag).Tag;
@@ -496,6 +497,9 @@ public partial class App : Application
         _nativeShellSurfaces.Add(bottomEdgeSensorSurface);
         _nativeShellSurfaces.Add(launcherSurface);
         _nativeShellSurfaces.Add(systemFlyoutSurface);
+        var tooltipSurface = backend.CreateWindow(
+            LayerShellSurfaceOptions.BottomTooltipOverlay(), shell.DetachBottomTooltipsForNativeOverlay());
+        _nativeShellSurfaces.Add(tooltipSurface);
         _nativeShellSurfaces.Add(toastSurface);
         _nativeShellSurfaces.Add(consoleSurface);
         _nativeShellSurfaces.Add(metricsSurface);
@@ -635,6 +639,8 @@ public partial class App : Application
         panelSurface.Show();
         bottomEdgeSensorSurface.Show();
         toastSurface.Show();
+        tooltipSurface.Show();
+        LayerShellWindow.SetInputPassthrough(tooltipSurface, true);
         launcherSurface.Show();
         systemFlyoutSurface.Show();
         // Map infrequently used full-output overlays on first use. Mapping
@@ -929,7 +935,7 @@ public partial class App : Application
     {
         if (_useDesktopSettings) { await ApplyDesktopSettingAsync("taskbar-auto-hide", enabled.ToString()); return; }
         _appearanceSettings.TaskbarAutoHide = enabled;
-        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide);
+        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
         await PersistAppearanceAsync();
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -938,7 +944,16 @@ public partial class App : Application
     {
         if (_useDesktopSettings) { await ApplyDesktopSettingAsync("systembar-auto-hide", enabled.ToString()); return; }
         _appearanceSettings.SystemBarAutoHide = enabled;
-        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide);
+        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
+        await PersistAppearanceAsync();
+        AppearanceChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task SetMediaWidgetAutoHideAsync(bool enabled)
+    {
+        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("media-widget-auto-hide", enabled.ToString()); return; }
+        _appearanceSettings.MediaWidgetAutoHide = enabled;
+        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, enabled);
         await PersistAppearanceAsync();
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -1176,7 +1191,7 @@ public partial class App : Application
     {
         _shellView = shell;
         shell.BottomChromeStateChanged += (_, _) => ApplyNativeBottomChromeState(shell);
-        shell.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide);
+        shell.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
         shell.Taskbar.ApplyOrder(SessionState.DockOrder);
         shell.Taskbar.OrderChanged += (_, order) => SessionState.SetDockOrder(order);
         shell.Taskbar.StartButtonClicked += (_, _) => ToggleLauncher();
@@ -2445,12 +2460,16 @@ public partial class App : Application
             return;
         }
 
-        if (WallpaperFileTypes.IsVideo(safeWallpaperUri) && _shellView?.ShellWallpaper is { } desktopWallpaper)
+        if ((WallpaperFileTypes.IsVideo(safeWallpaperUri) || WallpaperFileTypes.IsHeic(safeWallpaperUri)) &&
+            _shellView?.ShellWallpaper is { } desktopWallpaper)
         {
-            var presented = await desktopWallpaper.TryPresentWallpaperAsync(safeWallpaperUri, TimeSpan.FromSeconds(10));
+            var presented = await desktopWallpaper.TryPresentWallpaperAsync(safeWallpaperUri,
+                TimeSpan.FromSeconds(WallpaperFileTypes.IsHeic(safeWallpaperUri) ? 30 : 10));
             if (!presented)
             {
-                Feedback.Show(Loc.Get("The video opened, but the desktop could not present its first frame. Your wallpaper is unchanged."));
+                Feedback.Show(WallpaperFileTypes.IsHeic(safeWallpaperUri)
+                    ? Loc.Get("This image can’t be used as a wallpaper. Your current wallpaper is still active.")
+                    : Loc.Get("The video opened, but the desktop could not present its first frame. Your wallpaper is unchanged."));
                 return;
             }
         }
@@ -2493,12 +2512,14 @@ public partial class App : Application
         TopLevel? requester,
         bool allowMultiple,
         IReadOnlyList<string>? initialSelection = null,
-        bool allowFolderContents = false)
+        bool allowFolderContents = false,
+        bool allowHeic = false)
     {
         var existing = initialSelection?.Where(File.Exists).ToArray() ?? [];
         return await PickFilesAsync(requester, new DaisyFilePickerOptions(
             allowMultiple ? "Choose photos" : "Choose background photo", allowMultiple, allowFolderContents,
-            WallpaperFileTypes.ImagePatterns.Select(pattern => pattern.TrimStart('*')).ToArray(),
+            WallpaperFileTypes.ImagePatterns.Where(pattern => allowHeic || !WallpaperFileTypes.IsHeic(pattern))
+                .Select(pattern => pattern.TrimStart('*')).ToArray(),
             existing, existing.Select(Path.GetDirectoryName).FirstOrDefault(Directory.Exists), "photo", "photos")) ?? existing;
     }
 

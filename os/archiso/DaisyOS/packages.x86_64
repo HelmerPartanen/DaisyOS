@@ -47,3 +47,7 @@ power-profiles-daemon
 p7zip
 unzip
 zip
+
+# HEIC/HEIF wallpapers, including HEVC dynamic desktop images
+libheif
+libde265

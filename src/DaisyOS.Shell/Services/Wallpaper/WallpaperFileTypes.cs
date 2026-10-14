@@ -5,7 +5,7 @@ public static class WallpaperFileTypes
 {
     public static readonly string[] ImagePatterns =
     [
-        "*.jpg", "*.jpeg", "*.png", "*.webp", "*.bmp", "*.gif"
+        "*.jpg", "*.jpeg", "*.png", "*.webp", "*.bmp", "*.gif", "*.heic", "*.heif"
     ];
 
     public static readonly string[] VideoPatterns =
@@ -15,9 +15,11 @@ public static class WallpaperFileTypes
 
     public static readonly string[] WallpaperPatterns = [.. ImagePatterns, .. VideoPatterns];
 
+    public static bool IsHeic(string? path) => Path.GetExtension(path)?.ToLowerInvariant() is ".heic" or ".heif";
+
     public static bool IsVideo(string? path) =>
         Path.GetExtension(path)?.ToLowerInvariant() is ".mp4" or ".webm" or ".mkv" or ".mov" or ".m4v" or ".avi";
 
     public static bool IsImage(string? path) =>
-        Path.GetExtension(path)?.ToLowerInvariant() is ".jpg" or ".jpeg" or ".png" or ".webp" or ".bmp" or ".gif";
+        Path.GetExtension(path)?.ToLowerInvariant() is ".jpg" or ".jpeg" or ".png" or ".webp" or ".bmp" or ".gif" or ".heic" or ".heif";
 }

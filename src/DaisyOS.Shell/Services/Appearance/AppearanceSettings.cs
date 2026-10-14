@@ -36,4 +36,6 @@ public sealed class AppearanceSettings
     public bool TaskbarAutoHide { get; set; }
 
     public bool SystemBarAutoHide { get; set; }
+
+    public bool MediaWidgetAutoHide { get; set; }
 }

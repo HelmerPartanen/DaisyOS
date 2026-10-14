@@ -54,6 +54,10 @@ namespace DaisyOS.Shell.Views
         private Border? _nativeFullscreenBottomScrim;
         private bool _taskbarAutoHide;
         private bool _systemBarAutoHide;
+        private bool _mediaAutoHide;
+        private bool _mediaRevealed;
+        private readonly DispatcherTimer _mediaAutoHideTimer = new() { Interval = TimeSpan.FromMilliseconds(1100) };
+        private readonly BottomChromeTooltips _bottomTooltips = new();
         private bool _taskbarRevealed;
         private bool _systemBarRevealed;
         private bool _externalFullscreenActive;
@@ -74,6 +78,18 @@ namespace DaisyOS.Shell.Views
             _controllerService = controllerService ?? throw new ArgumentNullException(nameof(controllerService));
             _controllerInputService = controllerInputService ?? throw new ArgumentNullException(nameof(controllerInputService));
             InitializeComponent();
+            DesktopExperience.Children.Add(_bottomTooltips);
+            _bottomTooltips.Attach(TaskbarContent, TaskbarContent.HasHoverPreview);
+            _bottomTooltips.Attach(SystemBarContent);
+            _bottomTooltips.Attach(MediaWidgetContent);
+            MediaWidgetContent.PointerEntered += (_, _) => _mediaAutoHideTimer.Stop();
+            MediaWidgetContent.PointerExited += (_, _) => ScheduleMediaAutoHide();
+            MediaWidgetContent.ContextMenuVisibilityChanged += (_, visible) =>
+            {
+                if (visible) _mediaAutoHideTimer.Stop();
+                else ScheduleMediaAutoHide();
+            };
+            _mediaAutoHideTimer.Tick += (_, _) => HideMediaIfUnhovered();
             ActualThemeVariantChanged += (_, _) => UpdateNativeFullscreenBottomScrimBrush();
             ConsoleSettings.SetInputService(_controllerInputService);
             AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -130,52 +146,19 @@ namespace DaisyOS.Shell.Views
             MetricsPanel.PanelVisibilityChanged += (_, visible) => MetricsSurfaceVisibilityChanged?.Invoke(this, visible);
 
             Desktop.ViewModel.BottomMediaWidgetVisibilityChanged += (_, visible) =>
-                SetBottomMediaWidgetVisible(visible && !_externalFullscreenActive && IsTaskbarVisibleByPreference, animate: true);
-            SetBottomMediaWidgetVisible(Desktop.ViewModel.BottomMediaWidgetVisible, animate: false);
+            {
+                if (!visible) { _mediaRevealed = false; _mediaAutoHideTimer.Stop(); }
+                ApplyBottomBarVisibility();
+            };
+            SetBottomMediaWidgetVisible(Desktop.ViewModel.BottomMediaWidgetVisible, immediate: true);
         }
 
-        private CancellationTokenSource? _bottomMediaFadeCancellation;
-
-        private void SetBottomMediaWidgetVisible(bool visible, bool animate = true)
+        private void SetBottomMediaWidgetVisible(bool visible, bool immediate = false)
         {
-            _bottomMediaFadeCancellation?.Cancel();
-            _bottomMediaFadeCancellation?.Dispose();
-            _bottomMediaFadeCancellation = null;
-
-            if (!animate)
-            {
-                MediaWidgetContent.Opacity = visible ? 1 : 0;
-                MediaWidgetContent.IsVisible = visible;
-                return;
-            }
-
-            if (visible)
-            {
-                MediaWidgetContent.IsVisible = true;
-                MediaWidgetContent.Opacity = 0;
-                Dispatcher.UIThread.Post(() =>
-                {
-                    MediaWidgetContent.Opacity = 1;
-                }, DispatcherPriority.Render);
-            }
-            else
-            {
-                MediaWidgetContent.Opacity = 0;
-                var cts = _bottomMediaFadeCancellation = new CancellationTokenSource();
-                Task.Delay(200, cts.Token).ContinueWith(_ =>
-                {
-                    if (!cts.IsCancellationRequested)
-                    {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            if (!cts.IsCancellationRequested)
-                            {
-                                MediaWidgetContent.IsVisible = false;
-                            }
-                        });
-                    }
-                }, TaskScheduler.Default);
-            }
+            _ = GuiMotion.SetVisibleAsync(MediaWidgetContent,
+                MediaWidgetContent.FindControl<Border>("MediaFrame")!, visible,
+                NotifyBottomChromeStateChanged, immediate, GuiMotion.ShellSlideDistance,
+                GuiMotion.ShellSlideDuration(this, visible));
         }
 
         private readonly ShellMetricsMonitor _metricsMonitor = new();
@@ -184,10 +167,11 @@ namespace DaisyOS.Shell.Views
         public SystemBarView SystemBar => SystemBarContent;
         public DaisyOS.Shell.Views.Components.Widgets.MediaWidget MediaWidget => MediaWidgetContent;
         public event EventHandler? BottomChromeStateChanged;
-        public bool CanReleaseBottomWorkArea => _taskbarAutoHide && _systemBarAutoHide;
+        public bool CanReleaseBottomWorkArea => _taskbarAutoHide && _systemBarAutoHide &&
+            (_mediaAutoHide || !Desktop.ViewModel.BottomMediaWidgetVisible);
         public bool IsBottomPanelInputPassthrough => CanReleaseBottomWorkArea &&
             !TaskbarContent.IsVisible && !SystemBarContent.IsVisible && !MediaWidgetContent.IsVisible;
-        public bool IsBottomEdgeSensorEnabled => !_externalFullscreenActive && (_taskbarAutoHide || _systemBarAutoHide);
+        public bool IsBottomEdgeSensorEnabled => !_externalFullscreenActive && (_taskbarAutoHide || _systemBarAutoHide || (_mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible));
         public bool IsExternalFullscreenActive => _externalFullscreenActive;
 
         private bool IsTaskbarVisibleByPreference => !_taskbarAutoHide || _taskbarRevealed || IsLauncherVisible;
@@ -206,6 +190,9 @@ namespace DaisyOS.Shell.Views
                 _systemBarAutoHideTimer.Stop();
                 _taskbarRevealed = false;
                 _systemBarRevealed = false;
+                _mediaRevealed = false;
+                _mediaAutoHideTimer.Stop();
+                _bottomTooltips.Dismiss();
             }
             ApplyBottomBarVisibility(immediate: isFullScreen);
             if (_nativeFullscreenBottomScrim is not null)
@@ -223,11 +210,14 @@ namespace DaisyOS.Shell.Views
             }
         }
 
-        public void SetBottomBarAutoHide(bool taskbarAutoHide, bool systemBarAutoHide)
+        public void SetBottomBarAutoHide(bool taskbarAutoHide, bool systemBarAutoHide, bool mediaAutoHide = false)
         {
             var initialConfiguration = !_bottomBarVisibilityInitialized;
             _taskbarAutoHide = taskbarAutoHide;
             _systemBarAutoHide = systemBarAutoHide;
+            _mediaAutoHide = mediaAutoHide;
+            _mediaRevealed = false;
+            _mediaAutoHideTimer.Stop();
             UpdateLauncherBottomInset();
             _taskbarRevealed = false;
             _systemBarRevealed = false;
@@ -241,6 +231,15 @@ namespace DaisyOS.Shell.Views
         {
             if (!IsBottomEdgeSensorEnabled || outputWidth <= 0) return;
             var position = pointerX / outputWidth;
+            if (_mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible && position < 0.30)
+            {
+                if (!_mediaRevealed)
+                {
+                    _mediaRevealed = true;
+                    ApplyBottomBarVisibility();
+                }
+                ScheduleMediaAutoHide();
+            }
             if (_taskbarAutoHide && position >= 0.30 && position <= 0.72)
                 RevealTaskbarTemporarily();
             if (_systemBarAutoHide && position >= 0.80)
@@ -301,11 +300,28 @@ namespace DaisyOS.Shell.Views
                 immediate,
                 GuiMotion.ShellSlideDistance,
                 GuiMotion.ShellSlideDuration(this, systemBarVisible));
-            SetBottomMediaWidgetVisible(!_externalFullscreenActive && Desktop.ViewModel.BottomMediaWidgetVisible && taskbarVisible, animate: false);
+            SetBottomMediaWidgetVisible(!_externalFullscreenActive && Desktop.ViewModel.BottomMediaWidgetVisible &&
+                (!_mediaAutoHide || _mediaRevealed), immediate);
             NotifyBottomChromeStateChanged();
         }
 
         private void NotifyBottomChromeStateChanged() => BottomChromeStateChanged?.Invoke(this, EventArgs.Empty);
+
+        private void ScheduleMediaAutoHide()
+        {
+            _mediaAutoHideTimer.Stop();
+            if (_mediaAutoHide && _mediaRevealed && !_externalFullscreenActive && !MediaWidgetContent.IsContextMenuVisible)
+                _mediaAutoHideTimer.Start();
+        }
+
+        private void HideMediaIfUnhovered()
+        {
+            _mediaAutoHideTimer.Stop();
+            if (!_mediaAutoHide || !_mediaRevealed || _externalFullscreenActive ||
+                MediaWidgetContent.IsPointerOver || MediaWidgetContent.IsContextMenuVisible) return;
+            _mediaRevealed = false;
+            ApplyBottomBarVisibility();
+        }
 
         private void ScheduleTaskbarAutoHide()
         {
@@ -359,6 +375,12 @@ namespace DaisyOS.Shell.Views
             if (ShellWallpaper.Parent is Panel parent)
                 parent.Children.Remove(ShellWallpaper);
             return ShellWallpaper;
+        }
+
+        public Control DetachBottomTooltipsForNativeOverlay()
+        {
+            if (_bottomTooltips.Parent is Panel parent) parent.Children.Remove(_bottomTooltips);
+            return _bottomTooltips;
         }
 
         /// <summary>Moves the always-visible chrome into the native top-layer panel.</summary>
@@ -591,6 +613,10 @@ namespace DaisyOS.Shell.Views
         private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
             _controllerPollTimer.Stop();
+            _mediaAutoHideTimer.Stop();
+            _taskbarAutoHideTimer.Stop();
+            _systemBarAutoHideTimer.Stop();
+            _bottomTooltips.Dismiss();
             _controllerCancellation?.Cancel();
             _controllerCancellation?.Dispose();
             _controllerCancellation = null;

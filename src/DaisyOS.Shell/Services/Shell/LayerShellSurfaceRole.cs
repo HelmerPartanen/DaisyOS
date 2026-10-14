@@ -172,6 +172,17 @@ public sealed record LayerShellSurfaceOptions(
         // normal application title-bar controls in the upper-right output.
         InputPassthrough: true);
 
+    /// <summary>Passive bottom labels never own pointer or keyboard input.</summary>
+    public static LayerShellSurfaceOptions BottomTooltipOverlay(string? outputName = null) =>
+        Overlay("daisyos.overlay.bottom-tooltips", outputName) with
+        {
+            Anchor = LayerShellAnchor.Bottom | LayerShellAnchor.Left | LayerShellAnchor.Right,
+            Height = 160,
+            ExclusiveZone = IgnoreOtherExclusiveZones,
+            InputPassthrough = true,
+            KeyboardInteractivity = LayerShellKeyboardInteractivity.None
+        };
+
     public void Validate()
     {
         if (Role == LayerShellSurfaceRole.Toplevel)

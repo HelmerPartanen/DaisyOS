@@ -6250,4 +6250,9 @@ Used by: DaisyLaunch</comment>
     <value>Couldn’t rename that item</value>
     <comment>Source: Couldn’t rename that item</comment>
   </data>
+  <data name="Loc_1011E1E878A4" xml:space="preserve">
+    <value>Bottom media widget</value>
+    <comment>Source: Bottom media widget
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
+  </data>
 </root>

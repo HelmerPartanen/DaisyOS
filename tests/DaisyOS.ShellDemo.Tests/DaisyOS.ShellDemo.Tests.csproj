@@ -22,4 +22,7 @@
     <ProjectReference Include="../../src/DaisyOS.Shell/DaisyOS.Shell.csproj" />
     <ProjectReference Include="../../src/DaisyOS.Installer/DaisyOS.Installer.csproj" />
   </ItemGroup>
+  <ItemGroup>
+    <None Update="Fixtures/Heic/*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

@@ -9,6 +9,8 @@ public class WallpaperFileTypesTests
     [InlineData("/wallpapers/forest.jpg")]
     [InlineData("/wallpapers/forest.JPEG")]
     [InlineData("/wallpapers/forest.webp")]
+    [InlineData("/wallpapers/Dynamic.HEIC")]
+    [InlineData("/wallpapers/Dynamic.heif")]
     public void StillImages_AreNotTreatedAsVideos(string path)
     {
         Assert.True(WallpaperFileTypes.IsImage(path));
@@ -29,6 +31,8 @@ public class WallpaperFileTypesTests
     [Fact]
     public void DefaultWallpaperPickerFilter_IncludesImagesAndVideos()
     {
+        Assert.Contains("*.heic", WallpaperFileTypes.WallpaperPatterns);
+        Assert.Contains("*.heif", WallpaperFileTypes.WallpaperPatterns);
         Assert.Contains("*.jpg", WallpaperFileTypes.WallpaperPatterns);
         Assert.Contains("*.mp4", WallpaperFileTypes.WallpaperPatterns);
     }

@@ -55,6 +55,7 @@ public partial class App
             case "contrast" when request.Length == 2: await SetHighContrastAsync(bool.Parse(request[1])); break;
             case "motion" when request.Length == 2: await SetReduceMotionAsync(bool.Parse(request[1])); break;
             case "taskbar-auto-hide" when request.Length == 2: await SetTaskbarAutoHideAsync(bool.Parse(request[1])); break;
+            case "media-widget-auto-hide" when request.Length == 2: await SetMediaWidgetAutoHideAsync(bool.Parse(request[1])); break;
             case "systembar-auto-hide" when request.Length == 2: await SetSystemBarAutoHideAsync(bool.Parse(request[1])); break;
             case "cursor" when request.Length == 3:
                 if (!await SetCursorAsync(request[1], int.Parse(request[2]))) return "The cursor could not be changed.";

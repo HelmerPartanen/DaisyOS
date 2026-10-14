@@ -572,6 +572,17 @@
                       </ComboBox>
                     </Grid>
                   </Border>
+                  <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
+                  <Border Classes="SettingsGroupRow">
+                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+                      <controls:DaisyIcon Icon="music-note-02" Classes="SettingsRowIcon" />
+                      <TextBlock Grid.Column="1" Text="{DynamicResource Loc_1011E1E878A4}" Classes="SettingsLabel" VerticalAlignment="Center" />
+                      <ComboBox x:Name="MediaWidgetVisibilityPicker" Grid.Column="2" Classes="ThemeModePicker" VerticalAlignment="Center" SelectionChanged="OnMediaWidgetVisibilitySelectionChanged">
+                        <ComboBoxItem Tag="Always" Content="{DynamicResource Loc_BC42910F32AA}" />
+                        <ComboBoxItem Tag="AutoHide" Content="{DynamicResource Loc_EA736CCEBBFF}" />
+                      </ComboBox>
+                    </Grid>
+                  </Border>
                   <Border Margin="16,2,16,16" Padding="16,12" CornerRadius="{DynamicResource RoundedMD}" Background="{DynamicResource SurfaceSunkenBrush}">
                     <TextBlock Text="{DynamicResource Loc_77065E4B7150}" Classes="SettingsDescription" TextWrapping="Wrap" />
                   </Border>

@@ -16,6 +16,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
 using Avalonia.Threading;
+using Avalonia.Styling;
 using Avalonia.VisualTree;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.Services.Localization;
@@ -40,6 +41,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 {
     public partial class SettingsView : UserControl
     {
+        private readonly DispatcherTimer _heicPreviewTimer = new() { Interval = TimeSpan.FromMinutes(1) };
         private Bitmap? _wallpaperPreview;
         private readonly List<Bitmap> _retiredWallpaperPreviews = [];
         private bool _isRefreshingAppearanceControls;
@@ -158,6 +160,15 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 FontSearchBar.Text = string.Empty;
                 Dispatcher.UIThread.Post(() => FontSearchBar.FocusInput());
             };
+            _heicPreviewTimer.Tick += (_, _) =>
+            {
+                if (_activeCategory == "Appearance" && _previewWallpaperUri is { } uri && WallpaperFileTypes.IsHeic(uri))
+                    RefreshWallpaperPreview(uri);
+            };
+            ActualThemeVariantChanged += (_, _) =>
+            {
+                if (_previewWallpaperUri is { } uri && WallpaperFileTypes.IsHeic(uri)) RefreshWallpaperPreview(uri);
+            };
             AttachedToVisualTree += (_, _) =>
             {
                 if (_displayLifetime.IsCancellationRequested)
@@ -165,6 +176,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     _displayLifetime.Dispose();
                     _displayLifetime = new CancellationTokenSource();
                 }
+                _heicPreviewTimer.Start();
                 _allowDisplayOwnerClose = _closingForDisplayRevert = false;
                 _displayOwner = TopLevel.GetTopLevel(this) as Window;
                 if (_displayOwner is not null) _displayOwner.Closing += OnDisplayOwnerClosing;
@@ -179,6 +191,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             };
             DetachedFromVisualTree += (_, _) =>
             {
+                _heicPreviewTimer.Stop();
                 _displayLifetime.Cancel();
                 _storageScan?.Cancel();
                 if (_displayOwner is not null) _displayOwner.Closing -= OnDisplayOwnerClosing;
@@ -2964,7 +2977,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 ? await app.PickFilesAsync(topLevel, new DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerOptions(
                     "Choose video wallpaper", false, false,
                     WallpaperFileTypes.VideoPatterns.Select(pattern => pattern.TrimStart('*')).ToArray())) ?? []
-                : await app.PickImageFilesAsync(topLevel, allowMultiple: false);
+                : await app.PickImageFilesAsync(topLevel, allowMultiple: false, allowHeic: true);
 
             if (files.Count == 0 || string.IsNullOrWhiteSpace(files[0]))
             {
@@ -3047,6 +3060,13 @@ namespace DaisyOS.Shell.Apps.System.Settings
             if (_isRefreshingAppearanceControls || TaskbarVisibilityPicker.SelectedItem is not ComboBoxItem { Tag: string value } || Application.Current is not App app)
                 return;
             await app.SetTaskbarAutoHideAsync(value == "AutoHide");
+        }
+
+        private async void OnMediaWidgetVisibilitySelectionChanged(object? sender, SelectionChangedEventArgs e)
+        {
+            if (_isRefreshingAppearanceControls || MediaWidgetVisibilityPicker.SelectedItem is not ComboBoxItem { Tag: string value } || Application.Current is not App app)
+                return;
+            await app.SetMediaWidgetAutoHideAsync(value == "AutoHide");
         }
 
         private async void OnSystemBarVisibilitySelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -3180,6 +3200,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             ReduceMotionToggle.IsChecked = app.ReduceMotionEnabled;
             SelectComboByTag(TaskbarVisibilityPicker, app.TaskbarAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(SystemBarVisibilityPicker, app.SystemBarAutoHideEnabled ? "AutoHide" : "Always");
+            SelectComboByTag(MediaWidgetVisibilityPicker, app.MediaWidgetAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(SystemFontPicker, app.CurrentSystemFontFamily);
             RestoreDefaultFontButton.IsEnabled = !string.Equals(app.CurrentSystemFontFamily, "Inter", StringComparison.OrdinalIgnoreCase);
             TextScalePicker.SelectedIndex = app.CurrentTextScalePercent switch { 90 => 0, 110 => 2, 125 => 3, 150 => 4, _ => 1 };
@@ -3269,7 +3290,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private void RefreshWallpaperPreview(string wallpaperUri)
         {
-            if (WallpaperPreviewImage is null || string.Equals(_previewWallpaperUri, wallpaperUri, StringComparison.Ordinal)) return;
+            if (WallpaperPreviewImage is null || (!WallpaperFileTypes.IsHeic(wallpaperUri) && string.Equals(_previewWallpaperUri, wallpaperUri, StringComparison.Ordinal))) return;
 
             _previewWallpaperUri = wallpaperUri;
             _ = RefreshWallpaperPreviewAsync(wallpaperUri, Interlocked.Increment(ref _previewRequestVersion));
@@ -3286,7 +3307,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
                 if (File.Exists(resolvedPath) && WallpaperFileTypes.IsImage(resolvedPath))
                 {
-                    preview = await Task.Run(() => new Bitmap(resolvedPath));
+                    var imagePath = WallpaperFileTypes.IsHeic(resolvedPath)
+                        ? await HeicWallpaper.ResolveFrameAsync(resolvedPath, ActualThemeVariant == ThemeVariant.Dark, DateTimeOffset.Now)
+                        : resolvedPath;
+                    preview = await Task.Run(() => new Bitmap(imagePath));
                 }
                 else if (WallpaperFileTypes.IsVideo(resolvedPath))
                 {

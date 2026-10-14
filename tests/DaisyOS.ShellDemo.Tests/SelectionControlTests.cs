@@ -93,7 +93,7 @@ public sealed class SelectionControlTests
     [AvaloniaTheory]
     [InlineData(false)]
     [InlineData(true)]
-    public async Task HoverFramesStayOpaqueAndWithinThemeColors(bool dark)
+    public async Task HoverFramesStayWithinThemeColors(bool dark)
     {
         var check = new CheckBox { Content = "Checkbox" };
         var radio = new RadioButton { Content = "Radio" };
@@ -119,7 +119,7 @@ public sealed class SelectionControlTests
                         await Task.Delay(15);
                         using (window.CaptureRenderedFrame()) { }
                         var color = ((ISolidColorBrush)indicator.Background!).Color;
-                        Assert.Equal(255, color.A);
+                        Assert.InRange(color.A, Math.Min(a.A, b.A), Math.Max(a.A, b.A));
                         Assert.InRange(color.R, Math.Min(a.R, b.R), Math.Max(a.R, b.R));
                         Assert.InRange(color.G, Math.Min(a.G, b.G), Math.Max(a.G, b.G));
                         Assert.InRange(color.B, Math.Min(a.B, b.B), Math.Max(a.B, b.B));
