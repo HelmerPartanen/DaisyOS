@@ -88,6 +88,7 @@ if command -v kwriteconfig6 >/dev/null 2>&1; then
   kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Task Overview' 'Meta+Tab,Meta+Tab,Toggle DaisyOS Task Overview'
   kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Task Overview Alt' 'none,none,Toggle DaisyOS Task Overview'
   kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Launcher' 'Meta,Meta,Toggle DaisyOS Launcher'
+  kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Gaming Overlay' 'Meta+R,Meta+R,Toggle DaisyOS gaming overlay'
   kwriteconfig6 --file kwinrc --group ModifierOnlyShortcuts --key Meta ''
 
   # Custom app frames must be borderless from their first map, including the
@@ -120,6 +121,11 @@ import dbus
 try:
     bus = dbus.SessionBus()
     accel = dbus.Interface(bus.get_object('org.kde.kglobalaccel', '/kglobalaccel'), 'org.kde.KGlobalAccel')
+    # Meta+R belongs to the HUD; retain Spectacle's other recording binding.
+    recorder = ['org.kde.spectacle.desktop', 'RecordRegion', 'default', '']
+    recorder_keys = [key for key in accel.shortcut(recorder) if int(key) != 268435538]
+    accel.setForeignShortcut(recorder, dbus.Array(recorder_keys, signature='i'))
+    accel.setForeignShortcut(['kwin', 'DaisyOS Gaming Overlay', 'default', ''], dbus.Array([dbus.Int32(268435538)], signature='i'))
     accel.setForeignShortcut(['plasmashell', 'activate application launcher', 'default', ''], dbus.Array([], signature='i'))
     # KWin 6.7 no longer consumes ModifierOnlyShortcuts. KGlobalAccel does
     # support a modifier-only QKeySequence, so register bare Meta there.

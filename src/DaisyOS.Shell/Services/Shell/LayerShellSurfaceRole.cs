@@ -172,6 +172,16 @@ public sealed record LayerShellSurfaceOptions(
         // normal application title-bar controls in the upper-right output.
         InputPassthrough: true);
 
+    /// <summary>A passive HUD above fullscreen applications, without reserving desktop space.</summary>
+    public static LayerShellSurfaceOptions GamingOverlay(string? outputName = null) =>
+        PassiveOverlay("daisyos.overlay.gaming", outputName) with
+        {
+            Anchor = LayerShellAnchor.Top | LayerShellAnchor.Right,
+            ExclusiveZone = IgnoreOtherExclusiveZones,
+            Width = 340,
+            Height = 88
+        };
+
     /// <summary>Passive bottom labels never own pointer or keyboard input.</summary>
     public static LayerShellSurfaceOptions BottomTooltipOverlay(string? outputName = null) =>
         Overlay("daisyos.overlay.bottom-tooltips", outputName) with

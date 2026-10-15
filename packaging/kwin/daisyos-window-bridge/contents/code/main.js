@@ -290,3 +290,7 @@ if (workspace.currentDesktopChanged) workspace.currentDesktopChanged.connect(pub
 managedWindows().forEach(observeWindow);
 publishSnapshot();
 print("[daisy-window-bridge] Persistent KWin lifecycle bridge loaded.");
+
+registerShortcut("DaisyOS Gaming Overlay", "Toggle DaisyOS gaming overlay", "Meta+R", function () {
+    requestShellAction("gaming-overlay");
+});

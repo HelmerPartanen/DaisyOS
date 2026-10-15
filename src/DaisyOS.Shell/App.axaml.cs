@@ -92,6 +92,8 @@ public partial class App : Application
     private bool _localSendUnavailable;
     private ShellView? _shellView;
     private readonly List<Window> _nativeShellSurfaces = [];
+    private DaisyOS.Shell.Views.Components.Gaming.GamingOverlay? _gamingOverlay;
+    private Window? _gamingOverlaySurface;
     private ILayerShellWindowBackend? _layerShellBackend;
     private Window? _nativePanelSurface;
     private Window? _nativeLauncherSurface;
@@ -426,6 +428,11 @@ public partial class App : Application
             }
             flyoutPanel.Children.Add(shell.Desktop.DetachWidgetContextMenuForNativeOverlay());
         }
+        _gamingOverlay = new();
+        _gamingOverlaySurface = backend.CreateWindow(
+            LayerShellSurfaceOptions.GamingOverlay(), _gamingOverlay);
+        _blurEffects.Add(new KWinBlur(_gamingOverlaySurface, _gamingOverlay, () =>
+            _gamingOverlay.IsVisible ? new Control[] { _gamingOverlay.FindControl<Border>("MaterialFrame")! } : []));
         var toastContent = shell.DetachNotificationToastsForNativeOverlay();
         var consoleContent = shell.DetachConsoleForNativeOverlay();
         var metricsContent = shell.DetachMetricsForNativeOverlay();
@@ -509,6 +516,7 @@ public partial class App : Application
         _nativeShellSurfaces.Add(metricsSurface);
         _nativeShellSurfaces.Add(localSendSurface);
         _nativeShellSurfaces.Add(screenshotSurface);
+        _nativeShellSurfaces.Add(_gamingOverlaySurface);
 
         foreach (var surface in _nativeShellSurfaces)
         {
@@ -1311,6 +1319,15 @@ public partial class App : Application
             case "activate-files":
                 var files = _compositorWindows?.Windows.FirstOrDefault(window => window.AppId is "files" or "org.daisyos.files" or "org.daisyos.files.desktop");
                 if (files is not null) _ = _compositorWindows!.ActivateOrMinimizeAsync(files.Id, wasActive: false);
+                break;
+            case "gaming-overlay":
+                if (IsLockScreenActive) break;
+                _gamingOverlay?.Toggle();
+                if (_gamingOverlay?.IsVisible == true && _gamingOverlaySurface is { } gamingSurface)
+                {
+                    gamingSurface.Show();
+                    LayerShellWindow.SetInputPassthrough(gamingSurface, true);
+                }
                 break;
             case "launcher":
                 ToggleLauncher();
@@ -2333,6 +2350,7 @@ public partial class App : Application
 
     public void LockSession()
     {
+        if (_gamingOverlay?.IsVisible == true) _gamingOverlay.Toggle();
         DismissAllTransientShellSurfaces();
 
         if (_lockScreenWindow is not null)

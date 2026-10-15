@@ -19,6 +19,14 @@ The game-controller button in the system bar provides the same Gaming Mode switc
 and a separate choice for silencing non-critical popups. Advanced options remain
 on the Gaming page so the system bar stays compact.
 
+## Performance overlay
+
+Press **Meta + R** to toggle the top-right FPS / CPU / GPU / MEM pill. It uses the taskbar's theme-aware material and KWin blur on a passive Wayland overlay layer above fullscreen games. It does not take focus or intercept game input. Sampling runs once per second while visible.
+
+CPU is total system utilization and MEM is used system memory in GiB. GPU utilization comes from supported DRM drivers, NVIDIA’s `nvidia-smi`, or MangoHud telemetry; unavailable readings show **—**. FPS requires game telemetry, and never reports the shell's frame rate.
+
+For FPS, set `DAISYOS_MANGOHUD_LOG_DIR` in the shell session environment to a directory containing MangoHud CSV logs, configure MangoHud's `output_folder` to that directory, and enable logging in the game (default: **Left Shift + F2**). See [MangoHud logging configuration](https://github.com/flightlessmango/MangoHud#fps-logging). Only logs modified within five seconds are used. Without active logging FPS shows **—**. Other GPU drivers without a utilization counter need MangoHud logging for GPU load.
+
 ## Console mode
 
 Console mode is an opt-in, controller-first home for installed games. It never replaces the desktop merely because a controller is connected: open the Gaming tile's detail action in Quick Settings, or press the controller Guide/PlayStation button while DaisyOS is active. Pressing **B** returns through the current console surface, **X** opens Quick Settings, and **LB/RB** move between Home and Library. In console Quick Settings, use the D-pad to move, **A** to change the selected control, and **Y** for its available detail list (Wi-Fi networks or output devices). Select **Desktop mode** to leave the mode.

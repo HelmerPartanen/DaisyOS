@@ -1,0 +1,42 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Views.Components.Gaming.GamingOverlay"
+             IsVisible="False" IsHitTestVisible="False" UseLayoutRounding="True">
+  <UserControl.Styles>
+    <Style Selector="TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/>
+      <Setter Property="FontFamily" Value="{DynamicResource ShellFontFamily}"/>
+      <Setter Property="FontSize" Value="14"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+    </Style>
+  </UserControl.Styles>
+
+  <controls:ShellFrameBorder x:Name="MaterialFrame" Margin="16" Padding="1"
+                            CornerRadius="28" Background="{DynamicResource ShellFrameOuterEdgeBrush}">
+    <controls:ShellFrameBorder CornerRadius="27" BorderThickness="1"
+                              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                              Background="Transparent" BackgroundSizing="InnerBorderEdge">
+      <Border CornerRadius="26" Background="{DynamicResource SurfaceBaseBrush}" Padding="12,5">
+        <Grid ColumnDefinitions="*,*,*,*">
+          <StackPanel Grid.Column="0" Spacing="2">
+            <TextBlock Text="FPS"/>
+            <TextBlock x:Name="FPSValue" Text="—"/>
+          </StackPanel>
+          <StackPanel Grid.Column="1" Spacing="2">
+            <TextBlock Text="CPU"/>
+            <TextBlock x:Name="CPUValue" Text="—"/>
+          </StackPanel>
+          <StackPanel Grid.Column="2" Spacing="2">
+            <TextBlock Text="GPU"/>
+            <TextBlock x:Name="GPUValue" Text="—"/>
+          </StackPanel>
+          <StackPanel Grid.Column="3" Spacing="2">
+            <TextBlock Text="MEM"/>
+            <TextBlock x:Name="MEMValue" Text="—"/>
+          </StackPanel>
+        </Grid>
+      </Border>
+    </controls:ShellFrameBorder>
+  </controls:ShellFrameBorder>
+</UserControl>
