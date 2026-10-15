@@ -179,7 +179,8 @@ validate_profile() {
 minimal="$repo_root/os/packages/minimal.txt"
 desktop="$repo_root/os/packages/desktop.txt"
 gaming="$repo_root/os/packages/desktop-gaming.txt"
-for profile in "$minimal" "$desktop" "$gaming"; do
+gaming_nvidia="$repo_root/os/packages/desktop-gaming-nvidia.txt"
+for profile in "$minimal" "$desktop" "$gaming" "$gaming_nvidia"; do
   validate_profile "$profile"
 done
 
@@ -194,6 +195,19 @@ if missing="$(comm -23 <(profile_packages "$desktop") <(profile_packages "$gamin
   printf '%s\n' "$missing"
   exit 1
 fi
+
+if missing="$(comm -23 <(profile_packages "$gaming") <(profile_packages "$gaming_nvidia"))" && [[ -n "$missing" ]]; then
+  echo "NVIDIA gaming profile is missing gaming packages:"
+  printf '%s\n' "$missing"
+  exit 1
+fi
+
+for package in nvidia-utils lib32-nvidia-utils; do
+  if ! grep -Fxq "$package" <<<"$(profile_packages "$gaming_nvidia")"; then
+    echo "NVIDIA gaming profile does not install $package."
+    exit 1
+  fi
+done
 
 require_text "$package_dir/daisyos-repo.conf" \
   '^SigLevel[[:space:]]*=[[:space:]]*Required[[:space:]]+DatabaseRequired$' \

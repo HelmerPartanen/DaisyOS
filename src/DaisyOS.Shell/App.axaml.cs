@@ -283,9 +283,13 @@ public partial class App : Application
             var traceLifetime = new CancellationTokenSource();
             StartApplicationSettingsService(traceLifetime.Token);
             _ = DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.RunAsync(traceLifetime.Token);
+            var gamingAutomation = new GamingModeAutomation(SessionState, () =>
+                SessionState.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false");
+            gamingAutomation.Start();
             desktop.Exit += (_, _) =>
             {
                 traceLifetime.Cancel();
+                gamingAutomation.Dispose();
                 _ = AppTray.DisposeAsync();
                 _recentPrefetch.Dispose();
                 _lightweightWindows.Dispose();

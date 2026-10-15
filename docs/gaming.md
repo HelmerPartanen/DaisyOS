@@ -9,6 +9,11 @@ Toggle **Gaming Mode** on the Gaming page in Settings. When enabled:
 - Non-critical notification toast popups are suppressed while you play when **Silence notifications** is enabled.
 - A `do_not_disturb_on` icon appears in the system bar with a `sports_esports` badge when Gaming Mode is the reason.
 - Turning Gaming Mode off returns to the user's normal notification behavior; the separate Do Not Disturb preference is not changed.
+- When GameMode is installed, the shell holds a GameMode request (`gamemoderun sleep infinity`) for as long as Gaming Mode is on, so games get GameMode's CPU governor, priority, and GPU tuning without `gamemoderun` launch options.
+
+### Automatic Gaming Mode
+
+**Turn on automatically when a game starts** (Settings → Notifications, on by default) checks `/proc` every three seconds for a running Steam game (`reaper SteamLaunch AppId=…`, native or Proton) or a Lutris game (`lutris-wrapper`). Gaming Mode turns on when one starts and off when it exits. Gaming Mode that you switched on yourself is never switched off automatically, and switching it off during a game keeps it off until that game exits.
 
 The game-controller button in the system bar provides the same Gaming Mode switch
 and a separate choice for silencing non-critical popups. Advanced options remain
@@ -48,6 +53,8 @@ Missing tools are reported as optional capabilities, not fatal errors. Diagnosti
 
 `os/packages/desktop-gaming.txt` extends the normal desktop profile with Steam, Vulkan diagnostics, 32-bit Mesa and Vulkan support, GameMode, Gamescope, MangoHud, Wine, Winetricks, and Lutris. It is optional and requires Arch's `multilib` repository.
 
+`os/packages/desktop-gaming-nvidia.txt` is the same profile plus the NVIDIA driver stack (`nvidia-open`, `nvidia-utils`, `lib32-nvidia-utils`) for Turing (RTX 20-series / Quadro RTX) and newer GPUs. `nvidia-utils` enables `nvidia_drm` kernel modesetting, which KWin Wayland requires. Older NVIDIA GPUs need the legacy driver and are not covered by this profile.
+
 Controller access rules should come from a reviewed `game-devices-udev` package before the gaming image ships. Heroic Games Launcher is also planned, but it must use a reviewed package source rather than silently enabling an untrusted third-party repository. Neither package is added to the image until that packaging path is approved.
 
 Steam launch-option examples:
@@ -66,6 +73,5 @@ Proton is managed through Steam. Start with the version Steam selects for the ga
 
 ## Future Work
 
-- Automatic Gaming Mode: detect when a game is running and toggle Gaming Mode on/off.
 - Per-game profiles (launch options, GPU settings, performance profiles).
 - Game library integration with Steam and other launchers.

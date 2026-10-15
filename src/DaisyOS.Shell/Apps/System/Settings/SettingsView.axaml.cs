@@ -1369,6 +1369,12 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             AddSection(Loc.Get("FOCUS"), Loc.Get("Notifications still appear in Notification Centre while focus is on."),
                 Toggle("Do not disturb", "notifications.dnd", false, value => { if (Application.Current is App app) app.SetDoNotDisturb(value); }));
+            var shell = Application.Current as App;
+            AddSection(Loc.Get("GAMING"), Loc.Get("Gaming Mode boosts performance with GameMode and quiets popups while you play."),
+                Toggle("Gaming Mode", "gaming.mode", false, value => { if (shell is not null) shell.SessionState.GamingMode = value; }),
+                Toggle("Turn on automatically when a game starts", GamingModeAutomation.AutomaticPreferenceKey,
+                    shell?.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false",
+                    value => shell?.SetPreference(GamingModeAutomation.AutomaticPreferenceKey, value ? "true" : "false")));
         }
 
         private Button SettingsAction(string title, string description, string icon, Action activate, string? value = null, bool literalTitle = false, bool literalDescription = false)
