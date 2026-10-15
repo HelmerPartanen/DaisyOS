@@ -276,6 +276,8 @@ public partial class SystemBarView : UserControl
     {
         if (this.FindControl<Border>("NotificationBadge") is { } badge)
         {
+            if (this.FindControl<TextBlock>("NotificationBadgeCount") is { } label)
+                label.Text = count > 99 ? "99+" : Math.Max(0, count).ToString();
             badge.IsVisible = count > 0;
         }
     }

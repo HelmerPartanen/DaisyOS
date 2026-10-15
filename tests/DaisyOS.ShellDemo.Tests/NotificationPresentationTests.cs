@@ -19,6 +19,7 @@ public sealed class NotificationPresentationTests
     {
         var card = new NotificationCard
         {
+            Background = Avalonia.Media.Brushes.Transparent,
             DataContext = new NotificationItem("Test", "Body", DateTimeOffset.Now,
                 ActionId: "default", ActionLabel: "View")
         };
@@ -109,7 +110,7 @@ public sealed class NotificationPresentationTests
         try
         {
             var item = new NotificationItem(new string('W', 120), new string('W', 800), DateTimeOffset.Now,
-                SourceAppId: "org.daisyos.notes", ActionLabel: "Open", ActionId: "open",
+                SourceAppId: "org.daisyos.notes", ActionLabel: "Accept", ActionId: "accept",
                 PreviewImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=");
             host.Present(item);
             host.Present(item with { Id = "second" });
