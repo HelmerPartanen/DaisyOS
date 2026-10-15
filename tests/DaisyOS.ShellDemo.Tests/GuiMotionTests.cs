@@ -68,9 +68,20 @@ public sealed class GuiMotionTests
         shell.SetExternalFullscreenActive(true);
         Assert.False(shell.Taskbar.IsVisible);
         Assert.False(shell.SystemBar.IsVisible);
+        Assert.True(shell.IsBottomEdgeSensorEnabled);
         shell.RevealBottomBarAt(position * 1280, 1280);
+        Assert.Equal(position == 0.5, shell.Taskbar.IsVisible);
+        Assert.Equal(position == 0.9, shell.SystemBar.IsVisible);
+        // Repeated compositor snapshots must not cancel an active reveal.
+        shell.SetExternalFullscreenActive(true);
+        Assert.Equal(position == 0.5, shell.Taskbar.IsVisible);
+        Assert.Equal(position == 0.9, shell.SystemBar.IsVisible);
+        var hideMethod = position == 0.5 ? "HideTaskbarIfUnhovered" : "HideSystemBarIfUnhovered";
+        typeof(DaisyOS.Shell.Views.ShellView).GetMethod(hideMethod,
+            global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.NonPublic)!.Invoke(shell, null);
         Assert.False(shell.Taskbar.IsVisible);
         Assert.False(shell.SystemBar.IsVisible);
+        Assert.True(shell.IsBottomPanelInputPassthrough);
         shell.SetExternalFullscreenActive(false);
         shell.SetBottomBarAutoHide(true, true);
         Assert.False(shell.Taskbar.IsVisible);

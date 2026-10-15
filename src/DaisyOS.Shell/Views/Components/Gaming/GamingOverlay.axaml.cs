@@ -3,8 +3,6 @@ using Avalonia.Markup.Xaml;
 using Avalonia.Threading;
 using DaisyOS.System.Diagnostics;
 using System.Globalization;
-using System.Diagnostics;
-using System.ComponentModel;
 using System.IO;
 
 namespace DaisyOS.Shell.Views.Components.Gaming;
@@ -12,6 +10,7 @@ namespace DaisyOS.Shell.Views.Components.Gaming;
 public partial class GamingOverlay : UserControl
 {
     private readonly LinuxSystemMetricsService _metrics = new();
+    private NvidiaGpuMetrics _nvidia = new();
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(1) };
     private bool _sampling;
     private int _generation;
@@ -20,7 +19,8 @@ public partial class GamingOverlay : UserControl
     {
         AvaloniaXamlLoader.Load(this);
         _timer.Tick += async (_, _) => await SampleAsync();
-        DetachedFromVisualTree += (_, _) => _timer.Stop();
+        DetachedFromVisualTree += (_, _) => { _timer.Stop(); _nvidia.Dispose(); };
+        AttachedToVisualTree += (_, _) => { _nvidia = new(); if (IsVisible) _timer.Start(); };
     }
 
     public void Toggle()
@@ -45,14 +45,14 @@ public partial class GamingOverlay : UserControl
         var generation = _generation;
         try
         {
-            var status = await _metrics.GetStatusAsync();
-            var telemetry = await Task.Run(async () =>
+            var status = await Task.Run(() => _metrics.GetStatusAsync());
+            var telemetry = await Task.Run(() =>
             {
                 (double? Fps, double? Gpu) sample;
                 try { sample = ReadTelemetry(); }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 { sample = (null, null); }
-                return (sample.Fps, sample.Gpu ?? await ReadNvidiaUsageAsync());
+                return (sample.Fps, sample.Gpu ?? _nvidia.ReadUsage());
             });
             if (!IsVisible || generation != _generation) return;
             Set("CPU", status.CpuUsagePercent is { } cpu ? $"{cpu:0}%" : "—");
@@ -75,8 +75,12 @@ public partial class GamingOverlay : UserControl
                 gpu = Math.Max(gpu ?? 0, value);
         }
         double? fps = null;
-        // MangoHud CSV logging is optional; never substitute shell frame rate for game FPS.
-        var directory = Environment.GetEnvironmentVariable("DAISYOS_MANGOHUD_LOG_DIR");
+        // Shared with daisyos-game: telemetry works without configuring the shell environment.
+        var directory = TelemetryDirectory(
+            Environment.GetEnvironmentVariable("DAISYOS_MANGOHUD_LOG_DIR"),
+            Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR"),
+            Environment.GetEnvironmentVariable("XDG_CACHE_HOME"),
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
         if (!string.IsNullOrWhiteSpace(directory) && Directory.Exists(directory))
         {
             var file = new DirectoryInfo(directory).EnumerateFiles("*.csv")
@@ -93,40 +97,10 @@ public partial class GamingOverlay : UserControl
         return (fps, gpu);
     }
 
-    private static async Task<double?> ReadNvidiaUsageAsync()
-    {
-        if (!File.Exists("/usr/bin/nvidia-smi")) return null;
-        using var process = new Process
-        {
-            StartInfo = new ProcessStartInfo("/usr/bin/nvidia-smi")
-            {
-                UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true,
-                CreateNoWindow = true,
-                ArgumentList = { "--query-gpu=utilization.gpu", "--format=csv,noheader,nounits" }
-            }
-        };
-        using var timeout = new CancellationTokenSource(TimeSpan.FromMilliseconds(800));
-        try
-        {
-            process.Start();
-            var output = process.StandardOutput.ReadToEndAsync(timeout.Token);
-            var error = process.StandardError.ReadToEndAsync(timeout.Token);
-            await process.WaitForExitAsync(timeout.Token);
-            var text = await output;
-            await error;
-            if (process.ExitCode != 0) return null;
-            var loads = text.Split('\n').Select(line =>
-                double.TryParse(line.Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out var value) &&
-                value is >= 0 and <= 100 ? (double?)value : null).OfType<double>().ToArray();
-            return loads.Length > 0 ? loads.Max() : null;
-        }
-        catch (OperationCanceledException)
-        {
-            try { process.Kill(entireProcessTree: true); } catch (InvalidOperationException) { }
-            return null;
-        }
-        catch (Exception ex) when (ex is Win32Exception or IOException or InvalidOperationException) { return null; }
-    }
+    internal static string TelemetryDirectory(string? configured, string? runtime, string? cache, string home) =>
+        !string.IsNullOrWhiteSpace(configured) ? configured :
+        !string.IsNullOrWhiteSpace(runtime) ? Path.Combine(runtime, "daisyos", "gaming-telemetry") :
+        Path.Combine(string.IsNullOrWhiteSpace(cache) ? Path.Combine(home, ".cache") : cache, "DaisyOS", "gaming-telemetry");
 
     internal static (double? Fps, double? Gpu) ReadMangoHudLog(string path)
     {

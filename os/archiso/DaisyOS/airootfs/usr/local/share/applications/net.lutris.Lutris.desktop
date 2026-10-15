@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Lutris
+Exec=/usr/local/bin/daisyos-game-launcher /usr/bin/lutris %U
+TryExec=/usr/bin/lutris
+Icon=net.lutris.Lutris
+Terminal=false
+Categories=Game;
+DBusActivatable=false
+MimeType=x-scheme-handler/lutris;application/x-lutris;
+StartupWMClass=net.lutris.Lutris

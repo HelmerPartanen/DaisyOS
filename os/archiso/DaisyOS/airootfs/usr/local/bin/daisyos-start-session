@@ -1,0 +1,53 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/DaisyOS"
+session_log="$state_dir/session.log"
+evidence_console="${DAISYOS_BOOT_EVIDENCE_CONSOLE:-/dev/ttyS0}"
+mkdir -p "$state_dir"
+
+log_message() {
+  local message="$1"
+  local record
+  record="$(date --iso-8601=seconds) $message"
+  printf '%s\n' "$record" | tee -a "$session_log" | systemd-cat -t daisyos-session
+  if [[ -w "$evidence_console" ]]; then
+    printf 'DAISYOS_SESSION: %s\n' "$record" > "$evidence_console"
+  fi
+}
+
+export DAISYOS_BOOT_EVIDENCE_CONSOLE="$evidence_console"
+export XDG_CURRENT_DESKTOP=DaisyOS
+export XDG_SESSION_DESKTOP=DaisyOS
+export XDG_SESSION_TYPE=wayland
+XCURSOR_THEME="$(kreadconfig6 --file kcminputrc --group Mouse --key cursorTheme --default DaisyOS-Dark)" || XCURSOR_THEME=DaisyOS-Dark
+XCURSOR_SIZE="$(kreadconfig6 --file kcminputrc --group Mouse --key cursorSize --default 32)" || XCURSOR_SIZE=32
+export XCURSOR_THEME XCURSOR_SIZE
+
+# These services are user-owned and stop with the disposable live session.
+systemctl --user --no-block start \
+  pipewire.service \
+  pipewire-pulse.service \
+  wireplumber.service >/dev/null 2>&1 || true
+
+if command -v kwin_wayland >/dev/null 2>&1; then
+  log_message "Starting the KWin Wayland desktop compositor."
+  set +e
+  dbus-run-session -- kwin_wayland \
+    --drm \
+    --xwayland \
+    --no-lockscreen \
+    --exit-with-session /usr/local/bin/daisyos-session
+  status=$?
+  set -e
+  if [[ "$status" -eq 0 ]]; then
+    exit 0
+  fi
+  log_message "The primary desktop renderer could not start; trying the compatibility display path."
+else
+  log_message "The primary desktop renderer is unavailable; trying the compatibility display path."
+fi
+
+export XDG_SESSION_TYPE=x11
+unset WAYLAND_DISPLAY
+exec startx

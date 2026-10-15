@@ -9,7 +9,13 @@ Toggle **Gaming Mode** on the Gaming page in Settings. When enabled:
 - Non-critical notification toast popups are suppressed while you play when **Silence notifications** is enabled.
 - A `do_not_disturb_on` icon appears in the system bar with a `sports_esports` badge when Gaming Mode is the reason.
 - Turning Gaming Mode off returns to the user's normal notification behavior; the separate Do Not Disturb preference is not changed.
-- When GameMode is installed, the shell holds a GameMode request (`gamemoderun sleep infinity`) for as long as Gaming Mode is on, so games get GameMode's CPU governor, priority, and GPU tuning without `gamemoderun` launch options.
+- When GameMode is installed, the shell holds a GameMode request (`gamemoderun sleep infinity`) for as long as Gaming Mode is on, to activate the system-wide policy. The shell also registers detected Steam/Lutris game processes and their descendants with GameMode so configured per-process priority and I/O tuning apply to the game. Requests are released when Gaming Mode is disabled or the processes disappear. Available tuning depends on the installed GameMode configuration and permissions. Native requests run on a background worker, and the helper uses a parent-death signal (`setpriv`) so a shell crash or forced restart cannot leave its request running forever.
+
+### Built-in GameMode access
+
+The ISO includes GameMode and a narrowly scoped policy that lets the active local desktop session use its CPU governor helper without a password or group setup. The live account also belongs to the installed GameMode group. Optional GPU clock/core-management helpers retain GameMode's normal authorization rules; the default image does not enable overclocking.
+
+For development or older manually assembled systems, `scripts/configure-gaming.sh --check` and `gamemoded -t` remain diagnostics. They are not post-install setup steps for the shipped ISO.
 
 ### Automatic Gaming Mode
 
@@ -19,13 +25,53 @@ The game-controller button in the system bar provides the same Gaming Mode switc
 and a separate choice for silencing non-critical popups. Advanced options remain
 on the Gaming page so the system bar stays compact.
 
+## Fullscreen games
+
+With auto-hide enabled, the taskbar and system bar remain independently available above fullscreen games. Move the pointer to the bottom center for the taskbar or bottom right for the system bar. Each bar keeps its own hide timer. Hidden bars pass input through; the narrow reveal target does not request keyboard focus. Games that lock the pointer must release it before the pointer can reach the screen edge.
+
+## Performance validation
+
+The overlay's CPU percentage averages all logical CPUs. A busy game thread can limit FPS while total CPU and GPU utilization remain below 100%. Utilization alone does not identify a bottleneck or prove that the wrong GPU is in use.
+
+Compare the same in-game scene and settings, recording frame times, per-thread CPU use, GPU clocks/power/utilization, and background load. Check the game's frame limit and VSync, active output refresh rate, Vulkan driver/device, and GameMode registration. Repeat with the hardware overlay hidden to measure its cost. Do not force CPU affinity, GPU overclocks, or global driver overrides without measurements.
+
 ## Performance overlay
 
 Press **Meta + R** to toggle the top-right FPS / CPU / GPU / MEM pill. It uses the taskbar's theme-aware material and KWin blur on a passive Wayland overlay layer above fullscreen games. It does not take focus or intercept game input. Sampling runs once per second while visible.
 
-CPU is total system utilization and MEM is used system memory in GiB. GPU utilization comes from supported DRM drivers, NVIDIA’s `nvidia-smi`, or MangoHud telemetry; unavailable readings show **—**. FPS requires game telemetry, and never reports the shell's frame rate.
+CPU is total system utilization and MEM is used system memory in GiB. GPU utilization comes from supported DRM drivers, NVIDIA’s NVML library, or MangoHud telemetry; unavailable readings show **—**. FPS requires game telemetry, and never reports the shell's frame rate.
 
-For FPS, set `DAISYOS_MANGOHUD_LOG_DIR` in the shell session environment to a directory containing MangoHud CSV logs, configure MangoHud's `output_folder` to that directory, and enable logging in the game (default: **Left Shift + F2**). See [MangoHud logging configuration](https://github.com/flightlessmango/MangoHud#fps-logging). Only logs modified within five seconds are used. Without active logging FPS shows **—**. Other GPU drivers without a utilization counter need MangoHud logging for GPU load.
+FPS capture is built into the shipped desktop session. The image includes native and 32-bit MangoHud libraries, and the bundled Steam/Lutris launchers carry Vulkan and OpenGL telemetry into their games. Users open the monitor with **Meta + R**; they do not edit Steam launch options, install telemetry packages, set environment variables, or press a logging hotkey.
+
+The shell discovers each renderer's per-process control socket and starts hidden capture while the monitor is visible. It prefers the focused renderer and stops capture when the monitor closes. Applications outside a game-launcher tree do not receive a global OpenGL preload. Vulkan applications inherit the session's disabled-by-default capture layer; capture activates only when the monitor is open. Initial FPS can take a few seconds to appear. No active renderer means **—**.
+
+The telemetry folder is selected automatically under the user's runtime directory, with a cache fallback. Explicit directory overrides and `daisyos-game` remain available for developer diagnostics or launching games outside the normal desktop routes, rather than user setup requirements. The signed local-runtime installer supports development machines; the ISO uses distribution packages.
+
+The verified automatic routes are the bundled native Steam/Lutris desktop entries and command launchers, session-inherited native Vulkan applications, and the shipped Wine command wrapper. Flatpak launchers and sandbox-specific telemetry extensions are outside this host-runtime path and need separate integration before being advertised as automatic.
+
+See the [2026-10-15 gaming validation](validation/gaming-2026-10-15.md) for the measured hardware, live interaction checks, and remaining administrator setup.
+
+## Reducing background contention
+
+While Gaming Mode is enabled, desktop live wallpaper playback and its preparation job pause, including for windowed games. Lock-screen wallpaper remains independent. App prefetching stops during Gaming Mode or while a fullscreen application is active, then becomes eligible again after four seconds of shell inactivity. Already-issued kernel readahead cannot be recalled.
+
+Animated desktop clocks stop their render timer while covered or Gaming Mode is active, and refresh immediately when the desktop returns.
+
+The performance overlay samples NVIDIA utilization directly through [NVML](https://docs.nvidia.com/deploy/nvml-api/latest/api/group__nvmlDeviceQueries.html), without launching a GPU monitoring process every second. Missing drivers and device errors show **—** and back off before retrying.
+
+### Measuring stutter
+
+Use the same game scene or replay, graphics settings, resolution, frame cap, and warmed shader cache for each comparison. Stop builds and downloads first. Record at least three equal-duration runs for each configuration; do not compare different map views or average FPS alone.
+
+For `scripts/analyze-game-frametimes.py`, record a MangoHud **per-frame** log (`log_interval=0`). Periodic aggregated logs cannot establish true per-frame 1% lows. A short capture in a directory under `$XDG_RUNTIME_DIR` avoids benchmark writes competing with the game on a hard disk; keep captures bounded and copy the CSV afterward. See [MangoHud configuration](https://github.com/flightlessmango/MangoHud#fps-logging).
+
+```sh
+python scripts/analyze-game-frametimes.py /path/to/game.csv --skip-seconds 20 --duration 60
+```
+
+The report includes average FPS, p99 and maximum frame time, and 1% low FPS calculated as 1000 divided by the mean of the slowest 1% of frame times in milliseconds. This definition differs from simply taking the first percentile of reported FPS. The interval options require per-frame logs.
+
+These changes reduce specific shell work; they do not establish a measured game 1% low improvement. Include an overlay-hidden run to quantify the overlay’s remaining cost.
 
 ## Console mode
 

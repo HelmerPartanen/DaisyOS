@@ -149,6 +149,10 @@ publish_session_environment() {
     done < "$daisy_language_file"
   fi
 
+  if [[ -f "$source_root/scripts/daisyos-gaming-environment" ]]; then
+    # shellcheck source=/dev/null
+    source "$source_root/scripts/daisyos-gaming-environment"
+  fi
   export DAISYOS_SHELL_SERVICES=real
   export DESKTOP_SESSION=daisyos-native-development
   export XDG_CURRENT_DESKTOP=DaisyOS
@@ -167,7 +171,8 @@ publish_session_environment() {
   if command -v dbus-update-activation-environment >/dev/null 2>&1; then
     dbus-update-activation-environment --systemd \
       DISPLAY WAYLAND_DISPLAY XAUTHORITY XCURSOR_THEME XCURSOR_SIZE LANG LANGUAGE LC_MESSAGES LC_ALL \
-      XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_MENU_PREFIX QT_QPA_PLATFORMTHEME >/dev/null 2>&1 || true
+      XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_MENU_PREFIX QT_QPA_PLATFORMTHEME \
+      MANGOHUD MANGOHUD_CONFIG VK_ADD_IMPLICIT_LAYER_PATH DAISYOS_GAME_GL_PRELOAD DAISYOS_GAME_LIBRARY_PATH DAISYOS_GAMING_ENVIRONMENT_READY >/dev/null 2>&1 || true
   fi
 }
 
@@ -213,9 +218,11 @@ start_user_services() {
     pipewire.service \
     pipewire-pulse.service \
     wireplumber.service \
-    plasma-polkit-agent.service \
-    xdg-desktop-portal.service \
-    plasma-xdg-desktop-portal-kde.service >/dev/null 2>&1 || true
+    plasma-polkit-agent.service >/dev/null 2>&1 || true
+  mkdir -p "$state_dir"
+  if ! "$source_root/scripts/prepare-screen-sharing.sh" >> "$session_log" 2>&1; then
+    log_message "Screen capture preparation failed; OBS and screen sharing need portal diagnostics."
+  fi
 }
 
 configure_kwin_for_daisyos() {

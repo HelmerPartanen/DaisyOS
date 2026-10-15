@@ -17,6 +17,8 @@ if [[ ! -f "$publish_mode_file" ]] || [[ "$(<"$publish_mode_file")" != "producti
   exit 1
 fi
 
+"$repo_root/scripts/check-game-telemetry-payload.sh" "$publish_dir"
+
 for application in Files Notes Settings DiskManager; do
   if [[ ! -x "$publish_dir/apps/$application/DaisyOS.$application" ]]; then
     echo "Standalone $application is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
@@ -50,6 +52,15 @@ for application in Files Notes Settings DiskManager; do
   cp "$repo_root/src/native/daisy_window_decoration/applications/org.daisyos.$lower.desktop" "$iso_root/usr/share/applications/"
 done
 printf '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec=/opt/DaisyOS/shell/apps/Files/DaisyOS.Files\n' > "$iso_root/usr/share/dbus-1/services/org.freedesktop.FileManager1.service"
+
+# Capture portal routing and backend-only KDE compatibility for DaisyOS.
+install -m755 "$repo_root/scripts/prepare-screen-sharing.sh" "$iso_root/usr/local/bin/daisyos-prepare-screen-sharing"
+install -d "$iso_root/usr/share/xdg-desktop-portal"
+install -m644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
+  "$iso_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+install -d "$iso_root/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d"
+install -m644 "$repo_root/packaging/xdg-desktop-portal/kde-backend.conf" \
+  "$iso_root/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d/50-daisyos-capture.conf"
 
 # Persistent standards-aware launch service and supported one-shot fallback.
 mkdir -p "$iso_root/usr/lib/systemd/user/graphical-session.target.wants"
@@ -91,4 +102,5 @@ payload_sha256=$payload_sha256
 publish_mode=production
 EOF
 
+"$repo_root/scripts/stage-gaming-integration.sh" --root "$iso_root"
 echo "Copied shell to $iso_shell_dir"

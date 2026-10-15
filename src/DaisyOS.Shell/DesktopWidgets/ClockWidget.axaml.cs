@@ -48,6 +48,8 @@ public sealed partial class ClockFace : Control
         set => SetValue(IsAnalogProperty, value);
     }
 
+    private App? _app;
+    private bool _attached;
     private DateTime _now;
     private readonly DispatcherTimer _timer;
     private string _time = "";
@@ -110,14 +112,47 @@ public sealed partial class ClockFace : Control
         };
 
         _timer.Tick += (_, _) => UpdateTime();
-        _timer.Start();
-
-        DetachedFromVisualTree += (_, _) => _timer.Stop();
+        DetachedFromVisualTree += (_, _) =>
+        {
+            _attached = false;
+            _timer.Stop();
+            if (_app is not null)
+            {
+                _app.DesktopOcclusionChanged -= OnDesktopActivityChanged;
+                _app.WindowTracker.OcclusionStateChanged -= OnDesktopActivityChanged;
+                _app.SessionState.Changed -= OnDesktopActivityChanged;
+                _app = null;
+            }
+        };
         AttachedToVisualTree += (_, _) =>
+        {
+            _attached = true;
+            _app = Application.Current as App;
+            if (_app is not null)
+            {
+                _app.DesktopOcclusionChanged += OnDesktopActivityChanged;
+                _app.WindowTracker.OcclusionStateChanged += OnDesktopActivityChanged;
+                _app.SessionState.Changed += OnDesktopActivityChanged;
+            }
+            OnDesktopActivityChanged(null, EventArgs.Empty);
+        };
+    }
+
+    private void OnDesktopActivityChanged(object? sender, EventArgs e) =>
+        SetDesktopActivitySuspended(_app is not null &&
+            (_app.SessionState.GamingMode || _app.IsDesktopOccludedByExternalApp ||
+             _app.WindowTracker.IsAnyWindowMaximizedOrFullScreen || _app.IsLockScreenActive));
+
+    internal bool IsAnimationRunning => _timer.IsEnabled;
+
+    internal void SetDesktopActivitySuspended(bool suspended)
+    {
+        if (!_attached || suspended) _timer.Stop();
+        else if (!_timer.IsEnabled)
         {
             UpdateTime();
             _timer.Start();
-        };
+        }
     }
 
     private void UpdateTime()

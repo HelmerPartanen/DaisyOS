@@ -24,6 +24,12 @@ required_files=(
   airootfs/usr/local/bin/daisyos-xorg-session
   airootfs/usr/local/bin/daisyos-session
   airootfs/usr/local/bin/daisyos-fallback-session
+  airootfs/usr/local/bin/daisyos-game
+  airootfs/usr/local/bin/daisyos-game-launcher
+  airootfs/usr/local/bin/steam
+  airootfs/usr/local/bin/lutris
+  airootfs/usr/local/lib/daisyos/gaming-environment
+  airootfs/usr/share/polkit-1/rules.d/60-daisyos-gamemode.rules
 )
 
 for file in "${required_files[@]}"; do
@@ -146,6 +152,13 @@ required_packages=(
   xdg-desktop-portal-kde
   xterm
   qemu-guest-agent
+  steam
+  lutris
+  gamemode
+  lib32-gamemode
+  mangohud
+  lib32-mangohud
+  lib32-vulkan-icd-loader
 )
 for package in "${required_packages[@]}"; do
   if ! grep -Fxq "$package" <<<"$packages"; then
@@ -237,3 +250,8 @@ if command -v shellcheck >/dev/null 2>&1; then
 fi
 
 echo "ISO profile checks passed."
+
+if ! grep -Fxq '[multilib]' "$profile/pacman.conf"; then
+  echo 'The ISO must enable multilib for its 32-bit gaming packages.' >&2
+  exit 1
+fi

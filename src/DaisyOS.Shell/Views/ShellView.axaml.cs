@@ -51,7 +51,6 @@ namespace DaisyOS.Shell.Views
         private bool _consoleTransitionInProgress;
         private bool _lastInputWasController;
         private bool _usesNativeConsoleSurface;
-        private Border? _nativeFullscreenBottomScrim;
         private bool _taskbarAutoHide;
         private bool _systemBarAutoHide;
         private bool _mediaAutoHide;
@@ -90,7 +89,6 @@ namespace DaisyOS.Shell.Views
                 else ScheduleMediaAutoHide();
             };
             _mediaAutoHideTimer.Tick += (_, _) => HideMediaIfUnhovered();
-            ActualThemeVariantChanged += (_, _) => UpdateNativeFullscreenBottomScrimBrush();
             ConsoleSettings.SetInputService(_controllerInputService);
             AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             AddHandler(InputElement.PointerMovedEvent, OnPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -169,20 +167,21 @@ namespace DaisyOS.Shell.Views
         public event EventHandler? BottomChromeStateChanged;
         public bool CanReleaseBottomWorkArea => _taskbarAutoHide && _systemBarAutoHide &&
             (_mediaAutoHide || !Desktop.ViewModel.BottomMediaWidgetVisible);
-        public bool IsBottomPanelInputPassthrough => CanReleaseBottomWorkArea &&
+        public bool IsBottomPanelInputPassthrough =>
             !TaskbarContent.IsVisible && !SystemBarContent.IsVisible && !MediaWidgetContent.IsVisible;
-        public bool IsBottomEdgeSensorEnabled => !_externalFullscreenActive && (_taskbarAutoHide || _systemBarAutoHide || (_mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible));
+        public bool IsBottomEdgeSensorEnabled => _taskbarAutoHide || _systemBarAutoHide ||
+            (!_externalFullscreenActive && _mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible);
         public bool IsExternalFullscreenActive => _externalFullscreenActive;
 
         private bool IsTaskbarVisibleByPreference => !_taskbarAutoHide || _taskbarRevealed || IsLauncherVisible;
 
         /// <summary>
-        /// KWin reports when the active client owns an output fullscreen. Keep
-        /// passive desktop chrome out of games and video content until focus
-        /// returns to a normal window.
+        /// Hide chrome on entering fullscreen, while keeping auto-hidden bars
+        /// available through their independent edge reveal targets.
         /// </summary>
         public void SetExternalFullscreenActive(bool isFullScreen)
         {
+            if (_externalFullscreenActive == isFullScreen) return;
             _externalFullscreenActive = isFullScreen;
             if (isFullScreen)
             {
@@ -195,11 +194,6 @@ namespace DaisyOS.Shell.Views
                 _bottomTooltips.Dismiss();
             }
             ApplyBottomBarVisibility(immediate: isFullScreen);
-            if (_nativeFullscreenBottomScrim is not null)
-            {
-                UpdateNativeFullscreenBottomScrimBrush();
-                _nativeFullscreenBottomScrim.IsVisible = isFullScreen;
-            }
             if (isFullScreen)
             {
                 HideLauncher();
@@ -260,7 +254,7 @@ namespace DaisyOS.Shell.Views
 
         private void RevealTaskbarTemporarily()
         {
-            if (!_taskbarAutoHide || _externalFullscreenActive) return;
+            if (!_taskbarAutoHide) return;
             if (!_taskbarRevealed)
             {
                 _taskbarRevealed = true;
@@ -271,7 +265,7 @@ namespace DaisyOS.Shell.Views
 
         private void RevealSystemBarTemporarily()
         {
-            if (!_systemBarAutoHide || _externalFullscreenActive) return;
+            if (!_systemBarAutoHide) return;
             if (!_systemBarRevealed)
             {
                 _systemBarRevealed = true;
@@ -282,8 +276,8 @@ namespace DaisyOS.Shell.Views
 
         private void ApplyBottomBarVisibility(bool immediate = false)
         {
-            var taskbarVisible = !_externalFullscreenActive && IsTaskbarVisibleByPreference;
-            var systemBarVisible = !_externalFullscreenActive && (!_systemBarAutoHide || _systemBarRevealed);
+            var taskbarVisible = (!_externalFullscreenActive || _taskbarAutoHide) && IsTaskbarVisibleByPreference;
+            var systemBarVisible = (!_externalFullscreenActive || _systemBarAutoHide) && (!_systemBarAutoHide || _systemBarRevealed);
             _ = GuiMotion.SetVisibleAsync(
                 TaskbarContent,
                 TaskbarContent.FindControl<Border>("TaskbarBody")!,
@@ -326,14 +320,14 @@ namespace DaisyOS.Shell.Views
         private void ScheduleTaskbarAutoHide()
         {
             _taskbarAutoHideTimer.Stop();
-            if (_taskbarAutoHide && _taskbarRevealed && !_externalFullscreenActive && !IsLauncherVisible && !TaskbarContent.IsContextMenuVisible)
+            if (_taskbarAutoHide && _taskbarRevealed && !IsLauncherVisible && !TaskbarContent.IsContextMenuVisible)
                 _taskbarAutoHideTimer.Start();
         }
 
         private void ScheduleSystemBarAutoHide()
         {
             _systemBarAutoHideTimer.Stop();
-            if (_systemBarAutoHide && _systemBarRevealed && !_externalFullscreenActive && !SystemBar.IsQuickSettingsVisible &&
+            if (_systemBarAutoHide && _systemBarRevealed && !SystemBar.IsQuickSettingsVisible &&
                 !SystemBar.IsNotificationPanelVisible && !SystemBar.IsCalendarPanelVisible && !SystemBar.IsAppTrayVisible)
                 _systemBarAutoHideTimer.Start();
         }
@@ -341,7 +335,7 @@ namespace DaisyOS.Shell.Views
         private void HideTaskbarIfUnhovered()
         {
             _taskbarAutoHideTimer.Stop();
-            if (!_taskbarAutoHide || !_taskbarRevealed || _externalFullscreenActive || IsLauncherVisible ||
+            if (!_taskbarAutoHide || !_taskbarRevealed || IsLauncherVisible ||
                 TaskbarContent.IsPointerOver || TaskbarContent.IsContextMenuVisible) return;
             if (DaisyOS.Shell.Services.Compositor.TaskbarPreviewState.IsShowing)
             {
@@ -355,7 +349,7 @@ namespace DaisyOS.Shell.Views
         private void HideSystemBarIfUnhovered()
         {
             _systemBarAutoHideTimer.Stop();
-            if (!_systemBarAutoHide || !_systemBarRevealed || _externalFullscreenActive || SystemBarContent.IsPointerOver ||
+            if (!_systemBarAutoHide || !_systemBarRevealed || SystemBarContent.IsPointerOver ||
                 SystemBar.IsQuickSettingsVisible || SystemBar.IsNotificationPanelVisible || SystemBar.IsCalendarPanelVisible || SystemBar.IsAppTrayVisible) return;
             _systemBarRevealed = false;
             ApplyBottomBarVisibility();
@@ -383,33 +377,15 @@ namespace DaisyOS.Shell.Views
             return _bottomTooltips;
         }
 
-        /// <summary>Moves the always-visible chrome into the native top-layer panel.</summary>
+        /// <summary>Moves bottom chrome into the native overlay panel above fullscreen clients.</summary>
         public Control DetachDesktopChromeForNativePanel()
         {
             TaskbarContent.IsNativePanelHosted = true;
             var panel = new Grid { IsHitTestVisible = true, Background = Brushes.Transparent };
-            _nativeFullscreenBottomScrim = new Border
-            {
-                IsHitTestVisible = false,
-                IsVisible = false,
-                Height = ShellSurfacePlan.PrimaryPanelExclusiveZone,
-                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom
-            };
-            UpdateNativeFullscreenBottomScrimBrush();
-            panel.Children.Add(_nativeFullscreenBottomScrim);
             MoveToNativePanel(MediaWidgetContent, panel);
             MoveToNativePanel(TaskbarContent, panel);
             MoveToNativePanel(SystemBarContent, panel);
             return panel;
-        }
-
-        private void UpdateNativeFullscreenBottomScrimBrush()
-        {
-            if (_nativeFullscreenBottomScrim is not null)
-            {
-                _nativeFullscreenBottomScrim.Background =
-                    this.FindResource("FullscreenBottomScrimBrush") as IBrush ?? Brushes.Transparent;
-            }
         }
 
         /// <summary>Moves the launcher into a modal, native overlay surface.</summary>

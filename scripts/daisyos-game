@@ -1,0 +1,61 @@
+#!/usr/bin/env bash
+# Steam launch option: /path/to/daisyos-game %command%
+set -Eeuo pipefail
+if (($# == 0)); then
+  echo 'Usage: daisyos-game COMMAND [ARGUMENTS...]' >&2
+  exit 2
+fi
+runtime="${XDG_DATA_HOME:-$HOME/.local/share}/DaisyOS/game-telemetry"
+if command -v mangohud >/dev/null 2>&1; then
+  backend=system
+elif [[ -f "$runtime/usr/lib/mangohud/libMangoHud.so" && -d "$runtime/manifests" ]]; then
+  backend=local
+else
+  echo 'Game FPS telemetry requires MangoHud. Install mangohud (and lib32-mangohud for 32-bit games), then retry.' >&2
+  exit 127
+fi
+if [[ -n "${DAISYOS_MANGOHUD_LOG_DIR:-}" ]]; then
+  telemetry_dir="$DAISYOS_MANGOHUD_LOG_DIR"
+elif [[ -n "${XDG_RUNTIME_DIR:-}" ]]; then
+  telemetry_dir="$XDG_RUNTIME_DIR/daisyos/gaming-telemetry"
+else
+  telemetry_dir="${XDG_CACHE_HOME:-$HOME/.cache}/DaisyOS/gaming-telemetry"
+fi
+[[ "$telemetry_dir" == /* && "$telemetry_dir" != *','* && "$telemetry_dir" != *$'\n'* ]] || {
+  echo 'FPS telemetry directory must be an absolute path without commas or newlines.' >&2
+  exit 2
+}
+umask 077
+mkdir -p -- "$telemetry_dir"
+# Keep existing environment settings, then override telemetry and HUD visibility.
+# One sample per second avoids per-frame CSV writes competing with game loading.
+control_name="daisyos-fps-$UID-$$-$RANDOM-$RANDOM"
+export MANGOHUD_CONFIG="${MANGOHUD_CONFIG:+$MANGOHUD_CONFIG,}read_cfg=0,no_display,autostart_log=0,log_interval=1000,log_duration=0,control=$control_name,output_folder=$telemetry_dir"
+# Hidden MangoHud does not run its autostart check until logging is active.
+# Start logging over its native control socket, then let this bounded helper exit.
+python3 - "$control_name" <<'PYCONTROL' >/dev/null 2>&1 &
+import socket, sys, time
+for _ in range(120):
+    try:
+        with socket.socket(socket.AF_UNIX) as control:
+            control.settimeout(1)
+            control.connect('\0' + sys.argv[1])
+            control.recv(4096)
+            control.sendall(b':logging=1;')
+            time.sleep(0.1)
+        break
+    except OSError:
+        time.sleep(0.25)
+PYCONTROL
+if [[ "$backend" == system ]]; then
+  exec mangohud "$@"
+fi
+export MANGOHUD=1
+export LD_LIBRARY_PATH="$runtime/usr/\$LIB${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+export VK_ADD_IMPLICIT_LAYER_PATH="$runtime/manifests${VK_ADD_IMPLICIT_LAYER_PATH:+:$VK_ADD_IMPLICIT_LAYER_PATH}"
+# Match upstream's launcher exception for games whose scripts set their own loader paths.
+case "$*" in
+  *cs2.sh*|*RiseOfTheTombRaider.sh*) ;;
+  *) export LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD:}$runtime/usr/\$LIB/mangohud/libMangoHud_shim.so" ;;
+esac
+exec "$@"

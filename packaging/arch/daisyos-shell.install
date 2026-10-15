@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+post_install() {
+  cat <<'EOF'
+To enable the DaisyOS shell service:
+  systemctl --user enable --now daisyos-shell.service
+EOF
+}

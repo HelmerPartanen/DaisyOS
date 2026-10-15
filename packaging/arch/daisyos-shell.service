@@ -1,0 +1,11 @@
+[Unit]
+Description=DaisyOS Desktop Shell
+PartOf=graphical-session.target
+
+[Service]
+ExecStart=/usr/bin/daisyos-shell
+Restart=on-failure
+StartLimitBurst=5
+
+[Install]
+WantedBy=graphical-session.target

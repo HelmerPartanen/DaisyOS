@@ -28,6 +28,10 @@ cat > "$temp_dir/bin/systemctl" <<'EOF'
 #!/usr/bin/env bash
 exit "${DAISYOS_TEST_SYSTEMCTL_EXIT:-0}"
 EOF
+cat > "$temp_dir/bin/busctl" <<'EOF'
+#!/usr/bin/env bash
+printf 'u %s\n' "${DAISYOS_TEST_CAPTURE_TYPES:-3}"
+EOF
 chmod +x "$temp_dir/bin/"*
 
 pass_report="$temp_dir/pass.md"
@@ -60,6 +64,18 @@ grep -Fq '| FAIL | Wayland round trip |' "$failure_report"
 grep -Fq '| FAIL | KWin running |' "$failure_report"
 grep -Fq '| WARN | Desktop portal |' "$failure_report"
 grep -Eq 'Summary: [1-9][0-9]* required failure\(s\), 2 warning\(s\).' "$failure_report"
+
+# A running portal with no capture interfaces must fail the strict gate.
+empty_capture_report="$temp_dir/empty-capture.md"
+if PATH="$temp_dir/bin:$PATH" \
+    DAISYOS_CHECK_SESSION_TYPE=wayland \
+    DAISYOS_CHECK_WAYLAND_DISPLAY=wayland-test \
+    DAISYOS_TEST_CAPTURE_TYPES=0 \
+      "$checker" --strict --output "$empty_capture_report"; then
+  echo "Strict compositor validation accepted a portal with no capture sources."
+  exit 1
+fi
+grep -Fq '| FAIL | Screen capture sources |' "$empty_capture_report"
 
 wrong_pid_report="$temp_dir/wrong-pid.md"
 if PATH="$temp_dir/bin:$PATH" \

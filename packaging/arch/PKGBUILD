@@ -1,0 +1,30 @@
+pkgname=daisyos-shell
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="DaisyOS custom C#/.NET Avalonia shell"
+arch=('x86_64')
+url="https://github.com/helmeri/DottOS"
+license=('custom')
+depends=('dotnet-runtime' 'kwin' 'qt5-wayland' 'qt6-wayland' 'gamemode' 'lib32-gamemode' 'mangohud' 'lib32-mangohud')
+backup=('etc/daisyos/settings.json')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  if [[ ! -d "$srcdir/gaming-root/usr/local/lib/daisyos" ]]; then
+    echo "Missing automatic gaming integration; publish the current release payload first." >&2
+    return 1
+  fi
+  cp -a "$srcdir/gaming-root/." "$pkgdir/"
+  mkdir -p "$pkgdir/usr/lib/daisyos"
+  mkdir -p "$pkgdir/usr/bin"
+  mkdir -p "$pkgdir/usr/lib/systemd/user"
+  mkdir -p "$pkgdir/usr/share/daisyos/defaults"
+  mkdir -p "$pkgdir/etc/daisyos"
+
+  cp -r * "$pkgdir/usr/lib/daisyos/"
+  ln -s /usr/lib/daisyos/daisyos-shell "$pkgdir/usr/bin/daisyos-shell"
+  cp "$srcdir/daisyos-shell.service" "$pkgdir/usr/lib/systemd/user/daisyos-shell.service"
+  cp "$srcdir/defaults/settings.json" "$pkgdir/usr/share/daisyos/defaults/settings.json"
+  cp "$srcdir/defaults/settings.json" "$pkgdir/etc/daisyos/settings.json"
+}

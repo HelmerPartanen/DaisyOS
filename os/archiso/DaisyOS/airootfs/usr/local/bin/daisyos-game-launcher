@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Automatic Steam/Lutris tree integration; no per-game launch-option changes.
+set -Eeuo pipefail
+(($#)) || { echo 'Usage: daisyos-game-launcher COMMAND [ARGUMENTS...]' >&2; exit 2; }
+environment_file="${DAISYOS_GAMING_ENVIRONMENT:-/usr/local/lib/daisyos/gaming-environment}"
+if [[ ! -f "$environment_file" ]]; then
+  environment_file="$(dirname "$(readlink -f "$0")")/daisyos-gaming-environment"
+fi
+if [[ -f "$environment_file" ]]; then
+  # shellcheck source=/dev/null
+  source "$environment_file"
+fi
+if [[ -n "${DAISYOS_GAME_GL_PRELOAD:-}" ]]; then
+  case ":${LD_PRELOAD:-}:" in
+    *":$DAISYOS_GAME_GL_PRELOAD:"*) ;;
+    *) export LD_PRELOAD="${LD_PRELOAD:+$LD_PRELOAD:}$DAISYOS_GAME_GL_PRELOAD" ;;
+  esac
+fi
+if [[ -n "${DAISYOS_GAME_LIBRARY_PATH:-}" ]]; then
+  export LD_LIBRARY_PATH="$DAISYOS_GAME_LIBRARY_PATH${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+fi
+exec "$@"

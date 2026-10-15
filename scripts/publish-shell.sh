@@ -128,6 +128,8 @@ echo ""
   ffmpeg -version | sed -n '1p'
 } > "$output_dir/wallpaper-dependencies.txt"
 
+"$repo_root/scripts/stage-gaming-integration.sh" --root "$output_dir/gaming-root"
+
 shell_binary="$output_dir/DaisyOS.Shell"
 if [ -f "$shell_binary" ]; then
   chmod +x "$shell_binary"

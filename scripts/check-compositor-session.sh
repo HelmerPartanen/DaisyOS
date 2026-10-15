@@ -138,6 +138,20 @@ else
   report WARN "Desktop portal" "Screenshots, sharing, and file dialogs still need portal verification."
 fi
 
+# Running services can still export zero sources (for example when KDE's
+# backend is launched under a desktop identity that disables ScreenCast).
+capture_properties=""
+if command -v busctl >/dev/null 2>&1; then
+  capture_properties="$(timeout 5 busctl --user get-property org.freedesktop.portal.Desktop \
+    /org/freedesktop/portal/desktop org.freedesktop.portal.ScreenCast AvailableSourceTypes 2>/dev/null || true)"
+fi
+read -r capture_signature capture_types <<< "$capture_properties"
+if [[ "$capture_signature" == u && "$capture_types" =~ ^[0-9]+$ ]] && (( (capture_types & 1) != 0 )); then
+  report PASS "Screen capture sources" "The portal advertises monitor capture; permission selection and actual frames still require an application test."
+else
+  report FAIL "Screen capture sources" "The portal does not advertise monitor capture. Run the DaisyOS screen-sharing preparation and inspect the KDE backend."
+fi
+
 if command -v systemctl >/dev/null 2>&1 \
     && systemctl --user is-active --quiet pipewire.service; then
   report PASS "PipeWire" "Audio and portal screen-sharing support is running."

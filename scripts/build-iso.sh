@@ -20,6 +20,7 @@ if [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
   exit 1
 fi
 
+"$repo_root/scripts/stage-gaming-integration.sh" --root "$profile/airootfs"
 "$repo_root/scripts/check-iso-profile.sh"
 
 shell_binary="$profile/airootfs/opt/DaisyOS/shell/DaisyOS.Shell"
@@ -28,6 +29,8 @@ if [[ ! -x "$shell_binary" ]]; then
   echo "Run scripts/publish-shell.sh and scripts/copy-shell-to-iso.sh first."
   exit 1
 fi
+
+"$repo_root/scripts/check-game-telemetry-payload.sh" "$(dirname "$shell_binary")"
 
 # A live-alpha candidate must never inherit files from a previous image root.
 # mkarchiso's work tree is disposable and kept entirely inside the repository.

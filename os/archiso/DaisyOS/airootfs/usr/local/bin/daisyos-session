@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+shell_binary="${DAISYOS_SHELL_BINARY:-/opt/DaisyOS/shell/DaisyOS.Shell}"
+state_dir="${DAISYOS_STATE_DIR:-${XDG_STATE_HOME:-$HOME/.local/state}/DaisyOS}"
+recovery_marker="$state_dir/use-fallback-session"
+session_log="$state_dir/session.log"
+maximum_attempts=3
+fallback_command="${DAISYOS_FALLBACK_COMMAND:-/usr/local/bin/daisyos-fallback-session}"
+restart_delay="${DAISYOS_RESTART_DELAY_SECONDS:-2}"
+evidence_console="${DAISYOS_BOOT_EVIDENCE_CONSOLE:-}"
+
+mkdir -p "$state_dir"
+
+# Import only the managed locale values, never execute user configuration.
+daisy_language_file="${XDG_CONFIG_HOME:-$HOME/.config}/environment.d/90-daisyos-language.conf"
+if [[ -f "$daisy_language_file" ]]; then
+  while IFS='=' read -r daisy_locale_key daisy_locale_value; do
+    case "$daisy_locale_key:$daisy_locale_value" in
+      LANG:en_US.UTF-8|LANG:fi_FI.UTF-8|LANG:C.UTF-8|LC_MESSAGES:en_US.UTF-8|LC_MESSAGES:fi_FI.UTF-8|LC_MESSAGES:C.UTF-8|LANGUAGE:en|LANGUAGE:fi:en|LC_ALL:)
+        export "$daisy_locale_key=$daisy_locale_value" ;;
+    esac
+  done < "$daisy_language_file"
+fi
+
+
+if [[ -f /usr/local/lib/daisyos/gaming-environment ]]; then
+  # shellcheck source=/dev/null
+  source /usr/local/lib/daisyos/gaming-environment
+fi
+
+# Publish the compositor-provided display environment before portal and
+# authorization services start. Missing optional services must not crash the
+# desktop or bypass the bounded shell supervisor.
+if command -v dbus-update-activation-environment >/dev/null 2>&1; then
+  dbus-update-activation-environment --systemd \
+    DISPLAY WAYLAND_DISPLAY XAUTHORITY XCURSOR_THEME XCURSOR_SIZE LANG LANGUAGE LC_MESSAGES LC_ALL \
+    XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE MANGOHUD MANGOHUD_CONFIG \
+    VK_ADD_IMPLICIT_LAYER_PATH DAISYOS_GAME_GL_PRELOAD DAISYOS_GAME_LIBRARY_PATH DAISYOS_GAMING_ENVIRONMENT_READY >/dev/null 2>&1 || true
+fi
+systemctl --user --no-block start \
+  plasma-polkit-agent.service \
+  xdg-desktop-portal.service \
+  plasma-xdg-desktop-portal-kde.service >/dev/null 2>&1 || true
+
+log_message() {
+  local message="$1"
+  local record
+  record="$(date --iso-8601=seconds) $message"
+  printf '%s\n' "$record" | tee -a "$session_log" | systemd-cat -t daisyos-session
+  if [[ -n "$evidence_console" && -w "$evidence_console" ]]; then
+    printf 'DAISYOS_SESSION: %s\n' "$record" > "$evidence_console"
+  fi
+}
+
+record_crash_diagnostics() {
+  local status="$1"
+  local attempt="$2"
+  local firmware="BIOS"
+  local signal_name="none"
+
+  if [[ -d /sys/firmware/efi ]]; then
+    firmware="UEFI"
+  fi
+  if (( status > 128 )); then
+    signal_name="$(kill -l "$((status - 128))" 2>/dev/null || printf 'unknown')"
+  fi
+
+  log_message "Crash diagnostics: attempt=$attempt status=$status signal=$signal_name firmware=$firmware renderer=${DAISYOS_SOFTWARE_RENDERING:-default} kernel=$(uname -r)."
+}
+
+if [[ -e "$recovery_marker" ]]; then
+  log_message "Recovery marker found; starting the fallback session."
+  exec "$fallback_command"
+fi
+
+if [[ ! -x "$shell_binary" ]]; then
+  log_message "DaisyOS Shell is missing or not executable."
+  touch "$recovery_marker"
+  exec "$fallback_command"
+fi
+
+for ((attempt = 1; attempt <= maximum_attempts; attempt++)); do
+  log_message "Starting DaisyOS Shell (attempt $attempt of $maximum_attempts)."
+  export DOTNET_DbgEnableMiniDump="${DOTNET_DbgEnableMiniDump:-1}"
+  export DOTNET_DbgMiniDumpType="${DOTNET_DbgMiniDumpType:-1}"
+  export DOTNET_DbgMiniDumpName="${DOTNET_DbgMiniDumpName:-$state_dir/dump-%e-%p}"
+  ulimit -c unlimited 2>/dev/null || true
+  set +e
+  "$shell_binary" --real-services --production \
+    > >(tee -a "$session_log" | systemd-cat -t daisyos-shell) \
+    2> >(tee -a "$session_log" | systemd-cat -t daisyos-shell -p warning >&2)
+  status=$?
+  set -e
+
+  if [[ "$status" -eq 0 ]]; then
+    log_message "DaisyOS Shell exited normally."
+    exit 0
+  fi
+
+  log_message "DaisyOS Shell stopped unexpectedly with status $status."
+  record_crash_diagnostics "$status" "$attempt"
+  sleep "$restart_delay"
+done
+
+touch "$recovery_marker"
+log_message "DaisyOS Shell failed repeatedly; switching to recovery."
+exec "$fallback_command"

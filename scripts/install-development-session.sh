@@ -60,6 +60,12 @@ config_target="$config_dir/daisyos-development-session.conf"
 install -d -m 0755 "$bin_dir" "$session_dir" "$config_dir"
 install -m 0755 "$repo_root/scripts/daisyos-development-session" "$launcher_target"
 install -m 0644 "$repo_root/packaging/wayland-sessions/daisyos-development.desktop" "$entry_target"
+install -d -m 0755 "$prefix/usr/share/xdg-desktop-portal"
+install -m 0644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
+  "$prefix/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+install -d -m 0755 "$prefix/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d"
+install -m 0644 "$repo_root/packaging/xdg-desktop-portal/kde-backend.conf" \
+  "$prefix/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d/50-daisyos-capture.conf"
 
 # Preserve the selected checkout when refreshing the launcher, unless an
 # explicit --repo path was supplied for this installation.

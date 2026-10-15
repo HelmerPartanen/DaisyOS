@@ -36,10 +36,21 @@ public sealed class LayerShellSurfaceTests
     {
         var options = LayerShellSurfaceOptions.PrimaryPanel(ShellSurfacePlan.PrimaryPanelExclusiveZone, "eDP-1");
 
-        Assert.Equal(LayerShellSurfaceRole.Panel, options.Role);
+        Assert.Equal(LayerShellSurfaceRole.Overlay, options.Role);
         Assert.Equal(LayerShellAnchor.Bottom | LayerShellAnchor.Left | LayerShellAnchor.Right, options.Anchor);
         Assert.Equal(58, options.ExclusiveZone);
         options.Validate();
+    }
+
+    [Fact]
+    public void Fullscreen_edge_sensor_stays_above_games_without_taking_keyboard_focus()
+    {
+        var options = LayerShellSurfaceOptions.BottomEdgeSensor("eDP-1");
+        Assert.Equal(LayerShellSurfaceRole.Overlay, options.Role);
+        Assert.Equal(0, options.ExclusiveZone);
+        Assert.Equal(2u, options.Height);
+        Assert.Equal(LayerShellKeyboardInteractivity.None, options.KeyboardInteractivity);
+        Assert.True(options.InputPassthrough);
     }
 
     [Fact]

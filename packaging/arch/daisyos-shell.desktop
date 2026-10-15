@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=DaisyOS Shell
+Comment=Custom C#/.NET Desktop Shell
+Exec=/usr/bin/daisyos-shell
+Icon=daisyos
+Type=Application
+Categories=System;

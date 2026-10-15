@@ -111,9 +111,16 @@ install_file_atomically() {
 }
 
 install -d -m 0755 "$bin_dir" "$session_dir" "$config_dir"
+"$repo_root/scripts/stage-gaming-integration.sh" --root "$prefix"
 install_file_atomically 0755 "$repo_root/scripts/daisyos-native-development-session" "$session_target"
 install_file_atomically 0755 "$repo_root/scripts/daisyos-native-development" "$control_target"
 install_file_atomically 0644 "$repo_root/packaging/wayland-sessions/daisyos-native-development.desktop" "$entry_target"
+install -d -m 0755 "$prefix/usr/share/xdg-desktop-portal"
+install_file_atomically 0644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
+  "$prefix/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+install -d -m 0755 "$prefix/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d"
+install_file_atomically 0644 "$repo_root/packaging/xdg-desktop-portal/kde-backend.conf" \
+  "$prefix/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d/50-daisyos-capture.conf"
 
 # Preserve an explicitly selected checkout when the session launcher is
 # refreshed, unless the installation itself supplies a different checkout.

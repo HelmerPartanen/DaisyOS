@@ -127,6 +127,7 @@ public partial class WallpaperLayer : UserControl
     private Window? _attachedWindow;
     private bool _isConsoleMode;
     private bool _isGameRunning;
+    private bool _gamingModeActive;
 
     public void SetConsoleNavigationParallax(double position)
     {
@@ -177,6 +178,8 @@ public partial class WallpaperLayer : UserControl
             _app.WallpaperChanged += OnWallpaperChanged;
             _app.WindowTracker.OcclusionStateChanged += OnOcclusionStateChanged;
             _app.DesktopOcclusionChanged += OnOcclusionStateChanged;
+            _gamingModeActive = _app.SessionState.GamingMode;
+            _app.SessionState.Changed += OnGamingModeChanged;
         }
 
         _attachedWindow = TopLevel.GetTopLevel(this) as Window;
@@ -215,6 +218,7 @@ public partial class WallpaperLayer : UserControl
             _app.WallpaperChanged -= OnWallpaperChanged;
             _app.WindowTracker.OcclusionStateChanged -= OnOcclusionStateChanged;
             _app.DesktopOcclusionChanged -= OnOcclusionStateChanged;
+            _app.SessionState.Changed -= OnGamingModeChanged;
         }
 
         if (_attachedWindow is not null)
@@ -233,6 +237,14 @@ public partial class WallpaperLayer : UserControl
         _pendingVideoTransitionResources = null;
         foreach (var bitmap in _retiredWallpaperBitmaps) bitmap.Dispose();
         _retiredWallpaperBitmaps.Clear();
+    }
+
+    private void OnGamingModeChanged(object? sender, EventArgs e)
+    {
+        var active = _app?.SessionState.GamingMode ?? false;
+        if (_gamingModeActive == active) return;
+        _gamingModeActive = active;
+        UpdateVisibilityAndPauseState();
     }
 
     private void OnOcclusionStateChanged(object? sender, EventArgs e) => UpdateVisibilityAndPauseState();
@@ -279,7 +291,8 @@ public partial class WallpaperLayer : UserControl
                                  && !isExternalAppOccludingDesktop
                                  && !isLockScreenOccludingDesktop
                                  && !_isConsoleMode
-                                 && !_isGameRunning));
+                                 && !_isGameRunning
+                                 && (IgnoreDesktopOcclusion || !_gamingModeActive)));
 
         if (_mpvSession is not null)
         {

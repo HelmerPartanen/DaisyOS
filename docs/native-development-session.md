@@ -81,3 +81,7 @@ has passed on the hardware you use every day.
 
 The measured optimizations, benchmark results, and remaining acceptance limits
 are recorded in [Performance and memory verification](architecture/performance-and-memory.md).
+
+## Screen recording and sharing
+
+The session prepares KWin's KDE portal backend with a backend-only compatibility environment and validates monitor capture capability. See [screen sharing](screen-sharing.md) for the repair command, OBS sources, and end-to-end verification boundaries.

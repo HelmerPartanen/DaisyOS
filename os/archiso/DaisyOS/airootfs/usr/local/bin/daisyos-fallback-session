@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec xterm \
+  -title "DaisyOS Recovery" \
+  -geometry 100x30 \
+  -fa Monospace \
+  -fs 11 \
+  -e bash -lc '
+    printf "\nDaisyOS could not start the desktop.\n\n"
+    printf "Your files are still available. Review the session log with:\n"
+    printf "  less ~/.local/state/DaisyOS/session.log\n\n"
+    printf "After correcting the problem, run:\n"
+    printf "  sudo /usr/local/bin/daisyos-recover-session\n\n"
+    printf "Then close this terminal to try the desktop again.\n\n"
+    exec bash -l
+  '

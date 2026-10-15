@@ -23,6 +23,11 @@ packaging/*
 !packaging/wayland-sessions/
 packaging/wayland-sessions/*
 !packaging/wayland-sessions/daisyos-development.desktop
+# Portal configuration is source, not generated package output.
+!packaging/xdg-desktop-portal/
+packaging/xdg-desktop-portal/*
+!packaging/xdg-desktop-portal/daisyos-portals.conf
+!packaging/xdg-desktop-portal/kde-backend.conf
 
 # User-specific files
 *.rsuser
@@ -59,3 +64,22 @@ services/DaisyLaunch/build/
 
 # Native busy cursor plugin build outputs
 src/native/daisy_busy_cursor/build/
+
+# Release definitions and gaming policy are source, not generated packages.
+!packaging/arch/
+packaging/arch/*
+!packaging/arch/PKGBUILD
+!packaging/arch/daisyos-repo.conf
+!packaging/arch/daisyos-shell
+!packaging/arch/daisyos-shell.desktop
+!packaging/arch/daisyos-shell.install
+!packaging/arch/daisyos-shell.service
+!packaging/arch/defaults/
+packaging/arch/defaults/*
+!packaging/arch/defaults/settings.json
+!packaging/gaming/
+packaging/gaming/*
+!packaging/gaming/60-daisyos-gamemode.rules
+!packaging/wayland-sessions/daisyos-native-development.desktop
+# ISO launchers are source scripts; published binaries remain under ignored opt payloads.
+!os/archiso/DaisyOS/airootfs/usr/local/bin/

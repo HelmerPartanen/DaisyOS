@@ -14,12 +14,27 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
     private static partial int PosixFadvise(int fd, long offset, long len, int advice);
 
     private readonly object _gate = new();
+    private readonly object _cacheWriteGate = new();
     private readonly LinkedList<(string Id, string[] Paths)> _recent = [];
     private readonly Timer _idle;
     private readonly string _cachePath;
     private CancellationTokenSource? _work;
     private int _lastPid;
     private bool _disposed;
+    private bool _suspended;
+
+    internal bool IsSuspended { get { lock (_gate) return _suspended; } }
+
+    public void SetSuspended(bool suspended)
+    {
+        lock (_gate)
+        {
+            if (_disposed || _suspended == suspended) return;
+            _suspended = suspended;
+            if (suspended) _work?.Cancel();
+            _idle.Change(suspended ? Timeout.Infinite : 4000, Timeout.Infinite);
+        }
+    }
 
     public RecentAppPrefetcher()
     {
@@ -39,12 +54,13 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
         lock (_gate)
         {
             _work?.Cancel();
-            if (!_disposed) _idle.Change(4000, Timeout.Infinite);
+            if (!_disposed && !_suspended) _idle.Change(4000, Timeout.Infinite);
         }
     }
 
     public void Observe(CompositorWindowRecord window)
     {
+        lock (_gate) if (_disposed || _suspended) return;
         if (!window.IsActive || window.ProcessId <= 1 || window.ProcessId == Environment.ProcessId || window.ProcessId == _lastPid) return;
         _lastPid = window.ProcessId;
         _ = Task.Run(() =>
@@ -59,13 +75,13 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
                     .Cast<string>().Distinct(StringComparer.Ordinal).Take(256).ToArray();
                 lock (_gate)
                 {
-                    if (_disposed) return;
+                    if (_disposed || _suspended) return;
                     var old = _recent.First;
                     while (old is not null) { var next = old.Next; if (old.Value.Id == window.AppId) _recent.Remove(old); old = next; }
                     _recent.AddFirst((window.AppId, paths));
                     while (_recent.Count > 7) _recent.RemoveLast();
-                    SaveCache();
                 }
+                SaveCache();
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
         });
@@ -76,10 +92,13 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
         if (Environment.GetEnvironmentVariable("DAISYOS_PREFETCH") == "0" || MemoryPressure()) return;
         lock (_gate)
         {
-            if (_disposed || _work is { IsCancellationRequested: false }) return;
-            _work?.Dispose();
+            if (_disposed || _suspended || _work is { IsCancellationRequested: false }) return;
             _work = new CancellationTokenSource();
-            _ = RunAsync(_recent.SelectMany(entry => entry.Paths).Distinct(StringComparer.Ordinal).ToArray(), _work);
+            var paths = _recent.SelectMany(entry => entry.Paths).Distinct(StringComparer.Ordinal).ToArray();
+            var work = _work;
+            // Linux fadvise is synchronous. Never issue readahead while holding
+            // the gate that input and Gaming Mode need to cancel this worker.
+            _ = Task.Run(() => RunAsync(paths, work));
         }
     }
 
@@ -145,7 +164,7 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
             ResponsivenessTrace.Mark("external.prefetch", durationMs: null);
         }
         catch (OperationCanceledException) { }
-        finally { lock (_gate) if (ReferenceEquals(_work, work)) { _work = null; work.Dispose(); } }
+        finally { lock (_gate) { if (ReferenceEquals(_work, work)) _work = null; work.Dispose(); } }
     }
 
     private void LoadCache()
@@ -178,9 +197,14 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
                 Directory.CreateDirectory(dir);
             }
 
-            var records = _recent.Select(r => new PrefetchCacheRecord(r.Id, r.Paths)).ToList();
+            List<PrefetchCacheRecord> records;
+            lock (_gate)
+            {
+                if (_disposed || _suspended) return;
+                records = _recent.Select(r => new PrefetchCacheRecord(r.Id, r.Paths)).ToList();
+            }
             var json = JsonSerializer.Serialize(records, PrefetchJsonContext.Default.ListPrefetchCacheRecord);
-            File.WriteAllText(_cachePath, json);
+            lock (_cacheWriteGate) File.WriteAllText(_cachePath, json);
         }
         catch { }
     }

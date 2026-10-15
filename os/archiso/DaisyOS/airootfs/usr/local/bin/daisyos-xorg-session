@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+state_dir="${XDG_STATE_HOME:-$HOME/.local/state}/DaisyOS"
+session_log="$state_dir/session.log"
+mkdir -p "$state_dir"
+
+export XDG_CURRENT_DESKTOP=DaisyOS
+export XDG_SESSION_DESKTOP=DaisyOS
+
+if command -v kwin_wayland >/dev/null 2>&1; then
+  export XDG_SESSION_TYPE=wayland
+  # This path exists specifically for systems where direct DRM composition
+  # failed. Keep the compatibility compositor independent of that GPU path.
+  export LIBGL_ALWAYS_SOFTWARE="${DAISYOS_COMPATIBILITY_SOFTWARE_RENDERING:-1}"
+  export KWIN_COMPOSE="${DAISYOS_COMPATIBILITY_KWIN_COMPOSE:-Q}"
+  export QT_QUICK_BACKEND="${DAISYOS_COMPATIBILITY_QT_QUICK_BACKEND:-software}"
+  printf '%s %s\n' "$(date --iso-8601=seconds)" \
+    "Starting KWin through the compatibility display path." >> "$session_log"
+  set +e
+  dbus-run-session -- kwin_wayland \
+    --x11-display "$DISPLAY" \
+    --fullscreen true \
+    --xwayland \
+    --no-lockscreen \
+    --exit-with-session /usr/local/bin/daisyos-session
+  status=$?
+  set -e
+  if [[ "$status" -eq 0 ]]; then
+    exit 0
+  fi
+fi
+
+export XDG_SESSION_TYPE=x11
+printf '%s %s\n' "$(date --iso-8601=seconds)" \
+  "The compositor could not start; using the basic recovery desktop." >> "$session_log"
+exec /usr/local/bin/daisyos-session

@@ -62,9 +62,11 @@ start_user_services() {
     pipewire.service \
     pipewire-pulse.service \
     wireplumber.service \
-    plasma-polkit-agent.service \
-    xdg-desktop-portal.service \
-    plasma-xdg-desktop-portal-kde.service >/dev/null 2>&1 || true
+    plasma-polkit-agent.service >/dev/null 2>&1 || true
+  mkdir -p "$state_dir"
+  if ! "$source_root/scripts/prepare-screen-sharing.sh" >> "$session_log" 2>&1; then
+    log_message "Screen capture preparation failed; OBS and screen sharing need portal diagnostics."
+  fi
 }
 
 run_shell() {

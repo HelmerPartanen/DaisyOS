@@ -24,6 +24,8 @@ installed_config="$stage_root/etc/daisyos/daisyos-native-development.conf"
 [[ -f "$installed_entry" ]]
 [[ -s "$installed_entry" ]]
 [[ -f "$installed_config" ]]
+cmp "$repo_root/packaging/xdg-desktop-portal/kde-backend.conf" \
+  "$stage_root/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d/50-daisyos-capture.conf"
 grep -Fxq 'Name=DaisyOS (Native Development)' "$installed_entry"
 grep -Fxq 'Exec=/usr/local/bin/daisyos-native-development-session' "$installed_entry"
 grep -Fq 'DAISYOS_NATIVE_DEVELOPMENT_ROOT=' "$installed_config"
@@ -51,6 +53,9 @@ grep -Fq 'memory status' "$control"
 grep -Fq -- '--add-port=53317/tcp' "$installer"
 grep -Fq -- '--add-port=53317/udp' "$installer"
 [[ -x "$memory_policy" ]]
+grep -Fq 'prepare-screen-sharing.sh' "$session_launcher"
+grep -Fxq 'org.freedesktop.impl.portal.ScreenCast=kde' \
+  "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
 
 if command -v desktop-file-validate >/dev/null 2>&1; then
   desktop-file-validate "$installed_entry"

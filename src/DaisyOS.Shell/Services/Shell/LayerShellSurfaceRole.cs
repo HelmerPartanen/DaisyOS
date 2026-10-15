@@ -74,7 +74,7 @@ public sealed record LayerShellSurfaceOptions(
         int exclusiveZone,
         string? outputName = null,
         uint? surfaceHeight = null) => new(
-        LayerShellSurfaceRole.Panel,
+        LayerShellSurfaceRole.Overlay,
         "daisyos.primary-panel",
         LayerShellAnchor.Bottom | LayerShellAnchor.Left | LayerShellAnchor.Right,
         exclusiveZone,

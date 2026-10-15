@@ -1,0 +1,36 @@
+# shellcheck shell=bash
+# Sourced by DaisyOS sessions and game launchers. No global OpenGL preload.
+[ "${DAISYOS_GAMING_ENVIRONMENT_READY:-}" != 1 ] || return 0
+if command -v mangohud >/dev/null 2>&1; then
+  DAISYOS_GAME_GL_PRELOAD="/usr/\$LIB/mangohud/libMangoHud_shim.so"
+elif [ -f "${XDG_DATA_HOME:-$HOME/.local/share}/DaisyOS/game-telemetry/usr/lib/mangohud/libMangoHud.so" ]; then
+  daisy_game_runtime="${XDG_DATA_HOME:-$HOME/.local/share}/DaisyOS/game-telemetry"
+  DAISYOS_GAME_GL_PRELOAD="$daisy_game_runtime/usr/\$LIB/mangohud/libMangoHud_shim.so"
+  export VK_ADD_IMPLICIT_LAYER_PATH="$daisy_game_runtime/manifests${VK_ADD_IMPLICIT_LAYER_PATH:+:$VK_ADD_IMPLICIT_LAYER_PATH}"
+  export DAISYOS_GAME_LIBRARY_PATH="$daisy_game_runtime/usr/\$LIB"
+else
+  return 0
+fi
+if [ -n "${DAISYOS_MANGOHUD_LOG_DIR:-}" ]; then
+  daisy_game_logs="$DAISYOS_MANGOHUD_LOG_DIR"
+elif [ -n "${XDG_RUNTIME_DIR:-}" ]; then
+  daisy_game_logs="$XDG_RUNTIME_DIR/daisyos/gaming-telemetry"
+else
+  daisy_game_logs="${XDG_CACHE_HOME:-$HOME/.cache}/DaisyOS/gaming-telemetry"
+fi
+case "$daisy_game_logs" in
+  /*) ;;
+  *) return 0 ;;
+esac
+case "$daisy_game_logs" in
+  *,*|*'
+'*) return 0 ;;
+esac
+# Parent directories remain ordinary user runtime directories.
+# shellcheck disable=SC2174
+mkdir -p -m 700 -- "$daisy_game_logs" || return 0
+export MANGOHUD=1
+export DAISYOS_GAMING_ENVIRONMENT_READY=1
+export DAISYOS_GAME_GL_PRELOAD
+export MANGOHUD_CONFIG="${MANGOHUD_CONFIG:+$MANGOHUD_CONFIG,}read_cfg=0,no_display,autostart_log=0,log_interval=1000,log_duration=0,control=daisyos-fps-$USER-%p,output_folder=$daisy_game_logs"
+unset daisy_game_logs daisy_game_runtime

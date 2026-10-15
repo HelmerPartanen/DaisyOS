@@ -1,0 +1,8 @@
+// Desktop Gaming Mode may change the governor for the active local session.
+// GPU clocks, CPU core offlining and arbitrary privileged helpers are not granted.
+polkit.addRule(function (action, subject) {
+    if (action.id === "com.feralinteractive.GameMode.governor-helper" &&
+        subject.local === true && subject.active === true) {
+        return polkit.Result.YES;
+    }
+});

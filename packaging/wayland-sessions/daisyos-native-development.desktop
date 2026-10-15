@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=DaisyOS (Native Development)
+Comment=Run the native DaisyOS layer-shell development session in its own KWin Wayland session
+Exec=/usr/local/bin/daisyos-native-development-session
+TryExec=/usr/local/bin/daisyos-native-development-session
+Type=Application
+X-GDM-SessionRegisters=true

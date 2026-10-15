@@ -14,11 +14,14 @@ public sealed class GameProcessDetector
         _procRoot = procRoot;
     }
 
-    public bool IsGameRunning()
+    public bool IsGameRunning() => FindGameProcessIds().Count > 0;
+
+    public IReadOnlySet<int> FindGameProcessIds()
     {
+        var result = new HashSet<int>();
         IEnumerable<string> processes;
         try { processes = Directory.EnumerateDirectories(_procRoot); }
-        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return false; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { return result; }
 
         foreach (var process in processes)
         {
@@ -27,9 +30,22 @@ public sealed class GameProcessDetector
             string cmdline;
             try { cmdline = File.ReadAllText(Path.Combine(process, "cmdline")); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { continue; }
-            if (IsGameLauncherCommand(cmdline)) return true;
+            if (IsGameLauncherCommand(cmdline) && int.TryParse(pid, out var processId))
+                AddProcessTree(processId, result);
         }
-        return false;
+        return result;
+    }
+
+    private void AddProcessTree(int pid, HashSet<int> result)
+    {
+        if (!result.Add(pid)) return;
+        try
+        {
+            var children = File.ReadAllText(Path.Combine(_procRoot, pid.ToString(), "task", pid.ToString(), "children"));
+            foreach (var child in children.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries))
+                if (int.TryParse(child, out var childPid)) AddProcessTree(childPid, result);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
     }
 
     /// <summary>Recognises a NUL-separated /proc cmdline that hosts a running game.</summary>

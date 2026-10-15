@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Steam
+Exec=/usr/local/bin/daisyos-game-launcher /usr/bin/steam %U
+TryExec=/usr/bin/steam
+Icon=steam
+Terminal=false
+Categories=Game;
+DBusActivatable=false
+MimeType=x-scheme-handler/steam;x-scheme-handler/steamlink;

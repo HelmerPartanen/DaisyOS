@@ -51,3 +51,14 @@ zip
 # HEIC/HEIF wallpapers, including HEVC dynamic desktop images
 libheif
 libde265
+
+# Gaming and automatic hardware-monitor telemetry, native and 32-bit Proton.
+steam
+lutris
+gamemode
+lib32-gamemode
+mangohud
+lib32-mangohud
+lib32-vulkan-icd-loader
+lib32-mesa
+wine

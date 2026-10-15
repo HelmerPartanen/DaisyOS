@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+exec /opt/DaisyOS/shell/DaisyOS.Shell --real-services "$@"

@@ -88,6 +88,40 @@ public sealed class AutomaticGameModeTests
         Assert.False(controller.IsActive);
     }
 
+    [Fact]
+    public void ControllerRegistersGamesOnceAndReleasesThemWhenDisabled()
+    {
+        var starts = new List<int>();
+        var ends = new List<int>();
+        using var controller = new GameModeController("/nonexistent/gamemoderun",
+            pid => { starts.Add(pid); return 0; }, pid => { ends.Add(pid); return 0; });
+        controller.SetActive(true);
+        controller.UpdateGameProcesses([100, 200]);
+        controller.UpdateGameProcesses([100, 200]);
+        Assert.Equal(new[] { 100, 200 }, starts.Order().ToArray());
+        controller.UpdateGameProcesses([200]);
+        Assert.Equal(new[] { 100 }, ends);
+        controller.SetActive(false);
+        Assert.Equal(new[] { 100, 200 }, ends);
+        controller.UpdateGameProcesses([300]);
+        Assert.Equal(2, starts.Count);
+    }
+
+    [Fact]
+    public void DetectorIncludesGameDescendants()
+    {
+        var proc = Directory.CreateTempSubdirectory("daisy-game-tree-");
+        try
+        {
+            WriteCmdline(proc.FullName, "100", "reaper\0SteamLaunch\0AppId=730\0");
+            var task = Path.Combine(proc.FullName, "100", "task", "100");
+            Directory.CreateDirectory(task);
+            File.WriteAllText(Path.Combine(task, "children"), "200 300 ");
+            Assert.Equal(new[] { 100, 200, 300 }, new GameProcessDetector(proc.FullName).FindGameProcessIds().Order().ToArray());
+        }
+        finally { proc.Delete(true); }
+    }
+
     private static void WriteCmdline(string root, string pid, string cmdline)
     {
         var dir = Path.Combine(root, pid);

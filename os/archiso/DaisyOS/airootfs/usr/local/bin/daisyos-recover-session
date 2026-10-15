@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+user_name="${SUDO_USER:-${USER:-daisyos}}"
+user_home="$(getent passwd "$user_name" | cut -d: -f6)"
+if [[ -z "$user_home" ]]; then
+  echo "Could not find the live user’s home folder."
+  exit 1
+fi
+
+marker="$user_home/.local/state/DaisyOS/use-fallback-session"
+rm -f "$marker"
+echo "Recovery mode is cleared. Close the recovery terminal to retry DaisyOS."

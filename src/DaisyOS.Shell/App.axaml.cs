@@ -94,6 +94,8 @@ public partial class App : Application
     private readonly List<Window> _nativeShellSurfaces = [];
     private DaisyOS.Shell.Views.Components.Gaming.GamingOverlay? _gamingOverlay;
     private Window? _gamingOverlaySurface;
+    private int _gameTelemetryVisible;
+    private int _gameTelemetryWindowPid;
     private ILayerShellWindowBackend? _layerShellBackend;
     private Window? _nativePanelSurface;
     private Window? _nativeLauncherSurface;
@@ -286,13 +288,18 @@ public partial class App : Application
             StartApplicationSettingsService(traceLifetime.Token);
             _ = DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.RunAsync(traceLifetime.Token);
             var gamingAutomation = new GamingModeAutomation(SessionState, () =>
-                SessionState.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false");
+                SessionState.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false",
+                telemetryVisible: () => Volatile.Read(ref _gameTelemetryVisible) != 0,
+                telemetryWindowPid: () => Volatile.Read(ref _gameTelemetryWindowPid));
+            _recentPrefetch.SetSuspended(SessionState.GamingMode);
+            SessionState.Changed += OnGamingPrefetchPolicyChanged;
             gamingAutomation.Start();
             desktop.Exit += (_, _) =>
             {
                 traceLifetime.Cancel();
                 gamingAutomation.Dispose();
                 _ = AppTray.DisposeAsync();
+                SessionState.Changed -= OnGamingPrefetchPolicyChanged;
                 _recentPrefetch.Dispose();
                 _lightweightWindows.Dispose();
                 foreach (var blur in _blurEffects) blur.Dispose();
@@ -429,6 +436,11 @@ public partial class App : Application
             flyoutPanel.Children.Add(shell.Desktop.DetachWidgetContextMenuForNativeOverlay());
         }
         _gamingOverlay = new();
+        _gamingOverlay.PropertyChanged += (_, change) =>
+        {
+            if (change.Property == Visual.IsVisibleProperty)
+                Volatile.Write(ref _gameTelemetryVisible, _gamingOverlay.IsVisible ? 1 : 0);
+        };
         _gamingOverlaySurface = backend.CreateWindow(
             LayerShellSurfaceOptions.GamingOverlay(), _gamingOverlay);
         _blurEffects.Add(new KWinBlur(_gamingOverlaySurface, _gamingOverlay, () =>
@@ -1272,6 +1284,9 @@ public partial class App : Application
         {
             if (ReferenceEquals(shell, _shellView))
             {
+                Volatile.Write(ref _gameTelemetryWindowPid,
+                    kwinBridge.Windows.FirstOrDefault(window => window.IsActive)?.ProcessId ?? 0);
+                _recentPrefetch.SetSuspended(SessionState.GamingMode || kwinBridge.HasFullscreenWindow);
                 foreach (var window in kwinBridge.Windows.Where(window => window.IsActive)) _recentPrefetch.Observe(window);
                 shell.Taskbar.SetCompositorWindows(kwinBridge.Windows);
                 CompositorWindowsChanged?.Invoke(this, EventArgs.Empty);
@@ -1529,6 +1544,10 @@ public partial class App : Application
             Feedback.Show(Loc.Get("LocalSend receiving is off."));
         }
     }
+
+    private void OnGamingPrefetchPolicyChanged(object? sender, EventArgs e) =>
+        _recentPrefetch.SetSuspended(SessionState.GamingMode ||
+            (_compositorWindows is KWinWindowBridge bridge && bridge.HasFullscreenWindow));
 
     private void SetExternalDesktopOcclusion(bool isOccluded)
     {
