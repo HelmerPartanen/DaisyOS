@@ -30,6 +30,14 @@ public sealed record NotificationItem(
     public string DisplaySource => !string.IsNullOrWhiteSpace(SourceAppName) ? SourceAppName :
         string.IsNullOrWhiteSpace(SourceAppId) ? "System" : SourceAppId;
 
+    public bool OpensFromCard => string.IsNullOrWhiteSpace(ActionId) || ActionId == "default" ||
+        string.Equals(ActionLabel, "View", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(ActionLabel, "Open", StringComparison.OrdinalIgnoreCase) ||
+        ActionId.StartsWith("localsend-reveal:", StringComparison.Ordinal);
+
+    public bool HasPrimaryButton => !OpensFromCard && !string.IsNullOrWhiteSpace(ActionLabel);
+    public bool HasActionButtons => HasPrimaryButton || !string.IsNullOrWhiteSpace(SecondaryActionLabel);
+
     public bool HasActions => !string.IsNullOrWhiteSpace(ActionLabel) || !string.IsNullOrWhiteSpace(SecondaryActionLabel);
 
     public string EffectiveSystemIconGlyph => !string.IsNullOrWhiteSpace(SystemIconGlyph)

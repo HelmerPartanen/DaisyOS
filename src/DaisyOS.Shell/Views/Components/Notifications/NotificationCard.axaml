@@ -7,7 +7,7 @@
   <converters:NotificationPreviewValueConverter x:Key="Preview" />
  </UserControl.Resources>
  <Border Background="{Binding Background, RelativeSource={RelativeSource AncestorType=UserControl}}"
-         CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=UserControl}}" Padding="16" ClipToBounds="True">
+         CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=UserControl}}" Padding="16" ClipToBounds="True" Tapped="OnCardTapped">
   <StackPanel x:Name="MotionContent" Spacing="8">
    <Grid ColumnDefinitions="32,*,Auto,32" ColumnSpacing="8">
     <Panel Width="32" Height="32">
@@ -39,9 +39,9 @@
     <Image Source="{Binding PreviewImage, Converter={StaticResource Preview}}" Stretch="UniformToFill"
            RenderOptions.BitmapInterpolationMode="HighQuality" />
    </Border>
-   <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding HasActions}">
+   <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding HasActionButtons}">
     <Button x:Name="PrimaryAction" Classes="Secondary" Height="{DynamicResource ControlHeightStandard}" Padding="12,0" Click="OnPrimaryClicked"
-            IsVisible="{Binding ActionLabel, Converter={x:Static StringConverters.IsNotNullOrEmpty}}">
+            IsVisible="{Binding HasPrimaryButton}">
      <TextBlock Text="{Binding ActionLabel}" TextTrimming="CharacterEllipsis" />
     </Button>
     <Button Grid.Column="1" Classes="Secondary" Height="{DynamicResource ControlHeightStandard}" Padding="12,0" Click="OnSecondaryClicked"

@@ -97,8 +97,9 @@ public sealed class FreedesktopNotificationDaemonService : IAsyncDisposable
         for (var index = 0; index + 1 < actions.Count; index += 2)
             if (!string.IsNullOrWhiteSpace(actions[index]))
                 actionPairs.Add((actions[index], string.IsNullOrWhiteSpace(actions[index + 1]) ? "Open" : actions[index + 1]));
-        var primary = actionPairs.FirstOrDefault();
-        var secondary = actionPairs.Skip(1).FirstOrDefault();
+        var primary = actionPairs.FirstOrDefault(action => action.Id == "default");
+        if (primary.Id is null) primary = actionPairs.FirstOrDefault();
+        var secondary = actionPairs.FirstOrDefault(action => action.Id != primary.Id);
 
         Dispatcher.UIThread.Post(() =>
         {

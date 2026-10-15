@@ -37,8 +37,15 @@
       <ItemsControl x:Name="NotificationList" IsVisible="False">
        <ItemsControl.ItemTemplate>
         <DataTemplate>
-         <notifications:NotificationCard Background="{DynamicResource SurfaceSunkenBrush}" Margin="0,0,0,8"
-                  DismissRequested="OnDismissCard" PrimaryActionRequested="OnPrimaryCard" SecondaryActionRequested="OnSecondaryCard" />
+         <!-- Same double-border frame as NotificationToastView so panel cards match toasts exactly. -->
+         <controls:ShellFrameBorder Classes="ToastCard" Margin="0,0,0,8" Padding="1" Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                   CornerRadius="{DynamicResource RoundedXXL}">
+          <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                    BackgroundSizing="InnerBorderEdge" BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+           <notifications:NotificationCard CornerRadius="{DynamicResource RoundedXXLDoubleInset}" Background="{DynamicResource SurfaceBaseBrush}"
+                    DismissRequested="OnDismissCard" PrimaryActionRequested="OnPrimaryCard" SecondaryActionRequested="OnSecondaryCard" />
+          </controls:ShellFrameBorder>
+         </controls:ShellFrameBorder>
         </DataTemplate>
        </ItemsControl.ItemTemplate>
       </ItemsControl>

@@ -1,6 +1,8 @@
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DaisyOS.Core.Models;
@@ -12,6 +14,44 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class NotificationPresentationTests
 {
+    [AvaloniaFact]
+    public void ClickingCardOpensNotificationAndDismissDoesNotOpenIt()
+    {
+        var card = new NotificationCard
+        {
+            DataContext = new NotificationItem("Test", "Body", DateTimeOffset.Now,
+                ActionId: "default", ActionLabel: "View")
+        };
+        var opened = 0;
+        var dismissed = 0;
+        card.PrimaryActionRequested += (_, _) => opened++;
+        card.DismissRequested += (_, _) => dismissed++;
+        var window = new Window { Width = 420, Height = 300, Content = card };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            Assert.False(card.FindControl<Button>("PrimaryAction")!.IsVisible);
+            window.MouseDown(new Point(100, 80), MouseButton.Left);
+            window.MouseUp(new Point(100, 80), MouseButton.Left);
+            Assert.Equal(1, opened);
+            var dismiss = card.GetVisualDescendants().OfType<Button>().First();
+            var point = dismiss.TranslatePoint(new Point(16, 16), window)!.Value;
+            window.MouseDown(point, MouseButton.Left);
+            window.MouseUp(point, MouseButton.Left);
+            Assert.Equal(1, dismissed);
+            Assert.Equal(1, opened);
+            card.DataContext = new NotificationItem("Request", "Body", DateTimeOffset.Now,
+                ActionId: "accept", ActionLabel: "Accept");
+            window.UpdateLayout();
+            Assert.True(card.FindControl<Button>("PrimaryAction")!.IsVisible);
+            window.MouseDown(new Point(100, 80), MouseButton.Left);
+            window.MouseUp(new Point(100, 80), MouseButton.Left);
+            Assert.Equal(1, opened);
+        }
+        finally { window.Close(); }
+    }
+
     [AvaloniaFact]
     public async Task AllUrgenciesUseTheSameLifetimeAndOverflowWaitsForAFreeSlot()
     {
