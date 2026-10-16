@@ -10,7 +10,6 @@ required_packages=(
   plasma-workspace
   xorg-xwayland
   xdg-desktop-portal
-  xdg-desktop-portal-kde
   foot
   pipewire
   wireplumber

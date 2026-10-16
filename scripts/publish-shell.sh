@@ -10,6 +10,7 @@ if ! command -v dotnet >/dev/null 2>&1; then
   exit 1
 fi
 
+"$repo_root/scripts/build-desktop-services.sh"
 "$repo_root/scripts/build-mpv-wallpaper.sh"
 local_mpv_prefix="${DAISYOS_MPV_PREFIX:-${XDG_DATA_HOME:-$HOME/.local/share}/DaisyOS/mpv-gpu}"
 if ! pkg-config --exists mpv && [[ -d "$local_mpv_prefix/lib/pkgconfig" ]]; then

@@ -83,3 +83,12 @@ packaging/gaming/*
 !packaging/wayland-sessions/daisyos-native-development.desktop
 # ISO launchers are source scripts; published binaries remain under ignored opt payloads.
 !os/archiso/DaisyOS/airootfs/usr/local/bin/
+
+# Desktop integration native helpers
+src/native/daisy_portal_capture/build/
+src/native/daisy_polkit_agent/build/
+src/native/daisy_screenshot/build/
+src/native/daisy_portal_shortcuts/build/
+
+!packaging/xdg-desktop-portal/
+!packaging/xdg-desktop-portal/*

@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.21)
+project(daisyos_portal_shortcuts LANGUAGES CXX)
+set(CMAKE_CXX_STANDARD 20)
+find_package(Qt6 REQUIRED COMPONENTS Core Gui)
+find_package(KF6GlobalAccel REQUIRED)
+add_executable(daisyos-portal-shortcuts main.cpp)
+target_link_libraries(daisyos-portal-shortcuts PRIVATE Qt6::Core Qt6::Gui KF6::GlobalAccel)

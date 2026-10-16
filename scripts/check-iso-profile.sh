@@ -147,9 +147,8 @@ required_packages=(
   xorg-xwayland
   kwin
   plasma-workspace
-  polkit-kde-agent
+  polkit
   xdg-desktop-portal
-  xdg-desktop-portal-kde
   xterm
   qemu-guest-agent
   steam

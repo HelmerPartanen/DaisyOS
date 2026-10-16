@@ -29,19 +29,22 @@ if [[ -f /usr/local/lib/daisyos/gaming-environment ]]; then
   source /usr/local/lib/daisyos/gaming-environment
 fi
 
+export QT_QPA_PLATFORMTHEME=xdgdesktopportal
+export GTK_USE_PORTAL=1
+export GIO_USE_PORTALS=1
+
 # Publish the compositor-provided display environment before portal and
 # authorization services start. Missing optional services must not crash the
 # desktop or bypass the bounded shell supervisor.
 if command -v dbus-update-activation-environment >/dev/null 2>&1; then
   dbus-update-activation-environment --systemd \
     DISPLAY WAYLAND_DISPLAY XAUTHORITY XCURSOR_THEME XCURSOR_SIZE LANG LANGUAGE LC_MESSAGES LC_ALL \
-    XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE MANGOHUD MANGOHUD_CONFIG \
+    XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE QT_QPA_PLATFORMTHEME GTK_USE_PORTAL GIO_USE_PORTALS MANGOHUD MANGOHUD_CONFIG \
     VK_ADD_IMPLICIT_LAYER_PATH DAISYOS_GAME_GL_PRELOAD DAISYOS_GAME_LIBRARY_PATH DAISYOS_GAMING_ENVIRONMENT_READY >/dev/null 2>&1 || true
 fi
-systemctl --user --no-block start \
-  plasma-polkit-agent.service \
-  xdg-desktop-portal.service \
-  plasma-xdg-desktop-portal-kde.service >/dev/null 2>&1 || true
+if [[ "${XDG_SESSION_TYPE:-}" == wayland ]]; then
+  /usr/local/bin/daisyos-prepare-screen-sharing >> "$session_log" 2>&1 || true
+fi
 
 log_message() {
   local message="$1"

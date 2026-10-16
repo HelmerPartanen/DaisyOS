@@ -69,7 +69,15 @@ public partial class DaisyFilePickerWindow : Window
         EntriesListView.ItemsSource = _visibleEntries;
         ApplyViewMode();
         SelectionTray.ItemsSource = _selection;
-        AddFolderButton.IsVisible = options.AllowFolderContents;
+        AddFolderButton.IsVisible = options.AllowFolderContents || (options.SelectDirectory && options.AllowMultiple);
+        if (options.SelectDirectory) AddFolderButton.Content = Loc.Get("Add this folder");
+        if (options.SaveFile)
+        {
+            _saveName.Text = Path.GetFileName(options.SuggestedName ?? "Untitled");
+            var panel = (StackPanel)SelectionTitle.Parent!;
+            panel.Children.Insert(0, _saveName);
+            _saveName.PropertyChanged += (_, e) => { if (e.Property == TextBox.TextProperty) UpdateSelectionUi(); };
+        }
         SearchBox.PropertyChanged += (_, e) =>
         {
             if (e.Property == SearchBar.TextProperty) ApplyFilter();
@@ -79,7 +87,9 @@ public partial class DaisyFilePickerWindow : Window
         OpenFolder(_currentFolder, rememberCurrent: false);
     }
 
-    public IReadOnlyList<string> SelectedPaths => _selection.Select(item => item.Path).ToArray();
+    private readonly TextBox _saveName = new() { PlaceholderText = "File name" };
+    private IReadOnlyList<string>? _portalSelection;
+    public IReadOnlyList<string> SelectedPaths => _portalSelection ?? _selection.Select(item => item.Path).ToArray();
     public bool WasConfirmed { get; private set; }
 
     private static string ResolveInitialFolder(DaisyFilePickerOptions options)
@@ -164,6 +174,7 @@ public partial class DaisyFilePickerWindow : Window
         BackButton.IsEnabled = _history.Count > 0;
         UpButton.IsEnabled = Directory.GetParent(_currentFolder) is not null;
         RebuildBreadcrumbs();
+        UpdateSelectionUi();
         _ = LoadFolderAsync(++_navigationVersion);
     }
 
@@ -304,7 +315,8 @@ public partial class DaisyFilePickerWindow : Window
     {
         if (sender is not Button { DataContext: PickerEntry entry }) return;
         if (entry.IsDirectory) OpenFolder(entry.Path);
-        else ToggleSelection(entry);
+        else if (_options.SaveFile) _saveName.Text = entry.Name;
+        else if (!_options.SelectDirectory) ToggleSelection(entry);
     }
 
     private void ToggleSelection(PickerEntry entry)
@@ -341,6 +353,13 @@ public partial class DaisyFilePickerWindow : Window
 
     private void OnAddFolderClicked(object? sender, RoutedEventArgs e)
     {
+        if (_options.SelectDirectory)
+        {
+            if (!_selection.Any(item => PathComparer.Equals(item.Path, _currentFolder)))
+                _selection.Add(new PickerSelection(_currentFolder, null));
+            UpdateSelectionUi();
+            return;
+        }
         var candidates = _entries.Where(entry => entry.IsVisible && !entry.IsDirectory && IsAllowedFile(entry.Path)).ToArray();
         if (!_options.AllowMultiple) ClearSelection();
         if (!_options.AllowMultiple && candidates.Length > 0) candidates = [candidates[0]];
@@ -356,6 +375,17 @@ public partial class DaisyFilePickerWindow : Window
     private void UpdateSelectionUi()
     {
         ReleaseUnusedThumbnails();
+        if (_options.SaveFile || _options.SelectDirectory)
+        {
+            SelectionTitle.Text = _options.SelectDirectory && _selection.Count > 0 ? Loc.Format("{0} folders selected", _selection.Count) : _currentFolder;
+            SelectionHint.Text = _options.SaveFile ? Loc.Get("Choose a name and location.") : Loc.Get("Choose this folder.");
+            ConfirmButton.Content = _options.SaveFile ? Loc.Get("Save") : Loc.Get("Choose folder");
+            var name = _saveName.Text;
+            ConfirmButton.IsEnabled = Directory.Exists(_currentFolder) && (!_options.SaveFile ||
+                (!string.IsNullOrWhiteSpace(name) && name == Path.GetFileName(name) && name is not "." and not ".." && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0));
+            SelectionTrayScroller.IsVisible = _options.SelectDirectory && _selection.Count > 0;
+            return;
+        }
         SelectionTitle.Text = _selection.Count switch
         {
             0 => Loc.Format("No {0} selected", _options.ItemNamePlural),
@@ -390,7 +420,7 @@ public partial class DaisyFilePickerWindow : Window
             visible++;
         }
         foreach (var entry in _entries.Except(_visibleEntries)) entry.IsVisible = false;
-        AddFolderButton.IsEnabled = !_isLoading && _entries.Any(entry => !entry.IsDirectory && entry.IsVisible);
+        AddFolderButton.IsEnabled = !_isLoading && (_options.SelectDirectory || _entries.Any(entry => !entry.IsDirectory && entry.IsVisible));
         EmptyState.IsVisible = !_isLoading && visible == 0;
         EmptyStateTitle.Text = _loadError is not null ? Loc.Get("Folder unavailable") : query.Length == 0
             ? Loc.Format("No {0} here", _options.ItemNamePlural)
@@ -460,6 +490,19 @@ public partial class DaisyFilePickerWindow : Window
     private void OnConfirmClicked(object? sender, RoutedEventArgs e)
     {
         if (!ConfirmButton.IsEnabled) return;
+        if (_options.SaveFile || _options.SelectDirectory)
+        {
+            _portalSelection = _options.SaveFile ? [Path.Combine(_currentFolder, _saveName.Text!)]
+                : _selection.Count > 0 ? _selection.Select(item => item.Path).ToArray() : [_currentFolder];
+            if (!_options.SaveFile && _portalSelection.Any(path => !Directory.Exists(path)))
+            {
+                SelectionHint.Text = Loc.Get("A selected folder is no longer available.");
+                return;
+            }
+            WasConfirmed = true;
+            Close(SelectedPaths);
+            return;
+        }
         if (_selection.Any(item => !IsAllowedFile(item.Path)))
         {
             SelectionHint.Text = Loc.Get("Some selected files are no longer available. Remove them or choose them again.");

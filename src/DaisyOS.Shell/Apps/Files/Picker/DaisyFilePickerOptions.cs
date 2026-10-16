@@ -8,4 +8,7 @@ public sealed record DaisyFilePickerOptions(
     IReadOnlyList<string>? InitialSelection = null,
     string? InitialFolder = null,
     string ItemNameSingular = "file",
-    string ItemNamePlural = "files");
+    string ItemNamePlural = "files",
+    bool SelectDirectory = false,
+    bool SaveFile = false,
+    string? SuggestedName = null);

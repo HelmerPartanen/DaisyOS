@@ -566,6 +566,11 @@ signals:
   void RegistryChanged();
 };
 int main(int argc, char **argv) {
+  if (qEnvironmentVariable("XDG_CURRENT_DESKTOP").split(QLatin1Char(':')).contains(QStringLiteral("DaisyOS"), Qt::CaseInsensitive)) {
+    qputenv("GTK_USE_PORTAL", "1");
+    qputenv("GIO_USE_PORTALS", "1");
+    qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
+  }
   QGuiApplication app(argc, argv);
   app.setApplicationName("DaisyLaunch");
   app.setQuitOnLastWindowClosed(false);

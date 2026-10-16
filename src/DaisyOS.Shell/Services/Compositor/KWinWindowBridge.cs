@@ -21,6 +21,7 @@ public sealed class KWinWindowBridge : ICompositorWindowService
     private DBusConnection? _connection;
     private SnapshotHandler? _handler;
     private bool _receivedSnapshot;
+    private string _captureSnapshot = "{\"windows\":[]}";
 
     public IReadOnlyCollection<CompositorWindowRecord> Windows => Volatile.Read(ref _publishedWindows);
     public bool IsAvailable { get; private set; }
@@ -56,7 +57,8 @@ public sealed class KWinWindowBridge : ICompositorWindowService
                 () => LockRequested?.Invoke(this, EventArgs.Empty),
                 () => OverviewRequested?.Invoke(this, EventArgs.Empty),
                 action => MediaActionRequested?.Invoke(this, action),
-                action => ShellActionRequested?.Invoke(this, action));
+                action => ShellActionRequested?.Invoke(this, action),
+                () => Volatile.Read(ref _captureSnapshot));
             connection.AddMethodHandler(handler);
             await connection.RequestNameAsync(BusName, RequestNameOptions.ReplaceExisting);
 
@@ -127,6 +129,7 @@ public sealed class KWinWindowBridge : ICompositorWindowService
     {
         if (KWinWindowSnapshotParser.TryParse(payload, out var snapshot, out var occluded, out var fullscreen))
         {
+            Volatile.Write(ref _captureSnapshot, payload!);
             var coverageChanged = IsDesktopOccluded != occluded || HasFullscreenWindow != fullscreen;
             IsDesktopOccluded = occluded;
             HasFullscreenWindow = fullscreen;
@@ -183,13 +186,15 @@ public sealed class KWinWindowBridge : ICompositorWindowService
         Action lockRequested,
         Action overviewRequested,
         Action<string> mediaActionRequested,
-        Action<string> shellActionRequested) : IPathMethodHandler
+        Action<string> shellActionRequested,
+        Func<string> captureSnapshot) : IPathMethodHandler
     {
         private static readonly ReadOnlyMemory<byte> IntrospectionXml = """
             <interface name="org.daisyos.Shell.WindowBridge">
               <method name="PublishSnapshot">
                 <arg direction="in" type="s" name="snapshot"/>
               </method>
+              <method name="GetCaptureWindows"><arg direction="out" type="s" name="windows"/></method>
               <method name="GetTaskbarPreview">
                 <arg direction="in" type="b" name="visible"/>
                 <arg direction="out" type="s" name="preview"/>
@@ -222,6 +227,13 @@ public sealed class KWinWindowBridge : ICompositorWindowService
             }
 
             var request = context.Request;
+            if (request.InterfaceAsString == InterfaceName && request.MemberAsString == "GetCaptureWindows" && request.SignatureAsString == "")
+            {
+                using var captureWriter = context.CreateReplyWriter("s");
+                captureWriter.WriteString(captureSnapshot());
+                context.Reply(captureWriter.CreateMessage());
+                return default;
+            }
             if (request.InterfaceAsString == InterfaceName && request.MemberAsString == "GetTaskbarPreview" && request.SignatureAsString == "b")
             {
                 using var previewWriter = context.CreateReplyWriter("s");

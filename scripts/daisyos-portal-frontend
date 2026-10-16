@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# A per-user development install cannot write the system backend directory.
+# Keep this override limited to DaisyOS; other desktops retain their own portals.
+desktop="${XDG_CURRENT_DESKTOP:-}"
+case ":${desktop,,}:" in
+  *:daisyos:*)
+    portal_dir="${XDG_DATA_HOME:-$HOME/.local/share}/xdg-desktop-portal/portals"
+    if [[ -f "$portal_dir/daisyos.portal" ]]; then export XDG_DESKTOP_PORTAL_DIR="$portal_dir";
+    else unset XDG_DESKTOP_PORTAL_DIR; fi
+    # The broker must not use its own public portals while it is starting.
+    export GTK_USE_PORTAL=0 GIO_USE_PORTALS=0
+    ;;
+  *) unset XDG_DESKTOP_PORTAL_DIR ;;
+esac
+exec /usr/lib/xdg-desktop-portal "$@"

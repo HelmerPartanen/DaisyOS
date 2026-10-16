@@ -17,8 +17,8 @@ installed_config="$stage_root/etc/daisyos/daisyos-development-session.conf"
 [[ -x "$installed_launcher" ]]
 [[ -f "$installed_entry" ]]
 [[ -f "$installed_config" ]]
-cmp "$repo_root/packaging/xdg-desktop-portal/kde-backend.conf" \
-  "$stage_root/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d/50-daisyos-capture.conf"
+cmp "$repo_root/packaging/xdg-desktop-portal/daisyos-desktop-services.service" \
+  "$stage_root/usr/lib/systemd/user/daisyos-desktop-services.service"
 grep -Fxq 'Name=DaisyOS (Windowed Prototype)' "$installed_entry"
 grep -Fxq 'Exec=/usr/local/bin/daisyos-development-session' "$installed_entry"
 grep -Fq 'DAISYOS_DEVELOPMENT_ROOT=' "$installed_config"
@@ -51,7 +51,7 @@ PATH="$temp_dir/bin:$PATH" \
   "$launcher" --run-shell
 
 [[ -e "$temp_dir/capture-prepared" ]]
-grep -Fxq 'org.freedesktop.impl.portal.ScreenCast=kde' "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+grep -Fxq 'org.freedesktop.impl.portal.FileChooser=daisyos' "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
 grep -Fq "run --project $fake_checkout/src/DaisyOS.Shell -- --real-services --windowed-prototype" "$temp_dir/dotnet-arguments"
 
 echo "Development-session installer tests passed."

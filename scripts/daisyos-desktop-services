@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Installed systems use the published shell; development sessions use their selected checkout.
+if [[ -f /etc/daisyos/daisyos-native-development.conf ]]; then
+  # shellcheck source=/dev/null
+  source /etc/daisyos/daisyos-native-development.conf
+fi
+user_config="${XDG_CONFIG_HOME:-$HOME/.config}/DaisyOS/desktop-services.env"
+if [[ -f "$user_config" ]]; then
+  # shellcheck source=/dev/null
+  source "$user_config"
+fi
+if [[ -n "${DAISYOS_DESKTOP_SERVICES_BINARY:-}" ]]; then
+  desktop_binary="$DAISYOS_DESKTOP_SERVICES_BINARY"
+elif [[ -n "${DAISYOS_NATIVE_DEVELOPMENT_ROOT:-}" ]]; then
+  desktop_binary="${DAISYOS_NATIVE_DEVELOPMENT_SHELL_BINARY:-$DAISYOS_NATIVE_DEVELOPMENT_ROOT/src/DaisyOS.Shell/bin/Debug/net10.0/DaisyOS.Shell}"
+else
+  desktop_binary=/opt/DaisyOS/shell/DaisyOS.Shell
+  if [[ ! -x "$desktop_binary" && -x /usr/lib/daisyos/DaisyOS.Shell ]]; then desktop_binary=/usr/lib/daisyos/DaisyOS.Shell; fi
+fi
+[[ -x "$desktop_binary" ]] || { echo 'DaisyOS desktop services are not built.' >&2; exit 1; }
+exec "$desktop_binary" --desktop-services --authentication-agent

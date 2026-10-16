@@ -24,9 +24,8 @@ xorg-xwayland
 kwin
 breeze-cursors
 plasma-workspace
-polkit-kde-agent
+polkit
 xdg-desktop-portal
-xdg-desktop-portal-kde
 qemu-guest-agent
 noto-fonts
 noto-fonts-cjk

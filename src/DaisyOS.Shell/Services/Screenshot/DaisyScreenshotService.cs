@@ -72,6 +72,9 @@ public sealed class DaisyScreenshotService
         return result;
     }
 
+    internal Task<ScreenshotCaptureResult> CaptureWithoutFallbackAsync(ScreenshotRequest request, CancellationToken cancellationToken)
+        => CaptureCoreAsync(_executable, request, cancellationToken);
+
     private async Task<ScreenshotCaptureResult> CaptureCoreAsync(string? executable, ScreenshotRequest request, CancellationToken cancellationToken)
     {
         if (executable is null)

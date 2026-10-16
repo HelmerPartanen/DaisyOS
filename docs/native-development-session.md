@@ -84,4 +84,4 @@ are recorded in [Performance and memory verification](architecture/performance-a
 
 ## Screen recording and sharing
 
-The session prepares KWin's KDE portal backend with a backend-only compatibility environment and validates monitor capture capability. See [screen sharing](screen-sharing.md) for the repair command, OBS sources, and end-to-end verification boundaries.
+The session starts DaisyOS desktop services for authentication, permission dialogs, file selection and compositor capture. See [desktop services](desktop-services.md) for setup and remaining compatibility boundaries. See [screen sharing](screen-sharing.md) for the repair command, OBS sources, and end-to-end verification boundaries.

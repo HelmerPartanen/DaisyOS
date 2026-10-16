@@ -30,6 +30,12 @@ internal static class Program
             e.SetObserved();
         };
 
+        if (args.Contains("--desktop-services", StringComparer.Ordinal))
+        {
+            Services.DesktopIntegration.DesktopServicesApplication.Run(args);
+            return;
+        }
+
         if (args.Contains("--disk-manager", StringComparer.Ordinal))
         {
             Services.StandaloneApplication.Run("diskmanager", args,

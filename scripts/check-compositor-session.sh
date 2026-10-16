@@ -149,7 +149,7 @@ read -r capture_signature capture_types <<< "$capture_properties"
 if [[ "$capture_signature" == u && "$capture_types" =~ ^[0-9]+$ ]] && (( (capture_types & 1) != 0 )); then
   report PASS "Screen capture sources" "The portal advertises monitor capture; permission selection and actual frames still require an application test."
 else
-  report FAIL "Screen capture sources" "The portal does not advertise monitor capture. Run the DaisyOS screen-sharing preparation and inspect the KDE backend."
+  report FAIL "Screen capture sources" "The portal does not advertise monitor capture. Run the DaisyOS screen-sharing preparation and inspect daisyos-desktop-services.service."
 fi
 
 if command -v systemctl >/dev/null 2>&1 \

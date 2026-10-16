@@ -18,7 +18,7 @@
     <!-- Surfaces -->
     <Color x:Key="SurfaceCanvasColor">#FFF2F2F2</Color>
     <!-- Translucent so KWin's native background effect remains visible. -->
-    <Color x:Key="SurfaceBaseColor">#99F2F2F2</Color>
+    <Color x:Key="SurfaceBaseColor">#66F2F2F2</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FFF2F2F2</Color>
     <Color x:Key="SurfaceRaisedColor">#FFFFFFFF</Color>
     <Color x:Key="SurfaceRaisedSubtleColor">#0F000000</Color>
@@ -50,7 +50,7 @@
         Ordinary borders and dividers keep Stroke*.
     -->
     <Color x:Key="ShellFrameOuterEdgeColor">#33000000</Color>
-    <Color x:Key="ShellFrameInnerHighlightColor">#99FFFFFF</Color>
+    <Color x:Key="ShellFrameInnerHighlightColor">#1AFFFFFF</Color>
     <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
 
     <!-- Interaction states -->

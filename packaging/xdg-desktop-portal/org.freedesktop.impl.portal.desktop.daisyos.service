@@ -1,0 +1,4 @@
+[D-BUS Service]
+Name=org.freedesktop.impl.portal.desktop.daisyos
+Exec=/usr/local/bin/daisyos-desktop-services
+SystemdService=daisyos-desktop-services.service

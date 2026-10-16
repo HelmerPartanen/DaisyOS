@@ -164,6 +164,13 @@ public sealed class SafeProcessLauncher
             return;
         }
 
+        if ((Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? "")
+            .Split(':').Contains("DaisyOS", StringComparer.OrdinalIgnoreCase))
+        {
+            startInfo.Environment["GTK_USE_PORTAL"] = "1";
+            startInfo.Environment["GIO_USE_PORTALS"] = "1";
+            startInfo.Environment["QT_QPA_PLATFORMTHEME"] = "xdgdesktopportal";
+        }
         var waylandDisplay = Environment.GetEnvironmentVariable("WAYLAND_DISPLAY");
         var display = Environment.GetEnvironmentVariable("DISPLAY");
         var authority = Environment.GetEnvironmentVariable("XAUTHORITY");

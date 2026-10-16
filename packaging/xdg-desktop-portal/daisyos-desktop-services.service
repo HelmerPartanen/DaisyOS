@@ -1,0 +1,12 @@
+[Unit]
+Description=DaisyOS permissions, authentication and application portals
+PartOf=graphical-session.target
+After=pipewire.service
+
+[Service]
+Type=dbus
+BusName=org.freedesktop.impl.portal.desktop.daisyos
+ExecStart=/usr/local/bin/daisyos-desktop-services
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5

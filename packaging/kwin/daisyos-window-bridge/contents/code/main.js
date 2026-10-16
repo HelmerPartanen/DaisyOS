@@ -21,6 +21,7 @@ var daisyAppTitles = {
 };
 
 var daisyAppIdsByWaylandAppId = {
+    "org.daisyos.desktopservices": "desktop-services",
     "org.daisyos.settings": "settings",
     "org.daisyos.notes": "notes",
     "org.daisyos.calendar": "calendar",

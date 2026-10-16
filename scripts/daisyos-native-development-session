@@ -158,20 +158,19 @@ publish_session_environment() {
   export XDG_CURRENT_DESKTOP=DaisyOS
   export XDG_SESSION_DESKTOP=DaisyOS
   export XDG_SESSION_TYPE=wayland
+  export QT_QPA_PLATFORMTHEME=xdgdesktopportal
+  export GTK_USE_PORTAL=1
+  export GIO_USE_PORTALS=1
   export DAISYOS_MEMORY_APP_SLICE=daisyos-apps.slice
   # KDE Frameworks services (like KWin's screenshot authorization trader)
   # require XDG_MENU_PREFIX to find plasma-applications.menu on Arch/KDE systems.
   export XDG_MENU_PREFIX="${XDG_MENU_PREFIX:-plasma-}"
-  # Make Qt applications load the KDE platform integration, whose portal
-  # appearance setting is updated whenever DaisyOS changes theme. Respect an
-  # explicit user override for developer diagnostics or custom integrations.
-  export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-kde}"
   export XCURSOR_THEME="$(kreadconfig6 --file kcminputrc --group Mouse --key cursorTheme --default DaisyOS-Dark)"
   export XCURSOR_SIZE="$(kreadconfig6 --file kcminputrc --group Mouse --key cursorSize --default 32)"
   if command -v dbus-update-activation-environment >/dev/null 2>&1; then
     dbus-update-activation-environment --systemd \
       DISPLAY WAYLAND_DISPLAY XAUTHORITY XCURSOR_THEME XCURSOR_SIZE LANG LANGUAGE LC_MESSAGES LC_ALL \
-      XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_MENU_PREFIX QT_QPA_PLATFORMTHEME \
+      XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP XDG_SESSION_TYPE XDG_MENU_PREFIX QT_QPA_PLATFORMTHEME GTK_USE_PORTAL GIO_USE_PORTALS \
       MANGOHUD MANGOHUD_CONFIG VK_ADD_IMPLICIT_LAYER_PATH DAISYOS_GAME_GL_PRELOAD DAISYOS_GAME_LIBRARY_PATH DAISYOS_GAMING_ENVIRONMENT_READY >/dev/null 2>&1 || true
   fi
 }
@@ -217,8 +216,7 @@ start_user_services() {
   systemctl --user --no-block start \
     pipewire.service \
     pipewire-pulse.service \
-    wireplumber.service \
-    plasma-polkit-agent.service >/dev/null 2>&1 || true
+    wireplumber.service >/dev/null 2>&1 || true
   mkdir -p "$state_dir"
   if ! "$source_root/scripts/prepare-screen-sharing.sh" >> "$session_log" 2>&1; then
     log_message "Screen capture preparation failed; OBS and screen sharing need portal diagnostics."
@@ -606,9 +604,6 @@ start_compositor_and_shell() {
   configure_kwin_for_daisyos
   refresh_desktop_service_cache
   log_message "Starting KWin Wayland for DaisyOS Native Development on socket $socket_name."
-  # KWIN_SCREENSHOT_NO_PERMISSION_CHECKS bypasses KWin's desktop-file authorization
-  # check which always fails in the DaisyOS session (XDG_CURRENT_DESKTOP=DaisyOS, not KDE).
-  export KWIN_SCREENSHOT_NO_PERMISSION_CHECKS=1
   # KWin only scans Qt plugin paths when it starts. The DaisyOS frame effect
   # lives in the per-user plugin tree so it can be installed without replacing
   # distribution files.
@@ -627,17 +622,16 @@ start_compositor_and_shell() {
   fi
 
   publish_session_environment
+  if ! ensure_shell_binary; then
+    log_message "DaisyOS could not build for the native development session. Returning to the display manager."
+    return 1
+  fi
   start_user_services
   if ! install_kwin_bridge; then
     return 1
   fi
   evict_spectacle_shortcuts
   evict_kwin_lock_shortcuts
-  if ! ensure_shell_binary; then
-    log_message "DaisyOS could not build for the native development session. Returning to the display manager."
-    return 1
-  fi
-
   run_shell_supervisor
 }
 

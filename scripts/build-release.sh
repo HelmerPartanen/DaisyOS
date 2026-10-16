@@ -59,6 +59,7 @@ properties=(
   "-p:DaisyOSSourceRevision=$revision"
 )
 
+"$repo_root/scripts/build-desktop-services.sh"
 "$repo_root/scripts/format-check.sh"
 dotnet restore
 dotnet build --configuration Release --no-restore "${properties[@]}"

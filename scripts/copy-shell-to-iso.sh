@@ -53,14 +53,12 @@ for application in Files Notes Settings DiskManager; do
 done
 printf '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec=/opt/DaisyOS/shell/apps/Files/DaisyOS.Files\n' > "$iso_root/usr/share/dbus-1/services/org.freedesktop.FileManager1.service"
 
-# Capture portal routing and backend-only KDE compatibility for DaisyOS.
+# DaisyOS owns desktop consent, file selection and capture UI.
 install -m755 "$repo_root/scripts/prepare-screen-sharing.sh" "$iso_root/usr/local/bin/daisyos-prepare-screen-sharing"
 install -d "$iso_root/usr/share/xdg-desktop-portal"
 install -m644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
   "$iso_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
-install -d "$iso_root/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d"
-install -m644 "$repo_root/packaging/xdg-desktop-portal/kde-backend.conf" \
-  "$iso_root/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d/50-daisyos-capture.conf"
+"$repo_root/scripts/stage-desktop-services.sh" --root "$iso_root"
 
 # Persistent standards-aware launch service and supported one-shot fallback.
 mkdir -p "$iso_root/usr/lib/systemd/user/graphical-session.target.wants"

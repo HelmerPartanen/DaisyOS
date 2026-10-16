@@ -118,9 +118,8 @@ install_file_atomically 0644 "$repo_root/packaging/wayland-sessions/daisyos-nati
 install -d -m 0755 "$prefix/usr/share/xdg-desktop-portal"
 install_file_atomically 0644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
   "$prefix/usr/share/xdg-desktop-portal/daisyos-portals.conf"
-install -d -m 0755 "$prefix/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d"
-install_file_atomically 0644 "$repo_root/packaging/xdg-desktop-portal/kde-backend.conf" \
-  "$prefix/usr/lib/systemd/user/plasma-xdg-desktop-portal-kde.service.d/50-daisyos-capture.conf"
+"$repo_root/scripts/stage-desktop-services.sh" --root "$prefix" \
+  --capture-helper "$source_root/src/DaisyOS.Shell/bin/Debug/net10.0/daisyos-portal-capture"
 
 # Preserve an explicitly selected checkout when the session launcher is
 # refreshed, unless the installation itself supplies a different checkout.

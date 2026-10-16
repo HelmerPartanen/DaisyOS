@@ -23,6 +23,12 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <None Include="../native/daisy_portal_capture/build/daisyos-portal-capture" Link="daisyos-portal-capture" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_portal_capture/build/daisyos-portal-capture')" />
+    <None Include="../native/daisy_screenshot/build/daisy-screenshot-helper" Link="daisy-screenshot-helper" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_screenshot/build/daisy-screenshot-helper')" />
+    <None Include="../native/daisy_portal_shortcuts/build/daisyos-portal-shortcuts" Link="daisyos-portal-shortcuts" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_portal_shortcuts/build/daisyos-portal-shortcuts')" />
+    <None Include="../native/daisy_polkit_agent/build/daisyos-polkit-agent" Link="daisyos-polkit-agent" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_polkit_agent/build/daisyos-polkit-agent')" />
+  </ItemGroup>
+  <ItemGroup>
     <TrimmerRootDescriptor Include="Roots.xml" />
   </ItemGroup>
   <ItemGroup>
