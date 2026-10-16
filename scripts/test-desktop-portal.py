@@ -62,6 +62,10 @@ try:
     except dbus.exceptions.DBusException as error:
         assert error.get_dbus_name() == 'org.freedesktop.DBus.Error.AccessDenied', error
     print('PASS rejected direct application request')
+    settings = dbus.Interface(other.get_object(name, root), 'org.freedesktop.impl.portal.Settings')
+    appearance = settings.ReadAll(dbus.Array(['org.freedesktop.appearance'], signature='s'))
+    assert int(appearance['org.freedesktop.appearance']['color-scheme']) in (1, 2)
+    print('PASS appearance is readable during startup without UI-thread or frontend-owner errors')
     for index, (interface, method, tail) in enumerate([
         ('Access', 'AccessDialog', ['', 'Camera permission', 'Test app wants camera access', 'No access is granted by this test.']),
         ('FileChooser', 'OpenFile', ['', 'Choose a file']),

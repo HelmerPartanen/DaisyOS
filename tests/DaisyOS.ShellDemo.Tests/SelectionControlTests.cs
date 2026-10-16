@@ -18,6 +18,25 @@ public sealed class SelectionControlTests
     [AvaloniaTheory]
     [InlineData(false)]
     [InlineData(true)]
+    public void RuntimeAccentPreferencesKeepPrimaryLabelsWhite(bool dark)
+    {
+        var app = new DaisyOS.Shell.App { RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light };
+        const global::System.Reflection.BindingFlags flags = global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.NonPublic;
+        var settings = (DaisyOS.Shell.Services.Appearance.AppearanceSettings)typeof(DaisyOS.Shell.App)
+            .GetField("_appearanceSettings", flags)!.GetValue(app)!;
+        var apply = typeof(DaisyOS.Shell.App).GetMethod("ApplyAccentPreference", flags)!;
+        foreach (var accent in Enum.GetValues<DaisyOS.Core.Models.AccentColor>())
+        {
+            settings.AccentColor = accent;
+            apply.Invoke(app, null);
+            Assert.Equal(Colors.White, ((ISolidColorBrush)app.Resources["ContentOnPrimaryActionBrush"]!).Color);
+            Assert.Equal(Colors.White, app.Resources["ContentOnPrimaryActionColor"]);
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
     public async Task CustomChoicesRenderAllStatesAndKeepNativeInput(bool dark)
     {
         var check = new CheckBox { Content = "Vain vahvistetut", IsThreeState = true };
@@ -152,6 +171,16 @@ public sealed class SelectionControlTests
             Assert.Equal(Colors.White, ((ISolidColorBrush)primary.Foreground!).Color);
             Assert.Equal(Colors.White, ((ISolidColorBrush)primary.GetVisualDescendants()
                 .OfType<TextBlock>().Single(text => text.Text == "Open").Foreground!).Color);
+            foreach (var state in new[] { ":pointerover", ":pressed", ":disabled" })
+            {
+                var pseudoClasses = (IPseudoClasses)primary.Classes;
+                pseudoClasses.Set(state, true);
+                window.UpdateLayout();
+                Assert.Equal(Colors.White, ((ISolidColorBrush)Part<ContentPresenter>(primary, "PART_ContentPresenter").Foreground!).Color);
+                Assert.Equal(Colors.White, ((ISolidColorBrush)primary.GetVisualDescendants()
+                    .OfType<TextBlock>().Single(text => text.Text == "Open").Foreground!).Color);
+                pseudoClasses.Set(state, false);
+            }
             var indicator = Part<Border>(check, "SelectionIndicator");
             var surface = Part<Border>(combo, "Background");
             window.MouseMove(new Point(310, 230));

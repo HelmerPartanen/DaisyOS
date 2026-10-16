@@ -13,7 +13,8 @@ background activity, wallpaper changes, launcher installation, USB selection,
 global shortcuts and input-capture consent. Appearance settings and sandbox
 notifications use DaisyOS theme preferences and its existing notification center.
 
-Requests are accepted only from the current portal frontend's unique bus owner.
+Interactive requests are accepted only from the current portal frontend's unique bus owner.
+Public appearance reads are dispatched to the UI thread and are allowed during frontend startup.
 Request.Close cancels pending UI. Session.Close, frontend owner loss and the
 visible stop-sharing controls release capture resources. No permission request
 is automatically approved. PolicyKit supplies the identities, PAM conversation
@@ -29,6 +30,8 @@ scripts/prepare-screen-sharing.sh
 ```
 
 Run the last two commands as the desktop user in the DaisyOS Wayland session.
+The frontend wrapper clears forced GTK/GIO portal use inside the broker itself
+to prevent recursive activation while it starts.
 The per-user frontend wrapper selects the development portal directory only in
 DaisyOS; other desktops retain their system portal directory. Installed sessions
 use the system manifest and `daisyos-desktop-services.service`. Packaging stages
@@ -74,7 +77,7 @@ fallback is disabled; only existing application secret storage has another provi
 
 - Shell build: passed with zero warnings/errors. Native helpers compile successfully.
 - Three focused picker tests pass (empty folder, save destination/traversal, cancellation).
-- Thirteen live protocol/security assertions pass, including cancellation of the new
+- Fourteen live protocol/security assertions pass, including cancellation of the new
   permission, file, account, screenshot, print, USB, shortcut and input-capture dialogs.
 - The real public FileChooser opens the DaisyOS window and brings it to the foreground.
   KWin's window bridge now recognizes DesktopServices as an application rather than

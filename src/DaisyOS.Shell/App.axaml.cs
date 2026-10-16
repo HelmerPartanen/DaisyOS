@@ -2659,7 +2659,9 @@ public partial class App : Application
         Resources["ActionPrimaryBrush"] = actionBrush;
         Resources["ActionPrimaryHoverBrush"] = hoverBrush;
         Resources["ActionPrimaryPressedBrush"] = pressedBrush;
-        Resources["ContentOnPrimaryActionBrush"] = new SolidColorBrush(onAccent);
+        // Primary labels stay white regardless of accent contrast or theme.
+        Resources["ContentOnPrimaryActionColor"] = Colors.White;
+        Resources["ContentOnPrimaryActionBrush"] = new SolidColorBrush(Colors.White);
         Resources["ContentOnActionBrush"] = new SolidColorBrush(GetHighestContrastContent(accent));
         Resources["FocusRingBrush"] = focusBrush;
 

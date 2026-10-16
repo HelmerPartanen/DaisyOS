@@ -7,6 +7,8 @@ capture_helper=/opt/DaisyOS/shell/daisyos-portal-capture
 if [[ "${1:-}" == --capture-helper && $# -eq 2 ]]; then capture_helper="$2"; shift 2; fi
 [[ $# -eq 0 && "$capture_helper" == /* && "$capture_helper" != *$'\n'* ]] || exit 2
 assets="$repo_root/packaging/xdg-desktop-portal"
+install -Dm755 "$repo_root/scripts/daisyos-portal-frontend" "$stage_root/usr/local/bin/daisyos-portal-frontend"
+install -Dm644 "$assets/daisyos-frontend.conf" "$stage_root/usr/lib/systemd/user/xdg-desktop-portal.service.d/50-daisyos-frontend.conf"
 install -Dm755 "$repo_root/scripts/daisyos-desktop-services" "$stage_root/usr/local/bin/daisyos-desktop-services"
 install -Dm644 "$assets/daisyos.portal" "$stage_root/usr/share/xdg-desktop-portal/portals/daisyos.portal"
 install -Dm644 "$assets/org.freedesktop.impl.portal.desktop.daisyos.service" "$stage_root/usr/share/dbus-1/services/org.freedesktop.impl.portal.desktop.daisyos.service"
