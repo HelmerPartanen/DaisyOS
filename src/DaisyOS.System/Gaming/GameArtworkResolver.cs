@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using System.IO;
 using DaisyOS.Core.Models.Gaming;
 using DaisyOS.Core.Services.Gaming;
 using DaisyOS.System.Gaming.Providers;
@@ -11,6 +10,8 @@ public sealed class GameArtworkResolver : IGameArtworkResolver
     private readonly IArtworkCache _cache;
     private readonly IReadOnlyList<IGameArtworkProvider> _providers;
     private readonly ConcurrentDictionary<string, byte> _pendingResolutions = new(StringComparer.Ordinal);
+    private readonly ConcurrentDictionary<string, GameArtworkAssets> _resolvedAssets = new(StringComparer.Ordinal);
+    private readonly SemaphoreSlim _resolutionSlots = new(4, 4);
 
     public event EventHandler<ArtworkChangedEventArgs>? ArtworkUpdated;
 
@@ -27,70 +28,68 @@ public sealed class GameArtworkResolver : IGameArtworkResolver
 
     public Task<GameArtworkAssets> GetArtworkAsync(GameIdentity identity, CancellationToken cancellationToken = default)
     {
-        // 1. Check local DaisyOS artwork cache first (Zero UI delay!)
-        var cached = _cache.Lookup(identity);
-        if (cached != null)
-        {
-            return Task.FromResult(cached);
-        }
-
-        // 2. Immediate fallback return to keep shell UI instant
-        var fallbackProvider = _providers.OfType<FallbackArtworkProvider>().FirstOrDefault() ?? new FallbackArtworkProvider();
-        var fallbackAssets = fallbackProvider.ResolveAsync(identity, cancellationToken).GetAwaiter().GetResult()
-            ?? new GameArtworkAssets(null, null, null, identity.IconNameOrPath, true, "fallback", DateTimeOffset.UtcNow);
-
-        // 3. Queue asynchronous resolution in background
-        _ = EnqueueBackgroundResolutionAsync(identity);
-
-        return Task.FromResult(fallbackAssets);
+        if (cancellationToken.IsCancellationRequested) return Task.FromCanceled<GameArtworkAssets>(cancellationToken);
+        var key = ArtworkCache.BuildCacheKey(identity);
+        if (_resolvedAssets.TryGetValue(key, out var cached)) return Task.FromResult(cached);
+        // Cache metadata reads and providers can do synchronous disk/image work
+        // before returning a Task. None of that belongs on the caller's UI thread.
+        if (_pendingResolutions.TryAdd(key, 0)) _ = Task.Run(() => EnqueueBackgroundResolutionAsync(identity, key));
+        return Task.FromResult(new GameArtworkAssets(null, null, null, null, true, "fallback", DateTimeOffset.UtcNow));
     }
 
-    private async Task EnqueueBackgroundResolutionAsync(GameIdentity identity)
+    private async Task EnqueueBackgroundResolutionAsync(GameIdentity identity, string cacheKey)
     {
-        var cacheKey = ArtworkCache.BuildCacheKey(identity);
-        if (!_pendingResolutions.TryAdd(cacheKey, 0))
-        {
-            return; // Already resolving
-        }
-
         try
         {
-            GameArtworkAssets? resolved = null;
-
-            foreach (var provider in _providers)
+            await _resolutionSlots.WaitAsync().ConfigureAwait(false);
+            try
             {
-                if (provider is FallbackArtworkProvider) continue;
-                if (!provider.CanResolve(identity)) continue;
-
-                try
+                if (_cache.Lookup(identity) is { } cached)
                 {
-                    var assets = await provider.ResolveAsync(identity).ConfigureAwait(false);
-                    if (assets != null && (assets.HasCover || assets.HasHero || assets.HasLogo))
+                    _resolvedAssets[cacheKey] = cached;
+                    ArtworkUpdated?.Invoke(this, new ArtworkChangedEventArgs(identity, cached));
+                    return;
+                }
+                GameArtworkAssets? resolved = null;
+
+                foreach (var provider in _providers)
+                {
+                    if (provider is FallbackArtworkProvider) continue;
+                    if (!provider.CanResolve(identity)) continue;
+
+                    try
                     {
-                        resolved = assets;
-                        break;
+                        var assets = await provider.ResolveAsync(identity).ConfigureAwait(false);
+                        if (assets != null && (assets.HasCover || assets.HasHero || assets.HasLogo))
+                        {
+                            resolved = assets;
+                            break;
+                        }
+                    }
+                    catch
+                    {
+                        // Best effort provider iteration
                     }
                 }
-                catch
+
+                if (resolved != null)
                 {
-                    // Best effort provider iteration
+                    var storedAssets = await _cache.StoreAsync(identity, resolved).ConfigureAwait(false);
+                    _resolvedAssets[cacheKey] = storedAssets;
+                    ArtworkUpdated?.Invoke(this, new ArtworkChangedEventArgs(identity, storedAssets));
+                }
+                else
+                {
+                    var fallbackProvider = _providers.OfType<FallbackArtworkProvider>().FirstOrDefault() ?? new FallbackArtworkProvider();
+                    var fallbackAssets = await fallbackProvider.ResolveAsync(identity).ConfigureAwait(false)
+                        ?? new GameArtworkAssets(null, null, null, identity.IconNameOrPath, true, "fallback", DateTimeOffset.UtcNow);
+
+                    var storedFallback = await _cache.StoreAsync(identity, fallbackAssets).ConfigureAwait(false);
+                    _resolvedAssets[cacheKey] = storedFallback;
+                    ArtworkUpdated?.Invoke(this, new ArtworkChangedEventArgs(identity, storedFallback));
                 }
             }
-
-            if (resolved != null)
-            {
-                var storedAssets = await _cache.StoreAsync(identity, resolved).ConfigureAwait(false);
-                ArtworkUpdated?.Invoke(this, new ArtworkChangedEventArgs(identity, storedAssets));
-            }
-            else
-            {
-                var fallbackProvider = _providers.OfType<FallbackArtworkProvider>().FirstOrDefault() ?? new FallbackArtworkProvider();
-                var fallbackAssets = await fallbackProvider.ResolveAsync(identity).ConfigureAwait(false)
-                    ?? new GameArtworkAssets(null, null, null, identity.IconNameOrPath, true, "fallback", DateTimeOffset.UtcNow);
-
-                var storedFallback = await _cache.StoreAsync(identity, fallbackAssets).ConfigureAwait(false);
-                ArtworkUpdated?.Invoke(this, new ArtworkChangedEventArgs(identity, storedFallback));
-            }
+            finally { _resolutionSlots.Release(); }
         }
         catch
         {

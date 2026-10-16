@@ -928,6 +928,10 @@
               </ListBox>
 
                 <files:FilesRenderProbe Tab="{Binding ActiveTab}" />
+                <Border IsVisible="{Binding ActiveTab.ShowSkeleton}" IsHitTestVisible="False"
+                        Background="{DynamicResource SurfaceBaseSolidBrush}" Padding="{DynamicResource SpaceInset6}" ClipToBounds="True">
+                  <controls:SkeletonLoader />
+                </Border>
 
                 <StackPanel IsVisible="{Binding ActiveTab.IsEmpty}"
                             HorizontalAlignment="Center"

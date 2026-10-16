@@ -589,6 +589,31 @@
   <!-- Fixed media-overlay neutrals remain theme-independent because they sit
        over photography, wallpaper, or capture content rather than a themed
        application surface. -->
+  <!-- Artwork treatments stay readable independently of the desktop theme. -->
+  <SolidColorBrush x:Key="ArtworkControlHoverBrush" Color="#24FFFFFF" />
+  <SolidColorBrush x:Key="CaptureSelectionBorderBrush" Color="#59FFFFFF" />
+  <Color x:Key="ArtworkScrimMidColor">#45000000</Color>
+  <Color x:Key="ArtworkScrimSoftColor">#10000000</Color>
+  <Color x:Key="ArtworkTopScrimColor">#38000000</Color>
+  <Color x:Key="ArtworkTopScrimSoftColor">#18000000</Color>
+  <x:String x:Key="EditorGreenValue">#22C55E</x:String>
+  <SolidColorBrush x:Key="EditorGreenBrush" Color="#22C55E" />
+  <x:String x:Key="EditorYellowValue">#EAB308</x:String>
+  <SolidColorBrush x:Key="EditorYellowBrush" Color="#EAB308" />
+  <x:String x:Key="EditorRedValue">#EF4444</x:String>
+  <SolidColorBrush x:Key="EditorRedBrush" Color="#EF4444" />
+  <x:String x:Key="EditorPurpleValue">#A855F7</x:String>
+  <SolidColorBrush x:Key="EditorPurpleBrush" Color="#A855F7" />
+  <x:String x:Key="EditorSlateValue">#94A3B8</x:String>
+  <SolidColorBrush x:Key="EditorSlateBrush" Color="#94A3B8" />
+  <x:String x:Key="EditorHighlightYellowValue">#50EAB308</x:String>
+  <SolidColorBrush x:Key="EditorHighlightYellowBrush" Color="#50EAB308" />
+  <x:String x:Key="EditorHighlightBlueValue">#5059C7E8</x:String>
+  <SolidColorBrush x:Key="EditorHighlightBlueBrush" Color="#5059C7E8" />
+  <x:String x:Key="EditorHighlightGreenValue">#5022C55E</x:String>
+  <SolidColorBrush x:Key="EditorHighlightGreenBrush" Color="#5022C55E" />
+  <x:String x:Key="EditorHighlightRedValue">#50EF4444</x:String>
+  <SolidColorBrush x:Key="EditorHighlightRedBrush" Color="#50EF4444" />
   <Color x:Key="TransparentColor">#00000000</Color>
   <Color x:Key="BlackAlpha08Color">#15000000</Color>
   <Color x:Key="BlackAlpha13Color">#20000000</Color>

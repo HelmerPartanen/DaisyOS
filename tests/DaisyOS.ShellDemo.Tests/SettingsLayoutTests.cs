@@ -31,7 +31,7 @@ public sealed class SettingsLayoutTests
                 window.SelectCategory(category);
                 Dispatcher.UIThread.RunJobs();
                 var categoryContent = view.FindControl<StackPanel>("CategoryContent")!;
-                for (var attempt = 0; category != "Appearance" && attempt < 160 && categoryContent.Children.OfType<TextBlock>().Any(text => text.Text?.EndsWith("…") == true); attempt++)
+                for (var attempt = 0; category != "Appearance" && attempt < 160 && (categoryContent.Children.OfType<TextBlock>().Any(text => text.Text?.EndsWith("…") == true) || categoryContent.Children.OfType<DaisyOS.Shell.Controls.SkeletonLoader>().Any()); attempt++)
                 {
                     await Task.Delay(50);
                     Dispatcher.UIThread.RunJobs();

@@ -37,10 +37,10 @@
     </Style>
     <!-- Artwork controls use the dark subtle-button material in either theme. -->
     <Style Selector="Button.MediaBtn.MediumMediaBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#24FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource ArtworkControlHoverBrush}" />
     </Style>
     <Style Selector="Button.MediaBtn.MediumMediaBtn:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="#33FFFFFF" />
+      <Setter Property="Background" Value="{DynamicResource WhiteAlpha20Brush}" />
     </Style>
     <Style Selector="Button.MediaBtn:pressed">
       <Setter Property="RenderTransform" Value="scale(0.90)" />
@@ -128,10 +128,10 @@
         <Border x:Name="MediumBaseScrim" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" IsHitTestVisible="False">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
-              <GradientStop Color="#99000000" Offset="0.0" />
-              <GradientStop Color="#45000000" Offset="0.35" />
-              <GradientStop Color="#10000000" Offset="0.65" />
-              <GradientStop Color="#00000000" Offset="0.9" />
+              <GradientStop Color="{DynamicResource BlackAlpha60Color}" Offset="0.0" />
+              <GradientStop Color="{DynamicResource ArtworkScrimMidColor}" Offset="0.35" />
+              <GradientStop Color="{DynamicResource ArtworkScrimSoftColor}" Offset="0.65" />
+              <GradientStop Color="{DynamicResource TransparentColor}" Offset="0.9" />
             </LinearGradientBrush>
           </Border.Background>
         </Border>
@@ -140,9 +140,9 @@
         <Border x:Name="MediumHoverScrim" VerticalAlignment="Stretch" HorizontalAlignment="Stretch" IsHitTestVisible="False">
           <Border.Background>
             <LinearGradientBrush StartPoint="0%,100%" EndPoint="0%,0%">
-              <GradientStop Color="#38000000" Offset="0.0" />
-              <GradientStop Color="#18000000" Offset="0.5" />
-              <GradientStop Color="#00000000" Offset="1.0" />
+              <GradientStop Color="{DynamicResource ArtworkTopScrimColor}" Offset="0.0" />
+              <GradientStop Color="{DynamicResource ArtworkTopScrimSoftColor}" Offset="0.5" />
+              <GradientStop Color="{DynamicResource TransparentColor}" Offset="1.0" />
             </LinearGradientBrush>
           </Border.Background>
         </Border>
@@ -153,7 +153,7 @@
             <TextBlock x:Name="MediumTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
                        Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1" />
             <TextBlock x:Name="MediumArtist" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Normal"
-                       Foreground="#D8FFFFFF" TextTrimming="CharacterEllipsis" MaxLines="1" />
+                       Foreground="{DynamicResource WhiteAlpha85Brush}" TextTrimming="CharacterEllipsis" MaxLines="1" />
           </StackPanel>
         </Grid>
 
@@ -161,13 +161,13 @@
         <StackPanel x:Name="MediumControlsStack" Orientation="Horizontal" Spacing="{DynamicResource Space2}"
                     HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,14">
           <Button Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
-            <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="#F2F2F2" />
+            <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource WhiteAlpha95Brush}" />
           </Button>
           <Button x:Name="MediumPlayPauseButton" Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
-            <controls:DaisyIcon x:Name="MediumPlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="#F2F2F2" />
+            <controls:DaisyIcon x:Name="MediumPlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource WhiteAlpha95Brush}" />
           </Button>
           <Button Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
-            <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="#F2F2F2" />
+            <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource WhiteAlpha95Brush}" />
           </Button>
         </StackPanel>
       </Grid>

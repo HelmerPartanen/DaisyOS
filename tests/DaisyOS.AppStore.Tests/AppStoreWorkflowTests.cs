@@ -88,6 +88,60 @@ public sealed class AppStoreWorkflowTests
         Assert.Equal(queries, fake.Queries);
     }
     [AvaloniaFact]
+    public async Task RefreshKeepsCardsVisibleAndDiscoveryDoesNotFetchInstalledStateTwice()
+    {
+        var fake = new StoreFake();
+        using var vm = new AppStoreViewModel(fake); await vm.PendingLoad;
+        Assert.Equal(0, fake.FeaturedQueries);
+        var cards = vm.Apps.ToArray();
+        var pending = new TaskCompletionSource<IReadOnlyList<AppStoreItem>>();
+        fake.Category = () => pending.Task;
+        var refresh = vm.RefreshAsync();
+        Assert.True(vm.IsLoading);
+        Assert.True(vm.HasResults);
+        Assert.False(vm.ShowSkeleton);
+        Assert.Equal(cards, vm.Apps);
+        pending.SetException(new IOException("offline")); await refresh;
+        Assert.True(vm.HasResults);
+        Assert.True(vm.HasCatalogWarning);
+        Assert.Equal(cards, vm.Apps);
+    }
+
+    [AvaloniaFact]
+    public async Task NewPageShowsSkeletonAndNeverShowsPreviousCategoryCards()
+    {
+        var pending = new TaskCompletionSource<IReadOnlyList<AppStoreItem>>();
+        var fake = new StoreFake();
+        using var vm = new AppStoreViewModel(fake); await vm.PendingLoad;
+        fake.Category = () => pending.Task;
+        vm.SelectedCategory = vm.Categories[1];
+        Assert.True(vm.ShowSkeleton);
+        Assert.False(vm.HasResults);
+        Assert.Empty(vm.Apps);
+        foreach (var theme in new[] { ThemeVariant.Light, ThemeVariant.Dark })
+        {
+            var window = new AppStoreWindow(vm, ownsViewModel: false) { Width = 800, Height = 540, RequestedThemeVariant = theme };
+            window.Show();
+            try
+            {
+                Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+                var skeleton = window.GetVisualDescendants().OfType<SkeletonLoader>().Single();
+                Assert.True(skeleton.IsEffectivelyVisible);
+                Assert.True(skeleton.Bounds.Width > 0);
+                Assert.False(skeleton.IsHitTestVisible);
+                Assert.Equal(6, skeleton.Children.Count);
+                using var frame = window.CaptureRenderedFrame();
+                Assert.NotNull(frame);
+                frame.Save($"/tmp/daisy-store-loading-{theme}.png");
+            }
+            finally { window.Close(); }
+        }
+        pending.SetResult([Item(1)]); await vm.PendingLoad;
+        Assert.False(vm.ShowSkeleton);
+        Assert.Single(vm.Apps);
+    }
+
+    [AvaloniaFact]
     public async Task DetailsUseTheSameCardAndInstallStateSurvivesNavigation()
     {
         var fake = new StoreFake(); using var vm = new AppStoreViewModel(fake); await vm.PendingLoad;
@@ -293,6 +347,8 @@ public sealed class AppStoreWorkflowTests
     private sealed class StoreFake : IAppStoreService
     {
         public Func<string, Task<IReadOnlyList<AppStoreItem>>>? Search;
+        public Func<Task<IReadOnlyList<AppStoreItem>>>? Category;
+        public int FeaturedQueries;
         public int Queries;
         public bool LongText;
         public bool FailInstall, WaitForCancel;
@@ -300,8 +356,9 @@ public sealed class AppStoreWorkflowTests
         public HashSet<string> Updated = [];
         private IReadOnlyList<AppStoreItem> All => Enumerable.Range(0, 60).Select(n => Item(n, Installed.Contains(Item(n).Id) ? AppInstallState.Installed : AppInstallState.NotInstalled)).Select(a => LongText ? a with { Name = new string('W', 200), Publisher = new string('W', 200), Summary = new string('W', 500) } : a).ToArray();
         public Task<IReadOnlyList<AppStoreItem>> GetAppsByCategoryAsync(AppCategory category, CancellationToken cancellationToken = default)
-        { Queries++; return Task.FromResult(All); }
-        public Task<IReadOnlyList<AppStoreItem>> GetFeaturedAppsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<AppStoreItem>>(All.Take(4).ToArray());
+        { Queries++; return Category?.Invoke() ?? Task.FromResult(All); }
+        public Task<IReadOnlyList<AppStoreItem>> GetFeaturedAppsAsync(CancellationToken cancellationToken = default)
+        { FeaturedQueries++; return Task.FromResult<IReadOnlyList<AppStoreItem>>(All.Take(4).ToArray()); }
         public Task<IReadOnlyList<AppStoreItem>> SearchAppsAsync(string query, CancellationToken cancellationToken = default) => Search?.Invoke(query) ?? Task.FromResult(All);
         public Task<IReadOnlyList<AppStoreItem>> GetInstalledAppsAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<AppStoreItem>>(All.Where(a => Installed.Contains(a.Id)).ToArray());
         public Task<IReadOnlyList<AppStoreItem>> GetUpdatesAsync(CancellationToken cancellationToken = default) => Task.FromResult<IReadOnlyList<AppStoreItem>>(All.Where(a => !Updated.Contains(a.Id)).Select(a => a with { InstallState = AppInstallState.UpdateAvailable }).ToArray());

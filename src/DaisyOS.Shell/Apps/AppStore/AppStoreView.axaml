@@ -121,7 +121,7 @@
             <TextBlock Text="{Binding ErrorMessage}" TextWrapping="Wrap" />
           </Border>
           <Grid Grid.Row="3">
-            <ScrollViewer x:Name="AppsScroller" ClipToBounds="True" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasResults}">
+            <ScrollViewer controls:MotionBehavior.RevealOnVisible="True" x:Name="AppsScroller" ClipToBounds="True" HorizontalScrollBarVisibility="Disabled" IsVisible="{Binding HasResults}">
               <StackPanel x:Name="CardCollections" Margin="{DynamicResource SpaceInset4}" Spacing="{DynamicResource Space4}" MaxWidth="{Binding CardContentWidth, RelativeSource={RelativeSource AncestorType=store:AppStoreView}}">
                 <StackPanel IsVisible="{Binding IsDiscoverMode}">
                   <controls:SectionHeader Title="{DynamicResource Loc_FEB5EBB27E2A}" Margin="{DynamicResource SpaceInset2}" />
@@ -136,9 +136,11 @@
                 <Button Content="{DynamicResource Loc_732B7B585FD7}" Command="{Binding LoadMoreCommand}" Classes="Secondary" IsVisible="{Binding HasMore}" HorizontalAlignment="Center" Margin="{DynamicResource SpaceInset4}" />
               </StackPanel>
             </ScrollViewer>
-            <StackPanel IsVisible="{Binding IsLoading}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{DynamicResource Space4}">
-              <ProgressBar Width="180" IsIndeterminate="True" /><TextBlock Text="{DynamicResource Loc_50037E25E1F4}" Classes="Muted" TextAlignment="Center" />
-            </StackPanel>
+            <Grid IsVisible="{Binding ShowSkeleton}" Margin="{DynamicResource SpaceInset6}" RowDefinitions="Auto,*" RowSpacing="{DynamicResource Space4}">
+              <TextBlock Text="{DynamicResource Loc_50037E25E1F4}" Classes="Muted" />
+              <controls:SkeletonLoader Grid.Row="1" />
+            </Grid>
+            <ProgressBar IsVisible="{Binding IsLoading}" IsIndeterminate="True" Height="3" VerticalAlignment="Top" />
             <StackPanel IsVisible="{Binding ShowEmptyState}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{DynamicResource Space4}" MaxWidth="360" Margin="{DynamicResource SpaceInset6}">
               <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
               <TextBlock Text="{Binding EmptyStateTitle}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" />
@@ -153,7 +155,7 @@
             </StackPanel>
           </Grid>
         </Grid>
-        <Grid IsVisible="{Binding IsDetailMode}" RowDefinitions="Auto,*">
+        <Grid controls:MotionBehavior.RevealOnVisible="True" IsVisible="{Binding IsDetailMode}" RowDefinitions="Auto,*">
           <Button Classes="Subtle" Command="{Binding BackCommand}" HorizontalAlignment="Left" Margin="{DynamicResource SpaceInset4}">
             <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}"><controls:DaisyIcon Icon="arrow-left" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" /><TextBlock Text="{DynamicResource Loc_494219FD4CD7}" /></StackPanel>
           </Button>

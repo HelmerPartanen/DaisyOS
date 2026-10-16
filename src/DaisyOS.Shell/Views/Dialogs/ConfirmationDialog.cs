@@ -7,6 +7,11 @@ namespace DaisyOS.Shell.Views.Dialogs;
 
 internal sealed class ConfirmationDialog : Window
 {
+    public static Task<bool> ShowApplicationRemovalAsync(Window owner, string appName) =>
+        new ConfirmationDialog(Loc.Get("Remove application"), Loc.Format("Remove {0}?", appName),
+            Loc.Get("The application and its package files will be removed. Your personal files are not deleted."),
+            Loc.Get("Remove"), Loc.Get("Keep application")).ShowDialog<bool>(owner);
+
     public ConfirmationDialog(string title, string heading, string message, string confirmText, string cancelText = "Cancel")
     {
         Title = title;
@@ -42,6 +47,7 @@ internal sealed class ConfirmationDialog : Window
                 }
             }
         };
+        Controls.MotionBehavior.SetRevealOnAttach((Control)Content, true);
         Opened += (_, _) => keepEditing.Focus();
     }
 }

@@ -167,6 +167,51 @@ public sealed class LinuxAppStoreServiceTests : IDisposable
     }
 
     [Fact]
+    public async Task BrokenCatalogDoesNotPreventManagingInstalledApplications()
+    {
+        File.WriteAllText(_catalog, "<broken");
+        var runner = new ScriptedCommandRunner(CommandResult.Success("org.example.Editor\tEditor\t2.0\tprivate-repo\tuser\n"));
+        var app = Assert.Single(await Service(runner).GetInstalledAppsAsync());
+        Assert.Equal("Editor", app.Name);
+        Assert.Equal(AppInstallState.Installed, app.InstallState);
+        Assert.Equal("private-repo", app.Origin);
+        Assert.Single(runner.Calls);
+    }
+
+    [Fact]
+    public async Task NativeApplicationRemovalUsesActualPackageOwnerAndKeepsDependencyChecks()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var desktop = Path.Combine(directory, "firefox.desktop");
+            File.WriteAllText(desktop, "[Desktop Entry]\nType=Application\nName=Firefox\nExec=firefox %u\n");
+            var runner = new ScriptedCommandRunner(CommandResult.Success(), CommandResult.Success("firefox\n"), CommandResult.Success());
+            var service = new LinuxAppStoreService(runner, _catalog, [directory]);
+            Assert.True(await service.UninstallAppAsync("org.mozilla.firefox"));
+            Assert.Collection(runner.Calls,
+                c => Assert.Equal("list", c.Arguments[0]),
+                c => { Assert.Equal("pacman", c.FileName); Assert.Equal(new[] { "-Qqo", "--", desktop }, c.Arguments); },
+                c => { Assert.Equal("pkexec", c.FileName); Assert.Equal(new[] { "pacman", "-R", "--noconfirm", "--", "firefox" }, c.Arguments); });
+        }
+        finally { Directory.Delete(directory, true); }
+    }
+
+    [Theory]
+    [InlineData("--recursive")]
+    [InlineData("firefox\nkwin")]
+    [InlineData("firefox;reboot")]
+    public async Task MalformedPackageOwnersNeverReachRemoval(string owner)
+    {
+        var runner = new ScriptedCommandRunner(CommandResult.Success(owner));
+        Assert.Null(await NativeApplicationPackages.FindOwnerAsync(runner, "/usr/share/applications/firefox.desktop"));
+        Assert.Single(runner.Calls);
+        await Assert.ThrowsAsync<ArgumentException>(() => NativeApplicationPackages.RemoveAsync(runner, owner));
+        Assert.Single(runner.Calls);
+    }
+
+    [Fact]
     public async Task FailedTransactionDoesNotExposeCommandOutputOrReportSuccess()
     {
         var runner = new ScriptedCommandRunner(CommandResult.Success(), CommandResult.Success(), CommandResult.Failed("private path/password"));

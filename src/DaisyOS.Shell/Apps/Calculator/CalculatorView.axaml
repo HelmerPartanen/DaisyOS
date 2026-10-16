@@ -107,11 +107,6 @@
         <controls:DaisyIcon Icon="{Binding ModeToggleIcon}" Classes="IconSymbol" />
       </Button>
       <TextBlock x:Name="ModeTitleText" Grid.Column="1" Text="{Binding ModeTitle}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="Bold" VerticalAlignment="Center" Margin="8,0,0,0">
-        <TextBlock.Transitions>
-          <Transitions>
-            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
-          </Transitions>
-        </TextBlock.Transitions>
       </TextBlock>
       <Button Grid.Column="3" Classes="HeaderIconButton" ToolTip.Tip="{DynamicResource Loc_0E7696009337}">
         <controls:DaisyIcon Icon="clock-counter-clockwise" Classes="IconSymbol" />

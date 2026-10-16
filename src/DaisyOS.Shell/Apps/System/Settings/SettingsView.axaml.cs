@@ -1477,13 +1477,30 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private void BuildInstalledApplicationsSection(int buildVersion)
         {
+            var skeleton = new SkeletonLoader();
+            CategoryContent.Children.Add(skeleton);
+            _ = LoadInstalledApplicationsAsync(buildVersion, skeleton);
+        }
+
+        private async Task LoadInstalledApplicationsAsync(int buildVersion, SkeletonLoader skeleton)
+        {
             var service = new InstalledApplicationService();
-            var apps = service.GetInstalledApplications();
+            IReadOnlyList<AppEntry> apps;
+            try { apps = await Task.Run(service.GetInstalledApplications); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (buildVersion != _categoryBuildVersion) return;
+                CategoryContent.Children.Remove(skeleton);
+                CategoryContent.Children.Add(Secondary(Loc.Get("Installed applications could not be read. Try again.")));
+                return;
+            }
+            if (buildVersion != _categoryBuildVersion) return;
+            CategoryContent.Children.Remove(skeleton);
             var search = new SearchBar
             {
                 PlaceholderText = Loc.Get("Search installed apps")
             };
-            var rows = apps.Select(app => CreateInstalledApplicationRow(app, service, buildVersion)).ToArray();
+            var rows = new List<(AppEntry App, Border Row)>();
             search.PropertyChanged += (_, args) =>
             {
                 if (args.Property != SearchBar.TextProperty) return;
@@ -1504,8 +1521,20 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 Margin = new Thickness(0, -10, 0, -8)
             }, "Caption"));
             var rowsHost = new StackPanel { Spacing = 8 };
-            foreach (var (_, row) in rows) rowsHost.Children.Add(row);
             CategoryContent.Children.Add(rowsHost);
+            foreach (var app in apps)
+            {
+                if (buildVersion != _categoryBuildVersion) return;
+                var entry = CreateInstalledApplicationRow(app, service, buildVersion);
+                var query = search.Text?.Trim() ?? string.Empty;
+                entry.Row.IsVisible = query.Length == 0 || app.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
+                    || app.Description.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+                rows.Add(entry);
+                rowsHost.Children.Add(entry.Row);
+                // Let input and rendering run between batches of icon decoding and layout.
+                if (rows.Count % 8 == 0) await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
+            }
+            _ = GuiMotion.RevealAsync(rowsHost, 4);
         }
 
         private (AppEntry App, Border Row) CreateInstalledApplicationRow(
@@ -1659,27 +1688,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private async Task<bool> ConfirmApplicationRemovalAsync(string appName)
         {
             if (TopLevel.GetTopLevel(this) is not Window owner) return false;
-            var cancel = Loc.Bind(new Button { Content = "Cancel", Classes = { "Subtle" }, MinWidth = 88 }, Button.ContentProperty, "Cancel");
-            var uninstall = Loc.Bind(new Button { Content = "Uninstall", Classes = { "Danger" }, MinWidth = 96 }, Button.ContentProperty, "Uninstall");
-            var dialog = new Window
-            {
-                Title = Loc.Format("Uninstall {0}?", appName), Width = 420, Height = 190, CanResize = false,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner,
-                Background = TryBrush("SurfaceBaseSolidBrush"),
-                Content = new StackPanel
-                {
-                    Margin = new Thickness(24), Spacing = 18,
-                    Children =
-                    {
-                        DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock { Text = Loc.Format("Uninstall {0}?", appName), FontSize = 20, FontWeight = FontWeight.SemiBold }, "Title"),
-                        Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock { Text = "The application and its package files will be removed. Your personal files are not deleted.", FontSize = 13, TextWrapping = TextWrapping.Wrap, Foreground = TryBrush("ContentSecondaryBrush") }, "BodySmall"), TextBlock.TextProperty, "The application and its package files will be removed. Your personal files are not deleted."),
-                        new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Spacing = 8, Children = { cancel, uninstall } }
-                    }
-                }
-            };
-            cancel.Click += (_, _) => dialog.Close(false);
-            uninstall.Click += (_, _) => dialog.Close(true);
-            return await dialog.ShowDialog<bool>(owner);
+            return await DaisyOS.Shell.Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(owner, appName);
         }
 
         private async void BuildStorage()

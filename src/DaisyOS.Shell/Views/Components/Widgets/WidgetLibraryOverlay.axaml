@@ -55,7 +55,7 @@
     </Style>
     <Style Selector="Border.PreviewCard:pointerover">
       <Setter Property="RenderTransform" Value="scale(1.01)" />
-      <Setter Property="BoxShadow" Value="0 4 16 0 #33000000" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ElevationFlyoutShadow}" />
     </Style>
   </UserControl.Styles>
   <Grid Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
@@ -164,8 +164,8 @@
                                 <Border VerticalAlignment="Bottom" Height="76" IsHitTestVisible="False">
                                   <Border.Background>
                                     <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                                      <GradientStop Color="#00000000" Offset="0" />
-                                      <GradientStop Color="#90000000" Offset="1" />
+                                      <GradientStop Color="{DynamicResource TransparentColor}" Offset="0" />
+                                      <GradientStop Color="{DynamicResource BlackAlpha56Color}" Offset="1" />
                                     </LinearGradientBrush>
                                   </Border.Background>
                                 </Border>
@@ -195,7 +195,7 @@
                           <Grid Width="370" Height="176">
                             <controls:WidgetContainer ColumnSpan="5" RowSpan="2" Padding="0">
                               <Grid Margin="14" ColumnDefinitions="Auto,*">
-                                <Border Grid.Column="0" Width="128" Height="128" VerticalAlignment="Center" HorizontalAlignment="Left" CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" Background="{DynamicResource StateHoverBrush}" BoxShadow="0 2 8 0 #20000000">
+                                <Border Grid.Column="0" Width="128" Height="128" VerticalAlignment="Center" HorizontalAlignment="Left" CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" Background="{DynamicResource StateHoverBrush}" BoxShadow="{DynamicResource ElevationPreview}">
                                   <controls:DaisyIcon Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" Opacity="0.4" HorizontalAlignment="Center" VerticalAlignment="Center" />
                                 </Border>
                                 <Grid Grid.Column="1" Margin="14,2,0,2" RowDefinitions="Auto,*,Auto">

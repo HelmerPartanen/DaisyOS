@@ -509,30 +509,7 @@ public partial class LauncherView : UserControl
     private async Task<bool> ConfirmUninstallAsync(string appName)
     {
         if (TopLevel.GetTopLevel(this) is not Window owner) return false;
-        var cancel = Loc.Bind(new Button { Content = "Cancel", Classes = { "Subtle" }, MinWidth = 88 }, Button.ContentProperty, "Cancel");
-        var remove = Loc.Bind(new Button { Content = "Uninstall", Classes = { "Danger" }, MinWidth = 96 }, Button.ContentProperty, "Uninstall");
-        var dialog = new Window
-        {
-            Title = Loc.Format("Uninstall {0}?", appName),
-            Width = 420,
-            Height = 190,
-            CanResize = false,
-            WindowStartupLocation = WindowStartupLocation.CenterOwner,
-            Background = this.FindResource("SurfaceBaseSolidBrush") as Avalonia.Media.IBrush,
-            Content = new StackPanel
-            {
-                Margin = new Thickness(24), Spacing = 18,
-                Children =
-                {
-                    DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock { Text = Loc.Format("Uninstall {0}?", appName), FontSize = 20, FontWeight = Avalonia.Media.FontWeight.SemiBold }, "Title"),
-                    Loc.Bind(new TextBlock { Text = "The application and its package files will be removed. Your personal files are not deleted.", TextWrapping = Avalonia.Media.TextWrapping.Wrap }, TextBlock.TextProperty, "The application and its package files will be removed. Your personal files are not deleted."),
-                    new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Right, Spacing = 8, Children = { cancel, remove } }
-                }
-            }
-        };
-        cancel.Click += (_, _) => dialog.Close(false);
-        remove.Click += (_, _) => dialog.Close(true);
-        return await dialog.ShowDialog<bool>(owner);
+        return await DaisyOS.Shell.Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(owner, appName);
     }
 
     private async void OnSearchKeyDown(object? sender, KeyEventArgs e)

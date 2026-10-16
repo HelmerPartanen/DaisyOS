@@ -10,7 +10,7 @@ using DaisyOS.System.Processes;
 
 namespace DaisyOS.System.AppStore;
 
-/// <summary>Flathub metadata and scoped Flatpak transactions. No system package manager operations.</summary>
+/// <summary>Flathub metadata, scoped Flatpak transactions and ownership-based native application removal.</summary>
 public sealed partial class LinuxAppStoreService : IAppStoreService
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(60) };
@@ -37,7 +37,18 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
     private static string[] DefaultDesktopDirectories() =>
         new[] { Path.Combine(Environment.GetEnvironmentVariable("XDG_DATA_HOME") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share"), "applications") }
         .Concat((Environment.GetEnvironmentVariable("XDG_DATA_DIRS") ?? "/usr/local/share:/usr/share").Split(':', StringSplitOptions.RemoveEmptyEntries).Select(p => Path.Combine(p, "applications"))).ToArray();
-    private AppStoreItem WithNativeState(AppStoreItem item)
+    private HashSet<string> NativeDesktopFiles()
+    {
+        var files = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var directory in _desktopDirectories)
+        {
+            try { if (Directory.Exists(directory)) files.UnionWith(Directory.EnumerateFiles(directory, "*.desktop")); }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+        return files;
+    }
+
+    private AppStoreItem WithNativeState(AppStoreItem item, IReadOnlySet<string>? desktopFiles = null)
     {
         if (item.InstallState != AppInstallState.NotInstalled) return item;
         var desktopId = string.IsNullOrEmpty(item.DesktopFileId) ? item.Id + ".desktop" : item.DesktopFileId;
@@ -52,6 +63,7 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
         foreach (var candidate in new[] { desktopId, nativeAlias }.Distinct())
         {
             var file = Path.Combine(directory, candidate);
+            if (desktopFiles != null && !desktopFiles.Contains(file)) continue;
             try
             {
                 if (!File.Exists(file) || new FileInfo(file).Length > 256_000) continue;
@@ -70,15 +82,20 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
     [GeneratedRegex(@"^[A-Za-z_][A-Za-z0-9_-]*(?:\.[A-Za-z_][A-Za-z0-9_-]*){2,}\z")]
     private static partial Regex AppIdRegex();
 
-    private async Task<IReadOnlyList<AppStoreItem>> CatalogAsync(CancellationToken token)
+    private async Task<IReadOnlyList<AppStoreItem>> CatalogAsync(CancellationToken token, bool allowDownload = true)
     {
-        await _catalogGate.WaitAsync(token).ConfigureAwait(false);
+        // Library navigation must not queue behind a potentially slow catalog download.
+        if (!allowDownload)
+        {
+            if (!await _catalogGate.WaitAsync(0, token).ConfigureAwait(false)) return _catalog ?? [];
+        }
+        else await _catalogGate.WaitAsync(token).ConfigureAwait(false);
         try
         {
             var locale = CultureInfo.CurrentUICulture.Name;
             if (_locale != locale) { _locale = locale; _catalog = null; }
             if (_catalog != null) return _catalog;
-            var candidates = new[] { _catalogOverride, CacheFile,
+            var candidates = _catalogOverride != null ? [_catalogOverride] : new[] { CacheFile,
                 Path.Combine(Environment.GetEnvironmentVariable("XDG_DATA_HOME") ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local/share"),
                     "flatpak/appstream/flathub", Architecture, "active/appstream.xml"),
                 $"/var/lib/flatpak/appstream/flathub/{Architecture}/active/appstream.xml" };
@@ -89,6 +106,7 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
                 catch (Exception ex) when (ex is IOException or global::System.Xml.XmlException or InvalidDataException) { failure = ex; }
             }
             if (_catalogOverride != null) throw new AppStoreException("The application catalog could not be read.", failure);
+            if (!allowDownload) return [];
             await DownloadCatalogAsync(token).ConfigureAwait(false);
             _catalog = await ReadCatalogAsync(CacheFile, token).ConfigureAwait(false);
             return _catalog;
@@ -163,8 +181,9 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
     private async Task<IReadOnlyList<AppStoreItem>> WithStateAsync(IEnumerable<AppStoreItem> apps, CancellationToken token)
     {
         var installed = (await InstalledAsync(token).ConfigureAwait(false)).ToDictionary(a => a.Id);
+        var desktopFiles = NativeDesktopFiles();
         return apps.Select(a => installed.TryGetValue(a.Id, out var i)
-            ? a with { InstallState = AppInstallState.Installed, InstallationScope = i.Scope, Origin = i.Origin, Version = i.Version } : WithNativeState(a)).ToArray();
+            ? a with { InstallState = AppInstallState.Installed, InstallationScope = i.Scope, Origin = i.Origin, Version = i.Version } : WithNativeState(a, desktopFiles)).ToArray();
     }
     public async Task<IReadOnlyList<AppStoreItem>> GetFeaturedAppsAsync(CancellationToken cancellationToken = default)
     {
@@ -198,13 +217,14 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
         var installed = await InstalledAsync(cancellationToken, required: true).ConfigureAwait(false);
         if (installed.Count == 0 && _desktopDirectories.Count == 0) return [];
         IReadOnlyList<AppStoreItem> catalog;
-        try { catalog = await CatalogAsync(cancellationToken).ConfigureAwait(false); }
-        catch (Exception ex) when (ex is IOException or HttpRequestException or global::System.Xml.XmlException or TaskCanceledException && !cancellationToken.IsCancellationRequested) { catalog = []; }
+        try { catalog = await CatalogAsync(cancellationToken, allowDownload: false).ConfigureAwait(false); }
+        catch (Exception ex) when (ex is AppStoreException or IOException or HttpRequestException or global::System.Xml.XmlException or TaskCanceledException && !cancellationToken.IsCancellationRequested) { catalog = []; }
         var lookup = catalog.ToDictionary(a => a.Id);
+        var desktopFiles = NativeDesktopFiles();
         return installed.Select(i => (lookup.GetValueOrDefault(i.Id) ?? new AppStoreItem(i.Id, i.Id, i.Name, "Installed application", "", AppCategory.Utilities,
             "", "package", i.Version, "", "", 0, false, false)) with
             { InstallState = AppInstallState.Installed, Version = i.Version, InstallationScope = i.Scope, Origin = i.Origin })
-            .Concat(catalog.Select(WithNativeState).Where(a => a.NativeDesktopFile.Length > 0 && !installed.Any(i => i.Id == a.Id)))
+            .Concat(catalog.Select(a => WithNativeState(a, desktopFiles)).Where(a => a.NativeDesktopFile.Length > 0 && !installed.Any(i => i.Id == a.Id)))
             .OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
     }
     public async Task<IReadOnlyList<AppStoreItem>> GetUpdatesAsync(CancellationToken cancellationToken = default)
@@ -284,6 +304,19 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
         {
             var installed = await InstalledAsync(token, required: true).ConfigureAwait(false);
             var existing = installed.FirstOrDefault(a => a.Id == id);
+            if (existing == null && operation == "uninstall")
+            {
+                var catalog = await CatalogAsync(token, allowDownload: false).ConfigureAwait(false);
+                var native = catalog.FirstOrDefault(a => a.Id == id) is { } item ? WithNativeState(item) : null;
+                if (native?.NativeDesktopFile.Length > 0)
+                {
+                    var package = await NativeApplicationPackages.FindOwnerAsync(_runner, native.NativeDesktopFile, token).ConfigureAwait(false);
+                    if (package == null) throw new AppStoreException("This application is not owned by a supported Pacman or Flatpak package.");
+                    var removal = await NativeApplicationPackages.RemoveAsync(_runner, package, token).ConfigureAwait(false);
+                    if (!removal.Succeeded) throw new AppStoreException("The operation could not finish. Check your connection, available storage and permissions, then try again.");
+                    return true;
+                }
+            }
             var scope = existing?.Scope ?? "user";
             if (operation != "install" && existing == null) throw new AppStoreException("This application is no longer installed. Refresh the library.");
             if (operation == "install")

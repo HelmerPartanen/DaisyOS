@@ -152,9 +152,7 @@ public partial class AppStoreView : UserControl
     private async void OnUninstallButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button { DataContext: AppStoreCardViewModel card } || TopLevel.GetTopLevel(this) is not Window owner) return;
-        var dialog = new Views.Dialogs.ConfirmationDialog(Loc.Get("Remove application"), Loc.Format("Remove {0}?", card.Name),
-            Loc.Get("The application will be removed. Its saved data will be kept so you can reinstall it later."), Loc.Get("Remove"), Loc.Get("Keep application"));
-        if (await dialog.ShowDialog<bool>(owner)) await card.UninstallAsync();
+        if (await Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(owner, card.Name)) await card.UninstallAsync();
     }
     private void OnFlathubClicked(object? sender, RoutedEventArgs e)
     { if (sender is Button { DataContext: AppStoreCardViewModel card }) OpenUrl(card.AppUrl); }

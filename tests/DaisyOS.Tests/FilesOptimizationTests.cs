@@ -393,6 +393,31 @@ public sealed class WatcherTests
 public sealed class SessionCancellationTests
 {
     [Fact]
+    public async Task NavigatingFromPopulatedDirectoryPublishesSkeletonUntilTheNewProjectionIsReady()
+    {
+        using var first = new FilesFixture();
+        using var second = new FilesFixture();
+        first.Create("old.txt");
+        var service = new DelayedSnapshots(second.Root);
+        using var tab = first.Tab(service);
+        await tab.NavigateToAsync(first.Root);
+        Assert.Single(tab.FilteredEntries);
+        var observedLoadingSkeleton = false;
+        tab.PropertyChanged += (_, args) =>
+        {
+            if (args.PropertyName == nameof(tab.ShowSkeleton) && tab.ShowSkeleton) observedLoadingSkeleton = true;
+        };
+        var navigation = tab.NavigateToAsync(second.Root);
+        Assert.True(tab.ShowSkeleton);
+        Assert.True(observedLoadingSkeleton);
+        Assert.False(tab.IsEmpty);
+        service.Release.SetResult([]);
+        await navigation;
+        Assert.False(tab.ShowSkeleton);
+        Assert.True(tab.IsEmpty);
+    }
+
+    [Fact]
     public async Task OldEnumerationAndStaleDeltasCannotModifyNewDirectory()
     {
         using var first = new FilesFixture();

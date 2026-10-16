@@ -120,11 +120,11 @@
                 <WrapPanel Width="180">
                   <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ContentPrimaryBrush}" Click="OnColorSelected" Tag="" ToolTip.Tip="{DynamicResource Loc_E78B0327D832}" CornerRadius="4" />
                   <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ActionPrimaryBrush}" Click="OnColorSelected" Tag="accent" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#22C55E" Click="OnColorSelected" Tag="#22C55E" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#EAB308" Click="OnColorSelected" Tag="#EAB308" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#EF4444" Click="OnColorSelected" Tag="#EF4444" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#A855F7" Click="OnColorSelected" Tag="#A855F7" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#94A3B8" Click="OnColorSelected" Tag="#94A3B8" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorGreenBrush}" Click="OnColorSelected" Tag="{StaticResource EditorGreenValue}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorYellowBrush}" Click="OnColorSelected" Tag="{StaticResource EditorYellowValue}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorRedBrush}" Click="OnColorSelected" Tag="{StaticResource EditorRedValue}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorPurpleBrush}" Click="OnColorSelected" Tag="{StaticResource EditorPurpleValue}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorSlateBrush}" Click="OnColorSelected" Tag="{StaticResource EditorSlateValue}" CornerRadius="4" />
                 </WrapPanel>
               </Flyout>
             </Button.Flyout>
@@ -137,13 +137,13 @@
             <Button.Flyout>
               <Flyout>
                 <WrapPanel Width="180">
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#00000000" Click="OnHighlightSelected" Tag="" CornerRadius="4" ToolTip.Tip="{DynamicResource Loc_DC937B598926}">
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource TransparentBrush}" Click="OnHighlightSelected" Tag="" CornerRadius="4" ToolTip.Tip="{DynamicResource Loc_DC937B598926}">
                     <TextBlock Text="✕" FontSize="{DynamicResource TypeSizeCaption}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
                   </Button>
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#50EAB308" Click="OnHighlightSelected" Tag="#50EAB308" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#5059C7E8" Click="OnHighlightSelected" Tag="#5059C7E8" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#5022C55E" Click="OnHighlightSelected" Tag="#5022C55E" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="#50EF4444" Click="OnHighlightSelected" Tag="#50EF4444" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightYellowBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightYellowValue}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightBlueBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightBlueValue}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightGreenBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightGreenValue}" CornerRadius="4" />
+                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightRedBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightRedValue}" CornerRadius="4" />
                 </WrapPanel>
               </Flyout>
             </Button.Flyout>

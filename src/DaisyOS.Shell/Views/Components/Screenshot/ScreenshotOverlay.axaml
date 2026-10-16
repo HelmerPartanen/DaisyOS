@@ -189,7 +189,7 @@
               PointerPressed="OnSelectionBoxPointerPressed">
         <Grid>
           <Border IsHitTestVisible="False"
-                  BorderBrush="#59FFFFFF"
+                  BorderBrush="{DynamicResource CaptureSelectionBorderBrush}"
                   BorderThickness="1" />
 
           <!-- Dimension Badge (placed below / above / inside from code) -->

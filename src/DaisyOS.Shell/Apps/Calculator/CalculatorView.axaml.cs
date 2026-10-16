@@ -1,7 +1,6 @@
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
-using System.Threading.Tasks;
 
 namespace DaisyOS.Shell.Apps.Calculator;
 
@@ -61,23 +60,12 @@ public partial class CalculatorView : UserControl
         }
     }
 
-    private async void OnToggleModeClicked(object? sender, RoutedEventArgs e)
+    private void OnToggleModeClicked(object? sender, RoutedEventArgs e)
     {
-        if (ViewModel is not { } viewModel || !ModeToggleButton.IsEnabled)
-        {
-            return;
-        }
-
-        ModeToggleButton.IsEnabled = false;
-        ModeToggleButton.Opacity = 0;
-        ModeTitleText.Opacity = 0;
-
-        await Task.Delay(120);
+        if (ViewModel is not { } viewModel) return;
         viewModel.ToggleMode();
-
-        ModeToggleButton.Opacity = 1;
-        ModeTitleText.Opacity = 1;
-        ModeToggleButton.IsEnabled = true;
+        _ = Services.Motion.GuiMotion.RevealAsync(ModeToggleButton, 0);
+        _ = Services.Motion.GuiMotion.RevealAsync(ModeTitleText, 0);
     }
 
     private void OnDigitClicked(object? sender, RoutedEventArgs e)

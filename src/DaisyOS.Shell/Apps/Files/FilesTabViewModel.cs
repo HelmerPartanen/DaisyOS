@@ -78,6 +78,8 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             {
                 _loadingCursor?.Dispose();
                 _loadingCursor = value && !_disposed ? DaisyOS.System.Processes.BusyCursor.Begin() : null;
+                OnPropertyChanged(nameof(IsEmpty));
+                OnPropertyChanged(nameof(ShowSkeleton));
                 UpdateStatusText();
             }
         }
@@ -106,6 +108,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
     public bool HasSelectedEntry => SelectedEntry is not null;
 
     public bool IsEmpty => !IsLoading && FilteredEntries.Count == 0;
+    public bool ShowSkeleton => IsLoading && FilteredEntries.Count == 0;
 
     public bool IsSortByName => string.Equals(SortColumn, "Name", StringComparison.OrdinalIgnoreCase);
     public bool IsSortByDate => string.Equals(SortColumn, "Date", StringComparison.OrdinalIgnoreCase);
@@ -379,6 +382,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             SelectedItems.Clear();
             IsLoading = true;
             if (FilteredEntries.Count > 0) FilteredEntries.ReplaceAll([]);
+            OnPropertyChanged(nameof(ShowSkeleton));
             var cached = _recent.Take(fullPath);
             if (cached != null)
             {
@@ -1104,6 +1108,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
         ProjectionChanged?.Invoke();
         CurrentSession?.Performance.Count("UI collection notifications");
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(ShowSkeleton));
         UpdateStatusText();
     }
 
@@ -1180,6 +1185,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
         if (!batch) session.Performance.Count("UI collection notifications", FilteredEntries.NotificationCount - beforeNotifications);
         OnPropertyChanged(nameof(Entries));
         OnPropertyChanged(nameof(IsEmpty));
+        OnPropertyChanged(nameof(ShowSkeleton));
         UpdateStatusText();
         EntriesChanged?.Invoke();
     }

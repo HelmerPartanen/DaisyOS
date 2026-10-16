@@ -115,7 +115,7 @@
                   Background="{DynamicResource SurfaceRaisedBrush}"
                   BorderBrush="{DynamicResource StrokeDefaultBrush}"
                   BorderThickness="1"
-                  BoxShadow="0 2 6 0 #33000000"
+                  BoxShadow="{DynamicResource ElevationItemLift}"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center">
             <Border.Transitions>
@@ -149,7 +149,7 @@
     <Style Selector="Button.WidgetRemoveButton:pointerover /template/ Border#ButtonBorder">
       <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
-      <Setter Property="BoxShadow" Value="0 3 8 0 #4D000000" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ElevationItemDrag}" />
     </Style>
 
     <Style Selector="Button.WidgetRemoveButton:pressed /template/ Border#ButtonBorder">

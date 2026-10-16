@@ -81,7 +81,7 @@ public sealed class AppStoreCardViewModel : INotifyPropertyChanged
     public string ActionAccessibilityLabel => ActionText + " " + Name;
     public bool CanOpen => !IsBusy && _state is AppInstallState.Installed or AppInstallState.UpdateAvailable;
     public bool CanInstall => !IsBusy && _state == AppInstallState.NotInstalled;
-    public bool CanUninstall => Item.NativeDesktopFile.Length == 0 && !IsBusy && _state is AppInstallState.Installed or AppInstallState.UpdateAvailable;
+    public bool CanUninstall => !IsBusy && _state is AppInstallState.Installed or AppInstallState.UpdateAvailable;
     public bool CanUpdate => !IsBusy && _state == AppInstallState.UpdateAvailable;
     public AppInstallState InstallState { get => _state; set { _state = value; Publish(); } }
     public bool IsBusy => _busy;
@@ -158,6 +158,8 @@ public sealed class AppStoreViewModel : INotifyPropertyChanged, IDisposable
     private readonly IAppStoreService _service;
     private readonly Dictionary<string, AppStoreCardViewModel> _cards = new(StringComparer.Ordinal);
     private IReadOnlyList<AppStoreItem> _results = [];
+    private IReadOnlyList<AppStoreItem> _filteredResults = [];
+    private (AppCategory Category, string Query)? _displayedPage;
     private AppCategoryItem _selectedCategory;
     private string _searchQuery = "", _errorMessage = "";
     private bool _isLoading, _disposed, _verifiedOnly;
@@ -181,8 +183,9 @@ public sealed class AppStoreViewModel : INotifyPropertyChanged, IDisposable
     public bool HasError => !string.IsNullOrEmpty(_errorMessage) && _results.Count == 0;
     public bool HasCatalogWarning => !string.IsNullOrEmpty(_errorMessage) && _results.Count > 0;
     public bool ShowEmptyState => !IsLoading && !HasError && Apps.Count == 0;
-    public bool HasResults => !IsLoading && !HasError && Apps.Count > 0;
-    public bool HasMore => _visibleCount < FilteredResults().Count;
+    public bool HasResults => !HasError && Apps.Count > 0;
+    public bool ShowSkeleton => IsLoading && Apps.Count == 0;
+    public bool HasMore => _visibleCount < _filteredResults.Count;
     public string EmptyStateTitle => !string.IsNullOrWhiteSpace(SearchQuery) ? Loc.Get("No apps found") : SelectedCategory.Category switch
     { AppCategory.Installed => Loc.Get("Your library starts here"), AppCategory.Updates => Loc.Get("You're up to date"), _ => Loc.Get("No apps to show") };
     public string EmptyStateDescription => SelectedCategory.Category switch
@@ -191,9 +194,9 @@ public sealed class AppStoreViewModel : INotifyPropertyChanged, IDisposable
     public string PageDescription => !string.IsNullOrWhiteSpace(SearchQuery) ? Loc.Format("Apps matching “{0}”", SearchQuery.Trim()) : SelectedCategory.Category switch
     { AppCategory.Discover => Loc.Get("Find something great for your everyday."), AppCategory.Installed => Loc.Get("Your applications, all in one place."),
       AppCategory.Updates => Loc.Get("Keep your applications running at their best."), _ => Loc.Get("Explore applications from the Flathub community.") };
-    public string ResultsLabel => Loc.Format("{0} applications", FilteredResults().Count);
+    public string ResultsLabel => Loc.Format("{0} applications", _filteredResults.Count);
     public string CollectionTitle => !string.IsNullOrWhiteSpace(SearchQuery) ? Loc.Get("Matching applications") : SelectedCategory.Category == AppCategory.Discover ? Loc.Get("Explore the catalog") : SelectedCategory.Name;
-    public bool IsDiscoverMode => !IsLoading && !HasError && FeaturedApps.Count > 0 && SelectedCategory.Category == AppCategory.Discover && string.IsNullOrWhiteSpace(SearchQuery) && !VerifiedOnly;
+    public bool IsDiscoverMode => !HasError && FeaturedApps.Count > 0 && SelectedCategory.Category == AppCategory.Discover && string.IsNullOrWhiteSpace(SearchQuery) && !VerifiedOnly;
     public bool IsLibrary => SelectedCategory.Category is AppCategory.Installed or AppCategory.Updates;
     public bool ShowUpdateAll => SelectedCategory.Category == AppCategory.Updates && HasResults;
     public bool HasActiveOperations => _cards.Values.Any(c => c.IsBusy);
@@ -312,7 +315,10 @@ public sealed class AppStoreViewModel : INotifyPropertyChanged, IDisposable
         if (_disposed) return;
         _searchCts?.Cancel(); var request = new CancellationTokenSource(); _searchCts = request;
         var version = ++_requestVersion; var token = request.Token;
-        _errorMessage = ""; Apps.Clear(); FeaturedApps.Clear(); _results = []; IsLoading = true;
+        _errorMessage = "";
+        if (_displayedPage != (category, query))
+        { Apps.Clear(); FeaturedApps.Clear(); _results = []; _filteredResults = []; }
+        IsLoading = true;
         try
         {
             if (debounce && query.Length > 0) await Task.Delay(250, token);
@@ -324,9 +330,10 @@ public sealed class AppStoreViewModel : INotifyPropertyChanged, IDisposable
             }
             else results = query.Length > 0 ? await _service.SearchAppsAsync(query, token) : await _service.GetAppsByCategoryAsync(category, token);
             IReadOnlyList<AppStoreItem> featured = [];
-            if (category == AppCategory.Discover && query.Length == 0) featured = await _service.GetFeaturedAppsAsync(token);
+            if (category == AppCategory.Discover && query.Length == 0) featured = results.Where(a => a.IsFeatured).Take(4).ToArray();
             if (_disposed || version != _requestVersion || token.IsCancellationRequested) return;
-            _results = results;
+            _results = results; _displayedPage = (category, query);
+            FeaturedApps.Clear();
             foreach (var item in results) if (_cards.TryGetValue(item.Id, out var card)) card.UpdateItem(item);
             foreach (var item in featured.Take(4)) FeaturedApps.Add(Card(item));
             ApplyResults();
@@ -340,17 +347,14 @@ public sealed class AppStoreViewModel : INotifyPropertyChanged, IDisposable
             request.Dispose();
         }
     }
-    private IReadOnlyList<AppStoreItem> FilteredResults()
-    {
-        var results = _results.Where(a => !VerifiedOnly || a.IsVerified);
-        if (SortIndex == 1) results = results.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase);
-        return results.ToArray();
-    }
     private void ApplyResults(bool resetPage = true)
     {
         if (resetPage) _visibleCount = 24;
+        var filtered = _results.Where(a => !VerifiedOnly || a.IsVerified);
+        if (SortIndex == 1) filtered = filtered.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase);
+        _filteredResults = filtered.ToArray();
         Apps.Clear();
-        foreach (var item in FilteredResults().Take(_visibleCount))
+        foreach (var item in _filteredResults.Take(_visibleCount))
         {
             if (!_cards.TryGetValue(item.Id, out var card)) card = Card(item);
             Apps.Add(card);
@@ -360,7 +364,7 @@ public sealed class AppStoreViewModel : INotifyPropertyChanged, IDisposable
     private void PublishContentState()
     {
         foreach (var name in new[] { nameof(ErrorMessage), nameof(HasError), nameof(HasCatalogWarning), nameof(ShowEmptyState), nameof(EmptyStateTitle), nameof(EmptyStateDescription), nameof(IsDiscoverMode),
-            nameof(PageTitle), nameof(PageDescription), nameof(ResultsLabel), nameof(CollectionTitle), nameof(HasMore), nameof(HasResults), nameof(IsLibrary), nameof(ShowUpdateAll) }) OnPropertyChanged(name);
+            nameof(PageTitle), nameof(PageDescription), nameof(ResultsLabel), nameof(CollectionTitle), nameof(HasMore), nameof(HasResults), nameof(ShowSkeleton), nameof(IsLibrary), nameof(ShowUpdateAll) }) OnPropertyChanged(name);
     }
     public void Dispose()
     {
