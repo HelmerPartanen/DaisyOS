@@ -13,6 +13,50 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class SettingsLayoutTests
 {
+    [AvaloniaFact]
+    public async Task WallpaperPreviewLoadsOnlyOnAppearanceAndCanReloadAfterDetach()
+    {
+        var view = new SettingsView();
+        var window = new Window { Content = view, Width = 900, Height = 700 };
+        var refresh = typeof(SettingsView).GetMethod("RefreshWallpaperPreview",
+            global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.NonPublic)!;
+        var image = view.FindControl<Image>("WallpaperPreviewImage")!;
+        var path = Path.Combine(Path.GetTempPath(), $"daisy-settings-preview-{Guid.NewGuid():N}.png");
+        using (var bitmap = new Avalonia.Media.Imaging.WriteableBitmap(new PixelSize(2, 2), new Vector(96, 96)))
+            bitmap.Save(path);
+        try
+        {
+            window.Show();
+            refresh.Invoke(view, new object[] { path });
+            await Task.Delay(100);
+            Assert.Null(image.Source);
+
+            view.SelectCategory("Appearance");
+            refresh.Invoke(view, new object[] { path });
+            for (var attempt = 0; image.Source is null && attempt < 100; attempt++)
+                await Task.Delay(20);
+            Assert.NotNull(image.Source);
+
+            window.Content = null;
+            Assert.Null(image.Source);
+            refresh.Invoke(view, new object[] { path });
+            await Task.Delay(100);
+            Assert.Null(image.Source);
+
+            window.Content = view;
+            view.SelectCategory("Appearance");
+            refresh.Invoke(view, new object[] { path });
+            for (var attempt = 0; image.Source is null && attempt < 100; attempt++)
+                await Task.Delay(20);
+            Assert.NotNull(image.Source);
+        }
+        finally
+        {
+            window.Close();
+            File.Delete(path);
+        }
+    }
+
     [AvaloniaTheory]
     [InlineData(false, 760)]
     [InlineData(true, 760)]

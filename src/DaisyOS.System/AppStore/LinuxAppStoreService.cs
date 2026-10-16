@@ -69,8 +69,10 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
                 if (!File.Exists(file) || new FileInfo(file).Length > 256_000) continue;
                 var lines = File.ReadAllLines(file);
                 var entry = lines.SkipWhile(l => l.Trim() != "[Desktop Entry]").Skip(1).TakeWhile(l => !l.StartsWith('[')).ToArray();
-                if (entry.Contains("Hidden=true")) return item;
+                if (entry.Contains("Hidden=true") || entry.Contains("NoDisplay=true") || entry.Contains("X-DaisyOS-Removed=true")) return item;
                 if (!entry.Contains("Type=Application") || !entry.Any(l => l.StartsWith("Exec=")) || entry.Any(l => l.StartsWith("X-Flatpak="))) continue;
+                var tryExec = entry.FirstOrDefault(l => l.StartsWith("TryExec=", StringComparison.Ordinal))?["TryExec=".Length..].Trim();
+                if (!string.IsNullOrEmpty(tryExec) && !DesktopApplicationMaskStore.CommandExists(tryExec)) continue;
                 return item with { InstallState = AppInstallState.Installed, InstallationScope = "native", NativeDesktopFile = file, Version = "" };
             }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
@@ -311,16 +313,29 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
                 if (native?.NativeDesktopFile.Length > 0)
                 {
                     var package = await NativeApplicationPackages.FindOwnerAsync(_runner, native.NativeDesktopFile, token).ConfigureAwait(false);
-                    if (package == null) throw new AppStoreException("This application is not owned by a supported Pacman or Flatpak package.");
-                    var removal = await NativeApplicationPackages.RemoveAsync(_runner, package, token).ConfigureAwait(false);
-                    if (!removal.Succeeded) throw new AppStoreException("The operation could not finish. Check your connection, available storage and permissions, then try again.");
-                    return true;
+                    if (package == null && !native.NativeDesktopFile.StartsWith("/usr/share/applications/", StringComparison.Ordinal))
+                    {
+                        var systemDesktop = Path.Combine("/usr/share/applications", Path.GetFileName(native.NativeDesktopFile));
+                        if (File.Exists(systemDesktop))
+                            package = await NativeApplicationPackages.FindOwnerAsync(_runner, systemDesktop, token).ConfigureAwait(false);
+                    }
+                    if (package != null)
+                    {
+                        var removal = await NativeApplicationPackages.RemoveAsync(_runner, package, token).ConfigureAwait(false);
+                        if (!removal.Succeeded) throw new AppStoreException("The operation could not finish. Check your connection, available storage and permissions, then try again.");
+                        DesktopApplicationMaskStore.RemoveDesktopShortcut(Path.GetFileName(native.NativeDesktopFile));
+                        return true;
+                    }
+                    if (DesktopApplicationMaskStore.RemoveOrMask(Path.GetFileName(native.NativeDesktopFile), native.NativeDesktopFile, native.Name))
+                        return true;
+                    throw new AppStoreException("This application is not owned by a supported Pacman or Flatpak package.");
                 }
             }
             var scope = existing?.Scope ?? "user";
             if (operation != "install" && existing == null) throw new AppStoreException("This application is no longer installed. Refresh the library.");
             if (operation == "install")
             {
+                DesktopApplicationMaskStore.Restore(id);
                 if (existing != null) { progress?.Invoke(1); return true; }
                 var remote = await _runner.RunAsync("flatpak", ["remote-add", "--user", "--if-not-exists", "flathub",
                     "https://dl.flathub.org/repo/flathub.flatpakrepo"], QueryTimeout, token).ConfigureAwait(false);
@@ -334,6 +349,7 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
             if (!result.Succeeded) throw new AppStoreException(result.TimedOut
                 ? "The operation took too long. Check your connection and try again."
                 : "The operation could not finish. Check your connection, available storage and permissions, then try again.");
+            if (operation == "uninstall") DesktopApplicationMaskStore.RemoveDesktopShortcut(id);
             progress?.Invoke(1);
             return true;
         }

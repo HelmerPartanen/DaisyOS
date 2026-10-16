@@ -68,8 +68,11 @@ internal static class Program
                 var appearance = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
                 appearance.Tick += (_, _) => app.ReloadApplicationAppearance();
                 appearance.Start();
+                var appearanceObserver = new DaisyOS.Shell.Services.Theming.AppearanceFileObserver(
+                    app.AppearancePreferencesPath, () => app.ReloadApplicationAppearance(force: true));
                 desktop.Exit += (_, _) =>
                 {
+                    appearanceObserver.Dispose();
                     appearance.Stop();
                     stop.Cancel();
                     _ = fileManager.DisposeAsync();

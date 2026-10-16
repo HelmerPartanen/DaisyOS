@@ -36,8 +36,17 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
         }
     }
 
-    public RecentAppPrefetcher()
+    public RecentAppPrefetcher(bool enabled = true)
     {
+        if (!enabled)
+        {
+            _disposed = true;
+            _suspended = true;
+            _cachePath = string.Empty;
+            _idle = new Timer(_ => { }, null, Timeout.Infinite, Timeout.Infinite);
+            return;
+        }
+
         _cachePath = Path.Combine(
             Environment.GetEnvironmentVariable("XDG_STATE_HOME")
                 ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state"),

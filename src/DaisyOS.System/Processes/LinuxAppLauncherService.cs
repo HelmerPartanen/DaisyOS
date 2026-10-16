@@ -13,7 +13,7 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
 {
     private static readonly HashSet<string> SupportedKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Name", "Comment", "Icon", "Exec", "NoDisplay", "Hidden", "Terminal", "Type", "Categories"
+        "Name", "Comment", "Icon", "Exec", "TryExec", "NoDisplay", "Hidden", "Terminal", "Type", "Categories", "X-DaisyOS-Removed"
     };
 
     private readonly ILogService _log;
@@ -21,6 +21,7 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
     private readonly object _lock = new();
     private IReadOnlyList<AppEntry>? _cachedApps;
     private long _catalogVersion = -1;
+    private long _maskVersion = -1;
 
     public LinuxAppLauncherService(ILogService? log = null)
     {
@@ -33,8 +34,13 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
         lock (_lock)
         {
             var version = DaisyLaunchClient.Shared.CatalogVersion;
-            if (_cachedApps is null || _catalogVersion != version)
-            { _cachedApps = DiscoverApps(); _catalogVersion = version; }
+            var maskVersion = DesktopApplicationMaskStore.Version;
+            if (_cachedApps is null || _catalogVersion != version || _maskVersion != maskVersion)
+            {
+                _cachedApps = DiscoverApps();
+                _catalogVersion = version;
+                _maskVersion = maskVersion;
+            }
             return _cachedApps;
         }
     }
@@ -44,8 +50,10 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
         lock (_lock)
         {
             var version = DaisyLaunchClient.Shared.CatalogVersion;
+            var maskVersion = DesktopApplicationMaskStore.Version;
             _cachedApps = DiscoverApps();
             _catalogVersion = version;
+            _maskVersion = maskVersion;
         }
     }
 
@@ -180,22 +188,23 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
 
     private IReadOnlyList<AppEntry> DiscoverApps()
     {
+        var maskedIds = DesktopApplicationMaskStore.GetMaskedIds();
         var apps = new List<AppEntry>();
         try
         {
             var catalog = DaisyLaunchClient.Enabled
                 ? DaisyLaunchClient.Shared.CatalogAsync().GetAwaiter().GetResult()
                 : DaisyLaunchClient.CatalogFallbackAsync().GetAwaiter().GetResult();
-            apps.AddRange(catalog);
+            apps.AddRange(catalog.Where(app => !maskedIds.Contains(app.Id)));
         }
         catch (Exception ex) when (ex is IOException or TimeoutException or Tmds.DBus.Protocol.DBusExceptionBase or global::System.Text.Json.JsonException)
         {
-            try { apps.AddRange(DaisyLaunchClient.CatalogFallbackAsync().GetAwaiter().GetResult()); }
+            try { apps.AddRange(DaisyLaunchClient.CatalogFallbackAsync().GetAwaiter().GetResult().Where(app => !maskedIds.Contains(app.Id))); }
             catch (Exception fallback) when (fallback is IOException or TimeoutException or global::System.Text.Json.JsonException)
             { _log.Log(LogLevel.Warning, "Native catalog unavailable; using legacy discovery."); }
         }
         var nativeCatalog = apps.Count > 0;
-        var seenIds = new HashSet<string>(apps.Select(app => app.Id), StringComparer.OrdinalIgnoreCase);
+        var seenIds = new HashSet<string>(apps.Select(app => app.Id).Concat(maskedIds), StringComparer.OrdinalIgnoreCase);
         var seenNameAndTarget = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
         foreach (var directory in nativeCatalog ? [] : GetApplicationDirectories())
@@ -207,6 +216,13 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
 
             foreach (var file in Directory.EnumerateFiles(directory, "*.desktop", SearchOption.TopDirectoryOnly))
             {
+                var fileId = Path.GetFileName(file);
+                if (DesktopApplicationMaskStore.IsDesktopFileHiddenOrMasked(file))
+                {
+                    seenIds.Add(fileId);
+                    continue;
+                }
+
                 var app = TryReadDesktopEntry(file);
                 if (app is null || !seenIds.Add(app.Id))
                 {
@@ -229,6 +245,11 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             var normalizedId = builtIn.Id.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)
                 ? builtIn.Id[..^8]
                 : builtIn.Id;
+
+            if (maskedIds.Contains(builtIn.Id) || maskedIds.Contains(normalizedId))
+            {
+                continue;
+            }
 
             var alreadyPresent = seenIds.Contains(builtIn.Id)
                 || seenIds.Contains(normalizedId)
@@ -301,6 +322,11 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             || !IsDesktopApplication(entry)
             || !TryGet(entry, "Name", out var name)
             || !TryGet(entry, "Exec", out var exec))
+        {
+            return null;
+        }
+
+        if (TryGet(entry, "TryExec", out var tryExec) && !DesktopApplicationMaskStore.CommandExists(tryExec))
         {
             return null;
         }

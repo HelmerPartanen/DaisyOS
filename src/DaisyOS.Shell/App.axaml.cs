@@ -53,7 +53,7 @@ public partial class App : Application
     // Wayland Window can leave a taskbar entry without a mapped surface.
     private readonly DaisyOS.Shell.Services.Windows.LightweightWindowCache _lightweightWindows =
         new(retainWindows: !IsNativeShellSession);
-    private readonly DaisyOS.Shell.Services.Diagnostics.RecentAppPrefetcher _recentPrefetch = new();
+    private readonly DaisyOS.Shell.Services.Diagnostics.RecentAppPrefetcher _recentPrefetch;
 
     private IWallpaperService? _wallpaperService;
     private readonly AppearanceSettingsStore _appearanceSettingsStore = new();
@@ -229,6 +229,7 @@ public partial class App : Application
 
     public App(Action<App, IClassicDesktopStyleApplicationLifetime>? applicationStartup)
     {
+        _recentPrefetch = new(enabled: applicationStartup is null);
         _applicationStartup = applicationStartup;
         _appearanceSettings = _appearanceSettingsStore.Load();
         _automaticThemeScheduler = new AutomaticThemeScheduler(theme => _ = ApplyThemeVariantAsync(theme));
@@ -253,7 +254,7 @@ public partial class App : Application
     {
         if (_applicationStartup is not null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime application)
         {
-            ReloadApplicationAppearance();
+            ApplyInitialApplicationAppearance();
             _applicationStartup(this, application);
             base.OnFrameworkInitializationCompleted();
             return;
@@ -278,7 +279,6 @@ public partial class App : Application
 
         ApplyAccessibilityPreferences();
         ApplyAccentPreference();
-        ApplyLanguageResources();
         ApplyTypographyResources();
         _ = Task.Run(() => ExportWindowDecorationThemeAsync());
 
@@ -344,6 +344,19 @@ public partial class App : Application
     }
 
     internal string AppearancePreferencesPath => _appearanceSettingsStore.PreferencesPath;
+
+    private void ApplyInitialApplicationAppearance()
+    {
+        _applicationAppearanceWriteTime = File.GetLastWriteTimeUtc(_appearanceSettingsStore.PreferencesPath);
+        _applicationAppearanceMinute = DateTime.Now.Minute;
+        RequestedThemeVariant = _appearanceSettings.ThemeMode == ThemeMode.Automatic
+            ? (SolarSchedule.ForLocalTimeZone(DateTimeOffset.Now).IsDaylight(DateTimeOffset.Now) ? ThemeVariant.Light : ThemeVariant.Dark)
+            : ToThemeVariant(_appearanceSettings.ThemeMode);
+        ApplyAccessibilityPreferences();
+        ApplyAccentPreference();
+        ApplyTypographyResources();
+        AppearanceChanged?.Invoke(this, EventArgs.Empty);
+    }
 
     /// <summary>Applies shared appearance in an app process without starting desktop services.</summary>
     public void ReloadApplicationAppearance(bool force = false)
@@ -1221,7 +1234,8 @@ public partial class App : Application
         shell.Taskbar.StartButtonClicked += (_, _) => ToggleLauncher();
         shell.Taskbar.AppIconClicked += (_, appId) => LaunchTaskbarApp(appId);
         shell.Taskbar.ForceQuitRequested += (_, appId) => RequestForceQuit(appId);
-        shell.Taskbar.AppInfoRequested += (_, appId) => ShowSettings("Apps");
+        shell.Taskbar.AppInfoRequested += (_, appId) => ShowSettings("InstalledApps");
+        shell.Taskbar.UninstallAppRequested += (_, appId) => _ = UninstallTaskbarApplicationAsync(appId);
         shell.Taskbar.CloseAppRequested += (_, appId) => RequestClose(appId);
         foreach (var appId in NativeAppIds)
         {
@@ -1733,6 +1747,11 @@ public partial class App : Application
             normalized = normalized["org.daisyos.".Length..];
         }
 
+        if (normalized is not ("settings" or "appstore") && DesktopApplicationMaskStore.IsMasked(normalized))
+        {
+            return false;
+        }
+
         switch (normalized)
         {
             case "settings":
@@ -2041,6 +2060,9 @@ public partial class App : Application
         if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }
 
+    public bool IsLayerShellSurface(Window? window) =>
+        window is not null && IsNativeShellSession && _nativeShellSurfaces.Contains(window);
+
     public void PinApplicationToTaskbar(string applicationId)
     {
         if (_useDesktopSettings) { _ = ApplyDesktopSettingAsync("pin", applicationId); return; }
@@ -2055,6 +2077,97 @@ public partial class App : Application
             SessionState.SetDockOrder(order);
         }
         _shellView?.Taskbar.ApplyOrder(SessionState.DockOrder);
+    }
+
+    public void NotifyApplicationRemoved(string applicationId)
+    {
+        if (string.IsNullOrWhiteSpace(applicationId)) return;
+        if (_useDesktopSettings)
+        {
+            _ = ApplyDesktopSettingAsync("app-removed", applicationId);
+            return;
+        }
+
+        var shortId = DesktopApplicationMaskStore.NormalizeShortId(applicationId);
+        var desktopId = DesktopApplicationMaskStore.NormalizeDesktopId(applicationId);
+        var strippedId = desktopId[..^8];
+
+        var order = SessionState.DockOrder
+            .Where(id => !string.Equals(id, applicationId, StringComparison.OrdinalIgnoreCase)
+                      && !string.Equals(id, shortId, StringComparison.OrdinalIgnoreCase)
+                      && !string.Equals(id, desktopId, StringComparison.OrdinalIgnoreCase)
+                      && !string.Equals(id, strippedId, StringComparison.OrdinalIgnoreCase))
+            .ToList();
+        if (order.Count != SessionState.DockOrder.Count)
+        {
+            SessionState.SetDockOrder(order);
+        }
+
+        RequestClose(shortId);
+        RequestClose(strippedId);
+        _shellView?.Taskbar.ApplyOrder(SessionState.DockOrder);
+        RefreshApplicationCatalogs();
+    }
+
+    public void NotifyApplicationRestored(string applicationId)
+    {
+        if (string.IsNullOrWhiteSpace(applicationId)) return;
+        if (_useDesktopSettings)
+        {
+            _ = ApplyDesktopSettingAsync("app-restored", applicationId);
+            return;
+        }
+
+        RefreshApplicationCatalogs();
+    }
+
+    private void RefreshApplicationCatalogs()
+    {
+        if (_sharedLauncherService.IsValueCreated)
+        {
+            _sharedLauncherService.Value.Refresh();
+            lock (_externalLookupGate)
+            {
+                _externalCatalog = null;
+                _externalLookup = null;
+            }
+        }
+
+        if (_shellView is not null)
+        {
+            _ = _shellView.Launcher.ViewModel.ReloadApplicationsAsync();
+        }
+    }
+
+    private async Task UninstallTaskbarApplicationAsync(string appId)
+    {
+        if (string.IsNullOrWhiteSpace(appId)) return;
+        var service = new InstalledApplicationService();
+        var apps = await Task.Run(() => _sharedLauncherService.Value.GetAvailableApps());
+        var shortId = DesktopApplicationMaskStore.NormalizeShortId(appId);
+        var desktopId = DesktopApplicationMaskStore.NormalizeDesktopId(appId);
+        var entry = apps.FirstOrDefault(a =>
+            string.Equals(a.Id, appId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(a.Id, desktopId, StringComparison.OrdinalIgnoreCase)
+            || string.Equals(DesktopApplicationMaskStore.NormalizeShortId(a.Id), shortId, StringComparison.OrdinalIgnoreCase));
+        entry ??= new AppEntry(desktopId, shortId, string.Empty, shortId, false, AppLaunchKind.DesktopEntry, desktopId);
+
+        var target = await service.ResolveAsync(entry);
+        if (!target.CanManage)
+        {
+            Feedback.Show(target.UnavailableReason);
+            return;
+        }
+
+        if (!await Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(_nativePanelSurface, entry.Name))
+        {
+            return;
+        }
+
+        var removed = await service.UninstallAsync(target);
+        Feedback.Show(removed
+            ? Loc.Format("{0} was uninstalled.", entry.Name)
+            : Loc.Format("Couldn’t uninstall {0}.", entry.Name));
     }
 
     /// <summary>Opens one instance of the native DaisyOS Notes app.</summary>

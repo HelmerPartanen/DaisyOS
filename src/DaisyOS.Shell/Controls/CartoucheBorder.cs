@@ -2,6 +2,7 @@ using System;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
+using Avalonia.Media.Immutable;
 
 namespace DaisyOS.Shell.Controls;
 
@@ -11,6 +12,12 @@ namespace DaisyOS.Shell.Controls;
 /// </summary>
 public class CartoucheBorder : Decorator
 {
+    private static readonly IBrush ShadowFarBrush = new ImmutableSolidColorBrush(Color.FromArgb(0x18, 0, 0, 0));
+    private static readonly IBrush ShadowMiddleBrush = new ImmutableSolidColorBrush(Color.FromArgb(0x1C, 0, 0, 0));
+    private static readonly IBrush ShadowNearBrush = new ImmutableSolidColorBrush(Color.FromArgb(0x14, 0, 0, 0));
+    private static readonly IBrush FallbackSurfaceBrush = new ImmutableSolidColorBrush(Color.FromArgb(0xFF, 0x24, 0x24, 0x26));
+    private static readonly IBrush FallbackHighlightBrush = new ImmutableSolidColorBrush(Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF));
+    private static readonly IBrush FallbackEdgeBrush = new ImmutableSolidColorBrush(Color.FromArgb(0x40, 0, 0, 0));
     public static readonly StyledProperty<double> TailXProperty =
         AvaloniaProperty.Register<CartoucheBorder, double>(nameof(TailX), double.NaN);
 
@@ -146,15 +153,15 @@ public class CartoucheBorder : Decorator
         var shadowGeom = BuildGeometry(w, h, tx, tw, th, cr, 0, TailOnTop);
         using (context.PushTransform(Matrix.CreateTranslation(0, 4)))
         {
-            context.DrawGeometry(new SolidColorBrush(Color.FromArgb(0x18, 0, 0, 0)), null, shadowGeom);
+            context.DrawGeometry(ShadowFarBrush, null, shadowGeom);
         }
         using (context.PushTransform(Matrix.CreateTranslation(0, 2)))
         {
-            context.DrawGeometry(new SolidColorBrush(Color.FromArgb(0x1C, 0, 0, 0)), null, shadowGeom);
+            context.DrawGeometry(ShadowMiddleBrush, null, shadowGeom);
         }
         using (context.PushTransform(Matrix.CreateTranslation(0, 1)))
         {
-            context.DrawGeometry(new SolidColorBrush(Color.FromArgb(0x14, 0, 0, 0)), null, shadowGeom);
+            context.DrawGeometry(ShadowNearBrush, null, shadowGeom);
         }
 
         // 2. Tier 3: Surface fill
@@ -162,21 +169,21 @@ public class CartoucheBorder : Decorator
         var fillBrush = Background
                         ?? (this.TryFindResource("SurfaceOverlayBrush", out var resFill) ? resFill as IBrush : null)
                         ?? (Application.Current != null && Application.Current.TryFindResource("SurfaceOverlayBrush", out var appFill) ? appFill as IBrush : null)
-                        ?? new SolidColorBrush(Color.FromArgb(0xFF, 0x24, 0x24, 0x26));
+                        ?? FallbackSurfaceBrush;
         context.DrawGeometry(fillBrush, null, fillGeom);
 
         // 3. Tier 2: Inner highlight (1px inset frame)
         var innerGeom = BuildGeometry(w, h, tx, tw, th, cr, 1.5, TailOnTop);
         var innerHighlightBrush = (this.TryFindResource("ShellFrameInnerHighlightBrush", out var resInner) ? resInner as IBrush : null)
                                   ?? InnerHighlightBrush
-                                  ?? new SolidColorBrush(Color.FromArgb(0x20, 0xFF, 0xFF, 0xFF));
+                                  ?? FallbackHighlightBrush;
         context.DrawGeometry(null, new Pen(innerHighlightBrush, 1.0), innerGeom);
 
         // 4. Tier 1: Outer edge perimeter (1px outer frame)
         var outerGeom = BuildGeometry(w, h, tx, tw, th, cr, 0.5, TailOnTop);
         var outerEdgeBrush = (this.TryFindResource("ShellFrameOuterEdgeBrush", out var resOuter) ? resOuter as IBrush : null)
                              ?? BorderBrush
-                             ?? new SolidColorBrush(Color.FromArgb(0x40, 0, 0, 0));
+                             ?? FallbackEdgeBrush;
         context.DrawGeometry(null, new Pen(outerEdgeBrush, 1.0), outerGeom);
     }
 

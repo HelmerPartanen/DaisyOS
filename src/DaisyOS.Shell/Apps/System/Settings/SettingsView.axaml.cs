@@ -201,6 +201,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 {
                     app.AppearanceChanged -= OnAppearanceChanged;
                 }
+                _previewWallpaperUri = null;
                 WallpaperPreviewImage.Source = null;
                 _wallpaperPreview?.Dispose();
                 _wallpaperPreview = null;
@@ -3305,7 +3306,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private void RefreshWallpaperPreview(string wallpaperUri)
         {
-            if (WallpaperPreviewImage is null || (!WallpaperFileTypes.IsHeic(wallpaperUri) && string.Equals(_previewWallpaperUri, wallpaperUri, StringComparison.Ordinal))) return;
+            // Hidden settings pages must not decode images or start video preview workers.
+            if (_activeCategory != "Appearance" || TopLevel.GetTopLevel(this) is null || WallpaperPreviewImage is null) return;
+            if (!WallpaperFileTypes.IsHeic(wallpaperUri) && string.Equals(_previewWallpaperUri, wallpaperUri, StringComparison.Ordinal)) return;
 
             _previewWallpaperUri = wallpaperUri;
             _ = RefreshWallpaperPreviewAsync(wallpaperUri, Interlocked.Increment(ref _previewRequestVersion));

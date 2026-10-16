@@ -7,10 +7,32 @@ namespace DaisyOS.Shell.Views.Dialogs;
 
 internal sealed class ConfirmationDialog : Window
 {
-    public static Task<bool> ShowApplicationRemovalAsync(Window owner, string appName) =>
-        new ConfirmationDialog(Loc.Get("Remove application"), Loc.Format("Remove {0}?", appName),
+    private bool _confirmed;
+
+    public static Task<bool> ShowApplicationRemovalAsync(Window? owner, string appName)
+    {
+        var dialog = new ConfirmationDialog(
+            Loc.Get("Remove application"),
+            Loc.Format("Remove {0}?", appName),
             Loc.Get("The application and its package files will be removed. Your personal files are not deleted."),
-            Loc.Get("Remove"), Loc.Get("Keep application")).ShowDialog<bool>(owner);
+            Loc.Get("Remove"),
+            Loc.Get("Keep application"));
+
+        var app = Application.Current as App;
+        if (owner is null || !owner.IsVisible || (app is not null && app.IsLayerShellSurface(owner)))
+        {
+            app?.DismissAllTransientShellSurfaces();
+            dialog.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+            dialog.Topmost = true;
+            var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            dialog.Closed += (_, _) => tcs.TrySetResult(dialog._confirmed);
+            dialog.Show();
+            dialog.Activate();
+            return tcs.Task;
+        }
+
+        return dialog.ShowDialog<bool>(owner);
+    }
 
     public ConfirmationDialog(string title, string heading, string message, string confirmText, string cancelText = "Cancel")
     {
@@ -26,8 +48,8 @@ internal sealed class ConfirmationDialog : Window
 
         var keepEditing = new Button { Content = cancelText, Classes = { "Secondary" }, IsDefault = true, IsCancel = true };
         var discard = new Button { Content = confirmText, Classes = { "Danger" } };
-        keepEditing.Click += (_, _) => Close(false);
-        discard.Click += (_, _) => Close(true);
+        keepEditing.Click += (_, _) => { _confirmed = false; Close(false); };
+        discard.Click += (_, _) => { _confirmed = true; Close(true); };
         var headingText = new TextBlock { Text = heading, FontWeight = FontWeight.SemiBold, TextWrapping = TextWrapping.Wrap };
         headingText.Bind(TextBlock.FontSizeProperty, this.GetResourceObservable("TypeSizeBodyLarge"));
         var messageText = new TextBlock { Text = message, Classes = { "Body" }, TextWrapping = TextWrapping.Wrap };

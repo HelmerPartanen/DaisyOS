@@ -16,6 +16,7 @@ public sealed class WindowDecorationThemeService
 {
     private const string ConfigFileName = "daisyos-window-decorationrc";
     private readonly SemaphoreSlim _exportGate = new(1, 1);
+    private string? _lastExportedConfig;
 
     public void Export(Application application) => _ = ExportAsync(application);
 
@@ -33,6 +34,12 @@ public sealed class WindowDecorationThemeService
             var (content, overviewValues, frameValues) = Avalonia.Threading.Dispatcher.UIThread.CheckAccess()
                 ? CaptureTheme()
                 : await Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(CaptureTheme);
+
+            if (string.Equals(_lastExportedConfig, content, StringComparison.Ordinal))
+            {
+                return;
+            }
+            _lastExportedConfig = content;
 
             var directory = GetConfigDirectory();
             // File I/O and qdbus6 process spawn run on the thread pool to avoid
@@ -178,7 +185,7 @@ public sealed class WindowDecorationThemeService
 
     private static void ExportKWinConfig(IReadOnlyList<KeyValuePair<string, string>> values, string? group = null)
     {
-        if (!OperatingSystem.IsLinux()) return;
+        if (!OperatingSystem.IsLinux() || !string.Equals(Environment.GetEnvironmentVariable("DAISYOS_SHELL_SESSION"), "1", StringComparison.Ordinal)) return;
 
         foreach (var (key, value) in values)
         {

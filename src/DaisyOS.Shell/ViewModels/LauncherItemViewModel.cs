@@ -15,7 +15,7 @@ public class LauncherItemViewModel : INotifyPropertyChanged
     public string Name => IsDaisyApp ? Loc.Get(App.Name) : App.Name;
     public string Description => string.IsNullOrWhiteSpace(App.Description) ? Loc.Get("Application") : IsDaisyApp ? Loc.Get(App.Description) : App.Description;
     public string IconName => App.Icon;
-    public bool CanRequestUninstall => App.LaunchKind != AppLaunchKind.Internal;
+    public bool CanRequestUninstall => true;
     public string SearchKey { get; private set; } = string.Empty;
     private void CacheSearchKey() => SearchKey = string.Join("\n", new[] { Name, Description }.Concat(App.Categories ?? Array.Empty<string>()).Concat(App.SearchTerms ?? Array.Empty<string>())).ToUpperInvariant();
     private IImage? _iconBitmap;
