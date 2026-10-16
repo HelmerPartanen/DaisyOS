@@ -129,7 +129,7 @@ Window {
         scale: 0.98 + popup.reveal * 0.02
         transformOrigin: Item.Bottom
         Behavior on opacity { NumberAnimation { duration: popup.duration; easing.type: Easing.OutCubic } }
-        Behavior on scale { NumberAnimation { duration: popup.duration; easing.type: Easing.OutCubic } }
+        Behavior on scale { SpringAnimation { spring: 4; damping: 0.5; epsilon: 0.001 } }
         Flickable {
             id: strip
             anchors.fill: parent

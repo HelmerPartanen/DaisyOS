@@ -1,6 +1,6 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Transitions x:Key="ToggleThumbTransitions">
-    <DoubleTransition Property="{x:Static Canvas.LeftProperty}" Duration="0:0:0.1" Easing="CubicEaseInOut" />
+    <DoubleTransition Property="{x:Static Canvas.LeftProperty}" Duration="0:0:0.1" Easing="{StaticResource MotionEaseMove}" />
   </Transitions>
   <Transitions x:Key="ToggleTrackTransitions">
     <BrushTransition Property="{x:Static Border.BackgroundProperty}" Duration="0:0:0.1" Easing="CubicEaseInOut" />

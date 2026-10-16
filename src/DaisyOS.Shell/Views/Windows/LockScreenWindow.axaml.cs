@@ -9,6 +9,7 @@ using Avalonia.Media.Imaging;
 using System.Runtime.InteropServices;
 using Avalonia.Wayland;
 using DaisyOS.Shell.Services.Compositor;
+using DaisyOS.Shell.Services.Motion;
 using DaisyOS.Shell.Views.Components.Wallpaper;
 using DaisyOS.Shell.Services.Theming;
 using Avalonia.Threading;
@@ -38,7 +39,7 @@ public partial class LockScreenWindow : Window
     private readonly TranslateTransform _credentialsPresence = new();
     private TaskCompletionSource? _presenceCompletion;
     private double _presenceProgress;
-    private double _presenceStart, _presenceTarget;
+    private double _presenceTarget, _presenceVelocity, _presenceLast;
     private TimeSpan _presenceDuration;
     private readonly DispatcherTimer _clockAnimation = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly global::System.Diagnostics.Stopwatch _clockAnimationTime = new();
@@ -452,12 +453,11 @@ public partial class LockScreenWindow : Window
         _presenceTimer.Stop();
         _presenceCompletion?.TrySetResult();
         _presenceCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        _presenceStart = _presenceProgress;
         _presenceTarget = entering ? 1 : 0;
         _presenceDuration = Application.Current is App { ReduceMotionEnabled: true } ? TimeSpan.Zero :
             this.TryFindResource(entering ? "MotionDurationEnter" : "MotionDurationExit", out var resource) && resource is TimeSpan duration
                 ? duration : TimeSpan.FromMilliseconds(entering ? 280 : 140);
-        _presenceDuration *= Math.Abs(_presenceTarget - _presenceStart);
+        _presenceLast = 0;
         _presenceTime.Restart();
         AdvancePresence();
         if (!_presenceCompletion.Task.IsCompleted) _presenceTimer.Start();
@@ -466,14 +466,20 @@ public partial class LockScreenWindow : Window
 
     private void AdvancePresence()
     {
-        var progress = _presenceDuration <= TimeSpan.Zero ? 1 : Math.Clamp(_presenceTime.Elapsed.TotalMilliseconds / _presenceDuration.TotalMilliseconds, 0, 1);
-        var eased = 1 - Math.Pow(1 - progress, 3);
-        ApplyPresence(_presenceStart + (_presenceTarget - _presenceStart) * eased);
-        if (progress >= 1)
+        var now = _presenceTime.Elapsed.TotalSeconds;
+        var (position, velocity) = DampedSpring.Step(_presenceProgress, _presenceVelocity, _presenceTarget,
+            8 / Math.Max(0.1, _presenceDuration.TotalSeconds), Math.Max(0, now - _presenceLast));
+        _presenceLast = now;
+        _presenceVelocity = velocity;
+        if (_presenceDuration <= TimeSpan.Zero || Application.Current is App { ReduceMotionEnabled: true } ||
+            (Math.Abs(position - _presenceTarget) < 0.001 && Math.Abs(velocity) < 0.01))
         {
+            _presenceVelocity = 0;
+            ApplyPresence(_presenceTarget);
             _presenceTimer.Stop();
             _presenceCompletion?.TrySetResult();
         }
+        else ApplyPresence(Math.Clamp(position, 0, 1));
     }
 
     private void ApplyPresence(double progress)

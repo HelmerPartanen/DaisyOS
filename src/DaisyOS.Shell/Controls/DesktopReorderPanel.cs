@@ -81,7 +81,7 @@ public class DesktopReorderPanel : Panel
         {
             Property = Visual.RenderTransformProperty,
             Duration = TimeSpan.FromMilliseconds(240),
-            Easing = new Avalonia.Animation.Easings.CubicEaseOut()
+            Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 32)
         }
     };
 

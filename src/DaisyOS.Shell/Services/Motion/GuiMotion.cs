@@ -27,6 +27,7 @@ public static class GuiMotion
         public CancellationTokenSource? Animation;
         public CancellationTokenSource? Visibility;
         public bool? RequestedVisible;
+        public double VelocityX, VelocityY, VelocityOpacity;
     }
     private static readonly ConditionalWeakTable<Control, State> States = new();
 
@@ -159,39 +160,48 @@ public static class GuiMotion
         var duration = immediate || Application.Current is App { ReduceMotionEnabled: true }
             ? TimeSpan.Zero
             : durationOverride ?? Duration(content, entering);
-        if (interrupted)
+        if (!interrupted) state.VelocityX = state.VelocityY = state.VelocityOpacity = 0;
+        if (duration > TimeSpan.Zero && TopLevel.GetTopLevel(content) is { } topLevel)
         {
-            // A reversal near an endpoint should not replay a full-length slide.
-            var remaining = Math.Max(
-                Math.Abs(startX - (entering ? 0 : offset.X)) / Math.Max(1, Math.Abs(offset.X)),
-                Math.Abs(startY - (entering ? 0 : offset.Y)) / Math.Max(1, Math.Abs(offset.Y)));
-            if (entering || fadeOnExit)
-                remaining = Math.Max(remaining, Math.Abs(startOpacity - (entering ? 1 : 0)));
-            duration *= Math.Clamp(remaining, 0, 1);
-        }
-        if (duration > TimeSpan.Zero)
-        {
-            var easing = easingOverride ?? (content.TryFindResource(entering ? "MotionEaseEnter" : "MotionEaseExit", out var value) && value is Easing found
-                ? found : entering ? new SplineEasing(0.22, 1, 0.36, 1) : new SplineEasing(0.4, 0, 0.7, 0.2));
-            var animation = new Animation
+            // Settle by position AND velocity, rather than cutting a curve off at a deadline.
+            // Retargeting retains the last rendered velocity as well as its position.
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var registration = current.Token.Register(() => completion.TrySetResult());
+            var clock = global::System.Diagnostics.Stopwatch.StartNew();
+            var last = clock.Elapsed.TotalSeconds;
+            var x = startX;
+            var y = startY;
+            var opacity = startOpacity;
+            var targetX = entering ? 0 : offset.X;
+            var targetY = entering ? 0 : offset.Y;
+            var targetOpacity = entering || !fadeOnExit ? 1d : 0d;
+            // Timing tokens tune response, while critical damping prevents distracting bounce.
+            var frequency = 8 / Math.Max(0.1, duration.TotalSeconds);
+            var transform = (TranslateTransform)content.RenderTransform!;
+            void Frame(TimeSpan timestamp)
             {
-                Duration = duration, Easing = easing,
-                FillMode = FillMode.Forward,
-                Children =
-                {
-                    new KeyFrame { Cue = new Cue(0), Setters = { new Setter(Visual.OpacityProperty, startOpacity),
-                        new Setter(TranslateTransform.XProperty, startX),
-                        new Setter(TranslateTransform.YProperty, startY) } },
-                    new KeyFrame { Cue = new Cue(1), Setters = { new Setter(Visual.OpacityProperty, entering || !fadeOnExit ? 1d : 0d),
-                        new Setter(TranslateTransform.XProperty, entering ? 0d : offset.X),
-                        new Setter(TranslateTransform.YProperty, entering ? 0d : offset.Y) } }
-                }
-            };
-            try { await animation.RunAsync(content, current.Token); }
-            catch (OperationCanceledException) { }
+                if (current.IsCancellationRequested || !ReferenceEquals(state.Animation, current)) return;
+                var now = clock.Elapsed.TotalSeconds;
+                var elapsed = Math.Max(0, now - last);
+                last = now;
+                (x, state.VelocityX) = DampedSpring.Step(x, state.VelocityX, targetX, frequency, elapsed);
+                (y, state.VelocityY) = DampedSpring.Step(y, state.VelocityY, targetY, frequency, elapsed);
+                (opacity, state.VelocityOpacity) = DampedSpring.Step(opacity, state.VelocityOpacity, targetOpacity, frequency, elapsed);
+                transform.X = x;
+                transform.Y = y;
+                content.Opacity = Math.Clamp(opacity, 0, 1);
+                if (Math.Abs(x - targetX) < 0.05 && Math.Abs(y - targetY) < 0.05 &&
+                    Math.Abs(state.VelocityX) < 0.5 && Math.Abs(state.VelocityY) < 0.5 &&
+                    Math.Abs(opacity - targetOpacity) < 0.002 && Math.Abs(state.VelocityOpacity) < 0.02)
+                    completion.TrySetResult();
+                else topLevel.RequestAnimationFrame(Frame);
+            }
+            topLevel.RequestAnimationFrame(Frame);
+            await completion.Task;
         }
         if (!ReferenceEquals(state.Animation, current)) return;
         state.Animation = null;
+        state.VelocityX = state.VelocityY = state.VelocityOpacity = 0;
         content.Opacity = entering || !fadeOnExit ? 1 : 0;
         content.RenderTransform = !entering && preserveExitPosition
             ? new TranslateTransform(offset.X, offset.Y)

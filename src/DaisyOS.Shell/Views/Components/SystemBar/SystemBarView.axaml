@@ -29,7 +29,7 @@
     <Transitions>
       <TransformOperationsTransition
           Property="RenderTransform"
-          Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut"/>
+          Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
     </Transitions>
   </Setter>
 </Style>
@@ -101,7 +101,7 @@
             <controls:DaisyIcon.Transitions>
               <Transitions>
                 <TransformOperationsTransition Property="RenderTransform"
-                    Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut"/>
+                    Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}"/>
               </Transitions>
             </controls:DaisyIcon.Transitions>
           </controls:DaisyIcon>

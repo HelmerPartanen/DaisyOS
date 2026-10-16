@@ -51,7 +51,8 @@ public sealed class WindowDecorationThemeService
                 var temporary = Path.Combine(directory, $".{ConfigFileName}.{Environment.ProcessId}.tmp");
                 File.WriteAllText(temporary, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 File.Move(temporary, destination, overwrite: true);
-                ExportKWinConfig(overviewValues);
+                ExportKWinConfig(overviewValues, "Effect-daisyos-task-overview-v15");
+                ExportKWinConfig(overviewValues.Where(pair => pair.Key == "ReduceMotion").ToArray(), "Effect-daisyos-window-motion");
                 ExportKWinConfig(frameValues, "Round-Corners");
                 RequestKWinReconfigure();
             }).ConfigureAwait(false);

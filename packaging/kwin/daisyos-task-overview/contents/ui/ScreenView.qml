@@ -460,10 +460,10 @@ FocusScope {
                 scale: closing ? 0.96
                     : (effect.phase === effect.phaseActive && hover.hovered ? root.hoverScale : 1)
 
-                Behavior on x { enabled: effect.phase === effect.phaseActive; NumberAnimation { duration: 180; easing.type: Easing.InOutCubic } }
-                Behavior on y { enabled: effect.phase === effect.phaseActive; NumberAnimation { duration: 180; easing.type: Easing.InOutCubic } }
-                Behavior on width { enabled: effect.phase === effect.phaseActive; NumberAnimation { duration: 180; easing.type: Easing.InOutCubic } }
-                Behavior on height { enabled: effect.phase === effect.phaseActive; NumberAnimation { duration: 180; easing.type: Easing.InOutCubic } }
+                Behavior on x { enabled: !effect.reduceMotion && effect.phase === effect.phaseActive; SpringAnimation { spring: 4; damping: 0.5; mass: 1; epsilon: 0.05 } }
+                Behavior on y { enabled: !effect.reduceMotion && effect.phase === effect.phaseActive; SpringAnimation { spring: 4; damping: 0.5; mass: 1; epsilon: 0.05 } }
+                Behavior on width { enabled: !effect.reduceMotion && effect.phase === effect.phaseActive; SpringAnimation { spring: 4; damping: 0.5; mass: 1; epsilon: 0.05 } }
+                Behavior on height { enabled: !effect.reduceMotion && effect.phase === effect.phaseActive; SpringAnimation { spring: 4; damping: 0.5; mass: 1; epsilon: 0.05 } }
                 Behavior on opacity { enabled: effect.phase === effect.phaseActive; NumberAnimation { duration: 140; easing.type: Easing.InOutCubic } }
                 Behavior on scale {
                     enabled: effect.phase === effect.phaseActive

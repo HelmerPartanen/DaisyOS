@@ -91,6 +91,18 @@ registerShortcut("DaisyOS Task Manager", "Open DaisyOS Task Manager", "Ctrl+Shif
     requestShellAction("task-manager");
 });
 
+// Hardware volume keys belong to DaisyOS, including auto-repeat and fine steps.
+registerShortcut("DaisyOS Volume Up", "Increase volume", "Volume Up", function () { requestShellAction("volume-up"); });
+registerShortcut("DaisyOS Volume Down", "Decrease volume", "Volume Down", function () { requestShellAction("volume-down"); });
+registerShortcut("DaisyOS Volume Up Small", "Increase volume by 1%", "Shift+Volume Up", function () { requestShellAction("volume-up-small"); });
+registerShortcut("DaisyOS Volume Down Small", "Decrease volume by 1%", "Shift+Volume Down", function () { requestShellAction("volume-down-small"); });
+registerShortcut("DaisyOS Volume Mute", "Mute audio output", "Volume Mute", function () { requestShellAction("volume-mute"); });
+registerShortcut("DaisyOS Microphone Mute", "Mute microphone", "Microphone Mute", function () { requestShellAction("microphone-mute"); });
+registerShortcut("DaisyOS Displays", "Open DaisyOS display settings", "Meta+P", function () { requestShellAction("display-settings"); });
+registerShortcut("DaisyOS Search", "Search with DaisyOS Launcher", "Alt+Space", function () { requestShellAction("launcher"); });
+registerShortcut("DaisyOS Task Manager Alternate", "Open DaisyOS Task Manager", "Ctrl+Esc", function () { requestShellAction("task-manager"); });
+registerShortcut("DaisyOS Session Menu", "Open DaisyOS Launcher", "Ctrl+Alt+Del", function () { requestShellAction("launcher"); });
+
 registerShortcut("DaisyOS Media Play Pause", "Play or pause media", "Media Play", function () {
     requestMediaAction("play-pause");
 });

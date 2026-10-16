@@ -24,6 +24,7 @@
     <entry name="OuterPadding" type="Double"><default>48</default></entry>
     <entry name="MaxPreviewScale" type="Double"><default>1</default></entry>
     <entry name="HoverScale" type="Double"><default>1.012</default></entry>
+    <entry name="ReduceMotion" type="Bool"><default>false</default></entry>
     <entry name="AnimationDuration" type="Int"><default>280</default></entry>
   </group>
 </kcfg>

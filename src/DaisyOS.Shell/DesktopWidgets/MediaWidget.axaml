@@ -28,7 +28,7 @@
       <Setter Property="RenderTransform" Value="none" />
       <Setter Property="Transitions">
         <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}" />
         </Transitions>
       </Setter>
     </Style>
@@ -66,7 +66,7 @@
       <Setter Property="Transitions">
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" />
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
         </Transitions>
       </Setter>
     </Style>
@@ -82,7 +82,7 @@
       <Setter Property="Transitions">
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut" />
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
         </Transitions>
       </Setter>
     </Style>

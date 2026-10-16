@@ -94,6 +94,9 @@ public partial class App : Application
     private readonly List<Window> _nativeShellSurfaces = [];
     private DaisyOS.Shell.Views.Components.Gaming.GamingOverlay? _gamingOverlay;
     private Window? _gamingOverlaySurface;
+    private Views.Components.Volume.VolumeIndicator? _volumeIndicator;
+    private Window? _volumeIndicatorSurface;
+    private Services.VolumeKeyController? _volumeKeys;
     private int _gameTelemetryVisible;
     private int _gameTelemetryWindowPid;
     private ILayerShellWindowBackend? _layerShellBackend;
@@ -458,6 +461,23 @@ public partial class App : Application
             LayerShellSurfaceOptions.GamingOverlay(), _gamingOverlay);
         _blurEffects.Add(new KWinBlur(_gamingOverlaySurface, _gamingOverlay, () =>
             _gamingOverlay.IsVisible ? new Control[] { _gamingOverlay.FindControl<Border>("MaterialFrame")! } : []));
+        _volumeIndicator = new();
+        _volumeIndicatorSurface = backend.CreateWindow(LayerShellSurfaceOptions.VolumeIndicator(), _volumeIndicator);
+        _blurEffects.Add(new KWinBlur(_volumeIndicatorSurface, _volumeIndicator,
+            () => _volumeIndicator.IsVisible ? new Control[] { _volumeIndicator.MaterialSurface } : []));
+        _volumeKeys = new Services.VolumeKeyController(new DaisyOS.System.Audio.LinuxAudioService(new SafeCommandRunner()));
+        _volumeKeys.Changed += (volume, muted, input) =>
+        {
+            if (IsLockScreenActive) return;
+            if (!input) SessionState.LastKnownVolume = volume;
+            // Measure visible content on the first native map, rather than mapping
+            // an empty hidden root and leaving its material without a viewport.
+            _volumeIndicator.IsVisible = true;
+            _volumeIndicatorSurface.Show();
+            _volumeIndicatorSurface.UpdateLayout();
+            LayerShellWindow.SetInputPassthrough(_volumeIndicatorSurface, true);
+            _volumeIndicator.ShowLevel(volume, muted, input);
+        };
         var toastContent = shell.DetachNotificationToastsForNativeOverlay();
         var consoleContent = shell.DetachConsoleForNativeOverlay();
         var metricsContent = shell.DetachMetricsForNativeOverlay();
@@ -542,6 +562,7 @@ public partial class App : Application
         _nativeShellSurfaces.Add(localSendSurface);
         _nativeShellSurfaces.Add(screenshotSurface);
         _nativeShellSurfaces.Add(_gamingOverlaySurface);
+        _nativeShellSurfaces.Add(_volumeIndicatorSurface);
 
         foreach (var surface in _nativeShellSurfaces)
         {
@@ -1325,6 +1346,11 @@ public partial class App : Application
 
     private void HandleShellAction(string action)
     {
+        if (action.StartsWith("volume-", StringComparison.Ordinal) || action == "microphone-mute")
+        {
+            if (_volumeKeys is not null) _ = _volumeKeys.HandleAsync(action);
+            return;
+        }
         if (action.StartsWith("files-share:", StringComparison.Ordinal))
         {
             try { ShowLocalSend(global::System.Text.Json.JsonSerializer.Deserialize(action[12..], Services.Serialization.DaisyShellJsonContext.Default.StringArray)); }
@@ -1366,6 +1392,9 @@ public partial class App : Application
                 break;
             case "files":
                 OpenFilesWindow();
+                break;
+            case "display-settings":
+                ShowSettings("Displays");
                 break;
             case "settings":
                 ShowSettings();
@@ -2483,6 +2512,7 @@ public partial class App : Application
     public void LockSession()
     {
         if (_gamingOverlay?.IsVisible == true) _gamingOverlay.Toggle();
+        if (_volumeIndicator is { } indicator) _ = indicator.DismissAsync();
         DismissAllTransientShellSurfaces();
 
         if (_lockScreenWindow is not null)
@@ -2857,7 +2887,7 @@ public partial class App : Application
         Resources["ToggleThumbTransitions"] = new Avalonia.Animation.Transitions
         {
             new Avalonia.Animation.DoubleTransition { Property = Canvas.LeftProperty, Duration = toggleDuration,
-                Easing = new Avalonia.Animation.Easings.CubicEaseInOut() }
+                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 32) }
         };
         Resources["ToggleTrackTransitions"] = new Avalonia.Animation.Transitions
         {

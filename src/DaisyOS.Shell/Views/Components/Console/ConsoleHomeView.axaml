@@ -57,7 +57,7 @@
       <Setter Property="Transitions">
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
         </Transitions>
       </Setter>
 
@@ -75,7 +75,7 @@
               <Border.Transitions>
                 <Transitions>
                   <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="LinearEasing" />
-                  <ThicknessTransition Property="Margin" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
+                  <ThicknessTransition Property="Margin" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
                 </Transitions>
               </Border.Transitions>
             </Border>

@@ -213,7 +213,7 @@ public partial class SystemBarView : UserControl
             {
                 Property = Visual.RenderTransformProperty,
                 Duration = duration,
-                Easing = new Avalonia.Animation.Easings.CubicEaseOut()
+                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 32)
             }
         };
     }

@@ -174,6 +174,8 @@ if command -v qdbus6 >/dev/null 2>&1; then
   fi
 fi
 
+/usr/bin/python3 "$repo_root/scripts/configure-first-party-shortcuts.py"
+
 "$repo_root/scripts/install-kwin-window-motion.sh"
 "$repo_root/scripts/install-kwin-tiling-preview.sh"
 

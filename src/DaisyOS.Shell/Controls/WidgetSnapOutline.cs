@@ -17,7 +17,7 @@ public sealed class WidgetSnapOutline : Control
     {
         Property = AnimatedBoundsProperty,
         Duration = TimeSpan.FromMilliseconds(160),
-        Easing = new CubicEaseOut()
+        Easing = new SpringEasing(1, 256, 32)
     };
 
     static WidgetSnapOutline() => AffectsRender<WidgetSnapOutline>(TargetBoundsProperty, AnimatedBoundsProperty);

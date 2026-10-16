@@ -48,7 +48,7 @@
       <Setter Property="RenderTransform" Value="scale(1.0)" />
       <Setter Property="Transitions">
         <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="QuadraticEaseOut" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
           <BoxShadowsTransition Property="BoxShadow" Duration="{DynamicResource MotionDurationBase}" />
         </Transitions>
       </Setter>

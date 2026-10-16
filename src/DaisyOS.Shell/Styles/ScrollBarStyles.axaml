@@ -59,7 +59,7 @@
               <Border.Transitions>
                 <Transitions>
                   <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationFast}" />
-                  <ThicknessTransition Property="Margin" Duration="{DynamicResource MotionDurationFast}" />
+                  <ThicknessTransition Property="Margin" Duration="{DynamicResource MotionDurationFast}"  Easing="{StaticResource MotionEaseMove}"/>
                 </Transitions>
               </Border.Transitions>
             </Border>

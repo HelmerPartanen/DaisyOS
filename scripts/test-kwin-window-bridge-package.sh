@@ -52,10 +52,8 @@ grep -Fq '"RequestShellAction"' "$script"
 test -x "$repo_root/scripts/watch-task-overview-input.sh"
 grep -Fq 'for app_title in Files Settings Notes "Disk Manager"; do' "$repo_root/scripts/install-kwin-window-bridge.sh"
 grep -Fq 'WindowRoles.isDaisyWallpaper' "$overview_root/contents/ui/ScreenView.qml"
-if grep -Fq 'SpringAnimation {' "$overview_root/contents/ui/ScreenView.qml"; then
-  echo "Task overview geometry must use bounded animations without spring overshoot." >&2
-  exit 1
-fi
+grep -Fq 'SpringAnimation { spring: 4; damping: 0.5;' "$overview_root/contents/ui/ScreenView.qml"
+grep -Fq 'configure-first-party-shortcuts.py' "$repo_root/scripts/install-kwin-window-bridge.sh"
 grep -Fq 'import "TransitionGeometry.js" as Transition' "$overview_root/contents/ui/ScreenView.qml"
 grep -Fq 'readonly property var transitionRect: Transition.interpolateRect' "$overview_root/contents/ui/ScreenView.qml"
 grep -Fq 'property string phase: phaseIdle' "$overview_root/contents/ui/main.qml"

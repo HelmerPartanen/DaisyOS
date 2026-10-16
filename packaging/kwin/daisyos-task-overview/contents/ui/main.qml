@@ -16,6 +16,7 @@ KWinComponents.SceneEffect {
     readonly property string phaseExiting: "exiting"
     property string phase: phaseIdle
     readonly property bool activated: phase === phaseEntering || phase === phaseActive
+    readonly property bool reduceMotion: Boolean(configuration.ReduceMotion)
     property real transitionProgress: 0
     property QtObject pendingActivation: null
     readonly property int animationDuration: Math.max(1, Number(configuration.AnimationDuration || 280))
@@ -24,12 +25,17 @@ KWinComponents.SceneEffect {
         onSessionReady: view => effect.handleSessionReady(view)
     }
 
-    NumberAnimation {
-        id: transitionAnimation
-        target: effect
-        property: "transitionProgress"
-        easing.type: Easing.InOutCubic
-        onFinished: effect.finishTransition()
+    Behavior on transitionProgress {
+        enabled: !effect.reduceMotion && (effect.phase === effect.phaseEntering || effect.phase === effect.phaseExiting)
+        SpringAnimation {
+            id: transitionAnimation
+            spring: 4
+            damping: 0.5
+            epsilon: 0.0001
+            onRunningChanged: {
+                if (!running) effect.finishTransition();
+            }
+        }
     }
 
     Timer {
@@ -59,12 +65,8 @@ KWinComponents.SceneEffect {
     }
 
     function animateTo(targetProgress) {
-        transitionAnimation.stop();
-        transitionAnimation.from = transitionProgress;
-        transitionAnimation.to = targetProgress;
-        transitionAnimation.duration = Transition.transitionDuration(
-            animationDuration, transitionProgress, targetProgress);
-        transitionAnimation.start();
+        transitionProgress = targetProgress;
+        if (reduceMotion) finishTransition();
     }
 
     function activeRoot() {

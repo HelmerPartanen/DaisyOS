@@ -20,7 +20,7 @@
       <Setter Property="RenderTransform" Value="none"/>
       <Setter Property="Transitions">
         <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}"/>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
         </Transitions>
       </Setter>
     </Style>

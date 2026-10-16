@@ -97,7 +97,7 @@
           <Setter Property="ClipToBounds" Value="False" />
           <Setter Property="Transitions">
             <Transitions>
-              <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
+              <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="{StaticResource MotionEaseMove}" />
             </Transitions>
           </Setter>
         </Style>

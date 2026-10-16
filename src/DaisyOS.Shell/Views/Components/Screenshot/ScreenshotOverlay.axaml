@@ -24,7 +24,7 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Transitions">
         <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}"  Easing="{StaticResource MotionEaseMove}"/>
         </Transitions>
       </Setter>
     </Style>
@@ -76,7 +76,7 @@
       <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Transitions">
         <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}"  Easing="{StaticResource MotionEaseMove}"/>
         </Transitions>
       </Setter>
     </Style>
@@ -133,7 +133,7 @@
       <Setter Property="BoxShadow" Value="{DynamicResource ElevationSelectionHandle}" />
       <Setter Property="Transitions">
         <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}"  Easing="{StaticResource MotionEaseMove}"/>
         </Transitions>
       </Setter>
     </Style>

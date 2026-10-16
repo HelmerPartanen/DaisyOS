@@ -182,6 +182,16 @@ public sealed record LayerShellSurfaceOptions(
             Height = 88
         };
 
+    /// <summary>A compact, click-through hardware volume display above applications.</summary>
+    public static LayerShellSurfaceOptions VolumeIndicator(string? outputName = null) =>
+        PassiveOverlay("daisyos.overlay.volume", outputName) with
+        {
+            Anchor = LayerShellAnchor.Bottom,
+            ExclusiveZone = IgnoreOtherExclusiveZones,
+            Width = 328,
+            Height = 160
+        };
+
     /// <summary>Passive bottom labels never own pointer or keyboard input.</summary>
     public static LayerShellSurfaceOptions BottomTooltipOverlay(string? outputName = null) =>
         Overlay("daisyos.overlay.bottom-tooltips", outputName) with

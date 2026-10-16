@@ -101,7 +101,7 @@
     <Setter Property="Transitions">
       <Transitions>
         <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
-        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{DynamicResource MotionEasePress}" />
+        <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
       </Transitions>
     </Setter>
   </Style>

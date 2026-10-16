@@ -18,7 +18,7 @@
       <Setter Property="RenderTransform" Value="none"/>
       <Setter Property="Transitions">
         <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut"/>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
         </Transitions>
       </Setter>
     </Style>
@@ -52,7 +52,7 @@
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedPill}"/>
       <Setter Property="Transitions">
         <Transitions>
-          <DoubleTransition Property="Width" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut"/>
+          <DoubleTransition Property="Width" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}"/>
           <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut"/>
         </Transitions>
       </Setter>
@@ -99,8 +99,8 @@
       <Setter Property="RenderTransform" Value="none"/>
       <Setter Property="Transitions">
         <Transitions>
-          <DoubleTransition Property="Canvas.Left" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut"/>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut"/>
+          <DoubleTransition Property="Canvas.Left" Duration="{DynamicResource MotionDurationSlow}" Easing="{StaticResource MotionEaseMove}"/>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
         </Transitions>
       </Setter>
     </Style>
@@ -122,7 +122,7 @@
             CornerRadius="{DynamicResource RoundedXL}">
       <Border.Transitions>
         <Transitions>
-          <DoubleTransition Property="Width" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut"/>
+          <DoubleTransition Property="Width" Duration="{DynamicResource MotionDurationSlow}" Easing="{StaticResource MotionEaseMove}"/>
         </Transitions>
       </Border.Transitions>
 

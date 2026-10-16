@@ -13,6 +13,7 @@ using DaisyOS.Core.Models;
 using DaisyOS.Core.Models.Gaming;
 using DaisyOS.Core.Services.Gaming;
 using DaisyOS.Shell.ViewModels;
+using DaisyOS.Shell.Services.Motion;
 using DaisyOS.System.Gaming;
 
 namespace DaisyOS.Shell.Views.Components.Console;
@@ -31,7 +32,8 @@ public partial class ConsoleHomeView : UserControl
 
     private int _selectedIndex;
     private int _librarySelectedIndex;
-    private double _carouselOffset;
+    private double _carouselOffset, _carouselVelocity;
+    private readonly Stopwatch _carouselClock = new();
     private double _targetCarouselOffset;
     private CancellationTokenSource? _discoveryCts;
     private bool _discoveryActive;
@@ -504,6 +506,7 @@ public partial class ConsoleHomeView : UserControl
         _targetCarouselOffset = -_selectedIndex * 238;
         if (!_carouselTimer.IsEnabled)
         {
+            _carouselClock.Restart();
             _carouselTimer.Start();
         }
 
@@ -562,10 +565,15 @@ public partial class ConsoleHomeView : UserControl
 
     private void AdvanceCarousel()
     {
-        _carouselOffset += (_targetCarouselOffset - _carouselOffset) * 0.24;
+        var elapsed = _carouselClock.Elapsed.TotalSeconds;
+        _carouselClock.Restart();
+        (_carouselOffset, _carouselVelocity) = DampedSpring.Step(
+            _carouselOffset, _carouselVelocity, _targetCarouselOffset, 32, elapsed);
         _carouselTranslation.X = _carouselOffset;
-        if (Math.Abs(_targetCarouselOffset - _carouselOffset) < 0.05)
+        if (Application.Current is App { ReduceMotionEnabled: true } ||
+            (Math.Abs(_targetCarouselOffset - _carouselOffset) < 0.05 && Math.Abs(_carouselVelocity) < 0.5))
         {
+            _carouselVelocity = 0;
             _carouselOffset = _targetCarouselOffset;
             _carouselTranslation.X = _carouselOffset;
             _carouselTimer.Stop();
