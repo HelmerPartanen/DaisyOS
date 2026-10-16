@@ -2379,12 +2379,14 @@ public partial class App : Application
         }
 
         var wallpaperSource = GetCurrentWallpaperSource();
+        var initialWallpaper = _nativeShellSurfaces.Select(surface => surface.Content)
+            .OfType<DaisyOS.Shell.Views.Components.Wallpaper.WallpaperLayer>().FirstOrDefault();
         if (IsNativeShellSession && _layerShellBackend is not null)
         {
             var primaryScreen = _nativeShellSurfaces.FirstOrDefault()?.Screens?.Primary;
             var primaryOutput = primaryScreen?.DisplayName;
             var primaryOptions = LayerShellSurfaceOptions.LockScreen(primaryOutput, isSecondary: false);
-            _lockScreenWindow = LockScreenWindow.CreateNative(_layerShellBackend, primaryOptions, wallpaperSource);
+            _lockScreenWindow = LockScreenWindow.CreateNative(_layerShellBackend, primaryOptions, wallpaperSource, initialWallpaper: initialWallpaper);
         }
         else
         {
@@ -2429,7 +2431,7 @@ public partial class App : Application
                     if (IsNativeShellSession && _layerShellBackend is not null)
                     {
                         var secOptions = LayerShellSurfaceOptions.LockScreen(scr.DisplayName, isSecondary: true);
-                        secondary = LockScreenWindow.CreateNative(_layerShellBackend, secOptions, wallpaperSource, isSecondary: true);
+                        secondary = LockScreenWindow.CreateNative(_layerShellBackend, secOptions, wallpaperSource, isSecondary: true, initialWallpaper: initialWallpaper);
                     }
                     else
                     {

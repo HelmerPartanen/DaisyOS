@@ -21,6 +21,7 @@ internal sealed class KWinBlur : IDisposable
     private readonly Control[] _controls;
     private bool _queued;
     private bool _disposed;
+    private int _geometryUpdateDepth;
     private readonly Func<IEnumerable<Control>>? _regionControls;
     private List<WaylandBlurRect>? _lastRegions;
     internal Func<IEnumerable<WaylandBlurRect>>? AdditionalRegions { get; set; }
@@ -103,9 +104,17 @@ internal sealed class KWinBlur : IDisposable
 
     internal void RefreshImmediately()
     {
+        if (_geometryUpdateDepth > 0) return;
         var queued = _queued;
         Refresh();
         _queued = queued;
+    }
+
+    internal void UpdateGeometry(Action update)
+    {
+        _geometryUpdateDepth++;
+        try { update(); }
+        finally { if (--_geometryUpdateDepth == 0) RefreshImmediately(); }
     }
 
     private void Refresh()
@@ -113,12 +122,20 @@ internal sealed class KWinBlur : IDisposable
         _queued = false;
         if (_disposed) return;
         GeometryChanged?.Invoke();
+        var regions = BuildRegions();
+        if (_lastRegions is not null && _lastRegions.SequenceEqual(regions)) return;
+        LayerShellWindow.SetBlurRegions(_surface, regions);
+        _lastRegions = regions;
+    }
+
+    internal List<WaylandBlurRect> BuildRegions()
+    {
         var regions = new List<WaylandBlurRect>();
         var controls = (_regionControls?.Invoke() ?? _controls).ToArray();
         WatchGeometry(controls);
         foreach (var control in controls)
         {
-            if (!control.IsEffectivelyVisible || control.Opacity <= 0.001 ||
+            if (!control.IsEffectivelyVisible || EffectiveOpacity(control) <= 0.001 ||
                 control.Bounds.Width <= 0 || control.Bounds.Height <= 0)
                 continue;
             var transform = control.TransformToVisual(_surface);
@@ -136,9 +153,14 @@ internal sealed class KWinBlur : IDisposable
             AppendClippedRegions(regions, controlRegions, GetAncestorClipBounds(control));
         }
         if (AdditionalRegions is not null) regions.AddRange(AdditionalRegions());
-        if (_lastRegions is not null && _lastRegions.SequenceEqual(regions)) return;
-        LayerShellWindow.SetBlurRegions(_surface, regions);
-        _lastRegions = regions;
+        return regions;
+    }
+
+    internal static double EffectiveOpacity(Visual visual)
+    {
+        var opacity = visual.Opacity;
+        foreach (var ancestor in visual.GetVisualAncestors()) opacity *= ancestor.Opacity;
+        return opacity;
     }
 
     private Rect? GetAncestorClipBounds(Control control)

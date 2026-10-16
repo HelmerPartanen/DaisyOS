@@ -38,6 +38,16 @@ internal static class WallpaperSourceCache
         }
     }
 
+    // A lock surface can reuse the already decoded desktop frame on its first
+    // paint. This path performs no file I/O or decoding and owns a real lease.
+    public static Lease? TryAcquire(string path)
+    {
+        if (!path.StartsWith("avares://", StringComparison.OrdinalIgnoreCase)) path = Path.GetFullPath(path);
+        if (!Monitor.TryEnter(Gate)) return null;
+        try { return Entries.TryGetValue(path, out var entry) ? new Lease(entry) : null; }
+        finally { Monitor.Exit(Gate); }
+    }
+
     public static Task<Lease?> AcquireAsync(string path, WallpaperDiagnostics diagnostics, CancellationToken token) => Task.Run(() =>
     {
         lock (Gate)

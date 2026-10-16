@@ -6,17 +6,13 @@
     IsHitTestVisible="False">
   <Grid>
     <Border x:Name="SolidColorBackground" Background="Transparent" />
+    <Image x:Name="PreviousWallpaperImage" Stretch="UniformToFill"
+           HorizontalAlignment="Center" VerticalAlignment="Center" />
     <!-- Layout overscan, rather than a scale transform, keeps the image continuous during parallax. -->
     <Image x:Name="WallpaperImage"
            Stretch="UniformToFill"
            HorizontalAlignment="Center"
            VerticalAlignment="Center"
-           RenderTransformOrigin="0.5,0.5">
-      <Image.Transitions>
-        <Transitions>
-          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="CubicEaseOut" />
-        </Transitions>
-      </Image.Transitions>
-    </Image>
+           RenderTransformOrigin="0.5,0.5" />
   </Grid>
 </UserControl>

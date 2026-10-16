@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Animation;
+using Avalonia.Styling;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Platform;
@@ -63,6 +65,11 @@ public partial class WallpaperLayer : UserControl
     private double _horizontalTravelLimit;
     private double _verticalTravelLimit;
     private int _refreshRequestVersion;
+    private int _loadRequestVersion;
+    private bool _dynamicRefreshPending;
+    private CancellationTokenSource? _wallpaperFade;
+    private bool _fadingToSolid;
+    private WallpaperSourceCache.Lease? _initialWallpaperLease;
     private bool _isLoaded;
     private int _wallpaperTransitionVersion;
     private WallpaperResources? _pendingVideoTransitionResources;
@@ -116,6 +123,9 @@ public partial class WallpaperLayer : UserControl
     {
         InitializeComponent();
         WallpaperImage.RenderTransform = _parallaxTranslation;
+        Services.Theming.ThemeTransitionPolicy.SetEnabled(WallpaperImage, false);
+        Services.Theming.ThemeTransitionPolicy.SetEnabled(PreviousWallpaperImage, false);
+        Services.Theming.ThemeTransitionPolicy.SetEnabled(SolidColorBackground, false);
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
         SizeChanged += (_, _) => OnSizeChanged();
@@ -197,14 +207,19 @@ public partial class WallpaperLayer : UserControl
         PropertyChanged += OnLayerPropertyChanged;
         UpdateVisibilityAndPauseState();
 
-        if (_app is not null)
-        {
-            var uri = WallpaperUri ?? _app.CurrentWallpaperUri;
-            if (!string.IsNullOrEmpty(uri))
-            {
-                RequestWallpaperLoad(uri);
-            }
-        }
+        var uri = WallpaperUri ?? _app?.CurrentWallpaperUri;
+        if (!string.IsNullOrEmpty(uri)) RequestWallpaperLoad(uri);
+    }
+
+    internal void SeedFrom(WallpaperLayer source)
+    {
+        if (source._wallpaperImageService is not { } imageService) return;
+        var lease = WallpaperSourceCache.TryAcquire(imageService.WallpaperPath);
+        if (lease is null) return;
+        _initialWallpaperLease?.Dispose();
+        _initialWallpaperLease = lease;
+        WallpaperImage.Source = lease.Bitmap;
+        WallpaperImage.Opacity = 1;
     }
 
     private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
@@ -212,6 +227,9 @@ public partial class WallpaperLayer : UserControl
         _isLoaded = false;
         _dynamicImageTimer.Stop();
         Interlocked.Increment(ref _refreshRequestVersion);
+        Interlocked.Increment(ref _loadRequestVersion);
+        SettleWallpaperTransition();
+        PreviousWallpaperImage.Source = null;
         _videoFrameTimer.Stop();
         if (_app is not null)
         {
@@ -354,7 +372,7 @@ public partial class WallpaperLayer : UserControl
 
     private void RefreshDynamicImage()
     {
-        if (_loadGate.CurrentCount == 0) return;
+        if (_loadGate.CurrentCount == 0) { _dynamicRefreshPending = true; return; }
         var source = _presentedWallpaperUri ?? _requestedWallpaperUri;
         if (_isLoaded && source is not null && WallpaperFileTypes.IsHeic(WallpaperSource.ResolveWallpaperPath(source)) && HasUsablePresentationSize())
             _ = LoadWallpaperAsync(source);
@@ -388,7 +406,7 @@ public partial class WallpaperLayer : UserControl
         {
             if (ReferenceEquals(_presentationCompletion, completion))
             {
-                Interlocked.Increment(ref _refreshRequestVersion);
+                Interlocked.Increment(ref _loadRequestVersion);
                 _presentationCompletion = null;
                 FailVideoCandidate(wallpaperUri);
             }
@@ -406,11 +424,11 @@ public partial class WallpaperLayer : UserControl
             return;
         }
 
-        var requestVersion = Interlocked.Increment(ref _refreshRequestVersion);
+        var requestVersion = Interlocked.Increment(ref _loadRequestVersion);
         await _loadGate.WaitAsync();
         try
         {
-            if (!_isLoaded || requestVersion != Volatile.Read(ref _refreshRequestVersion)) return;
+            if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
 
             if (WallpaperSource.TryGetSolidColor(wallpaperUri, out var solidColor))
             {
@@ -425,7 +443,7 @@ public partial class WallpaperLayer : UserControl
                 if (MpvWallpaperSession.Enabled && _attachedWindow is not null)
                 {
                     var metadata = await VideoMetadata.ProbeAsync(resolvedPath);
-                    if (!_isLoaded || requestVersion != Volatile.Read(ref _refreshRequestVersion)) return;
+                    if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
                     await LoadNativeVideoAsync(resolvedPath, wallpaperUri, metadata, requestVersion);
                     return;
                 }
@@ -451,7 +469,7 @@ public partial class WallpaperLayer : UserControl
                     return;
                 }
 
-                if (!_isLoaded || requestVersion != Volatile.Read(ref _refreshRequestVersion))
+                if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion))
                 {
                     candidate.Dispose();
                     return;
@@ -477,10 +495,12 @@ public partial class WallpaperLayer : UserControl
                 return;
             }
 
-            var imagePath = WallpaperFileTypes.IsHeic(resolvedPath)
-                ? await HeicWallpaper.ResolveFrameAsync(resolvedPath, ActualThemeVariant == Avalonia.Styling.ThemeVariant.Dark, DateTimeOffset.Now)
+            var isHeic = WallpaperFileTypes.IsHeic(resolvedPath);
+            var dark = ActualThemeVariant == ThemeVariant.Dark;
+            var imagePath = isHeic
+                ? await HeicWallpaper.ResolveFrameAsync(resolvedPath, dark, DateTimeOffset.Now)
                 : wallpaperUri;
-            if (!_isLoaded || requestVersion != Volatile.Read(ref _refreshRequestVersion)) return;
+            if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
             if (_wallpaperImageService?.WallpaperPath == imagePath && _presentedWallpaperUri == wallpaperUri)
             {
                 CompletePresentation(wallpaperUri, true);
@@ -497,12 +517,18 @@ public partial class WallpaperLayer : UserControl
                 return;
             }
 
-            if (!_isLoaded || requestVersion != Volatile.Read(ref _refreshRequestVersion))
+            if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion))
             {
                 imageCandidate.Dispose();
                 return;
             }
 
+            if (isHeic && dark != (ActualThemeVariant == ThemeVariant.Dark))
+            {
+                imageCandidate.Dispose();
+                _dynamicRefreshPending = true;
+                return;
+            }
             var previousImageResources = TakeVisibleWallpaperResources();
             _wallpaperImageService = imageCandidate;
             _wallpaperMetrics = initialMetrics;
@@ -526,6 +552,7 @@ public partial class WallpaperLayer : UserControl
         finally
         {
             _loadGate.Release();
+            if (_dynamicRefreshPending) { _dynamicRefreshPending = false; RefreshDynamicImage(); }
         }
     }
 
@@ -543,7 +570,7 @@ public partial class WallpaperLayer : UserControl
             Math.Max(1, (int)Math.Round(Bounds.Width)), Math.Max(1, (int)Math.Round(Bounds.Height)),
             TopLevel.GetTopLevel(this)?.RenderScaling ?? 1, metadata, position); }
         catch { poster.Dispose(); throw; }
-        if (!_isLoaded || requestVersion != Volatile.Read(ref _refreshRequestVersion)) { candidate.Dispose(); poster.Dispose(); return; }
+        if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) { candidate.Dispose(); poster.Dispose(); return; }
         var oldResources = TakeVisibleWallpaperResources();
         _mpvSession = candidate;
         _mpvPoster = poster;
@@ -646,7 +673,7 @@ public partial class WallpaperLayer : UserControl
             if (_isLoaded)
             {
                 metadata = await VideoMetadata.ProbeAsync(source);
-                await LoadNativeVideoAsync(source, uri, metadata, Volatile.Read(ref _refreshRequestVersion), recovery: true);
+                await LoadNativeVideoAsync(source, uri, metadata, Volatile.Read(ref _loadRequestVersion), recovery: true);
             }
         }
         catch (Exception ex) when (ex is not (OutOfMemoryException or AccessViolationException))
@@ -674,7 +701,7 @@ public partial class WallpaperLayer : UserControl
             try
             {
                 if (ReferenceEquals(session, _mpvSession) && _isLoaded)
-                    await LoadNativeVideoAsync(path, uri, verified, Volatile.Read(ref _refreshRequestVersion), derivative: true,
+                    await LoadNativeVideoAsync(path, uri, verified, Volatile.Read(ref _loadRequestVersion), derivative: true,
                         optimizedWidth: targetWidth, optimizedHeight: targetHeight);
             }
             finally { _loadGate.Release(); }
@@ -923,8 +950,8 @@ public partial class WallpaperLayer : UserControl
             return;
         }
 
-        WallpaperImage.Width = targetW;
-        WallpaperImage.Height = targetH;
+        WallpaperImage.Width = PreviousWallpaperImage.Width = targetW;
+        WallpaperImage.Height = PreviousWallpaperImage.Height = targetH;
         ConfigureVideoOutput();
         _horizontalTravelLimit = Math.Max(0, Math.Min(
             MaximumParallaxOffset,
@@ -1005,7 +1032,8 @@ public partial class WallpaperLayer : UserControl
             _videoSourcePath,
             _optimizationStarted,
             _nativeRecoveryAttempted,
-            _usingOptimizedVideo, _optimizedWidth, _optimizedHeight);
+            _usingOptimizedVideo, _optimizedWidth, _optimizedHeight, _initialWallpaperLease);
+        _initialWallpaperLease = null;
         _mpvSession = null;
         _mpvPoster = null;
         _activeVideoFile = null;
@@ -1022,6 +1050,7 @@ public partial class WallpaperLayer : UserControl
 
     private WallpaperResources TakeVisibleWallpaperResources()
     {
+        SettleWallpaperTransition();
         var resources = DetachWallpaperResources();
         if (_pendingVideoTransitionResources is not { } pendingResources)
         {
@@ -1063,90 +1092,89 @@ public partial class WallpaperLayer : UserControl
         foreach (var bitmap in retired) bitmap.Dispose();
     }
 
+    private void SettleWallpaperTransition()
+    {
+        _wallpaperFade?.Cancel();
+        _wallpaperFade = null;
+        Interlocked.Increment(ref _wallpaperTransitionVersion);
+        PreviousWallpaperImage.Source = null;
+        if (_fadingToSolid) WallpaperImage.Source = null;
+        WallpaperImage.Opacity = 1;
+        _fadingToSolid = false;
+    }
+
     private void PresentWallpaper(IImage source, WallpaperResources? previousResources)
     {
+        SettleWallpaperTransition();
         SolidColorBackground.Background = Brushes.Transparent;
-
-        // Video wallpapers update continuously. Present frames directly with full opacity,
-        // avoiding crossfade race conditions and black flashes.
-        if (_videoWallpaperService is not null)
+        var outgoing = WallpaperImage.Source;
+        bool animate = _videoWallpaperService is null && previousResources?.HasResources == true
+            && outgoing is not null && !(_app?.ReduceMotionEnabled ?? false);
+        if (animate)
+        {
+            // Keep the outgoing frame fully opaque beneath the incoming frame.
+            // Fading both frames exposes the canvas and causes a brightness flash.
+            PreviousWallpaperImage.Source = outgoing;
+            WallpaperImage.Source = source;
+            _ = FadeWallpaperAsync(previousResources!, false);
+        }
+        else
         {
             WallpaperImage.Source = source;
             WallpaperImage.Opacity = 1;
-            if (previousResources is not null)
-            {
-                Interlocked.Increment(ref _wallpaperTransitionVersion);
-                _ = RetireResourcesAfterSourceReplacementAsync(previousResources);
-            }
-            return;
+            if (previousResources is not null) _ = RetireResourcesAfterSourceReplacementAsync(previousResources);
         }
-
-        bool shouldAnimate = previousResources?.HasResources == true
-                             && WallpaperImage.Source is not null
-                             && !(_app?.ReduceMotionEnabled ?? false);
-
-        if (!shouldAnimate)
-        {
-            if (previousResources is not null)
-            {
-                Interlocked.Increment(ref _wallpaperTransitionVersion);
-            }
-            WallpaperImage.Source = source;
-            WallpaperImage.Opacity = 1;
-            if (previousResources is not null)
-            {
-                _ = RetireResourcesAfterSourceReplacementAsync(previousResources);
-            }
-            return;
-        }
-
-        int transitionVersion = Interlocked.Increment(ref _wallpaperTransitionVersion);
-        _ = FadeToWallpaperAsync(source, previousResources!, transitionVersion);
     }
 
     private void PresentSolidWallpaper(Color color, WallpaperResources previousResources)
     {
-        var transitionVersion = Interlocked.Increment(ref _wallpaperTransitionVersion);
+        SettleWallpaperTransition();
         SolidColorBackground.Background = new SolidColorBrush(color);
-        WallpaperImage.Opacity = 0;
-        _ = ClearImageAfterSolidColourTransitionAsync(transitionVersion, previousResources);
-    }
-
-    private async Task ClearImageAfterSolidColourTransitionAsync(int transitionVersion, WallpaperResources previousResources)
-    {
-        await Task.Delay(WallpaperFadeHalfDurationMilliseconds);
-        if (_isLoaded && transitionVersion == Volatile.Read(ref _wallpaperTransitionVersion))
+        if (WallpaperImage.Source is not null && !(_app?.ReduceMotionEnabled ?? false))
+            _ = FadeWallpaperAsync(previousResources, true);
+        else
         {
             WallpaperImage.Source = null;
+            _ = RetireResourcesAfterSourceReplacementAsync(previousResources);
         }
-
-        previousResources.Dispose();
     }
 
-    private async Task FadeToWallpaperAsync(IImage source, WallpaperResources previousResources, int transitionVersion)
+    private async Task FadeWallpaperAsync(WallpaperResources previousResources, bool toSolid)
     {
-        WallpaperImage.Opacity = 0;
-        await Task.Delay(WallpaperFadeHalfDurationMilliseconds);
-
-        if (!_isLoaded || transitionVersion != Volatile.Read(ref _wallpaperTransitionVersion))
+        using var request = new CancellationTokenSource();
+        _wallpaperFade = request;
+        _fadingToSolid = toSolid;
+        var version = _wallpaperTransitionVersion;
+        WallpaperImage.Opacity = toSolid ? 1 : 0;
+        var animation = new Animation
         {
-            // A newer selection owns the source replacement now. Leave the old resources
-            // alive long enough for that replacement to reach the compositor.
-            await Task.Delay(WallpaperFadeHalfDurationMilliseconds * 2);
-            previousResources.Dispose();
-            return;
+            Duration = TimeSpan.FromMilliseconds(WallpaperFadeHalfDurationMilliseconds * 2),
+            Easing = new Avalonia.Animation.Easings.CubicEaseOut(),
+            Children =
+            {
+                new KeyFrame { Cue = new Cue(0), Setters = { new Setter(OpacityProperty, toSolid ? 1d : 0d) } },
+                new KeyFrame { Cue = new Cue(1), Setters = { new Setter(OpacityProperty, toSolid ? 0d : 1d) } }
+            }
+        };
+        try { await animation.RunAsync(WallpaperImage, request.Token); }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (version == _wallpaperTransitionVersion)
+            {
+                PreviousWallpaperImage.Source = null;
+                if (toSolid) WallpaperImage.Source = null;
+                WallpaperImage.Opacity = 1;
+                _wallpaperFade = null;
+                _fadingToSolid = false;
+            }
+            await RetireResourcesAfterSourceReplacementAsync(previousResources);
         }
-
-        WallpaperImage.Source = source;
-        WallpaperImage.Opacity = 1;
-
-        await RetireResourcesAfterSourceReplacementAsync(previousResources);
     }
 
     private static async Task RetireResourcesAfterSourceReplacementAsync(WallpaperResources resources)
     {
-        // Keep retired data through the rest of the fade. This protects compositors that
-        // retain a source for more than one frame while preparing the replacement.
+        // The removed drawing can remain in a compositor batch for another frame.
         await Task.Delay(WallpaperFadeHalfDurationMilliseconds);
         resources.Dispose();
     }
@@ -1165,12 +1193,14 @@ public partial class WallpaperLayer : UserControl
         string? videoSourcePath = null,
         bool optimizationStarted = false,
         bool nativeRecoveryAttempted = false,
-        bool usingOptimizedVideo = false, int optimizedWidth = 0, int optimizedHeight = 0) : IDisposable
+        bool usingOptimizedVideo = false, int optimizedWidth = 0, int optimizedHeight = 0,
+        WallpaperSourceCache.Lease? initialWallpaperLease = null) : IDisposable
     {
-        public bool HasResources => mpvSession is not null || gpuImage is not null || imageService is not null || videoService is not null || bitmapA is not null || bitmapB is not null;
+        public bool HasResources => initialWallpaperLease is not null || mpvSession is not null || gpuImage is not null || imageService is not null || videoService is not null || bitmapA is not null || bitmapB is not null;
 
         public void RestoreTo(WallpaperLayer owner)
         {
+            owner._initialWallpaperLease = initialWallpaperLease;
             owner._wallpaperImageService = imageService;
             owner._videoWallpaperService = videoService;
             owner._videoBitmapA = bitmapA;
@@ -1192,6 +1222,7 @@ public partial class WallpaperLayer : UserControl
 
         public void Dispose()
         {
+            initialWallpaperLease?.Dispose();
             mpvSession?.Dispose();
             mpvPoster?.Dispose();
             activeVideoFile?.Dispose();

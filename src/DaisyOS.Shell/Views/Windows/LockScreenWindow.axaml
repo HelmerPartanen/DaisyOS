@@ -13,11 +13,6 @@
 
   <Grid x:Name="RootGrid"
         Opacity="0">
-    <Grid.Transitions>
-      <Transitions>
-        <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
-      </Transitions>
-    </Grid.Transitions>
 
     <Panel x:Name="LockBackground" Background="{DynamicResource LockScreenCanvasBrush}">
     <!-- Background Wallpaper Layer -->
@@ -52,12 +47,6 @@
                   Margin="0,72,0,0"
                   Opacity="0"
                   RenderTransform="translateY(-14px)">
-        <StackPanel.Transitions>
-          <Transitions>
-            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
-            <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
-          </Transitions>
-        </StackPanel.Transitions>
 
         <TextBlock x:Name="DateText"
                    Text="{DynamicResource Loc_C2A36ACCB9A4}"
@@ -94,12 +83,6 @@
                   Width="320"
                   Opacity="0"
                   RenderTransform="translateY(14px)">
-        <StackPanel.Transitions>
-          <Transitions>
-            <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
-            <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
-          </Transitions>
-        </StackPanel.Transitions>
 
         <!-- User Avatar with Taskbar Shell Frame Material -->
         <controls:ShellFrameBorder x:Name="AvatarBorder" Width="48"
@@ -286,11 +269,6 @@
           Margin="24,20"
           IsHitTestVisible="True"
           Opacity="0">
-      <Grid.Transitions>
-        <Transitions>
-          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" Easing="CubicEaseOut" />
-        </Transitions>
-      </Grid.Transitions>
       <TextBlock x:Name="BatteryInfoText"
                  HorizontalAlignment="Left"
                  VerticalAlignment="Center"
