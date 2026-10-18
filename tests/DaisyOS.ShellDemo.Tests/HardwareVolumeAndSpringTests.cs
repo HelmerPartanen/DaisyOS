@@ -36,6 +36,22 @@ public sealed class HardwareVolumeAndSpringTests
     }
 
     [Fact]
+    public void ShellSpringHasRestrainedOvershootAndSettles()
+    {
+        double position = 82, velocity = 0, minimum = 82;
+        for (var i = 0; i < 120; i++)
+        {
+            (position, velocity) = DampedSpring.Step(position, velocity, 0, 27, 1d / 120, GuiMotion.EntranceDamping);
+            minimum = Math.Min(minimum, position);
+        }
+        Assert.InRange(minimum, -5, -3);
+        Assert.InRange(Math.Abs(position), 0, 0.001);
+        Assert.InRange(Math.Abs(velocity), 0, 0.001);
+        var direct = DampedSpring.Step(82, 0, 0, 27, 1, GuiMotion.EntranceDamping);
+        Assert.Equal(direct.Position, position, 8);
+    }
+
+    [Fact]
     public async Task RapidKeysAccumulateAndMuteTogglesAreSerialized()
     {
         var audio = new Audio();
@@ -67,7 +83,7 @@ public sealed class HardwareVolumeAndSpringTests
     public async Task VolumeIndicatorUsesSharedTrackAndReversesDismissal(bool dark)
     {
         var indicator = new VolumeIndicator();
-        var window = new Window { Content = indicator, Width = 360, Height = 180,
+        var window = new Window { Content = indicator, Width = 400, Height = 180,
             RequestedThemeVariant = dark ? Avalonia.Styling.ThemeVariant.Dark : Avalonia.Styling.ThemeVariant.Light };
         window.Show();
         try
@@ -80,7 +96,7 @@ public sealed class HardwareVolumeAndSpringTests
             Assert.Equal(62, slider.Value);
             Assert.False(indicator.IsHitTestVisible);
             Assert.NotNull(indicator.MaterialSurface.Background);
-            Assert.Equal(280, indicator.MaterialSurface.Bounds.Width);
+            Assert.Equal(320, indicator.MaterialSurface.Bounds.Width);
             Directory.CreateDirectory("/tmp/daisy-volume-preview");
             using (var frame = window.CaptureRenderedFrame())
                 frame!.Save($"/tmp/daisy-volume-preview/{(dark ? "Dark" : "Light")}.png");

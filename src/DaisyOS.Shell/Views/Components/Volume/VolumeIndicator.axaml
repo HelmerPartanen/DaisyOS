@@ -2,12 +2,12 @@
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
              x:Class="DaisyOS.Shell.Views.Components.Volume.VolumeIndicator"
              IsVisible="False" IsHitTestVisible="False" Focusable="False">
-  <controls:ShellFrameBorder x:Name="MaterialFrame" Width="280" Margin="24,24,24,80" Padding="1"
+  <controls:ShellFrameBorder x:Name="MaterialFrame" Width="320" Margin="24,24,24,80" Padding="1"
                             HorizontalAlignment="Center" VerticalAlignment="Bottom"
                             Background="{DynamicResource ShellFrameOuterEdgeBrush}" CornerRadius="{DynamicResource RoundedXL}">
     <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
                               BorderThickness="1" BackgroundSizing="InnerBorderEdge" CornerRadius="{DynamicResource RoundedXLInset}">
-      <Border Background="{DynamicResource SurfaceBaseBrush}" CornerRadius="{DynamicResource RoundedXLDoubleInset}" Padding="8,6,16,6">
+      <Border Background="{DynamicResource SurfaceBaseBrush}" CornerRadius="{DynamicResource RoundedXLDoubleInset}" Padding="4,4,12,4">
         <Grid ColumnDefinitions="*,44">
           <controls:QuickSettingsSlider x:Name="Level" ShowThumb="False" Focusable="False" />
           <TextBlock x:Name="Percentage" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"

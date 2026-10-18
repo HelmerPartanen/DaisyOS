@@ -105,6 +105,7 @@ public partial class App : Application
     private Window? _nativeSystemFlyoutSurface;
     private DesktopContextMenuOverlay? _nativeDesktopMenus;
     private Window? _nativeScreenshotSurface;
+    private Window? _nativeScreenshotBackdropSurface;
     private KWinBlur? _launcherBlur;
     private readonly NativeAppWindowTracker _nativeWindowTracker = new();
     private ICompositorWindowService? _compositorWindows;
@@ -539,6 +540,13 @@ public partial class App : Application
             }, _localSendWindow);
         _nativeLocalSendSurface = localSendSurface;
         var screenshotContent = shell.DetachScreenshotForNativeOverlay();
+        var screenshotBackdropSurface = backend.CreateWindow(
+            LayerShellSurfaceOptions.PassiveOverlay("daisyos.overlay.screenshot-backdrop") with
+            {
+                Role = LayerShellSurfaceRole.Panel,
+                ExclusiveZone = LayerShellSurfaceOptions.IgnoreOtherExclusiveZones
+            }, screenshotContent.DetachFrozenBackdrop());
+        _nativeScreenshotBackdropSurface = screenshotBackdropSurface;
         var screenshotSurface = backend.CreateWindow(
             LayerShellSurfaceOptions.Overlay("daisyos.overlay.screenshot") with
             {
@@ -560,6 +568,7 @@ public partial class App : Application
         _nativeShellSurfaces.Add(consoleSurface);
         _nativeShellSurfaces.Add(metricsSurface);
         _nativeShellSurfaces.Add(localSendSurface);
+        _nativeShellSurfaces.Add(screenshotBackdropSurface);
         _nativeShellSurfaces.Add(screenshotSurface);
         _nativeShellSurfaces.Add(_gamingOverlaySurface);
         _nativeShellSurfaces.Add(_volumeIndicatorSurface);
@@ -627,6 +636,7 @@ public partial class App : Application
             _localSendWindow.FindControl<Border>("ShareDialogCard") is { } card
                 ? new Control[] { card }
                 : []));
+        _blurEffects.Add(new KWinBlur(screenshotSurface, screenshotContent, () => screenshotContent.MaterialRegions));
         screenshotContent.Closed += (_, _) =>
         {
             if (_nativeScreenshotSurface is { } surface)
@@ -1427,9 +1437,9 @@ public partial class App : Application
 
     public void ShowScreenshotTool() => _ = ShowScreenshotToolAsync();
 
-    public async Task ShowScreenshotToolAsync()
+    public async Task ShowScreenshotToolAsync(ScreenshotCaptureMode mode = ScreenshotCaptureMode.Area)
     {
-        if (_shellView is null || _isScreenshotOpening) return;
+        if (IsLockScreenActive || _shellView is null || _isScreenshotOpening) return;
         if (_shellView.Screenshot.IsOpen) return;
 
         _isScreenshotOpening = true;
@@ -1437,13 +1447,28 @@ public partial class App : Application
         {
             // Capture the screen snapshot before making the screenshot overlay surface visible.
             // This captures the exact instant Print Screen was pressed, cleanly and without any overlay chrome.
+            var timing = global::System.Diagnostics.Stopwatch.StartNew();
             var snapshotPath = await _screenshotService.CaptureScreenSnapshotAsync();
-
-            if (_nativeScreenshotSurface is { } screenshotSurface)
+            var capturedMs = timing.Elapsed.TotalMilliseconds;
+            if (IsLockScreenActive)
             {
-                SetNativeSurfaceVisible(screenshotSurface, true, captureKeyboard: true);
+                DaisyScreenshotService.DeleteFile(snapshotPath);
+                return;
             }
-            _shellView.Screenshot.Open(snapshotPath);
+            if (!await _shellView.Screenshot.OpenAsync(snapshotPath, mode)) return;
+            if (!_shellView.Screenshot.IsOpen || IsLockScreenActive)
+            {
+                _shellView.Screenshot.Close();
+                return;
+            }
+            var preparedMs = timing.Elapsed.TotalMilliseconds;
+            _nativeScreenshotBackdropSurface?.Show();
+            if (_nativeScreenshotSurface is { } screenshotSurface)
+                SetNativeSurfaceVisible(screenshotSurface, true, captureKeyboard: true);
+            _shellView.Screenshot.Focus();
+            if (TopLevel.GetTopLevel(_shellView.Screenshot) is { } topLevel)
+                topLevel.RequestAnimationFrame(_ => global::System.Console.Error.WriteLine(
+                    $"[screenshot-startup] capture={capturedMs:F0}ms decode={preparedMs - capturedMs:F0}ms render-ready={timing.Elapsed.TotalMilliseconds:F0}ms"));
         }
         finally
         {
@@ -1451,9 +1476,20 @@ public partial class App : Application
         }
     }
 
-    private async Task HandleScreenshotRequestAsync(string action)
+    private Task HandleScreenshotRequestAsync(string action)
     {
-        await ShowScreenshotToolAsync();
+        // The same global shortcut is also a quick way to dismiss the tool.
+        if (_shellView?.Screenshot.IsOpen == true)
+        {
+            _shellView.Screenshot.Close();
+            return Task.CompletedTask;
+        }
+        return ShowScreenshotToolAsync(action switch
+        {
+            "screen" => ScreenshotCaptureMode.Screen,
+            "window" => ScreenshotCaptureMode.Window,
+            _ => ScreenshotCaptureMode.Area
+        });
     }
 
     public void ToggleOverview()
@@ -2511,6 +2547,7 @@ public partial class App : Application
 
     public void LockSession()
     {
+        _shellView?.Screenshot.Close();
         if (_gamingOverlay?.IsVisible == true) _gamingOverlay.Toggle();
         if (_volumeIndicator is { } indicator) _ = indicator.DismissAsync();
         DismissAllTransientShellSurfaces();
@@ -2887,7 +2924,7 @@ public partial class App : Application
         Resources["ToggleThumbTransitions"] = new Avalonia.Animation.Transitions
         {
             new Avalonia.Animation.DoubleTransition { Property = Canvas.LeftProperty, Duration = toggleDuration,
-                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 32) }
+                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 28) }
         };
         Resources["ToggleTrackTransitions"] = new Avalonia.Animation.Transitions
         {

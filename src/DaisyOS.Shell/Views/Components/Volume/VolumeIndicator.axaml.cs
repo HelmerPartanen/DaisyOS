@@ -28,7 +28,7 @@ public partial class VolumeIndicator : UserControl
         this.FindControl<TextBlock>("Percentage")!.Text = $"{Math.Round(volume):0}%";
         // Repeated keys refresh the timeout without restarting an active entrance.
         _dismiss.Stop();
-        _ = GuiMotion.SetVisibleAsync(this, MaterialSurface, true, offset: 12);
+        _ = GuiMotion.SetVisibleAsync(this, MaterialSurface, true, offset: 160, fadeOnEnter: false);
         IsHitTestVisible = false;
         _dismiss.Start();
         if (!_reportedGeometry)
@@ -40,5 +40,5 @@ public partial class VolumeIndicator : UserControl
         }
     }
 
-    public Task DismissAsync() => GuiMotion.SetVisibleAsync(this, MaterialSurface, false, offset: 12);
+    public Task DismissAsync() => GuiMotion.SetVisibleAsync(this, MaterialSurface, false, offset: 160, fadeOnExit: false);
 }

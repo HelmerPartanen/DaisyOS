@@ -285,7 +285,7 @@ namespace DaisyOS.Shell.Views
                 NotifyBottomChromeStateChanged,
                 immediate,
                 GuiMotion.ShellSlideDistance,
-                GuiMotion.ShellSlideDuration(this, taskbarVisible));
+                GuiMotion.ShellSlideDuration(this, taskbarVisible), fadeOnExit: false, fadeOnEnter: false);
             _ = GuiMotion.SetVisibleAsync(
                 SystemBarContent,
                 SystemBarContent.FindControl<Border>("SystemBarFrame")!,
@@ -293,7 +293,7 @@ namespace DaisyOS.Shell.Views
                 NotifyBottomChromeStateChanged,
                 immediate,
                 GuiMotion.ShellSlideDistance,
-                GuiMotion.ShellSlideDuration(this, systemBarVisible));
+                GuiMotion.ShellSlideDuration(this, systemBarVisible), fadeOnExit: false, fadeOnEnter: false);
             SetBottomMediaWidgetVisible(!_externalFullscreenActive && Desktop.ViewModel.BottomMediaWidgetVisible &&
                 (!_mediaAutoHide || _mediaRevealed), immediate);
             NotifyBottomChromeStateChanged();

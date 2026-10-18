@@ -1,0 +1,20 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             xmlns:local="clr-namespace:DaisyOS.Shell.DesktopWidgets"
+             x:Class="DaisyOS.Shell.DesktopWidgets.GlowClockWidget"
+             HorizontalAlignment="Stretch"
+             VerticalAlignment="Stretch">
+
+  <controls:WidgetContainer x:Name="Container"
+                            ColumnSpan="3"
+                            RowSpan="2"
+                            Padding="0">
+
+    <local:ClockFace x:Name="Face" IsGlow="True" HorizontalAlignment="Stretch"
+                     VerticalAlignment="Stretch" />
+
+  </controls:WidgetContainer>
+
+</UserControl>
+

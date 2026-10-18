@@ -127,10 +127,9 @@ public partial class NotificationToastHost : UserControl
     private async Task RevealAndTimeAsync(Toast toast)
     {
         var revision = ++toast.Revision;
-        await GuiMotion.RevealAsync(
-            toast.View,
-            new Point(GuiMotion.ShellSlideDistance, 0),
-            GuiMotion.ShellSlideDuration(this, true));
+        await GuiMotion.SetVisibleAsync(toast.View, toast.View, true, changed: null, immediate: false,
+            offset: new Point(Math.Max(GuiMotion.ShellSlideDistance, toast.View.Bounds.Width + 24), 0),
+            durationOverride: GuiMotion.ShellSlideDuration(this, true));
         if (toast.Closing || revision != toast.Revision || !_toasts.Contains(toast)) return;
         StartTimer(toast);
     }
@@ -149,10 +148,9 @@ public partial class NotificationToastHost : UserControl
         toast.Timer?.Stop();
         toast.View.IsHitTestVisible = false;
         RaiseVisibilityChanged(); // Last dismissal releases native input before its visual exit.
-        await GuiMotion.ExitAsync(
-            toast.View,
-            new Point(GuiMotion.ShellSlideDistance, 0),
-            GuiMotion.ShellSlideDuration(this, false));
+        await GuiMotion.SetVisibleAsync(toast.View, toast.View, false, changed: null, immediate: false,
+            offset: new Point(Math.Max(GuiMotion.ShellSlideDistance, toast.View.Bounds.Width + 24), 0),
+            durationOverride: GuiMotion.ShellSlideDuration(this, false));
         if (revision != toast.Revision || !_toasts.Remove(toast)) return;
         ToastList.Children.Remove(toast.View);
         RaiseVisibilityChanged();

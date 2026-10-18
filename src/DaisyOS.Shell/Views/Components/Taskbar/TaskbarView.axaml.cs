@@ -476,13 +476,13 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         private Transitions GetPositionTransitions() => new()
         {
-            new DoubleTransition { Property = Canvas.LeftProperty, Duration = MotionDuration("MotionDurationBase", 160), Easing = new SpringEasing(1, 256, 32) },
-            new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = MotionDuration("MotionDurationFast", 100), Easing = new SpringEasing(1, 256, 32) }
+            new DoubleTransition { Property = Canvas.LeftProperty, Duration = MotionDuration("MotionDurationBase", 160), Easing = new SpringEasing(1, 256, 28) },
+            new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = MotionDuration("MotionDurationFast", 100), Easing = new SpringEasing(1, 256, 28) }
         };
 
         private Transitions GetDragTransitions() => new()
         {
-            new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = MotionDuration("MotionDurationFast", 100), Easing = new SpringEasing(1, 256, 32) }
+            new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = MotionDuration("MotionDurationFast", 100), Easing = new SpringEasing(1, 256, 28) }
         };
 
         private void LayoutAllInstant()

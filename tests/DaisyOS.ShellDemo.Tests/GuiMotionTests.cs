@@ -10,6 +10,70 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class GuiMotionTests
 {
+    [Theory]
+    [InlineData(0, 82, -1000)]
+    [InlineData(20, 82, 500)]
+    [InlineData(-4, 82, -10)]
+    [InlineData(0, -82, 1000)]
+    public void ExitNeverReversesOrOvershootsEvenWhenInterruptingEntrance(double start, double target, double velocity)
+    {
+        var previous = start;
+        for (var frame = 0; frame <= 30; frame++)
+        {
+            var sample = GuiMotion.ExitStep(start, target, velocity, 0.14, frame / 30d * 0.14);
+            Assert.InRange(sample.Position, Math.Min(start, target), Math.Max(start, target));
+            Assert.True((sample.Position - previous) * (target - start) >= 0);
+            previous = sample.Position;
+        }
+        Assert.Equal(target, previous, 8);
+    }
+
+    [AvaloniaFact]
+    public void ParentFadeUpdatesMaskWhenCombinedMaterialOpacityCrossesThreshold()
+    {
+        var material = new Border { Width = 120, Height = 80, Opacity = 0.003 };
+        var parent = new Border { Child = material };
+        var window = new Window { Content = parent };
+        window.Show();
+        using var blur = new DaisyOS.Shell.Services.Compositor.KWinBlur(window, parent, () => [material]);
+        try
+        {
+            blur.RefreshImmediately();
+            var updates = 0;
+            blur.GeometryChanged += () => updates++;
+            parent.Opacity = 0.8;
+            Assert.Equal(0, updates);
+            parent.Opacity = 0.2;
+            Assert.Equal(1, updates);
+            parent.Opacity = 0.8;
+            Assert.Equal(2, updates);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void BlurMaskOnlyRebuildsWhenFadeCrossesVisibilityThreshold()
+    {
+        var material = new Border { Width = 120, Height = 80 };
+        var window = new Window { Content = material };
+        window.Show();
+        using var blur = new DaisyOS.Shell.Services.Compositor.KWinBlur(window, material);
+        try
+        {
+            blur.RefreshImmediately();
+            var updates = 0;
+            blur.GeometryChanged += () => updates++;
+            material.Opacity = 0.8;
+            material.Opacity = 0.4;
+            Assert.Equal(0, updates);
+            material.Opacity = 0;
+            Assert.Equal(1, updates);
+            material.Opacity = 0.5;
+            Assert.Equal(2, updates);
+        }
+        finally { window.Close(); }
+    }
+
     [AvaloniaFact]
     public void NativePreviewHoldsTaskbarUntilPreviewCloses()
     {
@@ -145,6 +209,30 @@ public sealed class GuiMotionTests
             Assert.Null(root.RenderTransform);
         }
         finally { launcher.CloseImmediate(); window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task DelayedFirstFrameDoesNotConsumeTheEntrance()
+    {
+        var content = new Border { Width = 120, Height = 80 };
+        var host = new Border { Child = content, IsVisible = false };
+        var window = new Window { Content = host };
+        window.Show();
+        try
+        {
+            var reveal = GuiMotion.SetVisibleAsync(host, content, true, offset: 82,
+                durationOverride: TimeSpan.FromMilliseconds(220), fadeOnEnter: false);
+            // Simulate mapping/layout blocking the UI before the first native frame.
+            Thread.Sleep(300);
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Assert.InRange(content.RenderTransform!.Value.M32, 80, 82);
+            await Task.Delay(65);
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Assert.InRange(content.RenderTransform!.Value.M32, 1, 79);
+            await reveal;
+            Assert.Null(content.RenderTransform);
+        }
+        finally { window.Close(); }
     }
 
     [AvaloniaFact]

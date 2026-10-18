@@ -5372,6 +5372,10 @@ Used by: src/DaisyOS.Shell/Apps/AppStore</comment>
     <value>Analog Clock</value>
     <comment>Source: Analog Clock</comment>
   </data>
+  <data name="Loc_5DEE82102283" xml:space="preserve">
+    <value>Glow Clock</value>
+    <comment>Source: Glow Clock</comment>
+  </data>
   <data name="Loc_29954C63C3BA" xml:space="preserve">
     <value>Keep display changes?</value>
     <comment>Source: Keep display changes?</comment>

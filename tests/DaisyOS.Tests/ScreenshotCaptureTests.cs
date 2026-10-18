@@ -41,6 +41,13 @@ public sealed class ScreenshotCaptureTests : IDisposable
     }
 
     [Fact]
+    public void NativeSnapshotUsesUncompressedBitmapTransfer()
+    {
+        var info = DaisyScreenshotService.CreateStartInfo("daisy-screenshot-helper", new(ScreenshotCaptureMode.Screen), "/tmp/freeze.bmp");
+        Assert.Equal("bmp", info.ArgumentList[info.ArgumentList.IndexOf("--format") + 1]);
+    }
+
+    [Fact]
     public void NativeAreaUsesGlobalLogicalCoordinatesRatherThanScaledCropPixels()
     {
         var info = DaisyScreenshotService.CreateStartInfo("daisy-screenshot-helper",
@@ -192,10 +199,10 @@ public sealed class ScreenshotLiveCaptureTests
         Directory.CreateDirectory(directory);
         try
         {
-            var service = new DaisyScreenshotService("/usr/bin/spectacle", directory, TimeSpan.FromSeconds(15));
+            var service = new DaisyScreenshotService(Environment.GetEnvironmentVariable("DAISYOS_TEST_SCREENSHOT_BACKEND") ?? "/usr/bin/spectacle", directory, TimeSpan.FromSeconds(15));
             foreach (var mode in Enum.GetValues<ScreenshotCaptureMode>())
             {
-                var result = await service.CaptureAsync(new(mode, X: 10, Y: 10, Width: 100, Height: 100));
+                var result = await service.CaptureWithoutFallbackAsync(new(mode, X: 10, Y: 10, Width: 100, Height: 100), CancellationToken.None);
                 Assert.True(result.Succeeded, $"{mode}: {result.Error}");
                 using var image = SKBitmap.Decode(result.Path);
                 Assert.True(image.Width > 0 && image.Height > 0);

@@ -76,6 +76,7 @@ chmod 0755 "$libexec_dir"
 if [[ -f "$libexec_dir/daisy-screenshot-helper" ]]; then
   chmod 0755 "$libexec_dir/daisy-screenshot-helper"
   install -m 0644 /dev/null "$libexec_dir/daisy-screenshot-helper.api-v2"
+  install -m 0644 /dev/null "$libexec_dir/daisy-screenshot-helper.api-v3"
 fi
 
 install -d -m 0755 "$applications_dir"
@@ -90,9 +91,11 @@ desktop_dst="$applications_dir/org.daisyos.screenshot-helper.desktop"
 sed "s|^Exec=.*|Exec=$helper_binary|" "$desktop_src" > "$desktop_dst"
 chmod 0644 "$desktop_dst"
 
-command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$applications_dir" || true
-command -v kbuildsycoca6 >/dev/null 2>&1 && XDG_MENU_PREFIX="${XDG_MENU_PREFIX:-plasma-}" kbuildsycoca6 --noincremental || true
+if [[ "$prefix" == "/" ]]; then
+  command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$applications_dir" || true
+  command -v kbuildsycoca6 >/dev/null 2>&1 && XDG_MENU_PREFIX="${XDG_MENU_PREFIX:-plasma-}" kbuildsycoca6 --noincremental || true
+fi
 
 echo "Installed DaisyOS Screenshot helper at $helper_binary"
 echo "Desktop file installed at $desktop_dst with Exec=$helper_binary"
-echo "Sign out and back into DaisyOS Native Development before the first capture."
+echo "The updated capture backend is ready for DaisyOS."

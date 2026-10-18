@@ -475,13 +475,14 @@ public class DesktopViewModel : INotifyPropertyChanged
             {
                 bool isAnalogClock = widgetConfig.Id.Contains("analog", StringComparison.OrdinalIgnoreCase);
                 bool isDigitalClock = widgetConfig.Id.Contains("digital", StringComparison.OrdinalIgnoreCase);
-                bool isClock = !isAnalogClock && !isDigitalClock && widgetConfig.Id.Contains("clock", StringComparison.OrdinalIgnoreCase);
+                bool isGlowClock = widgetConfig.Id.Contains("glow", StringComparison.OrdinalIgnoreCase);
+                bool isClock = !isAnalogClock && !isDigitalClock && !isGlowClock && widgetConfig.Id.Contains("clock", StringComparison.OrdinalIgnoreCase);
                 bool isMedia = widgetConfig.Id.Contains("media", StringComparison.OrdinalIgnoreCase) || widgetConfig.Id.Contains("music", StringComparison.OrdinalIgnoreCase);
                 bool isImage = widgetConfig.Id.Contains("image", StringComparison.OrdinalIgnoreCase) || widgetConfig.Id.Contains("photo", StringComparison.OrdinalIgnoreCase);
-                string label = isAnalogClock ? Loc.Get("Analog Clock") : isDigitalClock ? Loc.Get("Digital Clock") : isClock ? Loc.Get("Sweep Clock") : isMedia ? Loc.Get("Media") : isImage ? Loc.Get("Photos") : Loc.Get("Calendar");
+                string label = isAnalogClock ? Loc.Get("Analog Clock") : isGlowClock ? Loc.Get("Glow Clock") : isDigitalClock ? Loc.Get("Digital Clock") : isClock ? Loc.Get("Sweep Clock") : isMedia ? Loc.Get("Media") : isImage ? Loc.Get("Photos") : Loc.Get("Calendar");
                 int colSpan = Math.Max(1, widgetConfig.ColumnSpan);
                 int rowSpan = Math.Max(1, widgetConfig.RowSpan);
-                if (!isAnalogClock && !isDigitalClock && !isClock && !isMedia && !isImage)
+                if (!isAnalogClock && !isDigitalClock && !isGlowClock && !isClock && !isMedia && !isImage)
                 {
                     colSpan = Math.Max(3, colSpan);
                     rowSpan = Math.Max(2, rowSpan);
@@ -493,6 +494,12 @@ public class DesktopViewModel : INotifyPropertyChanged
                     var analogClock = new DesktopWidgets.AnalogClockWidget();
                     analogClock.SetGridSize(colSpan, rowSpan);
                     content = analogClock;
+                }
+                else if (isGlowClock)
+                {
+                    var glowClock = new DesktopWidgets.GlowClockWidget();
+                    glowClock.SetGridSize(colSpan, rowSpan);
+                    content = glowClock;
                 }
                 else if (isDigitalClock)
                 {
@@ -646,7 +653,9 @@ public class DesktopViewModel : INotifyPropertyChanged
         bool isDigitalClock = string.Equals(widgetType, "clock-digital", StringComparison.OrdinalIgnoreCase)
             || string.Equals(widgetType, "digital-clock", StringComparison.OrdinalIgnoreCase)
             || string.Equals(widgetType, "digitalclock", StringComparison.OrdinalIgnoreCase);
-        bool isClock = !isAnalogClock && !isDigitalClock && (string.Equals(widgetType, "clock", StringComparison.OrdinalIgnoreCase)
+        bool isGlowClock = string.Equals(widgetType, "clock-glow", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(widgetType, "glow-clock", StringComparison.OrdinalIgnoreCase);
+        bool isClock = !isAnalogClock && !isDigitalClock && !isGlowClock && (string.Equals(widgetType, "clock", StringComparison.OrdinalIgnoreCase)
             || string.Equals(widgetType, "clock-sweep", StringComparison.OrdinalIgnoreCase)
             || string.Equals(widgetType, "sweep-clock", StringComparison.OrdinalIgnoreCase));
         bool isMedia = string.Equals(widgetType, "media", StringComparison.OrdinalIgnoreCase) || string.Equals(widgetType, "music", StringComparison.OrdinalIgnoreCase);
@@ -655,7 +664,7 @@ public class DesktopViewModel : INotifyPropertyChanged
             || string.Equals(widgetType, "photo", StringComparison.OrdinalIgnoreCase)
             || string.Equals(widgetType, "photos", StringComparison.OrdinalIgnoreCase);
 
-        if (!isAnalogClock && !isDigitalClock && !isClock && !isMedia && !isImage)
+        if (!isAnalogClock && !isDigitalClock && !isGlowClock && !isClock && !isMedia && !isImage)
         {
             columnSpan = Math.Max(3, columnSpan);
             rowSpan = Math.Max(2, rowSpan);
@@ -672,8 +681,8 @@ public class DesktopViewModel : INotifyPropertyChanged
         }
 
         string uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
-        string id = isAnalogClock ? $"desktop.widget.clock.analog.{uniqueSuffix}" : isDigitalClock ? $"desktop.widget.clock.digital.{uniqueSuffix}" : isClock ? $"desktop.widget.clock.sweep.{uniqueSuffix}" : isMedia ? $"desktop.widget.media.{uniqueSuffix}" : isImage ? $"desktop.widget.image.{uniqueSuffix}" : $"desktop.widget.calendar.{uniqueSuffix}";
-        string label = isAnalogClock ? Loc.Get("Analog Clock") : isDigitalClock ? Loc.Get("Digital Clock") : isClock ? Loc.Get("Sweep Clock") : isMedia ? Loc.Get("Media") : isImage ? Loc.Get("Photos") : Loc.Get("Calendar");
+        string id = isAnalogClock ? $"desktop.widget.clock.analog.{uniqueSuffix}" : isGlowClock ? $"desktop.widget.clock.glow.{uniqueSuffix}" : isDigitalClock ? $"desktop.widget.clock.digital.{uniqueSuffix}" : isClock ? $"desktop.widget.clock.sweep.{uniqueSuffix}" : isMedia ? $"desktop.widget.media.{uniqueSuffix}" : isImage ? $"desktop.widget.image.{uniqueSuffix}" : $"desktop.widget.calendar.{uniqueSuffix}";
+        string label = isAnalogClock ? Loc.Get("Analog Clock") : isGlowClock ? Loc.Get("Glow Clock") : isDigitalClock ? Loc.Get("Digital Clock") : isClock ? Loc.Get("Sweep Clock") : isMedia ? Loc.Get("Media") : isImage ? Loc.Get("Photos") : Loc.Get("Calendar");
 
         object content;
         if (isAnalogClock)
@@ -681,6 +690,12 @@ public class DesktopViewModel : INotifyPropertyChanged
             var analogClock = new DesktopWidgets.AnalogClockWidget();
             analogClock.SetGridSize(columnSpan, rowSpan);
             content = analogClock;
+        }
+        else if (isGlowClock)
+        {
+            var glowClock = new DesktopWidgets.GlowClockWidget();
+            glowClock.SetGridSize(columnSpan, rowSpan);
+            content = glowClock;
         }
         else if (isDigitalClock)
         {
@@ -1056,6 +1071,10 @@ public class DesktopViewModel : INotifyPropertyChanged
         else if (item.WidgetContent is DesktopWidgets.AnalogClockWidget analogClock)
         {
             analogClock.SetGridSize(columnSpan, rowSpan);
+        }
+        else if (item.WidgetContent is DesktopWidgets.GlowClockWidget glowClock)
+        {
+            glowClock.SetGridSize(columnSpan, rowSpan);
         }
         else if (item.WidgetContent is DesktopWidgets.DigitalClockWidget digitalClock)
         {

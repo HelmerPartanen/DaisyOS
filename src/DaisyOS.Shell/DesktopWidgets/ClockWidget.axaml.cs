@@ -40,7 +40,7 @@ public sealed partial class ClockFace : Control
     public static readonly StyledProperty<bool> IsAnalogProperty =
         AvaloniaProperty.Register<ClockFace, bool>(nameof(IsAnalog));
 
-    static ClockFace() => AffectsRender<ClockFace>(IsAnalogProperty);
+    static ClockFace() => AffectsRender<ClockFace>(IsAnalogProperty, IsGlowProperty);
 
     public bool IsAnalog
     {
@@ -181,6 +181,11 @@ public sealed partial class ClockFace : Control
         var center = new Point(width * 0.5, height * 0.5);
 
         EnsureTickGeometry(width, height, center);
+        if (IsGlow)
+        {
+            DrawGlow(context, center, width, height, _now);
+            return;
+        }
         if (IsAnalog)
         {
             DrawAnalog(context, center, width, height, _now);

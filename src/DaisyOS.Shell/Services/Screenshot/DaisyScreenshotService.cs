@@ -13,9 +13,11 @@ public sealed record ScreenshotRequest(ScreenshotCaptureMode Mode, bool IncludeC
 public sealed class DaisyScreenshotService
 {
     private readonly string? _executable;
+    private readonly bool _discoverBackend;
+    private string? Executable => _discoverBackend ? FindCaptureBackend() : _executable;
     private readonly string _destination;
     private readonly TimeSpan _timeout;
-    public DaisyScreenshotService() : this(FindCaptureBackend(), DefaultSaveDirectory(), TimeSpan.FromSeconds(15)) { }
+    public DaisyScreenshotService() : this(null, DefaultSaveDirectory(), TimeSpan.FromSeconds(15)) => _discoverBackend = true;
     internal DaisyScreenshotService(string? executable, string destination, TimeSpan timeout)
     {
         _executable = executable;
@@ -44,6 +46,11 @@ public sealed class DaisyScreenshotService
         {
             foreach (var argument in new[] { "--mode", request.Mode.ToString().ToLowerInvariant(), "--output", outputPath })
                 info.ArgumentList.Add(argument);
+            if (Path.GetExtension(outputPath).Equals(".bmp", StringComparison.OrdinalIgnoreCase))
+            {
+                info.ArgumentList.Add("--format");
+                info.ArgumentList.Add("bmp");
+            }
             if (request.IncludeCursor) info.ArgumentList.Add("--include-cursor");
             if (request.Mode == ScreenshotCaptureMode.Area)
             {
@@ -65,20 +72,21 @@ public sealed class DaisyScreenshotService
 
     public async Task<ScreenshotCaptureResult> CaptureAsync(ScreenshotRequest request, CancellationToken cancellationToken = default)
     {
-        var result = await CaptureCoreAsync(_executable, request, cancellationToken);
-        if (!result.Succeeded && _executable is not null && IsNativeHelper(_executable)
+        var executable = Executable;
+        var result = await CaptureCoreAsync(executable, request, cancellationToken);
+        if (!result.Succeeded && executable is not null && IsNativeHelper(executable)
             && !cancellationToken.IsCancellationRequested && FindExecutable("spectacle") is { } fallback)
             return await CaptureCoreAsync(fallback, request, cancellationToken);
         return result;
     }
 
     internal Task<ScreenshotCaptureResult> CaptureWithoutFallbackAsync(ScreenshotRequest request, CancellationToken cancellationToken)
-        => CaptureCoreAsync(_executable, request, cancellationToken);
+        => CaptureCoreAsync(Executable, request, cancellationToken);
 
     private async Task<ScreenshotCaptureResult> CaptureCoreAsync(string? executable, ScreenshotRequest request, CancellationToken cancellationToken)
     {
         if (executable is null)
-            return ScreenshotCaptureResult.Failed("Spectacle is not installed. Install the spectacle package to enable KWin capture.");
+            return ScreenshotCaptureResult.Failed("Screenshot capture is unavailable. Install or repair the DaisyOS screenshot helper.");
         if (request.Mode == ScreenshotCaptureMode.Area && (request.Width < 10 || request.Height < 10))
             return ScreenshotCaptureResult.Failed("Select an area at least 10 × 10 pixels.");
         string? outputPath = null;
@@ -184,10 +192,19 @@ public sealed class DaisyScreenshotService
 
     public async Task<string?> CaptureScreenSnapshotAsync(bool includeCursor = false, CancellationToken cancellationToken = default)
     {
-        var executable = _executable;
+        var executable = Executable;
+        var path = await CaptureScreenSnapshotCoreAsync(executable, includeCursor, cancellationToken);
+        if (path is null && executable is not null && IsNativeHelper(executable) &&
+            !cancellationToken.IsCancellationRequested && FindExecutable("spectacle") is { } fallback)
+            return await CaptureScreenSnapshotCoreAsync(fallback, includeCursor, cancellationToken);
+        return path;
+    }
+
+    private async Task<string?> CaptureScreenSnapshotCoreAsync(string? executable, bool includeCursor, CancellationToken cancellationToken)
+    {
         if (executable is null) return null;
 
-        var useBitmapTransfer = !IsNativeHelper(executable);
+        var useBitmapTransfer = true; // Raw BMP avoids a PNG encode before the toolbar can open.
         var temporaryPath = Path.Combine(Path.GetTempPath(), $"daisyos-freeze-{Guid.NewGuid():N}.{(useBitmapTransfer ? "bmp" : "png")}");
 
         try
@@ -280,7 +297,7 @@ public sealed class DaisyScreenshotService
     {
         // Older installed helpers can deadlock on their pipe. Only opt in after reinstalling the fixed version.
         const string helper = "/usr/local/libexec/daisyos/daisy-screenshot-helper";
-        if (File.Exists(helper) && File.Exists(helper + ".api-v2")) return helper;
+        if (File.Exists(helper) && File.Exists(helper + ".api-v3")) return helper;
         return FindExecutable("spectacle");
     }
     public Task<ScreenshotCaptureResult> CaptureActiveScreenAsync(bool includeCursor = false, CancellationToken cancellationToken = default)

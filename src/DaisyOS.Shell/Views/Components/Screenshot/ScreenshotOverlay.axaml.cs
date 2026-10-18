@@ -12,6 +12,7 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
+using Avalonia.Platform;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DaisyOS.Shell.Services;
@@ -51,6 +52,7 @@ public partial class ScreenshotOverlay : UserControl
     private CancellationTokenSource? _countdownCancellation;
     private CancellationTokenSource? _captureCancellation;
     private bool _isCapturing;
+    private int _openVersion;
     // The clipboard serves images lazily. Retain the last image until replaced.
     private Bitmap? _clipboardImage;
     private SkiaSharp.SKBitmap? _frozenSkBitmap;
@@ -67,11 +69,92 @@ public partial class ScreenshotOverlay : UserControl
         InitializeComponent();
         ToolbarPill.RenderTransform = _toolbarTransform;
         AddHandler(KeyDownEvent, OnOverlayKeyDown, RoutingStrategies.Tunnel);
+        RootLayout.SizeChanged += (_, _) => UpdateToolbarLayout();
+        SelectionCanvas.SizeChanged += (_, _) =>
+        {
+            if (!IsVisible) return;
+            UpdateSelectionVisuals();
+            AvoidSelectionWithToolbar();
+        };
+    }
+
+    internal ScreenshotOverlay(DaisyScreenshotService service) : this() => _screenshotService = service;
+
+    /// <summary>The frozen desktop must be below this surface so KWin can blur it behind the toolbar.</summary>
+    internal Control DetachFrozenBackdrop()
+    {
+        RootLayout.Children.Remove(FrozenScreenImage);
+        return FrozenScreenImage;
+    }
+
+    internal IEnumerable<Control> MaterialRegions => IsVisible
+        ? new Control[] { ToolbarPill, InstructionBanner, ModeHintCard, CountdownMaterial }
+        : [];
+
+    private void UpdateToolbarLayout()
+    {
+        var compact = ModeAreaBtn.FontSize > 18 || RootLayout.Bounds.Width < 640 * Math.Max(1, ModeAreaBtn.FontSize / 13);
+        ModeHintCard.MaxWidth = InstructionBanner.MaxWidth = Math.Max(0, RootLayout.Bounds.Width - 32);
+        ModeAreaLabel.IsVisible = ModeWindowLabel.IsVisible = ModeScreenLabel.IsVisible = CaptureActionLabel.IsVisible = !compact;
+    }
+
+    private sealed record PreparedSnapshot(SkiaSharp.SKBitmap Pixels, Bitmap Image);
+
+    private static PreparedSnapshot? LoadSnapshot(string? path)
+    {
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+        SkiaSharp.SKBitmap? pixels = null;
+        try
+        {
+            using var codec = SkiaSharp.SKCodec.Create(path);
+            if (codec is null) return null;
+            using var colorSpace = SkiaSharp.SKColorSpace.CreateSrgb();
+            var opaque = codec.Info.AlphaType == SkiaSharp.SKAlphaType.Opaque;
+            var info = new SkiaSharp.SKImageInfo(codec.Info.Width, codec.Info.Height, SkiaSharp.SKColorType.Bgra8888,
+                opaque ? SkiaSharp.SKAlphaType.Opaque : SkiaSharp.SKAlphaType.Premul, colorSpace);
+            pixels = new SkiaSharp.SKBitmap(info);
+            if (codec.GetPixels(info, pixels.GetPixels()) != SkiaSharp.SKCodecResult.Success)
+            {
+                pixels.Dispose();
+                return null;
+            }
+            // The Avalonia constructor copies these decoded pixels. Avoid reading and
+            // decoding the same full-screen image a second time just to display it.
+            return new PreparedSnapshot(pixels, new Bitmap(PixelFormat.Bgra8888,
+                opaque ? AlphaFormat.Opaque : AlphaFormat.Premul, pixels.GetPixels(),
+                new PixelSize(pixels.Width, pixels.Height), new Vector(96, 96), pixels.RowBytes));
+        }
+        catch { pixels?.Dispose(); return null; }
+    }
+
+    public async Task<bool> OpenAsync(string? snapshotPath, ScreenshotCaptureMode mode = ScreenshotCaptureMode.Area)
+    {
+        var version = ++_openVersion;
+        var snapshot = await Task.Run(() => LoadSnapshot(snapshotPath));
+        if (version != _openVersion)
+        {
+            snapshot?.Pixels.Dispose();
+            snapshot?.Image.Dispose();
+            DaisyScreenshotService.DeleteFile(snapshotPath);
+            return false;
+        }
+        OpenCore(snapshotPath, mode, snapshot);
+        return IsOpen;
     }
 
     public void Open(string? snapshotPath = null, ScreenshotCaptureMode mode = ScreenshotCaptureMode.Area)
+        => OpenCore(snapshotPath, mode, LoadSnapshot(snapshotPath));
+
+    private void OpenCore(string? snapshotPath, ScreenshotCaptureMode mode, PreparedSnapshot? snapshot)
     {
-        if (_captureCancellation is not null) return;
+        if (_captureCancellation is not null)
+        {
+            snapshot?.Pixels.Dispose();
+            snapshot?.Image.Dispose();
+            if (_frozenSnapshotPath != snapshotPath) DaisyScreenshotService.DeleteFile(snapshotPath);
+            return;
+        }
+        var openVersion = ++_openVersion;
         _isCapturing = false;
         _isDragging = false;
         _isMoving = false;
@@ -81,13 +164,24 @@ public partial class ScreenshotOverlay : UserControl
         SelectionBox.IsVisible = false;
         CountdownBadge.IsVisible = false;
         FlashOverlay.IsVisible = false;
+        _toolbarTransform.Transitions = null;
         if (!_toolbarUserMoved) _toolbarTransform.Y = 0;
+        _toolbarTransform.Transitions = new Avalonia.Animation.Transitions
+        {
+            new Avalonia.Animation.DoubleTransition
+            {
+                Property = TranslateTransform.YProperty,
+                Duration = Services.Motion.GuiMotion.ShellSlideDuration(this, true),
+                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 28)
+            }
+        };
         ToolbarPill.Opacity = 0;
         InstructionBanner.Opacity = 0;
         ToolbarPill.IsVisible = true;
         InstructionBanner.IsVisible = true;
 
         // Dispose previous frozen snapshot if any
+        FrozenScreenImage.Source = null;
         _frozenAvaloniaBitmap?.Dispose();
         _frozenAvaloniaBitmap = null;
         _frozenSkBitmap?.Dispose();
@@ -98,35 +192,15 @@ public partial class ScreenshotOverlay : UserControl
             _frozenSnapshotPath = null;
         }
 
-        // Load new frozen snapshot
-        if (!string.IsNullOrEmpty(snapshotPath) && File.Exists(snapshotPath))
-        {
-            try
-            {
-                _frozenSnapshotPath = snapshotPath;
-                _frozenSkBitmap = SkiaSharp.SKBitmap.Decode(snapshotPath);
-                _frozenAvaloniaBitmap = new Bitmap(snapshotPath);
-                FrozenScreenImage.Source = _frozenAvaloniaBitmap;
-                FrozenScreenImage.IsVisible = true;
-            }
-            catch
-            {
-                _frozenSkBitmap?.Dispose();
-                _frozenSkBitmap = null;
-                _frozenAvaloniaBitmap?.Dispose();
-                _frozenAvaloniaBitmap = null;
-                FrozenScreenImage.Source = null;
-                FrozenScreenImage.IsVisible = false;
-            }
-        }
-        else
-        {
-            FrozenScreenImage.Source = null;
-            FrozenScreenImage.IsVisible = false;
-        }
+        _frozenSnapshotPath = snapshotPath;
+        _frozenSkBitmap = snapshot?.Pixels;
+        _frozenAvaloniaBitmap = snapshot?.Image;
+        FrozenScreenImage.Source = snapshot?.Image;
+        FrozenScreenImage.IsVisible = snapshot is not null;
 
         IsVisible = true;
 
+        UpdateToolbarLayout();
         UpdateModeUi();
         UpdateDimMask();
         Focus();
@@ -135,6 +209,7 @@ public partial class ScreenshotOverlay : UserControl
         // in rather than popping onto the screen.
         Dispatcher.UIThread.Post(() =>
         {
+            if (!IsVisible || openVersion != _openVersion) return;
             ToolbarPill.Opacity = 1;
             UpdateHints();
         }, DispatcherPriority.Render);
@@ -142,6 +217,7 @@ public partial class ScreenshotOverlay : UserControl
 
     public void Close()
     {
+        ++_openVersion;
         _countdownCancellation?.Cancel();
         _captureCancellation?.Cancel();
         _isCapturing = false;
@@ -150,6 +226,7 @@ public partial class ScreenshotOverlay : UserControl
         _isMoving = false;
         _resizeHandle = null;
 
+        FrozenScreenImage.Source = null;
         _frozenAvaloniaBitmap?.Dispose();
         _frozenAvaloniaBitmap = null;
         _frozenSkBitmap?.Dispose();
@@ -299,11 +376,7 @@ public partial class ScreenshotOverlay : UserControl
         ModeScreenBtn.Classes.Set("Active", _currentMode == ScreenshotCaptureMode.Screen);
 
         SelectionCanvas.IsVisible = _currentMode == ScreenshotCaptureMode.Area;
-        if (_currentMode != ScreenshotCaptureMode.Area)
-        {
-            _selectedRect = default;
-            SelectionBox.IsVisible = false;
-        }
+        SelectionBox.IsVisible = _currentMode == ScreenshotCaptureMode.Area && HasSelection();
 
         // Refreshes mask, handles, hint card and capture button in one go.
         UpdateSelectionVisuals();
@@ -487,6 +560,11 @@ public partial class ScreenshotOverlay : UserControl
             return;
         }
 
+        // Automatic avoidance springs into place; a manual drag follows the pointer directly.
+        var current = new Point(_toolbarTransform.X, _toolbarTransform.Y);
+        _toolbarTransform.Transitions = null;
+        _toolbarTransform.X = current.X;
+        _toolbarTransform.Y = current.Y;
         _isDraggingToolbar = true;
         _toolbarUserMoved = true;
         _toolbarDragStart = point.Position;
@@ -798,82 +876,101 @@ public partial class ScreenshotOverlay : UserControl
         if (_currentMode == ScreenshotCaptureMode.Area && !HasSelection()) return;
 
         _isCapturing = true;
-
-        // Hide UI elements immediately
-        ToolbarPill.IsVisible = false;
-        InstructionBanner.IsVisible = false;
-        ModeHintCard.IsVisible = false;
-        ScreenOutline.IsVisible = false;
-        DimMask.IsVisible = false;
-        SelectionBox.IsVisible = false;
-        HandleNW.IsVisible = HandleN.IsVisible = HandleNE.IsVisible = HandleE.IsVisible =
-            HandleSE.IsVisible = HandleS.IsVisible = HandleSW.IsVisible = HandleW.IsVisible = false;
-
-        // Trigger shutter flash for instant visual feedback
-        FlashOverlay.IsVisible = true;
-        FlashOverlay.Opacity = 0.6;
-
-        var outputPath = _screenshotService.GenerateDestinationPath();
-        var isArea = _currentMode == ScreenshotCaptureMode.Area;
+        using var cancellation = new CancellationTokenSource();
+        _captureCancellation = cancellation;
+        var ct = cancellation.Token;
+        // Transfer ownership to this operation. Escape may close the overlay while
+        // PNG encoding is still running; Close must never dispose pixels on a worker.
         var frozen = _frozenSkBitmap;
-        var selRect = _selectedRect;
-        var canvasBounds = SelectionCanvas.Bounds;
-
+        _frozenSkBitmap = null;
+        var isArea = _currentMode == ScreenshotCaptureMode.Area;
+        var selection = _selectedRect;
+        var canvas = SelectionCanvas.Bounds;
+        string? outputPath = null;
+        var completed = false;
+        HideCaptureChrome();
         try
         {
+            outputPath = _screenshotService.GenerateDestinationPath();
             await Task.Run(() =>
             {
+                ct.ThrowIfCancellationRequested();
                 if (isArea)
                 {
-                    var scaleX = canvasBounds.Width > 0 ? (double)frozen.Width / canvasBounds.Width : 1.0;
-                    var scaleY = canvasBounds.Height > 0 ? (double)frozen.Height / canvasBounds.Height : 1.0;
-                    var x = (int)Math.Clamp(Math.Round(selRect.X * scaleX), 0, frozen.Width - 1);
-                    var y = (int)Math.Clamp(Math.Round(selRect.Y * scaleY), 0, frozen.Height - 1);
-                    var w = (int)Math.Clamp(Math.Round(selRect.Width * scaleX), 1, frozen.Width - x);
-                    var h = (int)Math.Clamp(Math.Round(selRect.Height * scaleY), 1, frozen.Height - y);
-                    var cropBounds = new SkiaSharp.SKRectI(x, y, x + w, y + h);
-                    DaisyScreenshotService.SaveCroppedPng(frozen, cropBounds, outputPath);
+                    var scaleX = canvas.Width > 0 ? frozen.Width / canvas.Width : 1;
+                    var scaleY = canvas.Height > 0 ? frozen.Height / canvas.Height : 1;
+                    var x = (int)Math.Clamp(Math.Round(selection.X * scaleX), 0, frozen.Width - 1);
+                    var y = (int)Math.Clamp(Math.Round(selection.Y * scaleY), 0, frozen.Height - 1);
+                    var width = (int)Math.Clamp(Math.Round(selection.Width * scaleX), 1, frozen.Width - x);
+                    var height = (int)Math.Clamp(Math.Round(selection.Height * scaleY), 1, frozen.Height - y);
+                    DaisyScreenshotService.SaveCroppedPng(frozen, new SkiaSharp.SKRectI(x, y, x + width, y + height), outputPath);
                 }
-                else
-                {
-                    DaisyScreenshotService.SavePng(frozen, outputPath);
-                }
-            });
-
+                else DaisyScreenshotService.SavePng(frozen, outputPath);
+            }, ct);
+            ct.ThrowIfCancellationRequested();
+            completed = true;
             var imageCopied = false;
             try
             {
-                var topLevel = TopLevel.GetTopLevel(this);
-                if (topLevel?.Clipboard is { } clipboard)
+                if (TopLevel.GetTopLevel(this)?.Clipboard is { } clipboard)
                 {
-                    var image = new Bitmap(outputPath);
-                    try { await clipboard.SetBitmapAsync(image); }
+                    var image = await Task.Run(() => new Bitmap(outputPath), ct);
+                    try { ct.ThrowIfCancellationRequested(); await clipboard.SetBitmapAsync(image); }
                     catch { image.Dispose(); throw; }
-                    var prev = _clipboardImage;
+                    var previous = _clipboardImage;
                     _clipboardImage = image;
-                    prev?.Dispose();
+                    previous?.Dispose();
                     imageCopied = true;
                 }
             }
-            catch
-            {
-                // Non-fatal if clipboard provider is unavailable
-            }
-
+            catch (OperationCanceledException) { throw; }
+            catch { /* A saved file remains useful if clipboard ownership is unavailable. */ }
             ShowFeedback(imageCopied
                 ? "Screenshot saved to Pictures/Screenshots — image copied to clipboard"
-                : "Screenshot saved to Pictures/Screenshots");
+                : "Screenshot saved to Pictures/Screenshots — image could not be copied");
+            FlashOverlay.IsVisible = true;
+            FlashOverlay.Opacity = 0.6;
+            await Task.Delay(40, ct);
         }
-        catch (Exception ex)
+        catch (OperationCanceledException) { }
+        catch (Exception exception) { ShowFeedback($"Screenshot failed: {exception.Message}"); }
+        finally
         {
-            ShowFeedback($"Screenshot failed: {ex.Message}");
+            _captureCancellation = null;
+            _isCapturing = false;
+            FlashOverlay.Opacity = 0;
+            FlashOverlay.IsVisible = false;
+            if (!completed) DaisyScreenshotService.DeleteFile(outputPath);
+            if (completed || ct.IsCancellationRequested || !IsVisible)
+            {
+                frozen.Dispose();
+                Close();
+            }
+            else
+            {
+                _frozenSkBitmap = frozen;
+                RestoreCaptureChrome();
+            }
         }
+    }
 
-        await Task.Delay(40);
-        FlashOverlay.Opacity = 0;
-        await Task.Delay(30);
+    private void HideCaptureChrome()
+    {
+        ToolbarPill.IsVisible = InstructionBanner.IsVisible = ModeHintCard.IsVisible = false;
+        ScreenOutline.IsVisible = DimMask.IsVisible = SelectionBox.IsVisible = false;
+        HandleNW.IsVisible = HandleN.IsVisible = HandleNE.IsVisible = HandleE.IsVisible =
+            HandleSE.IsVisible = HandleS.IsVisible = HandleSW.IsVisible = HandleW.IsVisible = false;
+    }
 
-        Close();
+    private void RestoreCaptureChrome()
+    {
+        CaptureInputChanged?.Invoke(this, true);
+        FrozenScreenImage.IsVisible = _frozenAvaloniaBitmap is not null;
+        ToolbarPill.IsVisible = InstructionBanner.IsVisible = DimMask.IsVisible = true;
+        ToolbarPill.Opacity = 1;
+        SelectionBox.IsVisible = _currentMode == ScreenshotCaptureMode.Area && HasSelection();
+        UpdateSelectionVisuals();
+        Focus();
     }
 
     private async Task ExecuteCaptureAsync()
@@ -883,7 +980,7 @@ public partial class ScreenshotOverlay : UserControl
 
         // If we have an in-memory frozen snapshot, timer is 0, and not capturing a distinct active window,
         // capture is 100% instant from memory (<20ms).
-        if (_timerSeconds == 0 && _frozenSkBitmap is not null && _currentMode != ScreenshotCaptureMode.Window)
+        if (_timerSeconds == 0 && !_includeCursor && _frozenSkBitmap is not null && _currentMode != ScreenshotCaptureMode.Window)
         {
             await ExecuteInstantFrozenCaptureAsync();
             return;
@@ -891,15 +988,7 @@ public partial class ScreenshotOverlay : UserControl
 
         _isCapturing = true;
 
-        // Hide toolbar, banner, hint and handles so they are not captured
-        ToolbarPill.IsVisible = false;
-        InstructionBanner.IsVisible = false;
-        ModeHintCard.IsVisible = false;
-        ScreenOutline.IsVisible = false;
-        DimMask.IsVisible = false;
-        SelectionBox.IsVisible = false;
-        HandleNW.IsVisible = HandleN.IsVisible = HandleNE.IsVisible = HandleE.IsVisible =
-            HandleSE.IsVisible = HandleS.IsVisible = HandleSW.IsVisible = HandleW.IsVisible = false;
+        HideCaptureChrome();
 
         // A delayed or window capture targets the LIVE screen, so stop covering it with
         // the frozen snapshot (otherwise the countdown is pointless and the snapshot could
@@ -934,8 +1023,7 @@ public partial class ScreenshotOverlay : UserControl
             // Release the exclusive layer-shell focus so KWin can capture the
             // previously active application, not the screenshot tool itself.
             CaptureInputChanged?.Invoke(this, false);
-            await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-            await Task.Delay(32, ct);
+            await WaitForChromeFramesAsync(ct);
 
             // Prepare screenshot request
             ScreenshotRequest request;
@@ -988,8 +1076,7 @@ public partial class ScreenshotOverlay : UserControl
                     {
                         // Wayland clipboard ownership requires focus and a valid input serial.
                         CaptureInputChanged?.Invoke(this, true);
-                        await Dispatcher.UIThread.InvokeAsync(() => { }, DispatcherPriority.Background);
-                        await Task.Delay(32, ct);
+                        await WaitForChromeFramesAsync(ct);
                         var image = await Task.Run(() => new Bitmap(result.Path), ct);
                         try { await clipboard.SetBitmapAsync(image); }
                         catch { image.Dispose(); throw; }
@@ -1033,16 +1120,19 @@ public partial class ScreenshotOverlay : UserControl
             if (completed || ct.IsCancellationRequested || !IsVisible) Close();
             else
             {
-                CaptureInputChanged?.Invoke(this, true);
-                FrozenScreenImage.IsVisible = _frozenAvaloniaBitmap is not null;
-                ToolbarPill.IsVisible = true;
-                InstructionBanner.IsVisible = true;
-                ToolbarPill.Opacity = 1;
-                SelectionBox.IsVisible = _currentMode == ScreenshotCaptureMode.Area && HasSelection();
-                UpdateSelectionVisuals();
-                Focus();
+                RestoreCaptureChrome();
             }
         }
+    }
+
+    private async Task WaitForChromeFramesAsync(CancellationToken cancellationToken)
+    {
+        if (TopLevel.GetTopLevel(this) is not { } topLevel) return;
+        var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        using var registration = cancellationToken.Register(() => completion.TrySetCanceled(cancellationToken));
+        // Follow the renderer instead of assuming two frames always fit in 32ms.
+        topLevel.RequestAnimationFrame(_ => topLevel.RequestAnimationFrame(_ => completion.TrySetResult()));
+        await completion.Task;
     }
 
     private static void ShowFeedback(string message)

@@ -577,9 +577,9 @@
   <x:TimeSpan x:Key="MotionDurationShellExit">0:0:0.14</x:TimeSpan>
   <x:TimeSpan x:Key="MotionDurationEnter">0:0:0.28</x:TimeSpan>
   <x:TimeSpan x:Key="MotionDurationExit">0:0:0.14</x:TimeSpan>
-  <easings:SpringEasing x:Key="MotionEaseEnter" Mass="1" Stiffness="256" Damping="32" />
-  <easings:SpringEasing x:Key="MotionEaseExit" Mass="1" Stiffness="256" Damping="32" />
-  <easings:SpringEasing x:Key="MotionEaseMove" Mass="1" Stiffness="256" Damping="32" />
+  <easings:SpringEasing x:Key="MotionEaseEnter" Mass="1" Stiffness="256" Damping="22.4" />
+  <easings:CubicEaseIn x:Key="MotionEaseExit" />
+  <easings:SpringEasing x:Key="MotionEaseMove" Mass="1" Stiffness="256" Damping="28" />
   <easings:SpringEasing x:Key="MotionEasePress" Mass="1" Stiffness="500" Damping="40" />
   <x:TimeSpan x:Key="MotionDurationInstant">0:0:0</x:TimeSpan>
   <x:TimeSpan x:Key="MotionDurationHover">0:0:0.05</x:TimeSpan>

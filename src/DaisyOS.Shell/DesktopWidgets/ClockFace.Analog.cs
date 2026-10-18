@@ -23,10 +23,16 @@ public sealed partial class ClockFace
         using var stream = AssetLoader.Open(new Uri($"avares://DaisyOS.Shell/Assets/ClockWidget/{file}"));
         var svg = XElement.Load(stream);
         // All daydate hands supply a circle; its center is the rotation origin.
-        var ring = svg.Elements().Single(element => element.Name.LocalName == "circle");
-        var pivot = new Point(
-            double.Parse(ring.Attribute("cx")!.Value, CultureInfo.InvariantCulture),
-            double.Parse(ring.Attribute("cy")!.Value, CultureInfo.InvariantCulture));
+        // The Hour/Minute Glow hands instead draw their ring as a stroked circular
+        // path (e.g. "M32 5C46.9 5 59 17.08 59 31.96 ..."), so its geometric center is used.
+        var ring = svg.Elements().SingleOrDefault(element => element.Name.LocalName == "circle");
+        var pivot = ring is not null
+            ? new Point(
+                double.Parse(ring.Attribute("cx")!.Value, CultureInfo.InvariantCulture),
+                double.Parse(ring.Attribute("cy")!.Value, CultureInfo.InvariantCulture))
+            : Geometry.Parse(svg.Elements().First(element =>
+                    element.Name.LocalName == "path" && element.Attribute("stroke") != null)
+                .Attribute("d")!.Value).Bounds.Center;
         double forwardLength = double.Parse(svg.Attribute("height")!.Value, CultureInfo.InvariantCulture) - pivot.Y;
         var parts = svg.Elements().Select(element =>
         {

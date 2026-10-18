@@ -120,6 +120,9 @@ public static class LayerShellWindow
                 data[offset + 2] = region.Width;
                 data[offset + 3] = region.Height;
             }
+            // Serialize the immutable mask in the same composition batch as
+            // the visual changes. The render thread carries it with the buffer.
+            window.Renderer.CompositionTarget.BlurRegions = data;
             layerWindow.SetBlurRegions(data);
         }
     }

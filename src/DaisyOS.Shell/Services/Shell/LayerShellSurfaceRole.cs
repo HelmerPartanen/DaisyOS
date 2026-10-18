@@ -188,7 +188,7 @@ public sealed record LayerShellSurfaceOptions(
         {
             Anchor = LayerShellAnchor.Bottom,
             ExclusiveZone = IgnoreOtherExclusiveZones,
-            Width = 328,
+            Width = 368,
             Height = 160
         };
 

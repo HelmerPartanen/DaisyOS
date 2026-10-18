@@ -121,7 +121,7 @@ public partial class SystemBarView : UserControl
         HideNotificationPanel(immediate: true);
         HideCalendarPanel(immediate: true);
         _ = GuiMotion.SetVisibleAsync(_quickSettings, _quickSettings.MaterialSurface, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true));
+            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         QueueStatusRefresh();
         SetFlyoutButtonActive("QuickSettingsButton", true);
         RaiseFlyoutVisibilityChanged();
@@ -140,7 +140,7 @@ public partial class SystemBarView : UserControl
     {
         HideAppTrayPanel(immediate: true);
         _ = GuiMotion.SetVisibleAsync(_notifications, NotificationMaterialFrame, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true));
+            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         HideQuickSettingsPanel(immediate: true);
         HideCalendarPanel(immediate: true);
         SetFlyoutButtonActive("NotificationsButton", true);
@@ -159,7 +159,7 @@ public partial class SystemBarView : UserControl
     {
         HideAppTrayPanel(immediate: true);
         _ = GuiMotion.SetVisibleAsync(_calendar, _calendar, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true));
+            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         HideQuickSettingsPanel(immediate: true);
         HideNotificationPanel(immediate: true);
         SetFlyoutButtonActive("CalendarButton", true);
@@ -180,7 +180,7 @@ public partial class SystemBarView : UserControl
         HideNotificationPanel(immediate: true);
         HideCalendarPanel(immediate: true);
         _ = GuiMotion.SetVisibleAsync(_appTray, _appTray.MaterialSurface, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true));
+            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         ConfigureTrayTransition();
         _trayChevron.RenderTransform = TransformOperations.Parse("rotate(180deg)");
         SetFlyoutButtonActive("AppTrayButton", true);
@@ -213,7 +213,7 @@ public partial class SystemBarView : UserControl
             {
                 Property = Visual.RenderTransformProperty,
                 Duration = duration,
-                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 32)
+                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 28)
             }
         };
     }

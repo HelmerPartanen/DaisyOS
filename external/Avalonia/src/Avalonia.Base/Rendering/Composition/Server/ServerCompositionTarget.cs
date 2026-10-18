@@ -100,6 +100,11 @@ namespace Avalonia.Rendering.Composition.Server
         }
 
         partial void OnLastLayoutPassTimingChanged() => _overlays.OnLastLayoutPassTimingChanged(LastLayoutPassTiming);
+        partial void OnBlurRegionsChanged()
+        {
+            _fullRedrawRequested = true;
+            RequestUpdate();
+        }
 
         partial void DeserializeChangesExtra(BatchStreamReader c)
         {
@@ -205,7 +210,8 @@ namespace Avalonia.Rendering.Composition.Server
             try
             {
                 renderTargetContext =
-                    _renderTarget.CreateDrawingContext(new(PixelSize, Scaling, Size, TransparencyLevel), out properties);
+                    _renderTarget.CreateDrawingContext(new(PixelSize, Scaling, Size, TransparencyLevel)
+                        { BlurRegions = BlurRegions }, out properties);
             }
             catch (RenderTargetNotReadyException)
             {

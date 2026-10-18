@@ -115,8 +115,14 @@ class WSurface : IPersistentWaylandObject, IWSurface, IWaylandFramebufferSurface
         Globals?.InputDispatcher?.NotifyCursorChanged(this);
     }
 
-    public void SetBlurRegions(int[] regions)
+    private int[]? _pendingBlurRegions;
+    private int[]? _appliedBlurRegions;
+
+    public void SetBlurRegions(int[] regions) => _pendingBlurRegions = regions;
+
+    private void ApplyBlurRegions(int[] regions)
     {
+        if (ReferenceEquals(regions, _appliedBlurRegions)) return;
         if (WlSurface is null || Globals?.BackgroundEffectManager is null || Connection is null)
             return;
 
@@ -125,7 +131,7 @@ class WSurface : IPersistentWaylandObject, IWSurface, IWaylandFramebufferSurface
         if (regions.Length == 0)
         {
             _backgroundEffect.SetBlurRegion(null!);
-            WlSurface.Commit();
+            _appliedBlurRegions = regions;
             return;
         }
 
@@ -137,7 +143,7 @@ class WSurface : IPersistentWaylandObject, IWSurface, IWaylandFramebufferSurface
         }
         _backgroundEffect.SetBlurRegion(region);
         region.Destroy();
-        WlSurface.Commit();
+        _appliedBlurRegions = regions;
     }
 
     private sealed class BackgroundEffectListener : ExtBackgroundEffectSurfaceV1.Listener;
@@ -287,6 +293,11 @@ class WSurface : IPersistentWaylandObject, IWSurface, IWaylandFramebufferSurface
     /// </summary>
     public virtual void OnBeforeNewBufferAttached(IRenderTarget.RenderTargetSceneInfo sceneInfo)
     {
+        // Background effects are double buffered surface state. Stage the mask
+        // for this exact scene immediately before its buffer is committed.
+        // Never commit a mask against the previous frame's pixels.
+        if ((sceneInfo.BlurRegions ?? _pendingBlurRegions) is { } regions)
+            ApplyBlurRegions(regions);
         if (HasFractionalScaling)
         {
             var lw = Math.Max(1, (int)Math.Round(sceneInfo.LogicalSize.Width));

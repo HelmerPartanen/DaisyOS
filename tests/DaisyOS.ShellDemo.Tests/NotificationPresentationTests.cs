@@ -15,6 +15,30 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class NotificationPresentationTests
 {
     [AvaloniaFact]
+    public async Task ToastSlidesItsWholeMaterialIntoViewWithoutFading()
+    {
+        var host = new NotificationToastHost();
+        var window = new Window { Width = 420, Height = 600, Content = host };
+        window.Show();
+        try
+        {
+            Assert.True(host.Present(new NotificationItem("Spring", "Toast entrance", DateTimeOffset.Now)));
+            var toast = Assert.Single(host.FindControl<StackPanel>("ToastList")!.Children);
+            Assert.True(toast.RenderTransform!.Value.M31 >= toast.Bounds.Width);
+            Assert.Equal(1, toast.Opacity);
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            await Task.Delay(80);
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Assert.True(toast.RenderTransform!.Value.M31 < toast.Bounds.Width);
+            Assert.Equal(1, toast.Opacity);
+            await Task.Delay(700);
+            Assert.Null(toast.RenderTransform);
+            Assert.True(host.HasActiveToasts);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public void ClickingCardOpensNotificationAndDismissDoesNotOpenIt()
     {
         var card = new NotificationCard
@@ -33,11 +57,16 @@ public sealed class NotificationPresentationTests
         {
             window.UpdateLayout();
             Assert.False(card.FindControl<Button>("PrimaryAction")!.IsVisible);
+            // Pointer hit testing uses the rendered scene, not layout alone.
+            using (window.CaptureRenderedFrame()) { }
+            window.MouseMove(new Point(100, 80));
             window.MouseDown(new Point(100, 80), MouseButton.Left);
             window.MouseUp(new Point(100, 80), MouseButton.Left);
             Assert.Equal(1, opened);
             var dismiss = card.GetVisualDescendants().OfType<Button>().First();
             var point = dismiss.TranslatePoint(new Point(16, 16), window)!.Value;
+            using (window.CaptureRenderedFrame()) { }
+            window.MouseMove(point);
             window.MouseDown(point, MouseButton.Left);
             window.MouseUp(point, MouseButton.Left);
             Assert.Equal(1, dismissed);
@@ -46,6 +75,8 @@ public sealed class NotificationPresentationTests
                 ActionId: "accept", ActionLabel: "Accept");
             window.UpdateLayout();
             Assert.True(card.FindControl<Button>("PrimaryAction")!.IsVisible);
+            using (window.CaptureRenderedFrame()) { }
+            window.MouseMove(new Point(100, 80));
             window.MouseDown(new Point(100, 80), MouseButton.Left);
             window.MouseUp(new Point(100, 80), MouseButton.Left);
             Assert.Equal(1, opened);

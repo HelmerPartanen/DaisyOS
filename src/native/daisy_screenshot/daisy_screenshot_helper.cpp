@@ -78,11 +78,14 @@ int main(int argc, char *argv[])
     const QCommandLineOption yOption("y", "Area y coordinate.", "coordinate");
     const QCommandLineOption widthOption("width", "Area width.", "pixels");
     const QCommandLineOption heightOption("height", "Area height.", "pixels");
+    const QCommandLineOption formatOption("format", "Transfer format: png or bmp.", "format", "png");
     const QCommandLineOption cursorOption("include-cursor", "Include the pointer in the capture.");
-    parser.addOptions({modeOption, outputOption, xOption, yOption, widthOption, heightOption, cursorOption});
+    parser.addOptions({modeOption, outputOption, xOption, yOption, widthOption, heightOption, cursorOption, formatOption});
     parser.process(application);
 
     const QString mode = parser.value(modeOption).trimmed().toLower();
+    const QString formatName = parser.value(formatOption).trimmed().toLower();
+    if (formatName != "png" && formatName != "bmp") return fail(QStringLiteral("Choose output format png or bmp."));
     const QString outputPath = parser.value(outputOption).trimmed();
     if (mode != QStringLiteral("screen") && mode != QStringLiteral("window") && mode != QStringLiteral("area")) {
         return fail(QStringLiteral("Choose capture mode screen, window, or area."));
@@ -145,6 +148,7 @@ int main(int argc, char *argv[])
 
     QDBusInterface screenshotApi(QString::fromLatin1(kService), QString::fromLatin1(kPath), QString::fromLatin1(kInterface), QDBusConnection::sessionBus());
     if (!screenshotApi.isValid()) {
+        cancelled = true;
         close(pipeFds[1]);
         reader.join();
         return fail(QStringLiteral("KWin's secure screenshot interface is unavailable: %1").arg(screenshotApi.lastError().message()));
@@ -237,7 +241,7 @@ int main(int argc, char *argv[])
     if (scale > 0) {
         image.setDevicePixelRatio(scale);
     }
-    QImageWriter writer(outputPath, "PNG");
+    QImageWriter writer(outputPath, formatName.toLatin1());
     writer.setCompression(1);
     if (!writer.write(image)) {
         return fail(QStringLiteral("The screenshot could not be saved as PNG."));

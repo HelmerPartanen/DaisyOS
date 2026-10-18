@@ -13,9 +13,10 @@ desktop_file="$temporary_root/stage/share/applications/org.daisyos.screenshot-he
 [[ -x "$helper" ]]
 [[ -f "$desktop_file" ]]
 [[ -f "$helper.api-v2" ]]
+[[ -f "$helper.api-v3" ]]
 grep -Fxq "Exec=$helper" "$desktop_file"
 grep -Fxq 'X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2' "$desktop_file"
-"$helper" --help >/dev/null
+QT_QPA_PLATFORM=offscreen "$helper" --help >/dev/null
 
 if command -v desktop-file-validate >/dev/null 2>&1; then
   desktop-file-validate "$desktop_file"
