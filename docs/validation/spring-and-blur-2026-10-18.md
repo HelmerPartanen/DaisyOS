@@ -44,3 +44,14 @@ the current window before pressing, avoiding stale pointer state from preceding
 shell tests. Theme-token and whitespace checks passed. The running shell was
 reloaded; a real D-Bus notification was displayed, captured, and closed. Its
 appearance is saved as `artifacts/spring-and-blur-2026-10-18/toast-live.png`.
+
+Launcher clipping follow-up: `LauncherView` inherited `ClipToBounds=true` from
+Avalonia's `TemplatedControl`. Its fixed 620px host therefore cut off the card
+during upward spring overshoot. The launcher host now permits overflow. The
+card's rounded content clip and the native bottom-edge viewport clip remain.
+The regression test checks the blur mask at a 30px upward overshoot pose and
+renders that pose for inspection.
+All 16 motion tests passed; the rendered overshoot pose shows an intact rounded
+top and search field. Theme-token and whitespace checks passed. The fixed shell
+was reloaded. The pose is saved as
+`artifacts/spring-and-blur-2026-10-18/launcher-overshoot.png`.

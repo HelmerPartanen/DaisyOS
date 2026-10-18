@@ -10,6 +10,36 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class GuiMotionTests
 {
+    [AvaloniaFact]
+    public void LauncherSpringOvershootKeepsTheWholeCardAndBlurVisible()
+    {
+        var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
+            new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
+        { IsVisible = false, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom };
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
+        var overlay = new DaisyOS.Shell.Services.Shell.BottomChromeOverlayHost();
+        overlay.Viewport.Children.Add(launcher);
+        var window = new Window { Width = 1280, Height = 900, Content = overlay };
+        window.Show();
+        try
+        {
+            launcher.AnimateIn();
+            window.UpdateLayout();
+            var root = launcher.FindControl<Border>("LauncherRootBorder")!;
+            root.RenderTransform = new Avalonia.Media.TranslateTransform(0, -30);
+            using var blur = new DaisyOS.Shell.Services.Compositor.KWinBlur(window, launcher, () => [root]);
+            var regions = blur.BuildRegions();
+            var cardTop = root.TranslatePoint(default, window)!.Value.Y;
+            Assert.False(launcher.ClipToBounds);
+            Assert.True(root.ClipToBounds);
+            Assert.True(overlay.Viewport.ClipToBounds);
+            Assert.Equal((int)Math.Floor(cardTop), regions.Min(region => region.Y));
+            using var frame = window.CaptureRenderedFrame();
+            frame!.Save("/tmp/daisy-launcher-overshoot.png");
+        }
+        finally { launcher.CloseImmediate(); window.Close(); }
+    }
+
     [Theory]
     [InlineData(0, 82, -1000)]
     [InlineData(20, 82, 500)]

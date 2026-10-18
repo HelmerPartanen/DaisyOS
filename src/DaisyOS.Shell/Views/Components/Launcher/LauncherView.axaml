@@ -4,7 +4,7 @@
              xmlns:vm="clr-namespace:DaisyOS.Shell.ViewModels"
              x:Class="DaisyOS.Shell.Views.Components.Launcher.LauncherView"
              x:DataType="vm:LauncherViewModel"
-             Width="720" Height="620">
+             Width="720" Height="620" ClipToBounds="False">
 
   <UserControl.Resources>
     <DataTemplate x:Key="LauncherTileTemplate" DataType="vm:LauncherItemViewModel">
