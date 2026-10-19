@@ -80,6 +80,19 @@ public static class DesktopItemLoader
     /// <summary>Forces eager construction of the icon theme index on the current thread.</summary>
     public static void WarmUp() => _ = _iconIndex.Value;
 
+    internal static string ResolveFileIconPath(string path)
+    {
+        var directory = Directory.Exists(path);
+        var extension = Path.GetExtension(path).ToLowerInvariant();
+        var mimeIcon = directory ? "folder" :
+            DaisyOS.Shell.Apps.Files.Services.FileVisualResolver.GetMimeIconName(extension);
+        var resolved = ResolveIconPath(mimeIcon);
+        if (!string.IsNullOrWhiteSpace(resolved)) return resolved;
+        resolved = ResolveIconPath(directory ? "inode-directory" : "text-x-generic");
+        return !string.IsNullOrWhiteSpace(resolved) ? resolved :
+            $"avares://DaisyOS.Shell/Assets/Icons/HugeIcons/{(directory ? "folder-01" : "file-02")}.svg";
+    }
+
     public static string ResolveIconPath(string iconName)
     {
         if (string.IsNullOrWhiteSpace(iconName)) return string.Empty;

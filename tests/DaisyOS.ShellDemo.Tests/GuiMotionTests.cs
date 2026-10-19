@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.Styling;
 using DaisyOS.Shell.Services.Motion;
 using Xunit;
 
@@ -11,7 +12,7 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class GuiMotionTests
 {
     [AvaloniaFact]
-    public void LauncherSpringOvershootKeepsTheWholeCardAndBlurVisible()
+    public void LauncherTranslatedCardKeepsTheWholeCardAndBlurVisible()
     {
         var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
             new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
@@ -40,22 +41,23 @@ public sealed class GuiMotionTests
         finally { launcher.CloseImmediate(); window.Close(); }
     }
 
-    [Theory]
-    [InlineData(0, 82, -1000)]
-    [InlineData(20, 82, 500)]
-    [InlineData(-4, 82, -10)]
-    [InlineData(0, -82, 1000)]
-    public void ExitNeverReversesOrOvershootsEvenWhenInterruptingEntrance(double start, double target, double velocity)
+    [AvaloniaTheory]
+    [InlineData("MotionEaseEnter")]
+    [InlineData("MotionEaseExit")]
+    [InlineData("MotionEaseMove")]
+    [InlineData("MotionEasePress")]
+    public void SharedEasingIsMonotonicAndNeverOvershoots(string key)
     {
-        var previous = start;
-        for (var frame = 0; frame <= 30; frame++)
+        Assert.True(Application.Current!.Resources.TryGetResource(key, ThemeVariant.Default, out var resource));
+        var easing = Assert.IsAssignableFrom<Avalonia.Animation.Easings.Easing>(resource);
+        var previous = 0d;
+        for (var frame = 0; frame <= 120; frame++)
         {
-            var sample = GuiMotion.ExitStep(start, target, velocity, 0.14, frame / 30d * 0.14);
-            Assert.InRange(sample.Position, Math.Min(start, target), Math.Max(start, target));
-            Assert.True((sample.Position - previous) * (target - start) >= 0);
-            previous = sample.Position;
+            var progress = easing.Ease(frame / 120d);
+            Assert.InRange(progress, previous, 1);
+            previous = progress;
         }
-        Assert.Equal(target, previous, 8);
+        Assert.Equal(1, previous);
     }
 
     [AvaloniaFact]

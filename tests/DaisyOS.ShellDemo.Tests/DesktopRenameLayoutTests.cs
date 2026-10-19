@@ -18,6 +18,56 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class DesktopRenameLayoutTests
 {
     [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task NewlyAddedFilesUseContentIconsAndShowTheirNames(bool dark)
+    {
+        var directory = Path.Combine(Path.GetTempPath(), "desktop-new-items-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        var vm = new DesktopViewModel(new DaisyOS.Shell.Services.Desktop.DesktopLayoutStore(Path.Combine(directory, "layout.json")));
+        vm.ClearItems();
+        var row = new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 100 };
+        var window = new Window { Width = 520, Height = 200, Content = row, Background = Brushes.DarkSlateBlue,
+            RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light };
+        try
+        {
+            foreach (var name in new[] { "New Document.txt", "New Folder" })
+            {
+                var path = Path.Combine(directory, name);
+                if (name.EndsWith(".txt")) File.WriteAllText(path, "");
+                else Directory.CreateDirectory(path);
+                vm.AddDesktopPath(path);
+                var item = vm.Items.Single(i => i.State.Id == path);
+                Assert.DoesNotContain("AppIcons/Files", item.IconPath);
+                Assert.NotNull(item.IconBitmap);
+                item.IsRenaming = true;
+                item.IsSelected = true;
+                row.Children.Add(new DesktopItemView { DataContext = item, Width = 74, Height = 88,
+                    VerticalAlignment = Avalonia.Layout.VerticalAlignment.Top, Margin = new Thickness(50, 20, 0, 0) });
+            }
+            Assert.NotEqual(vm.Items[0].IconPath, vm.Items[1].IconPath);
+            window.Show();
+            await Task.Delay(250);
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            foreach (var view in row.Children.Cast<DesktopItemView>())
+            {
+                var editor = view.FindControl<TextBox>("RenameBox")!;
+                var presenter = editor.GetVisualDescendants().OfType<TextPresenter>().Single();
+                Assert.Single(presenter.TextLayout.TextLines);
+                var icon = view.FindControl<Border>("IconWrapper")!;
+                Assert.True(editor.TranslatePoint(default, view)!.Value.Y >= icon.TranslatePoint(default, view)!.Value.Y + icon.Bounds.Height);
+                Assert.True(presenter.TextLayout.Height <= editor.Bounds.Height);
+            }
+            Assert.True(row.Children.Cast<DesktopItemView>().Last().FindControl<TextBox>("RenameBox")!.IsFocused);
+            Directory.CreateDirectory("/tmp/desktop-new-items");
+            using var frame = window.CaptureRenderedFrame();
+            frame!.Save($"/tmp/desktop-new-items/{dark}.png");
+        }
+        finally { window.Close(); Directory.Delete(directory, true); }
+    }
+
+    [AvaloniaTheory]
     [InlineData(false, false)]
     [InlineData(true, false)]
     [InlineData(false, true)]
@@ -47,12 +97,12 @@ public sealed class DesktopRenameLayoutTests
             var position = editor.TranslatePoint(default, window)!.Value;
             Assert.InRange(position.X, 0, window.Bounds.Width - editor.Bounds.Width);
             Assert.InRange(position.Y, 0, window.Bounds.Height - editor.Bounds.Height);
-            Assert.InRange(editor.Bounds.Width, 60, 84);
+            Assert.InRange(editor.Bounds.Width, 100, 160);
             Assert.InRange(editor.Bounds.Height, 24, 48);
             if (!longName)
             {
                 var presenter = editor.GetVisualDescendants().OfType<TextPresenter>().Single();
-                Assert.Equal(2, presenter.TextLayout.TextLines.Count);
+                Assert.Equal(1, presenter.TextLayout.TextLines.Count);
             }
             Assert.Equal(new Size(74, 88), view.Bounds.Size);
             Assert.Equal(50, view.ZIndex);

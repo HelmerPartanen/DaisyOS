@@ -611,7 +611,7 @@ public class DesktopViewModel : INotifyPropertyChanged
 
         var isDesktopEntry = path.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase);
         var label = Path.GetFileName(path);
-        var iconPath = DesktopItemLoader.GetAppIconPath("files", DesktopItemLoader.IsCurrentThemeLight());
+        var iconPath = DesktopItemLoader.ResolveFileIconPath(path);
         if (isDesktopEntry)
         {
             var parsed = DesktopItemLoader.ParseDesktopFile(path);
@@ -945,10 +945,9 @@ public class DesktopViewModel : INotifyPropertyChanged
             _itemMap[newId] = item;
 
             item.Label = newName;
-            if (IsPreviewableImage(newPath))
-            {
-                item.IconPath = newPath;
-            }
+            item.IconPath = IsPreviewableImage(newPath) ? newPath :
+                item.IsDesktopEntry ? DesktopItemLoader.ParseDesktopFile(newPath).iconPath :
+                DesktopItemLoader.ResolveFileIconPath(newPath);
         }
         catch (Exception ex)
         {

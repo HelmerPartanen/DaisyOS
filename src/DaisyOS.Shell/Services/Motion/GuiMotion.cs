@@ -11,20 +11,6 @@ namespace DaisyOS.Shell.Services.Motion;
 /// <summary>Interruptible interior motion. Native geometry and material/blur frames stay fixed.</summary>
 public static class GuiMotion
 {
-    internal const double EntranceDamping = 0.7;
-
-    // A bounded, accelerating exit retains outward velocity but never carries
-    // an entrance spring's inward velocity back onto the screen.
-    internal static (double Position, double Velocity) ExitStep(
-        double start, double target, double initialVelocity, double duration, double elapsed)
-    {
-        var delta = target - start;
-        if (Math.Abs(delta) < 0.000001) return (target, 0);
-        var t = Math.Clamp(elapsed / duration, 0, 1);
-        var slope = Math.Clamp(initialVelocity * duration / delta, 0, 1);
-        var progress = slope * t + (1 - slope) * t * t;
-        return (start + delta * progress, delta * (slope + 2 * (1 - slope) * t) / duration);
-    }
     public const double ShellSlideDistance = 82;
     public static TimeSpan ShellSlideDuration(Control content, bool entering) =>
         Application.Current is App { ReduceMotionEnabled: true } ? TimeSpan.Zero :
@@ -41,7 +27,6 @@ public static class GuiMotion
         public CancellationTokenSource? Animation;
         public CancellationTokenSource? Visibility;
         public bool? RequestedVisible;
-        public double VelocityX, VelocityY, VelocityOpacity;
     }
     private static readonly ConditionalWeakTable<Control, State> States = new();
 
@@ -174,11 +159,8 @@ public static class GuiMotion
         var duration = immediate || Application.Current is App { ReduceMotionEnabled: true }
             ? TimeSpan.Zero
             : durationOverride ?? Duration(content, entering);
-        if (!interrupted) state.VelocityX = state.VelocityY = state.VelocityOpacity = 0;
         if (duration > TimeSpan.Zero && TopLevel.GetTopLevel(content) is { } topLevel)
         {
-            // Settle by position AND velocity, rather than cutting a curve off at a deadline.
-            // Retargeting retains the last rendered velocity as well as its position.
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             using var registration = current.Token.Register(() => completion.TrySetResult());
             TimeSpan? lastFrame = null;
@@ -188,41 +170,27 @@ public static class GuiMotion
             var targetX = entering ? 0 : offset.X;
             var targetY = entering ? 0 : offset.Y;
             var targetOpacity = entering || !fadeOnExit ? 1d : 0d;
-            // A restrained spring has a small settling overshoot. Do not spend its
-            // visible lifetime waiting for a newly mapped native surface to paint.
-            var frequency = 6 / Math.Max(0.1, duration.TotalSeconds);
-            var exitElapsed = 0d;
-            var initialVelocityX = state.VelocityX;
-            var initialVelocityY = state.VelocityY;
+            var easing = easingOverride ??
+                (content.TryFindResource(entering ? "MotionEaseEnter" : "MotionEaseExit", out var resource) && resource is Easing configured
+                    ? configured : entering ? new CubicEaseOut() : new CubicEaseIn());
+            var animationElapsed = 0d;
             var transform = (TranslateTransform)content.RenderTransform!;
             void Frame(TimeSpan timestamp)
             {
                 if (current.IsCancellationRequested || !ReferenceEquals(state.Animation, current)) return;
                 var elapsed = lastFrame is { } previous
-                    ? Math.Clamp((timestamp - previous).TotalSeconds, 0, 1d / 30) : 0;
+                    ? Math.Max(0, (timestamp - previous).TotalSeconds) : 0;
                 lastFrame = timestamp;
-                if (entering)
-                {
-                    (x, state.VelocityX) = DampedSpring.Step(x, state.VelocityX, targetX, frequency, elapsed, EntranceDamping);
-                    (y, state.VelocityY) = DampedSpring.Step(y, state.VelocityY, targetY, frequency, elapsed, EntranceDamping);
-                    (opacity, state.VelocityOpacity) = DampedSpring.Step(opacity, state.VelocityOpacity, targetOpacity, frequency, elapsed);
-                }
-                else
-                {
-                    exitElapsed += elapsed;
-                    (x, state.VelocityX) = ExitStep(startX, targetX, initialVelocityX, duration.TotalSeconds, exitElapsed);
-                    (y, state.VelocityY) = ExitStep(startY, targetY, initialVelocityY, duration.TotalSeconds, exitElapsed);
-                    var progress = Math.Clamp(exitElapsed / duration.TotalSeconds, 0, 1);
-                    opacity = startOpacity + (targetOpacity - startOpacity) * progress * progress;
-                    state.VelocityOpacity = 2 * (targetOpacity - startOpacity) * progress / duration.TotalSeconds;
-                }
+                animationElapsed += elapsed;
+                var progress = Math.Clamp(animationElapsed / duration.TotalSeconds, 0, 1);
+                var eased = easing.Ease(progress);
+                x = startX + (targetX - startX) * eased;
+                y = startY + (targetY - startY) * eased;
+                opacity = startOpacity + (targetOpacity - startOpacity) * eased;
                 transform.X = x;
                 transform.Y = y;
                 content.Opacity = Math.Clamp(opacity, 0, 1);
-                if (!entering ? exitElapsed >= duration.TotalSeconds :
-                    Math.Abs(x - targetX) < 0.05 && Math.Abs(y - targetY) < 0.05 &&
-                    Math.Abs(state.VelocityX) < 0.5 && Math.Abs(state.VelocityY) < 0.5 &&
-                    Math.Abs(opacity - targetOpacity) < 0.002 && Math.Abs(state.VelocityOpacity) < 0.02)
+                if (animationElapsed >= duration.TotalSeconds)
                     completion.TrySetResult();
                 else topLevel.RequestAnimationFrame(Frame);
             }
@@ -231,7 +199,6 @@ public static class GuiMotion
         }
         if (!ReferenceEquals(state.Animation, current)) return;
         state.Animation = null;
-        state.VelocityX = state.VelocityY = state.VelocityOpacity = 0;
         content.Opacity = entering || !fadeOnExit ? 1 : 0;
         content.RenderTransform = !entering && preserveExitPosition
             ? new TranslateTransform(offset.X, offset.Y)

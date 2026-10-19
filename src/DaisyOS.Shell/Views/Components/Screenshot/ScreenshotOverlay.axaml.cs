@@ -172,7 +172,7 @@ public partial class ScreenshotOverlay : UserControl
             {
                 Property = TranslateTransform.YProperty,
                 Duration = Services.Motion.GuiMotion.ShellSlideDuration(this, true),
-                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 28)
+                Easing = new Avalonia.Animation.Easings.CubicEaseOut()
             }
         };
         ToolbarPill.Opacity = 0;
@@ -560,7 +560,7 @@ public partial class ScreenshotOverlay : UserControl
             return;
         }
 
-        // Automatic avoidance springs into place; a manual drag follows the pointer directly.
+        // Automatic avoidance eases into place; a manual drag follows the pointer directly.
         var current = new Point(_toolbarTransform.X, _toolbarTransform.Y);
         _toolbarTransform.Transitions = null;
         _toolbarTransform.X = current.X;

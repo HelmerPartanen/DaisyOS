@@ -32,7 +32,7 @@ public partial class ConsoleHomeView : UserControl
 
     private int _selectedIndex;
     private int _librarySelectedIndex;
-    private double _carouselOffset, _carouselVelocity;
+    private double _carouselOffset, _carouselStart;
     private readonly Stopwatch _carouselClock = new();
     private double _targetCarouselOffset;
     private CancellationTokenSource? _discoveryCts;
@@ -503,12 +503,10 @@ public partial class ConsoleHomeView : UserControl
     {
         if (_recentGames.Count == 0 || _selectedIndex < 0 || _selectedIndex >= _recentGames.Count) return;
 
+        _carouselStart = _carouselOffset;
+        _carouselClock.Restart();
         _targetCarouselOffset = -_selectedIndex * 238;
-        if (!_carouselTimer.IsEnabled)
-        {
-            _carouselClock.Restart();
-            _carouselTimer.Start();
-        }
+        if (!_carouselTimer.IsEnabled) _carouselTimer.Start();
 
         if (!_isHeaderFocused && _activeTab == "Recents")
         {
@@ -565,15 +563,12 @@ public partial class ConsoleHomeView : UserControl
 
     private void AdvanceCarousel()
     {
-        var elapsed = _carouselClock.Elapsed.TotalSeconds;
-        _carouselClock.Restart();
-        (_carouselOffset, _carouselVelocity) = DampedSpring.Step(
-            _carouselOffset, _carouselVelocity, _targetCarouselOffset, 32, elapsed);
+        var progress = Math.Clamp(_carouselClock.Elapsed.TotalSeconds / 0.22, 0, 1);
+        var eased = 1 - Math.Pow(1 - progress, 3);
+        _carouselOffset = _carouselStart + (_targetCarouselOffset - _carouselStart) * eased;
         _carouselTranslation.X = _carouselOffset;
-        if (Application.Current is App { ReduceMotionEnabled: true } ||
-            (Math.Abs(_targetCarouselOffset - _carouselOffset) < 0.05 && Math.Abs(_carouselVelocity) < 0.5))
+        if (progress >= 1 || Application.Current is App { ReduceMotionEnabled: true })
         {
-            _carouselVelocity = 0;
             _carouselOffset = _targetCarouselOffset;
             _carouselTranslation.X = _carouselOffset;
             _carouselTimer.Stop();

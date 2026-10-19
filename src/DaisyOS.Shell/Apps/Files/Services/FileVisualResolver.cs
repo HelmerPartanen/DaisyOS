@@ -93,6 +93,10 @@ internal static class FileVisualResolver
         [".gz"] = ["org.gnome.FileRoller", "org.kde.ark"]
     };
 
+    internal static string GetMimeIconName(string extension) =>
+        MimeTypesByExtension.TryGetValue(extension, out var mime) ? mime.Replace('/', '-') :
+        IsImage(extension) ? "image-x-generic" : "application-octet-stream";
+
     internal static bool IsImage(string extension) => extension is ".png" or ".jpg" or ".jpeg" or ".gif" or ".bmp" or ".webp" or ".svg";
     internal static bool CanResolve(FileEntrySnapshot snapshot) => !snapshot.IsDirectory &&
         (IsImage(snapshot.Extension) || snapshot.Extension == ".desktop" || MimeTypesByExtension.ContainsKey(snapshot.Extension));

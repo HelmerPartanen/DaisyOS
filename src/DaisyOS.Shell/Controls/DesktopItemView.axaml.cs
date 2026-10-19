@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -84,6 +85,7 @@ public partial class DesktopItemView : UserControl
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        if (DataContext is DesktopItemViewModel { IsRenaming: true }) FocusRenameEditor();
         _contextMenu = this.FindControl<Panel>("RootPanel")?.ContextMenu;
         if (_contextMenu is null)
             return;
@@ -132,18 +134,23 @@ public partial class DesktopItemView : UserControl
             SyncProperties(vm);
             if (e.PropertyName == nameof(DesktopItemViewModel.IsRenaming) && vm.IsRenaming)
             {
-                Dispatcher.UIThread.Post(() =>
-                {
-                    var renameBox = this.FindControl<TextBox>("RenameBox");
-                    if (renameBox != null)
-                    {
-                        renameBox.Focus();
-                        renameBox.SelectAll();
-                    }
-                }, DispatcherPriority.Input);
+                FocusRenameEditor();
             }
         }
     }
+
+    private void FocusRenameEditor() => Dispatcher.UIThread.Post(() =>
+    {
+        if (DataContext is not DesktopItemViewModel { IsRenaming: true }) return;
+        if (this.FindControl<TextBox>("RenameBox") is { } editor)
+        {
+            editor.Focus();
+            var extension = Path.GetExtension(editor.Text ?? "");
+            editor.SelectionStart = 0;
+            editor.SelectionEnd = DataContext is DesktopItemViewModel { IsDirectory: false } && extension.Length > 0
+                ? (editor.Text?.Length ?? 0) - extension.Length : editor.Text?.Length ?? 0;
+        }
+    }, DispatcherPriority.Input);
 
     private void SyncProperties(DesktopItemViewModel vm)
     {

@@ -18,7 +18,7 @@
     <!-- Surfaces -->
     <Color x:Key="SurfaceCanvasColor">#FFF2F2F2</Color>
     <!-- Translucent so KWin's native background effect remains visible. -->
-    <Color x:Key="SurfaceBaseColor">#66F2F2F2</Color>
+    <Color x:Key="SurfaceBaseColor">#99F2F2F2</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FFF2F2F2</Color>
     <Color x:Key="SurfaceRaisedColor">#FFFFFFFF</Color>
     <Color x:Key="SurfaceRaisedSubtleColor">#0F000000</Color>
@@ -577,10 +577,10 @@
   <x:TimeSpan x:Key="MotionDurationShellExit">0:0:0.14</x:TimeSpan>
   <x:TimeSpan x:Key="MotionDurationEnter">0:0:0.28</x:TimeSpan>
   <x:TimeSpan x:Key="MotionDurationExit">0:0:0.14</x:TimeSpan>
-  <easings:SpringEasing x:Key="MotionEaseEnter" Mass="1" Stiffness="256" Damping="22.4" />
+  <easings:CubicEaseOut x:Key="MotionEaseEnter" />
   <easings:CubicEaseIn x:Key="MotionEaseExit" />
-  <easings:SpringEasing x:Key="MotionEaseMove" Mass="1" Stiffness="256" Damping="28" />
-  <easings:SpringEasing x:Key="MotionEasePress" Mass="1" Stiffness="500" Damping="40" />
+  <easings:CubicEaseOut x:Key="MotionEaseMove" />
+  <easings:CubicEaseOut x:Key="MotionEasePress" />
   <x:TimeSpan x:Key="MotionDurationInstant">0:0:0</x:TimeSpan>
   <x:TimeSpan x:Key="MotionDurationHover">0:0:0.05</x:TimeSpan>
   <x:TimeSpan x:Key="MotionDurationFast">0:0:0.10</x:TimeSpan>

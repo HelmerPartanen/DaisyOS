@@ -7,21 +7,15 @@ namespace DaisyOS.Shell.Controls;
 /// <summary>Allows the desktop's inline editor to wrap outside its fixed icon cell.</summary>
 public sealed class DesktopRenameHost : Panel
 {
-    // The normal desktop label receives the full 74 px cell width. The editor
-    // adds four pixels of padding and a one-pixel border on each side, so its
-    // outer width needs ten extra pixels to preserve that exact text width.
-    private const double EditorChromeWidth = 10d;
-    private double _editorWidth = 84d;
+    private double _editorWidth = 160d;
 
     public DesktopRenameHost() => ClipToBounds = false;
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        var labelWidth = this.FindAncestorOfType<DesktopItemView>()?.FindControl<DesktopItemLabel>("ItemLabel")?.TextLayout.WidthIncludingTrailingWhitespace;
-        var contentWidth = labelWidth is > 0
-            ? Math.Ceiling(labelWidth.Value) + 1
-            : double.IsFinite(availableSize.Width) ? availableSize.Width : 74d;
-        var width = Math.Min(84d, contentWidth + EditorChromeWidth);
+        // Reserve enough room for ordinary filenames, including their extension.
+        // Hidden labels have no reliable measured width when an item starts in rename mode.
+        var width = 160d;
         if (TopLevel.GetTopLevel(this) is { } window && window.Bounds.Width > 8)
             width = Math.Min(width, window.Bounds.Width - 8);
         _editorWidth = width;
@@ -38,7 +32,7 @@ public sealed class DesktopRenameHost : Panel
         {
             var size = new Size(_editorWidth, child.DesiredSize.Height);
             var x = (finalSize.Width - size.Width) / 2;
-            var y = 54d;
+            var y = 56d;
             if (origin is { } point && window is not null)
             {
                 x = Math.Clamp(x, 4 - point.X, Math.Max(4 - point.X, window.Bounds.Width - point.X - size.Width - 4));

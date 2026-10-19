@@ -27,11 +27,10 @@ KWinComponents.SceneEffect {
 
     Behavior on transitionProgress {
         enabled: !effect.reduceMotion && (effect.phase === effect.phaseEntering || effect.phase === effect.phaseExiting)
-        SpringAnimation {
+        NumberAnimation {
             id: transitionAnimation
-            spring: 4
-            damping: 0.5
-            epsilon: 0.0001
+            duration: effect.animationDuration
+            easing.type: effect.phase === effect.phaseExiting ? Easing.InCubic : Easing.OutCubic
             onRunningChanged: {
                 if (!running) effect.finishTransition();
             }

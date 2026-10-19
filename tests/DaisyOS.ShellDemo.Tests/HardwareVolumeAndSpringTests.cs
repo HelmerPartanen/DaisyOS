@@ -16,41 +16,6 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class HardwareVolumeAndSpringTests
 {
-    [Theory]
-    [InlineData(30)]
-    [InlineData(60)]
-    [InlineData(144)]
-    public void SpringSettlesWithoutOvershootingAtEveryRefreshRate(int frames)
-    {
-        double x = 82, velocity = 0;
-        for (var i = 0; i < frames; i++)
-        {
-            var previous = x;
-            (x, velocity) = DampedSpring.Step(x, velocity, 0, 32, 1d / frames);
-            Assert.InRange(x, 0, previous);
-        }
-        Assert.InRange(x, 0, 0.001);
-        Assert.InRange(Math.Abs(velocity), 0, 0.001);
-        var single = DampedSpring.Step(82, 0, 0, 32, 1);
-        Assert.Equal(single.Position, x, 8);
-    }
-
-    [Fact]
-    public void ShellSpringHasRestrainedOvershootAndSettles()
-    {
-        double position = 82, velocity = 0, minimum = 82;
-        for (var i = 0; i < 120; i++)
-        {
-            (position, velocity) = DampedSpring.Step(position, velocity, 0, 27, 1d / 120, GuiMotion.EntranceDamping);
-            minimum = Math.Min(minimum, position);
-        }
-        Assert.InRange(minimum, -5, -3);
-        Assert.InRange(Math.Abs(position), 0, 0.001);
-        Assert.InRange(Math.Abs(velocity), 0, 0.001);
-        var direct = DampedSpring.Step(82, 0, 0, 27, 1, GuiMotion.EntranceDamping);
-        Assert.Equal(direct.Position, position, 8);
-    }
-
     [Fact]
     public async Task RapidKeysAccumulateAndMuteTogglesAreSerialized()
     {

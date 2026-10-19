@@ -2924,7 +2924,7 @@ public partial class App : Application
         Resources["ToggleThumbTransitions"] = new Avalonia.Animation.Transitions
         {
             new Avalonia.Animation.DoubleTransition { Property = Canvas.LeftProperty, Duration = toggleDuration,
-                Easing = new Avalonia.Animation.Easings.SpringEasing(1, 256, 28) }
+                Easing = new Avalonia.Animation.Easings.CubicEaseOut() }
         };
         Resources["ToggleTrackTransitions"] = new Avalonia.Animation.Transitions
         {
