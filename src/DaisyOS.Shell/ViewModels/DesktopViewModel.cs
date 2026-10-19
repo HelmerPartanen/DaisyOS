@@ -592,11 +592,8 @@ public class DesktopViewModel : INotifyPropertyChanged
 
         foreach (var item in Items.Where(i => !i.IsTrash && !i.IsWidgetCard && !i.IsImage))
         {
-            if (item.IconPath.Contains("AppIcons/Files", StringComparison.OrdinalIgnoreCase)
-                || item.IconPath.Contains("FilesIcon", StringComparison.OrdinalIgnoreCase))
-            {
-                item.IconPath = DesktopItemLoader.GetAppIconPath("files", isLight);
-            }
+            if (!item.IsDesktopEntry)
+                item.IconPath = DesktopItemLoader.ResolveFileIconPath(item.State.Id);
         }
     }
 

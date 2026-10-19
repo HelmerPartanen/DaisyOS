@@ -88,9 +88,14 @@ public static class DesktopItemLoader
             DaisyOS.Shell.Apps.Files.Services.FileVisualResolver.GetMimeIconName(extension);
         var resolved = ResolveIconPath(mimeIcon);
         if (!string.IsNullOrWhiteSpace(resolved)) return resolved;
-        resolved = ResolveIconPath(directory ? "inode-directory" : "text-x-generic");
+        var genericIcon = directory ? "inode-directory" :
+            mimeIcon.StartsWith("text-", StringComparison.Ordinal) ? "text-x-generic" :
+            mimeIcon.StartsWith("image-", StringComparison.Ordinal) ? "image-x-generic" :
+            mimeIcon.StartsWith("audio-", StringComparison.Ordinal) ? "audio-x-generic" :
+            mimeIcon.StartsWith("video-", StringComparison.Ordinal) ? "video-x-generic" : "application-x-generic";
+        resolved = ResolveIconPath(genericIcon);
         return !string.IsNullOrWhiteSpace(resolved) ? resolved :
-            $"avares://DaisyOS.Shell/Assets/Icons/HugeIcons/{(directory ? "folder-01" : "file-02")}.svg";
+            $"avares://DaisyOS.Shell/Assets/FileIcons/{(directory ? "Folder" : "Document")}.svg";
     }
 
     public static string ResolveIconPath(string iconName)
@@ -459,7 +464,7 @@ public static class DesktopItemLoader
         dataRoots.AddRange(configuredRoots);
 
         var themes = new[] { "hicolor", "Qogir", "Qogir-Dark", "Qogir-Light", "breeze", "breeze-dark", "Adwaita", "Papirus" };
-        var sizes = new[] { "scalable", "512x512", "256x256", "128x128", "96x96", "64x64", "48x48", "32x32", "24x24", "16x16" };
+        var sizes = new[] { "scalable", "512x512", "256x256", "128x128", "96x96", "64x64", "48x48", "32x32", "24x24", "16x16", "64", "48", "32" };
 
         foreach (var root in dataRoots.Distinct(StringComparer.Ordinal))
         {
@@ -469,6 +474,11 @@ public static class DesktopItemLoader
                 {
                     yield return Path.Combine(root, "icons", theme, size, "apps");
                     yield return Path.Combine(root, "icons", theme, "apps", size);
+                    foreach (var context in new[] { "mimetypes", "places" })
+                    {
+                        yield return Path.Combine(root, "icons", theme, size, context);
+                        yield return Path.Combine(root, "icons", theme, context, size);
+                    }
                 }
             }
         }

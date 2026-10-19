@@ -39,7 +39,7 @@ public sealed class DesktopRenameLayoutTests
                 vm.AddDesktopPath(path);
                 var item = vm.Items.Single(i => i.State.Id == path);
                 Assert.DoesNotContain("AppIcons/Files", item.IconPath);
-                Assert.NotNull(item.IconBitmap);
+                Assert.True(item.IconBitmap is not null, $"Icon could not be decoded: {item.IconPath}");
                 item.IsRenaming = true;
                 item.IsSelected = true;
                 row.Children.Add(new DesktopItemView { DataContext = item, Width = 74, Height = 88,
@@ -50,13 +50,15 @@ public sealed class DesktopRenameLayoutTests
             await Task.Delay(250);
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
+            Directory.CreateDirectory("/tmp/desktop-new-items");
+            using (var preview = window.CaptureRenderedFrame()) preview!.Save($"/tmp/desktop-new-items/{dark}.png");
             foreach (var view in row.Children.Cast<DesktopItemView>())
             {
                 var editor = view.FindControl<TextBox>("RenameBox")!;
                 var presenter = editor.GetVisualDescendants().OfType<TextPresenter>().Single();
                 Assert.Single(presenter.TextLayout.TextLines);
                 var icon = view.FindControl<Border>("IconWrapper")!;
-                Assert.True(editor.TranslatePoint(default, view)!.Value.Y >= icon.TranslatePoint(default, view)!.Value.Y + icon.Bounds.Height);
+                Assert.True(editor.TranslatePoint(default, view)!.Value.Y >= icon.TranslatePoint(default, view)!.Value.Y + icon.Bounds.Height, $"editor={editor.TranslatePoint(default, view)} {editor.Bounds}; icon={icon.TranslatePoint(default, view)} {icon.Bounds}");
                 Assert.True(presenter.TextLayout.Height <= editor.Bounds.Height);
             }
             Assert.True(row.Children.Cast<DesktopItemView>().Last().FindControl<TextBox>("RenameBox")!.IsFocused);
