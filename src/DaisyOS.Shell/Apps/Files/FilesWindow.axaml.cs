@@ -54,8 +54,8 @@ public partial class FilesWindow : Window
             this,
             TabRow,
             ContentLayout,
-            normalRowDefinitions: "44,60,*,28",
-            fullscreenRowDefinitions: "0,60,*,28");
+            normalRowDefinitions: "44,Auto,*,Auto",
+            fullscreenRowDefinitions: "0,Auto,*,Auto");
         _viewModel = new FilesViewModel(ResolveInitialFolder(initialPath), initialPath, selectItem);
         Loc.RefreshOnChange(this, () =>
         {
@@ -83,6 +83,7 @@ public partial class FilesWindow : Window
         HookActiveTab();
         if (Application.Current is App app) app.AppearanceChanged += OnAppearanceChanged;
         FileContentGrid.SizeChanged += (_, _) => UpdateDetailsLayout();
+        BreadcrumbItems.SizeChanged += (_, _) => UpdateBreadcrumbLayout();
         UpdatePreviewPaneLayout();
         // ListBox may capture the pointer while it updates selection. Listen at
         // the window as well so a drag remains reliable after that capture and
@@ -158,6 +159,7 @@ public partial class FilesWindow : Window
         if (e.PropertyName is nameof(FilesTabViewModel.CurrentPath) or nameof(FilesTabViewModel.IsGridView))
         {
             _animateNavigationPending = IsVisible;
+            Dispatcher.UIThread.Post(UpdateBreadcrumbLayout, DispatcherPriority.Loaded);
             UpdateSidebarActiveState();
             ScheduleVisuals();
         }
@@ -189,7 +191,10 @@ public partial class FilesWindow : Window
             if (_animateNavigationPending)
             {
                 _animateNavigationPending = false;
-                _ = GuiMotion.RevealAsync(FileContentGrid, 6);
+                // A short content fade keeps the chrome still and avoids travel/overshoot.
+                var duration = list.TryFindResource("MotionDurationFast", out var value) && value is TimeSpan configured
+                    ? configured : TimeSpan.FromMilliseconds(100);
+                _ = GuiMotion.RevealAsync(list, default(Point), duration);
             }
             tab.SetViewport(visible, nearby);
             tab.CurrentSession.Performance.Count("Realized containers sampled", list.GetRealizedContainers().Count());
@@ -241,6 +246,7 @@ public partial class FilesWindow : Window
         if (string.IsNullOrEmpty(currentPath))
             return;
 
+        var comparison = OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
         var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var home = userProfile;
         var desktop = UserDirectoryPaths.Current["Desktop"];
@@ -257,22 +263,25 @@ public partial class FilesWindow : Window
             var tag = btn.Tag as string;
             var isActive = tag switch
             {
-                "home" => string.Equals(currentPath, home, StringComparison.OrdinalIgnoreCase),
-                "desktop" => string.Equals(currentPath, desktop, StringComparison.OrdinalIgnoreCase),
-                "documents" => string.Equals(currentPath, documents, StringComparison.OrdinalIgnoreCase),
-                "downloads" => string.Equals(currentPath, downloads, StringComparison.OrdinalIgnoreCase),
-                "pictures" => string.Equals(currentPath, pictures, StringComparison.OrdinalIgnoreCase),
-                "videos" => string.Equals(currentPath, videos, StringComparison.OrdinalIgnoreCase),
-                "music" => string.Equals(currentPath, music, StringComparison.OrdinalIgnoreCase),
+                "home" => string.Equals(currentPath, home, comparison),
+                "desktop" => string.Equals(currentPath, desktop, comparison),
+                "documents" => string.Equals(currentPath, documents, comparison),
+                "downloads" => string.Equals(currentPath, downloads, comparison),
+                "pictures" => string.Equals(currentPath, pictures, comparison),
+                "videos" => string.Equals(currentPath, videos, comparison),
+                "music" => string.Equals(currentPath, music, comparison),
                 "trash" => string.Equals(currentPath, trash, StringComparison.Ordinal) || currentPath.StartsWith(trash + Path.DirectorySeparatorChar, StringComparison.Ordinal),
-                _ => !string.IsNullOrEmpty(tag) && string.Equals(currentPath, tag, StringComparison.OrdinalIgnoreCase)
+                _ => !string.IsNullOrEmpty(tag) && string.Equals(currentPath, tag, comparison)
             };
             btn.Classes.Set("Active", isActive);
+            if (btn.GetVisualAncestors().OfType<Border>().FirstOrDefault(border => border.Classes.Contains("PinnedLocationRow")) is { } pinnedRow)
+                pinnedRow.Classes.Set("Active", isActive);
         }
     }
 
     private void OnAppearanceChanged(object? sender, EventArgs e)
     {
+        Dispatcher.UIThread.Post(UpdateBreadcrumbLayout, DispatcherPriority.Loaded);
         FileVisualResolver.InvalidateAssociations();
         _viewModel.ActiveTab?.SetViewport([]);
         ScheduleVisuals();
@@ -444,8 +453,49 @@ public partial class FilesWindow : Window
         }
     }
 
+    private void UpdateBreadcrumbLayout()
+    {
+        if (_viewModel.ActiveTab is not { } tab || tab.Breadcrumbs.Count == 0 || BreadcrumbItems.Bounds.Width <= 0) return;
+        var available = BreadcrumbItems.Bounds.Width;
+        var maximum = Math.Clamp(available, 24, 150);
+        if (!Resources.TryGetValue("FilesBreadcrumbMaxWidth", out var current) || !Equals(current, maximum))
+            Resources["FilesBreadcrumbMaxWidth"] = maximum;
+        var family = this.FindResource("ShellFontFamily") as Avalonia.Media.FontFamily ?? Avalonia.Media.FontFamily.Default;
+        var size = this.FindResource("TypeSizeBodySmall") is double configured ? configured : 13;
+        double Width(BreadcrumbSegment segment)
+        {
+            using var text = new Avalonia.Media.TextFormatting.TextLayout(segment.Name, new Avalonia.Media.Typeface(family), size,
+                fontFeatures: DaisyOS.Shell.Services.Theming.TypographyPolicy.ProportionalNumerals);
+            return Math.Min(maximum, text.WidthIncludingTrailingWhitespace + 16);
+        }
+        var used = Width(tab.Breadcrumbs[^1]);
+        var count = 1;
+        for (var index = tab.Breadcrumbs.Count - 2; index >= 0; index--)
+        {
+            var proposed = used + Width(tab.Breadcrumbs[index]) + 16;
+            if (proposed + (index > 0 ? 40 : 0) > available) break;
+            used = proposed;
+            count++;
+        }
+        tab.SetVisibleBreadcrumbs(count, count < tab.Breadcrumbs.Count && used + 40 <= available);
+    }
+
     private void OnBreadcrumbClicked(object? sender, RoutedEventArgs e)
     {
+        if (sender is Button { DataContext: BreadcrumbSegment { IsOverflow: true } } overflow && _viewModel.ActiveTab is { } tab)
+        {
+            var visiblePaths = tab.VisibleBreadcrumbs.Where(segment => !segment.IsOverflow).Select(segment => segment.Path).ToHashSet(StringComparer.Ordinal);
+            var menu = new ContextMenu();
+            foreach (var segment in tab.Breadcrumbs.Where(segment => !visiblePaths.Contains(segment.Path)))
+            {
+                var item = new MenuItem { Header = segment.Name };
+                item.Click += async (_, _) => await tab.NavigateToAsync(segment.Path);
+                menu.Items.Add(item);
+            }
+            overflow.ContextMenu = menu;
+            menu.Open(overflow);
+            return;
+        }
         if (sender is Button btn && btn.Tag is string path && _viewModel.ActiveTab != null)
         {
             _ = _viewModel.ActiveTab.NavigateToAsync(path);
@@ -545,6 +595,15 @@ public partial class FilesWindow : Window
         {
             _viewModel.ActiveTab.SetGridViewFromUser(!_viewModel.ActiveTab.IsGridView);
         }
+    }
+
+    private async void OnEmptyStateActionClicked(object? sender, RoutedEventArgs e)
+    {
+        if (_viewModel.ActiveTab is not { } tab) return;
+        if (tab.HasLoadError) await tab.NavigateToAsync(tab.CurrentPath, addHistory: false);
+        else if (tab.HasSearchQuery) OnClearSearchClicked(sender, e);
+        else if (tab.HasHiddenEntriesOnly) tab.ShowHiddenFiles = true;
+        else OnNewFolderClicked(sender, e);
     }
 
     private void OnTogglePreviewPaneClicked(object? sender, RoutedEventArgs e) => _viewModel.TogglePreviewPane();

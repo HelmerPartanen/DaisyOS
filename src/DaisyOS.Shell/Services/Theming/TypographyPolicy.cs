@@ -8,6 +8,9 @@ namespace DaisyOS.Shell.Services.Theming;
 /// <summary>Integer type sizes and font-measured line/control heights shared by every app.</summary>
 public static class TypographyPolicy
 {
+    // Request proportional alternates explicitly; some UI fonts default to tabular digits.
+    public static FontFeatureCollection ProportionalNumerals { get; } = FontFeatureCollection.Parse("tnum=0,pnum=1");
+
     public const string DefaultFamilyName = "Atkinson Hyperlegible";
     public const string BundledDefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible";
 

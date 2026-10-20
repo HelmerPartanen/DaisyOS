@@ -29,6 +29,7 @@ internal static class FileDragPreview
             MaxLineCount = 1,
             Trimming = TextTrimming.CharacterEllipsis
         };
+        text.SetFontFeatures(DaisyOS.Shell.Services.Theming.TypographyPolicy.ProportionalNumerals);
         var width = Math.Ceiling(text.Width) + 46;
         var bitmap = new RenderTargetBitmap(new PixelSize((int)Math.Ceiling((width + 12) * scale),
             (int)Math.Ceiling(42 * scale)), new Vector(96 * scale, 96 * scale));

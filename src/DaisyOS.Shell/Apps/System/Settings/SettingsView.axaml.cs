@@ -96,6 +96,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Ethernet", "ETHERNET", "Ethernet", "Wired connection status", "ethernet wired lan network cable internet"),
             new("Bluetooth", "BLUETOOTH", "Bluetooth", "Devices, pairing, and discoverability", "bluetooth headset controller devices"),
             new("Appearance", "", "Theme", "Light, dark, and automatic appearance", "dark light theme mode appearance"),
+            new("Appearance", "", "Taskbar size", "Minimum, default or maximum", "taskbar dock size height scale"),
             new("Appearance", "", "Taskbar and systembar", "Always visible or auto-hide", "taskbar systembar system bar dock auto-hide maximize fullscreen"),
             new("Appearance", "", "Profile picture", "Shown in the launcher and on the lock screen.", "profile avatar account user photo picture"),
             new("Appearance", "", "Wallpaper", "Desktop picture or video wallpaper", "wallpaper background picture video live"),
@@ -2519,6 +2520,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 "Profile picture" => ChooseProfilePictureButton,
                 "Theme" => ThemeModePicker,
+                "Taskbar size" => TaskbarSizeSlider,
                 "Taskbar and systembar" => TaskbarVisibilityPicker,
                 "Wallpaper" => WallpaperTypePicker,
                 "Accent color" => AccentDefaultButton,
@@ -3071,6 +3073,12 @@ namespace DaisyOS.Shell.Apps.System.Settings
             }
         }
 
+        private async void OnTaskbarSizeChanged(object? sender, EventArgs e)
+        {
+            if (_isRefreshingAppearanceControls || sender is not QuickSettingsSlider { IsLoaded: true } slider || Application.Current is not App app) return;
+            await app.SetTaskbarSizeAsync((int)Math.Round(slider.Value));
+        }
+
         private async void OnTaskbarVisibilitySelectionChanged(object? sender, SelectionChangedEventArgs e)
         {
             if (_isRefreshingAppearanceControls || TaskbarVisibilityPicker.SelectedItem is not ComboBoxItem { Tag: string value } || Application.Current is not App app)
@@ -3211,6 +3219,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             AutomaticThemeInfo.Text = app.GetAutomaticThemeScheduleDescription();
             HighContrastToggle.IsChecked = app.HighContrastEnabled;
             ReduceMotionToggle.IsChecked = app.ReduceMotionEnabled;
+            TaskbarSizeSlider.Value = app.CurrentTaskbarSize;
             SelectComboByTag(TaskbarVisibilityPicker, app.TaskbarAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(SystemBarVisibilityPicker, app.SystemBarAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(MediaWidgetVisibilityPicker, app.MediaWidgetAutoHideEnabled ? "AutoHide" : "Always");

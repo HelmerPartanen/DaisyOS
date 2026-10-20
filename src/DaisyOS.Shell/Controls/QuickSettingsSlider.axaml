@@ -8,7 +8,7 @@
              Height="40">
   <Grid x:Name="RangeSurface" ColumnDefinitions="Auto,*">
     
-    <controls:DaisyIcon Icon="{Binding Icon, ElementName=Root}"
+    <controls:DaisyIcon IsVisible="{Binding ShowIcon, ElementName=Root}" Icon="{Binding Icon, ElementName=Root}"
                         Size="{DynamicResource IconSizeMedium}"
                         Foreground="{DynamicResource ContentPrimaryBrush}"
                         Margin="12,0,12,0"
@@ -32,6 +32,10 @@
                 HorizontalAlignment="Left" />
       </Border>
       
+      <Canvas x:Name="TickMarks" Height="4" Margin="12,0" VerticalAlignment="Center"
+              IsHitTestVisible="False" IsVisible="{Binding ShowTicks, ElementName=Root}">
+        <Canvas.RenderTransform><TranslateTransform Y="14" /></Canvas.RenderTransform>
+      </Canvas>
       <Border x:Name="ProgressThumb"
               Width="24" Height="16"
               Background="{DynamicResource ContentOnActionBrush}"

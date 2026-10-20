@@ -93,13 +93,13 @@ public sealed class BottomChromeTooltips : Canvas
         if (ToolTip.GetTip(owner) is not string { Length: > 0 } text) { Dismiss(); return; }
         var top = TopLevel.GetTopLevel(owner);
         if (top is null || top.Bounds.Width <= 0) return;
-        var point = owner.TranslatePoint(default, top);
+        var point = owner.TranslatePoint(new Point(owner.Bounds.Width / 2, 0), top);
         if (point is null) return;
         _label.Text = text;
         _card.IsVisible = true;
         _card.Measure(new Size(Math.Max(0, Bounds.Width - 16), double.PositiveInfinity));
         var size = _card.DesiredSize;
-        var center = (point.Value.X + owner.Bounds.Width / 2) / top.Bounds.Width * Bounds.Width;
+        var center = point.Value.X / top.Bounds.Width * Bounds.Width;
         SetLeft(_card, Math.Clamp(center - size.Width / 2, 8, Math.Max(8, Bounds.Width - size.Width - 8)));
         // The reserved strip includes the 3px clearance above the 52px taskbar frame.
         SetTop(_card, Bounds.Height - ShellSurfacePlan.PrimaryPanelExclusiveZone - size.Height);

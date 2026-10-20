@@ -17,6 +17,7 @@ public sealed class FileEntryViewModel : INotifyPropertyChanged
     private bool _isRenaming;
     private string _name = string.Empty;
     private string _displayName = string.Empty;
+    private string _presentationName = string.Empty;
     private string _lastWriteDisplay = string.Empty;
     private string _sizeDisplay = string.Empty;
     private long _visualVersion;
@@ -39,7 +40,9 @@ public sealed class FileEntryViewModel : INotifyPropertyChanged
         {
             if (SetProperty(ref _name, value))
             {
-                _displayName = AbbreviateFileName(GetPresentationName(value));
+                _presentationName = GetPresentationName(value);
+                _displayName = AbbreviateFileName(_presentationName);
+                RaisePropertyChanged(nameof(PresentationName));
                 RaisePropertyChanged(nameof(DisplayName));
             }
         }
@@ -50,6 +53,7 @@ public sealed class FileEntryViewModel : INotifyPropertyChanged
     /// changing the on-disk file name or the rename workflow.
     /// </summary>
     public string DisplayName => _displayName;
+    public string PresentationName => _presentationName;
 
     public bool IsSelected
     {

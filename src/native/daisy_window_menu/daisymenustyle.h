@@ -3,6 +3,8 @@
 #include <QProxyStyle>
 #include <QColor>
 #include <QFont>
+#include <QHash>
+#include <QPixmap>
 
 // Native counterpart of DropdownMenuStyles.axaml. Only QMenu is styled;
 // KWin retains its actions, enabled/check states, shortcuts and target window.
@@ -10,6 +12,8 @@ class DaisyMenuStyle final : public QProxyStyle {
 public:
     explicit DaisyMenuStyle(const QString &configFile, QObject *parent = nullptr);
     void reload();
+    qreal cornerRadius() const { return m_radius; }
+    QColor surfaceColor() const { return m_surface; }
     void polish(QWidget *widget) override;
     void drawPrimitive(PrimitiveElement, const QStyleOption *, QPainter *, const QWidget *) const override;
     void drawControl(ControlElement, const QStyleOption *, QPainter *, const QWidget *) const override;
@@ -17,6 +21,7 @@ public:
     int pixelMetric(PixelMetric, const QStyleOption * = nullptr, const QWidget * = nullptr) const override;
     int styleHint(StyleHint, const QStyleOption * = nullptr, const QWidget * = nullptr, QStyleHintReturn * = nullptr) const override;
 private:
+    mutable QHash<QString, QPixmap> m_icons;
     QString m_configFile;
     QColor m_surface, m_outer, m_inner, m_text, m_secondary, m_disabled, m_hover, m_pressed, m_separator;
     QFont m_font;

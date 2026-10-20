@@ -527,6 +527,7 @@ FocusScope {
                                     color: tile.selected
                                         ? (effect.configuration.ContentPrimary || "#fff5f5f7")
                                         : (effect.configuration.ContentDisabled || "#ff98989f")
+                                    font.features: ({ "tnum": 0, "pnum": 1 })
                                     font.family: root.titleFontFamily
                                     font.pixelSize: root.titleFontPixels
                                     font.weight: Font.Medium
@@ -623,6 +624,7 @@ FocusScope {
                 anchors.centerIn: parent
                 text: "No active windows"
                 color: effect.configuration.ContentDisabled || "#ff98989f"
+                font.features: ({ "tnum": 0, "pnum": 1 })
                 font.family: root.titleFontFamily
                 font.pixelSize: Math.max(11, root.titleFontPixels + 1)
                 font.weight: Font.Medium

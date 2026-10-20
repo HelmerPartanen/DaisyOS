@@ -103,11 +103,10 @@ public sealed class WindowDecorationThemeService
         }
 
         // KWin's native QMenus use the same semantic menu contract as Avalonia.
-        // Native compositor widgets use an opaque material base; their text and
-        // frames must remain readable without a layer-shell blur surface.
+        // Preserve the semantic brush opacity; KWin blurs behind native menu windows.
         var menuValues = new (string Key, string Value)[]
         {
-            ("Surface", ToArgb(Opaque(ResolveColor(application, theme, "ContextMenuBackgroundBrush", "ContextMenuBackgroundColor", "#FF212121")))),
+            ("Surface", ToArgb(ResolveMenuSurface(application, theme))),
             ("FrameOuter", ToArgb(ResolveColor(application, theme, "ShellFrameOuterEdgeBrush", "ShellFrameOuterEdgeColor", "#99000000"))),
             ("FrameInner", ToArgb(ResolveColor(application, theme, "ShellFrameInnerHighlightBrush", "ShellFrameInnerHighlightColor", "#14FFFFFF"))),
             ("ContentPrimary", ToArgb(ResolveColor(application, theme, "ContentPrimaryBrush", "ContentPrimaryColor", "#FFFFFFFF"))),
@@ -176,6 +175,14 @@ public sealed class WindowDecorationThemeService
             new("ActiveSecondOutlineAlpha", inner.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
             new("InactiveSecondOutlineAlpha", inner.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture))
         ];
+    }
+
+    private static Color ResolveMenuSurface(Application application, ThemeVariant? theme)
+    {
+        var color = ResolveColor(application, theme, "ContextMenuBackgroundBrush", "ContextMenuBackgroundColor", "#FF212121");
+        var opacity = application.TryGetResource("ContextMenuBackgroundBrush", theme, out var value) && value is ISolidColorBrush brush
+            ? brush.Opacity : 0.6;
+        return Color.FromArgb((byte)Math.Round(color.A * Math.Clamp(opacity, 0, 1)), color.R, color.G, color.B);
     }
 
     private static Color ResolveColor(Application application, ThemeVariant? theme, string brushKey, string colorKey, string fallback)

@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 #include "daisymenustyle.h"
 #include <effect/effect.h>
+#include <options.h>
+#include <core/region.h>
+#include <QWindow>
+#include <QPainterPath>
+#include <QAction>
 #include <QApplication>
 #include <QDBusConnection>
 #include <QDir>
@@ -45,8 +50,12 @@ public:
             for (const auto &menu : std::as_const(m_menus)) {
                 if (!menu) continue;
                 m_style->polish(menu);
+                QEvent changed(QEvent::StyleChange);
+                QCoreApplication::sendEvent(menu, &changed);
                 menu->updateGeometry();
+                if (menu->isVisible()) menu->adjustSize();
                 menu->update();
+                updateBlur(menu);
             }
         });
         QDBusConnection::sessionBus().registerObject(QStringLiteral("/org/daisyos/WindowMenus"), this, QDBusConnection::ExportAllSlots);
@@ -58,6 +67,7 @@ public:
         for (const auto &menu : std::as_const(m_menus)) {
             if (!menu) continue;
             menu->close();
+            if (menu->windowHandle()) menu->windowHandle()->setProperty("kwin_blur", QVariant());
             menu->setStyle(nullptr);
             menu->setProperty("daisyosWindowMenu", QVariant());
         }
@@ -65,13 +75,50 @@ public:
     bool isActive() const override { return false; } // Never inhibits direct scanout.
     bool eventFilter(QObject *object, QEvent *event) override
     {
-        if (event->type() == QEvent::Polish || event->type() == QEvent::Show) {
-            if (auto *menu = qobject_cast<QMenu *>(object)) styleMenu(menu);
+        if (event->type() == QEvent::Polish || event->type() == QEvent::Show || event->type() == QEvent::Resize || event->type() == QEvent::WinIdChange) {
+            if (auto *menu = qobject_cast<QMenu *>(object)) {
+                styleMenu(menu);
+                QTimer::singleShot(0, this, [this, menu = QPointer<QMenu>(menu)] { if (menu) updateBlur(menu); });
+            }
         }
         return false; // KWin keeps all keyboard, pointer, focus and dismissal handling.
     }
+    void updateBlur(QMenu *menu)
+    {
+        if (!menu->windowHandle() || menu->size().isEmpty()) return;
+        QPainterPath shape;
+        shape.addRoundedRect(QRectF(QPointF(), menu->size()), m_style->cornerRadius(), m_style->cornerRadius());
+        // KWin's internal Qt windows consume RegionF through this property.
+        const RegionF region(QRegion(shape.toFillPolygon().toPolygon()));
+        menu->windowHandle()->setProperty("kwin_blur", QVariant::fromValue(region));
+        menu->setProperty("daisyosBlurRequested", true);
+    }
     void styleMenu(QMenu *menu)
     {
+        for (auto *action : menu->actions()) {
+            QString asset;
+            if (action->data().isValid()) {
+                // Use KWin's operation IDs, never localized text or icon-theme availability.
+                switch (static_cast<Options::WindowOperation>(action->data().toInt())) {
+                case Options::MaximizeOp: asset = "Maximize"; break;
+                case Options::UntileOrRestoreOp: asset = "arrow-shrink"; break;
+                case Options::MinimizeOp: asset = "Minimize"; break;
+                case Options::MoveOp: case Options::UnrestrictedMoveOp: asset = "drag-drop"; break;
+                case Options::ResizeOp: case Options::UnrestrictedResizeOp: asset = "arrow-expand"; break;
+                case Options::CloseOp: asset = "cancel-01"; break;
+                case Options::OnAllDesktopsOp: asset = "square-stack"; break;
+                case Options::KeepAboveOp: asset = "arrow-up-02"; break;
+                case Options::KeepBelowOp: asset = "arrow-down-02"; break;
+                case Options::FullScreenOp: asset = "full-screen"; break;
+                case Options::NoBorderOp: asset = "square-dashed"; break;
+                case Options::ExcludeFromCaptureOp: asset = "view-off"; break;
+                case Options::SetupWindowShortcutOp: asset = "keyboard"; break;
+                case Options::WindowRulesOp: case Options::ApplicationRulesOp: asset = "settings-01"; break;
+                default: break;
+                }
+            }
+            if (!asset.isEmpty()) action->setProperty("daisyosMenuIcon", asset);
+        }
         if (menu->property("daisyosWindowMenu").toBool()) return;
         menu->setProperty("daisyosWindowMenu", true);
         m_menus.append(menu);
@@ -88,9 +135,10 @@ public Q_SLOTS:
             ++styled;
             if (menu->isVisible()) visible.append(QJsonObject{
                 {"style", menu->style()->objectName()}, {"font", menu->font().family()},
-                {"x", menu->x()}, {"y", menu->y()}, {"width", menu->width()}, {"height", menu->height()}});
+                {"blurRequested", menu->property("daisyosBlurRequested").toBool()},
+                {"surfaceAlpha", m_style->surfaceColor().alpha()}, {"x", menu->x()}, {"y", menu->y()}, {"width", menu->width()}, {"height", menu->height()}});
         }
-        return QString::fromUtf8(QJsonDocument(QJsonObject{{"styledMenus", styled}, {"visible", visible}}).toJson(QJsonDocument::Compact));
+        return QString::fromUtf8(QJsonDocument(QJsonObject{{"rendererRevision", 4}, {"styledMenus", styled}, {"visible", visible}}).toJson(QJsonDocument::Compact));
     }
 };
 KWIN_EFFECT_FACTORY_SUPPORTED(DaisyWindowMenus, "metadata.json", return qobject_cast<QApplication *>(QCoreApplication::instance());)

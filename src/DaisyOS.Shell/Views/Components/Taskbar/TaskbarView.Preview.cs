@@ -82,6 +82,9 @@ public partial class TaskbarView
         // Wayland has no global client coordinates. The native panel is anchored
         // to the output bottom; KWin resolves these surface-relative bounds.
         var local = button.TranslatePoint(default, top) ?? default;
+        var far = button.TranslatePoint(new Point(button.Bounds.Width, button.Bounds.Height), top) ?? local;
+        var renderedWidth = far.X - local.X;
+        var renderedHeight = far.Y - local.Y;
         if (IsNativePanelHosted && (top.Bounds.Width <= 0 || top.Bounds.Height <= 0)) return;
         string Color(string key, string fallback) => this.TryFindResource(key, ActualThemeVariant, out var value)
             && value is ISolidColorBrush brush ? brush.Color.ToString() : fallback;
@@ -89,8 +92,8 @@ public partial class TaskbarView
             windows.Select(w => w.Id).ToArray(),
             IsNativePanelHosted ? local.X / top.Bounds.Width : (origin.X - screen.Bounds.X) / (double)screen.Bounds.Width,
             IsNativePanelHosted ? local.Y / top.Bounds.Height : (origin.Y - screen.Bounds.Y) / (double)screen.Bounds.Height,
-            IsNativePanelHosted ? button.Bounds.Width / top.Bounds.Width : button.Bounds.Width * scaling / screen.Bounds.Width,
-            IsNativePanelHosted ? button.Bounds.Height / top.Bounds.Height : button.Bounds.Height * scaling / screen.Bounds.Height,
+            IsNativePanelHosted ? renderedWidth / top.Bounds.Width : renderedWidth * scaling / screen.Bounds.Width,
+            IsNativePanelHosted ? renderedHeight / top.Bounds.Height : renderedHeight * scaling / screen.Bounds.Height,
             Color("SurfaceBaseSolidBrush", "#ff181818"), Color("SurfaceRaisedSubtleBrush", "#ff252525"),
             Color("ContentPrimaryBrush", "#fff5f5f7"), Color("StrokeDefaultBrush", "#ff444444"),
             Color("StateHoverBrush", "#20ffffff"), Color("ActionDangerHoverBrush", "#ffb8212c"),

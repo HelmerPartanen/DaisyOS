@@ -6258,4 +6258,33 @@ Used by: DaisyLaunch</comment>
     <value>Asemaa ei voitu avata</value>
     <comment>Source: Couldn’t open drive</comment>
   </data>
+  <data name="Loc_7EAA329A4009" xml:space="preserve">
+    <value>Ei vastaavia tiedostoja</value>
+    <comment>Source: No matching files
+Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
+  </data>
+  <data name="Loc_FECDE0307FE4" xml:space="preserve">
+    <value>Kokeile toista hakua tai tyhjennä suodatin.</value>
+    <comment>Source: Try a different search or clear the filter.
+Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
+  </data>
+  <data name="Loc_52A78027BDD9" xml:space="preserve">
+    <value>Roskakori on tyhjä</value>
+    <comment>Source: Trash is empty
+Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
+  </data>
+  <data name="Loc_EC5601FE33B2" xml:space="preserve">
+    <value>Ei näkyviä tiedostoja</value>
+    <comment>Source: No visible files
+Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
+  </data>
+  <data name="Loc_2E8B87AA7C8E" xml:space="preserve">
+    <value>Näet kansion sisällön näyttämällä piilotetut tiedostot.</value>
+    <comment>Source: Show hidden files to see the items in this folder.
+Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
+  </data>
+  <data name="Loc_86C9A2D06EFC" xml:space="preserve"><value>Tehtäväpalkin koko</value><comment>Source: Taskbar size</comment></data>
+  <data name="Loc_735BEEE2E390" xml:space="preserve"><value>Pienin</value><comment>Source: Minimum</comment></data>
+  <data name="Loc_66C9AB177708" xml:space="preserve"><value>Suurin</value><comment>Source: Maximum</comment></data>
+  <data name="Loc_31315D9BDE97" xml:space="preserve"><value>Pienin, oletus tai suurin</value><comment>Source: Minimum, default or maximum</comment></data>
 </root>

@@ -20,11 +20,15 @@
     PointerPressed="OnWindowPointerPressed"
     KeyDown="OnWindowKeyDown">
 
+  <Window.Resources>
+    <x:Double x:Key="FilesBreadcrumbMaxWidth">150</x:Double>
+  </Window.Resources>
+
   <Window.Styles>
     <Style Selector="Button.FilesBreadcrumb">
       <Setter Property="Height" Value="28" />
       <Setter Property="MinWidth" Value="0" />
-      <Setter Property="MaxWidth" Value="150" />
+      <Setter Property="MaxWidth" Value="{DynamicResource FilesBreadcrumbMaxWidth}" />
       <Setter Property="Padding" Value="8,0" />
       <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlInner}" />
       <Setter Property="Background" Value="Transparent" />
@@ -70,6 +74,11 @@
       <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
     </Style>
     <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
+    <!-- Match sidebar destinations to the file-list rows, including text scaling. -->
+    <Style Selector="Button.SettingsNavItem">
+      <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    </Style>
     <Style Selector="Button.SettingsNavItem.DragOver /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
     </Style>
@@ -77,8 +86,8 @@
          the row while the trailing unpin action receives its own hover layer
          without looking like a detached sibling button. -->
     <Style Selector="Border.PinnedLocationRow">
-      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="ClipToBounds" Value="True" />
     </Style>
@@ -90,10 +99,16 @@
     <Style Selector="Border.PinnedLocationRow:pointerover">
       <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
     </Style>
+    <Style Selector="Border.PinnedLocationRow.Active">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+    </Style>
+    <Style Selector="Border.PinnedLocationRow.Active:pointerover">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
     <Style Selector="Button.PinnedLocationBody">
-      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
+      <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
       <Setter Property="Padding" Value="10,0,46,0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
       <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="Button.PinnedLocationBody /template/ ContentPresenter#PART_ContentPresenter">
@@ -340,7 +355,7 @@
               </StackPanel>
             </ScrollViewer>
               </Border>
-            <Grid Grid.Column="1" x:Name="ContentLayout" RowDefinitions="44,60,*,28" Background="{DynamicResource SurfaceBaseSolidBrush}">
+            <Grid Grid.Column="1" x:Name="ContentLayout" RowDefinitions="44,Auto,*,Auto" Background="{DynamicResource SurfaceBaseSolidBrush}">
 
               <!-- ROW 0: TABS AREA & WINDOW CONTROLS -->
               <Panel x:Name="TabRow"
@@ -487,10 +502,10 @@
                              VerticalAlignment="Center"
                              Margin="2,0,0,0"/>
                              
-                  <ItemsControl Grid.Column="1"
-                                ItemsSource="{Binding ActiveTab.Breadcrumbs}"
+                  <ItemsControl x:Name="BreadcrumbItems" Grid.Column="1"
+                                ItemsSource="{Binding ActiveTab.VisibleBreadcrumbs}"
                                 IsVisible="{Binding !#PathBox.IsVisible}"
-                                HorizontalAlignment="Left"
+                                HorizontalAlignment="Stretch"
                                 VerticalAlignment="Center"
                                 Height="32">
                     <ItemsControl.ItemsPanel>
@@ -509,7 +524,7 @@
                                    HorizontalAlignment="Center"/>
                         <Button Classes="FilesBreadcrumb"
                                 Classes.Current="{Binding IsCurrent}"
-                                Tag="{Binding Path}"
+                                Tag="{Binding Path}" ToolTip.Tip="{Binding Path}"
                                 Click="OnBreadcrumbClicked">
                           <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" FontSize="{DynamicResource TypeSizeBodySmall}" VerticalAlignment="Center"/>
                         </Button>
@@ -584,10 +599,10 @@
               <Grid Grid.Column="0">
 
               <!-- VIEW MODE 1: DETAILS LIST VIEW -->
-              <Grid RowDefinitions="40,*" IsVisible="{Binding !ActiveTab.IsGridView}">
+              <Grid RowDefinitions="Auto,*" IsVisible="{Binding !ActiveTab.IsGridView}">
 
                 <!-- Table Header Bar -->
-                <Panel Grid.Row="0" Background="Transparent">
+                <Panel Grid.Row="0" MinHeight="{DynamicResource InputHeightStandard}" Background="Transparent">
                   <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="16,0" VerticalAlignment="Center">
                     <Button Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortByName}" Click="OnSortNameClicked">
                       <TextBlock Text="{DynamicResource Loc_DCD1D5223F73}" FontSize="{DynamicResource TypeSizeCaption}"/>
@@ -647,7 +662,7 @@
                               DragDrop.DragOver="OnFolderDragOver"
                               DragDrop.DragLeave="OnFolderDragLeave"
                               DragDrop.Drop="OnFolderDrop"
-                              Height="40"
+                              Height="{DynamicResource InputHeightStandard}"
                               Padding="12,0"
                               CornerRadius="{DynamicResource RoundedSM}"
                               Background="Transparent"
@@ -724,11 +739,11 @@
                               </Grid>
                             </Border>
                             <TextBlock Grid.Column="1"
-                                       Text="{Binding DisplayName}"
+                                       Text="{Binding PresentationName}" ToolTip.Tip="{Binding PresentationName}"
                                        FontSize="{DynamicResource TypeSizeBodySmall}"
                                        Foreground="{DynamicResource ContentPrimaryBrush}"
                                        VerticalAlignment="Center"
-                                       TextTrimming="CharacterEllipsis"
+                                       TextTrimming="PrefixCharacterEllipsis"
                                        IsVisible="{Binding !IsRenaming}"/>
                             <TextBox Grid.Column="1"
                                      Classes="RenameBox"
@@ -743,7 +758,7 @@
 
                           <!-- Date Modified -->
                           <TextBlock Grid.Column="1"
-                                     Text="{Binding LastWriteTimeDisplay}"
+                                     Text="{Binding LastWriteTimeDisplay}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding LastWriteTimeDisplay}"
                                      Width="160"
                                      FontSize="{DynamicResource TypeSizeCaption}"
                                      Foreground="{DynamicResource ContentSecondaryBrush}"
@@ -752,7 +767,7 @@
 
                           <!-- Type -->
                           <TextBlock Grid.Column="2"
-                                     Text="{Binding DisplayType}"
+                                     Text="{Binding DisplayType}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DisplayType}"
                                      Width="120"
                                      FontSize="{DynamicResource TypeSizeCaption}"
                                      Foreground="{DynamicResource ContentSecondaryBrush}"
@@ -761,7 +776,7 @@
 
                           <!-- Size -->
                           <TextBlock Grid.Column="3"
-                                     Text="{Binding DisplaySize}"
+                                     Text="{Binding DisplaySize}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding DisplaySize}"
                                      Width="80"
                                      FontSize="{DynamicResource TypeSizeCaption}"
                                      Foreground="{DynamicResource ContentSecondaryBrush}"
@@ -903,7 +918,7 @@
                                                 HorizontalAlignment="Center" VerticalAlignment="Center"/>
                           </Grid>
                         </Border>
-                        <TextBlock Text="{Binding DisplayName}"
+                        <TextBlock Text="{Binding PresentationName}" ToolTip.Tip="{Binding PresentationName}"
                                    FontSize="{DynamicResource TypeSizeCaption}"
                                    Foreground="{DynamicResource ContentPrimaryBrush}"
                                    HorizontalAlignment="Center"
@@ -928,19 +943,18 @@
               </ListBox>
 
                 <files:FilesRenderProbe Tab="{Binding ActiveTab}" />
-                <Border IsVisible="{Binding ActiveTab.ShowSkeleton}" IsHitTestVisible="False"
-                        Background="{DynamicResource SurfaceBaseSolidBrush}" Padding="{DynamicResource SpaceInset6}" ClipToBounds="True">
-                  <controls:SkeletonLoader />
-                </Border>
 
                 <StackPanel IsVisible="{Binding ActiveTab.IsEmpty}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="10">
-                  <controls:DaisyIcon Icon="folder-open" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Center"/>
-                  <TextBlock Text="{DynamicResource Loc_3043F9FA4D31}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                  <Button Classes="ShellButton" Click="OnNewFolderClicked" HorizontalAlignment="Center" Padding="10,6">
-                    <StackPanel Orientation="Horizontal" Spacing="6"><controls:DaisyIcon Icon="folder-plus" Size="{DynamicResource IconSizeStandard}"/><TextBlock Text="{DynamicResource Loc_82B9E1EF0B40}"/></StackPanel>
+                  <controls:DaisyIcon Icon="{Binding ActiveTab.EmptyIcon}" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Center"/>
+                  <TextBlock x:Name="EmptyStateTitle" Text="{Binding ActiveTab.EmptyTitle}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                  <TextBlock Text="{Binding ActiveTab.EmptyMessage}" IsVisible="{Binding ActiveTab.HasEmptyMessage}"
+                             MaxWidth="300" TextWrapping="Wrap" TextAlignment="Center"
+                             Foreground="{DynamicResource ContentSecondaryBrush}"/>
+                  <Button x:Name="EmptyStateAction" Classes="ShellButton" Click="OnEmptyStateActionClicked" IsVisible="{Binding ActiveTab.HasEmptyAction}" HorizontalAlignment="Center" Padding="10,6">
+                    <StackPanel Orientation="Horizontal" Spacing="6"><controls:DaisyIcon Icon="{Binding ActiveTab.EmptyActionIcon}" Size="{DynamicResource IconSizeStandard}"/><TextBlock Text="{Binding ActiveTab.EmptyActionLabel}"/></StackPanel>
                   </Button>
                 </StackPanel>
               </Grid>
@@ -980,30 +994,30 @@
           </Grid>
 
           <!-- ROW 3: BOTTOM STATUS BAR -->
-          <Panel Grid.Row="3" Background="{DynamicResource SurfaceBaseSolidBrush}">
+          <Panel Grid.Row="3" MinHeight="{DynamicResource ControlHeightStandard}" Background="{DynamicResource SurfaceBaseSolidBrush}">
             <!-- Divider above Status Bar -->
             <Rectangle VerticalAlignment="Top" Height="1" Fill="{DynamicResource StrokeSubtleBrush}" />
 
             <Grid Margin="14,0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10" VerticalAlignment="Center">
-              <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-                <TextBlock Text="{Binding ActiveTab.StatusText}"
+              <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+                <TextBlock Text="{Binding ActiveTab.StatusText}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ActiveTab.StatusText}"
                          FontSize="{DynamicResource TypeSizeCaption}"
                          Foreground="{DynamicResource ContentSecondaryBrush}"
                          VerticalAlignment="Center"/>
                 <!-- Only shown once idle; while an operation is running the
                      progress column to the right owns this text instead, so
                      the same message no longer appears twice at once. -->
-                <TextBlock Text="{Binding ActiveTab.OperationStatus}"
+                <TextBlock Grid.Column="1" MaxWidth="220" TextTrimming="CharacterEllipsis" Text="{Binding ActiveTab.OperationStatus}"
                            FontSize="{DynamicResource TypeSizeCaption}"
                            Foreground="{DynamicResource ContentSecondaryBrush}"
                            IsVisible="{Binding ActiveTab.ShowIdleOperationStatus}"/>
-              </StackPanel>
+              </Grid>
               <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" IsVisible="{Binding ActiveTab.IsOperationInProgress}" VerticalAlignment="Center">
                 <ProgressBar Width="72" Height="3" IsIndeterminate="True" />
-                <TextBlock Text="{Binding ActiveTab.OperationStatus}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+                <TextBlock MaxWidth="220" TextTrimming="CharacterEllipsis" Text="{Binding ActiveTab.OperationStatus}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
               </StackPanel>
               <Button Grid.Column="2" Classes="SubtleLink" Content="{DynamicResource Loc_3B7EA51793E9}" Click="OnClearSearchClicked"
-                      ToolTip.Tip="{Binding ActiveTab.SearchQuery}" IsVisible="{Binding ActiveTab.HasSearchQuery}" />
+                      ToolTip.Tip="{Binding ActiveTab.SearchQuery}" IsVisible="{Binding ActiveTab.ShowSearchClearInStatusBar}" />
               <Button Grid.Column="3" Classes="SubtleLink" Content="{DynamicResource Loc_A8283ADE3185}" Click="OnUndoTrashClicked" IsVisible="{Binding ActiveTab.CanUndoTrash}"/>
             </Grid>
           </Panel>

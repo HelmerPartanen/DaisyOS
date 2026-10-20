@@ -1,1 +1,1 @@
-{"KPlugin":{"Id":"daisyos-window-menus-v1","Name":"DaisyOS Window Menus","Description":"DaisyOS native context-menu rendering for all KWin window-menu entry points","License":"GPL-2.0-or-later","EnabledByDefault":false},"org.kde.kwin.effect":{"internal":true}}
+{"KPlugin":{"Id":"daisyos-window-menus-v4","Name":"DaisyOS Window Menus","Description":"DaisyOS native context-menu rendering for all KWin window-menu entry points","License":"GPL-2.0-or-later","EnabledByDefault":false},"org.kde.kwin.effect":{"internal":true}}

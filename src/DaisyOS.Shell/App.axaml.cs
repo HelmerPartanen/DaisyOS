@@ -183,6 +183,8 @@ public partial class App : Application
     public AccentColor CurrentAccentColor => _appearanceSettings.AccentColor;
     public bool HighContrastEnabled => _appearanceSettings.HighContrast;
     public bool ReduceMotionEnabled => _appearanceSettings.ReduceMotion;
+    public int CurrentTaskbarSize => Math.Clamp(_appearanceSettings.TaskbarSize, 0, 2);
+
     public bool TaskbarAutoHideEnabled => _appearanceSettings.TaskbarAutoHide;
     public bool SystemBarAutoHideEnabled => _appearanceSettings.SystemBarAutoHide;
     public bool MediaWidgetAutoHideEnabled => _appearanceSettings.MediaWidgetAutoHide;
@@ -999,6 +1001,23 @@ public partial class App : Application
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }
 
+    public async Task SetTaskbarSizeAsync(int size)
+    {
+        size = Math.Clamp(size, 0, 2);
+        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("taskbar-size", size.ToString()); return; }
+        _appearanceSettings.TaskbarSize = size;
+        ApplyTaskbarSizeResources();
+        await PersistAppearanceAsync();
+        AppearanceChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private void ApplyTaskbarSizeResources()
+    {
+        var height = CurrentTaskbarSize switch { 0 => 44d, 2 => 55d, _ => 52d };
+        Resources["TaskbarScale"] = height / 52d;
+        Resources["TaskbarMenuInset"] = new Thickness(0, 0, 0, height + 3);
+    }
+
     public async Task SetTaskbarAutoHideAsync(bool enabled)
     {
         if (_useDesktopSettings) { await ApplyDesktopSettingAsync("taskbar-auto-hide", enabled.ToString()); return; }
@@ -1118,6 +1137,7 @@ public partial class App : Application
     {
         TypographyPolicy.Apply(Resources, _appearanceSettings.SystemFontFamily, _appearanceSettings.TextScalePercent);
         ApplyProfilePictureResources();
+        ApplyTaskbarSizeResources();
     }
 
     private void ApplyLanguageResources()

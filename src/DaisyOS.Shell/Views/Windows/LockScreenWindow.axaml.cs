@@ -124,6 +124,7 @@ public partial class LockScreenWindow : Window
     {
         var formatted = new FormattedText(value, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
             typeface, fontSize, Brushes.White);
+        formatted.SetFontFeatures(DaisyOS.Shell.Services.Theming.TypographyPolicy.ProportionalNumerals);
         var geometry = formatted.BuildGeometry(default);
         if (geometry is null || geometry.Bounds.Width <= 0 || geometry.Bounds.Height <= 0) return [];
         var bounds = geometry.Bounds;
@@ -273,7 +274,7 @@ public partial class LockScreenWindow : Window
         var size = Math.Min(Resource("TypeSizeDisplayHero", 104) * Math.Clamp(height / 720, 0.75, 1.25),
             Math.Clamp(height * 0.2, 64, 160));
         using var measured = new TextLayout("88:88", new Typeface(ClockText.FontFamily,
-            ClockText.FontStyle, ClockText.FontWeight, ClockText.FontStretch), size);
+            ClockText.FontStyle, ClockText.FontWeight, ClockText.FontStretch), size, fontFeatures: ClockText.FontFeatures);
         if (measured.Width > width && measured.Width > 0) size *= width / measured.Width;
         ClockText.FontSize = PreviousClockText.FontSize = Math.Max(1, Math.Floor(size));
         DateText.FontSize = Math.Min(Resource("TypeSizeHeading", 24), Math.Max(18, Math.Round(size * 0.24)));

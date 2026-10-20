@@ -63,10 +63,13 @@ class DaisyWindowMotion {
         // Start at the actual source endpoint; only reverse an already running timeline.
         w.daisyMotionKind = "presence";
         w.daisyMotionShowing = showing;
-        w.daisyMotion = animate({ window: w, duration: animationTime(showing ? 180 : 140),
-            curve: QEasingCurve.InOutCubic, keepAlive: role === Effect.WindowClosedGrabRole,
-            animations: [{ type: Effect.Scale, from: showing ? 0.96 : 1, to: showing ? 1 : 0.96 },
-                         { type: Effect.Opacity, from: showing ? 0 : 1, to: showing ? 1 : 0 }] });
+        const fileWindow = /(^|[\s.])(?:org\.daisyos\.)?files(?:[\s.]|$)/i.test(String(w.windowClass || w.desktopFileName || ""));
+        // Files opens without a zoom pulse; keep the app's everyday motion quiet.
+        const presenceAnimations = [{ type: Effect.Opacity, from: showing ? 0 : 1, to: showing ? 1 : 0 }];
+        if (!fileWindow) presenceAnimations.unshift({ type: Effect.Scale, from: showing ? 0.96 : 1, to: showing ? 1 : 0.96 });
+        w.daisyMotion = animate({ window: w, duration: animationTime(fileWindow ? (showing ? 120 : 100) : (showing ? 180 : 140)),
+            curve: fileWindow ? (showing ? QEasingCurve.OutCubic : QEasingCurve.InCubic) : QEasingCurve.InOutCubic,
+            keepAlive: role === Effect.WindowClosedGrabRole, animations: presenceAnimations });
     }
     minimize(w) {
         const showing = !w.minimized;

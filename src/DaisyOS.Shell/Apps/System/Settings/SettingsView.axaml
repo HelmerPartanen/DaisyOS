@@ -546,6 +546,16 @@
               <Border Classes="SettingsGroupCard">
                 <StackPanel>
                   <Border Classes="SettingsGroupRow">
+                    <Grid ColumnDefinitions="Auto,*,220" ColumnSpacing="12">
+                      <controls:DaisyIcon Icon="dock" Classes="SettingsRowIcon" />
+                      <TextBlock Grid.Column="1" Text="{DynamicResource Loc_86C9A2D06EFC}" Classes="SettingsLabel" VerticalAlignment="Center" />
+                      <controls:QuickSettingsSlider x:Name="TaskbarSizeSlider" Grid.Column="2" Minimum="0" Maximum="2" Value="1"
+                                                    StepFrequency="1" ShowTicks="True" ShowIcon="False"
+                                                    ValueChanged="OnTaskbarSizeChanged" AutomationProperties.Name="{DynamicResource Loc_86C9A2D06EFC}" />
+                    </Grid>
+                  </Border>
+                  <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
+                  <Border Classes="SettingsGroupRow">
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                       <controls:DaisyIcon Icon="dock" Classes="SettingsRowIcon" />
                       <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">

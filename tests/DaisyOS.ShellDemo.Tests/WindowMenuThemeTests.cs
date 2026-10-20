@@ -31,7 +31,7 @@ public sealed class WindowMenuThemeTests
             Assert.Equal(app.Resources["HitTargetCompact"]!.ToString(), menu["ItemHeight"]);
             Assert.Equal("14", menu["CornerRadius"]);
             Assert.Equal("8", menu["ItemCornerRadius"]);
-            Assert.StartsWith("#FF", menu["Surface"]);
+            Assert.StartsWith("#99", menu["Surface"]);
             Assert.NotEqual(menu["Surface"], menu["ContentPrimary"]);
             File.WriteAllText($"/tmp/daisy-native-menu-{(dark ? "dark" : "light")}-{scale}.ini", config);
         }

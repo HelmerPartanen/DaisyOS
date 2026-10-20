@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Media;
 
 namespace DaisyOS.Shell.Services.Theming;
@@ -15,12 +16,15 @@ public sealed class TextRenderingPolicy : AvaloniaObject
         EnabledProperty.Changed.AddClassHandler<Control>((control, change) =>
         {
             if (change.NewValue is true)
+            {
+                TextElement.SetFontFeatures(control, TypographyPolicy.ProportionalNumerals);
                 TextOptions.SetTextOptions(control, new TextOptions
                 {
                     TextRenderingMode = TextRenderingMode.Antialias,
                     TextHintingMode = TextHintingMode.Strong,
                     BaselinePixelAlignment = BaselinePixelAlignment.Aligned
                 });
+            }
         });
     }
 

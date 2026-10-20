@@ -413,6 +413,8 @@ void DaisyDecoration::paint(QPainter *painter, const QRectF &repaintRegion)
         font.setFamily(m_titleFontFamily);
         font.setPixelSize(m_titleFontPixels);
         font.setWeight(QFont::Medium);
+        font.setFeature("tnum", 0);
+        font.setFeature("pnum", 1);
         painter->setFont(font);
         const auto caption = painter->fontMetrics().elidedText(window()->caption(), Qt::ElideRight, static_cast<int>(captionRect.width()));
         painter->drawText(captionRect, Qt::AlignCenter | Qt::TextSingleLine, caption);

@@ -387,6 +387,7 @@ public sealed partial class ClockFace : Control
                 TimeTypeface,
                 68.0 * scale,
                 new SolidColorBrush(foreColor));
+            _cachedFormattedText.SetFontFeatures(DaisyOS.Shell.Services.Theming.TypographyPolicy.ProportionalNumerals);
         }
 
         var timeX = center.X - _cachedFormattedText.Width * 0.5;

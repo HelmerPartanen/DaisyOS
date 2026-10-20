@@ -660,7 +660,8 @@ public class RichTextBlockEditor : Control
                 runForeground,
                 runHighlight,
                 baseline,
-                CultureInfo.CurrentCulture);
+                CultureInfo.CurrentCulture,
+                fontFeatures: DaisyOS.Shell.Services.Theming.TypographyPolicy.ProportionalNumerals);
 
             overrides.Add(new ValueSpan<TextRunProperties>(currentOffset, run.Text.Length, props));
             currentOffset += run.Text.Length;
@@ -676,7 +677,8 @@ public class RichTextBlockEditor : Control
             textAlignment: TextAlignment.Left,
             textWrapping: TextWrapping.Wrap,
             maxWidth: width > 0 ? width : 600,
-            textStyleOverrides: overrides.Count > 0 ? overrides : null);
+            textStyleOverrides: overrides.Count > 0 ? overrides : null,
+            fontFeatures: DaisyOS.Shell.Services.Theming.TypographyPolicy.ProportionalNumerals);
     }
 
     public override void Render(DrawingContext context)

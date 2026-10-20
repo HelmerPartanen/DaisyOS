@@ -78,10 +78,10 @@ kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorTh
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorSize 32
 
 # KWin window menus use the native DaisyOS renderer on every request path.
-[[ -f "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v1.so" ]] || { echo 'DaisyOS native window menus are missing. Publish again.' >&2; exit 1; }
-install -Dm755 "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v1.so" "$iso_root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v1.so"
+[[ -f "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so" ]] || { echo 'DaisyOS native window menus are missing. Publish again.' >&2; exit 1; }
+install -Dm755 "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so" "$iso_root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so"
 "$repo_root/scripts/install-window-menu-icons.sh" --root "$iso_root"
-kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v1Enabled --type bool true
+kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v4Enabled --type bool true
 
 # KWin discovers this native effect through its system Qt plugin directory.
 # Build/publish against the same KWin ABI as the target ISO.

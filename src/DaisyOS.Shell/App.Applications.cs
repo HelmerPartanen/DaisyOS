@@ -54,6 +54,7 @@ public partial class App
             case "accent" when request.Length == 2 && Enum.TryParse<AccentColor>(request[1], out var accent) && Enum.IsDefined(accent): await SetAccentColorAsync(accent); break;
             case "contrast" when request.Length == 2: await SetHighContrastAsync(bool.Parse(request[1])); break;
             case "motion" when request.Length == 2: await SetReduceMotionAsync(bool.Parse(request[1])); break;
+            case "taskbar-size" when request.Length == 2: await SetTaskbarSizeAsync(int.Parse(request[1])); break;
             case "taskbar-auto-hide" when request.Length == 2: await SetTaskbarAutoHideAsync(bool.Parse(request[1])); break;
             case "media-widget-auto-hide" when request.Length == 2: await SetMediaWidgetAutoHideAsync(bool.Parse(request[1])); break;
             case "systembar-auto-hide" when request.Length == 2: await SetSystemBarAutoHideAsync(bool.Parse(request[1])); break;

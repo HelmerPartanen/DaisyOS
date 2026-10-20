@@ -19,6 +19,7 @@ public sealed class DesktopItemLabel : TextBlock
     protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
     {
         base.OnPropertyChanged(change);
+        if (change.Property == FontFeaturesProperty) _layoutKey = null;
         if (change.Property == LetterSpacingProperty && !_settingSpacing) { _baseSpacing = LetterSpacing; _layoutKey = null; }
     }
 
@@ -33,7 +34,7 @@ public sealed class DesktopItemLabel : TextBlock
             _layoutKey = key;
             double Width(string value)
             {
-                using var layout = new TextLayout(value, face, FontSize, Foreground, flowDirection: FlowDirection, letterSpacing: spacing);
+                using var layout = new TextLayout(value, face, FontSize, Foreground, flowDirection: FlowDirection, letterSpacing: spacing, fontFeatures: FontFeatures);
                 return layout.WidthIncludingTrailingWhitespace;
             }
             var fullWidth = Width(key.Item1);
@@ -45,7 +46,7 @@ public sealed class DesktopItemLabel : TextBlock
             _settingSpacing = true;
             try { SetCurrentValue(LetterSpacingProperty, tracking); }
             finally { _settingSpacing = false; }
-            using var fitted = new TextLayout(key.Item1, face, FontSize, Foreground, flowDirection: FlowDirection, letterSpacing: tracking);
+            using var fitted = new TextLayout(key.Item1, face, FontSize, Foreground, flowDirection: FlowDirection, letterSpacing: tracking, fontFeatures: FontFeatures);
             Text = fitted.WidthIncludingTrailingWhitespace <= availableSize.Width ? key.Item1 : Balance(key.Item1, availableSize.Width, Width);
         }
         return base.MeasureOverride(availableSize);

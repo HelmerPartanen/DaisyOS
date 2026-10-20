@@ -3,6 +3,7 @@
 #include <KConfig>
 #include <KConfigGroup>
 #include <QApplication>
+#include <QAction>
 #include <QFile>
 #include <QMenu>
 #include <QPainter>
@@ -23,13 +24,14 @@ DaisyMenuStyle::DaisyMenuStyle(const QString &configFile, QObject *parent)
 
 void DaisyMenuStyle::reload()
 {
+    m_icons.clear();
     KConfig config(m_configFile, KConfig::SimpleConfig);
     const KConfigGroup group(&config, QStringLiteral("Menus"));
     auto color = [&](const char *key, const char *fallback) {
         const QColor value(group.readEntry(key, QString::fromLatin1(fallback)));
         return value.isValid() ? value : QColor(QString::fromLatin1(fallback));
     };
-    m_surface = color("Surface", "#ff212121");
+    m_surface = color("Surface", "#99212121");
     m_outer = color("FrameOuter", "#99000000");
     m_inner = color("FrameInner", "#14ffffff");
     m_text = color("ContentPrimary", "#ffffffff");
@@ -41,6 +43,8 @@ void DaisyMenuStyle::reload()
     m_font = QFont(group.readEntry("FontFamily", QStringLiteral("Atkinson Hyperlegible")));
     m_font.setPixelSize(std::clamp(group.readEntry("FontPixels", 13), 10, 40));
     m_font.setWeight(QFont::Normal);
+    m_font.setFeature("tnum", 0);
+    m_font.setFeature("pnum", 1);
     m_font.setHintingPreference(QFont::PreferFullHinting);
     m_radius = std::clamp(group.readEntry("CornerRadius", 14.0), 0.0, 40.0);
     m_itemRadius = std::clamp(group.readEntry("ItemCornerRadius", 8.0), 0.0, 30.0);
@@ -71,13 +75,14 @@ void DaisyMenuStyle::drawPrimitive(PrimitiveElement element, const QStyleOption 
     painter->setRenderHint(QPainter::Antialiasing);
     painter->setPen(Qt::NoPen);
     const QRectF rect(option->rect);
-    painter->setBrush(m_outer);
-    painter->drawRoundedRect(rect, m_radius, m_radius);
-    // Match the shell's two one-pixel frame layers and 4px content inset.
-    painter->setBrush(m_inner);
-    painter->drawRoundedRect(rect.adjusted(1, 1, -1, -1), std::max(0.0, m_radius - 1), std::max(0.0, m_radius - 1));
-    painter->setBrush(m_surface);
-    painter->drawRoundedRect(rect.adjusted(2, 2, -2, -2), std::max(0.0, m_radius - 2), std::max(0.0, m_radius - 2));
+    QPainterPath outer, inner, content;
+    outer.addRoundedRect(rect, m_radius, m_radius);
+    inner.addRoundedRect(rect.adjusted(1, 1, -1, -1), std::max(0.0, m_radius - 1), std::max(0.0, m_radius - 1));
+    content.addRoundedRect(rect.adjusted(2, 2, -2, -2), std::max(0.0, m_radius - 2), std::max(0.0, m_radius - 2));
+    // Paint frame rings only: an opaque full-size underlay defeats blur.
+    painter->fillPath(outer.subtracted(inner), m_outer);
+    painter->fillPath(inner.subtracted(content), m_inner);
+    painter->fillPath(content, m_surface);
     painter->restore();
 }
 
@@ -127,18 +132,35 @@ void DaisyMenuStyle::drawControl(ControlElement element, const QStyleOption *opt
         return rtl ? QRectF(bounds.right() - (rect.left() - bounds.left()) - rect.width(), rect.top(), rect.width(), rect.height()) : rect;
     };
     const QRectF iconRect = visualRect(QRectF(bounds.left() + 8, bounds.center().y() - m_iconSize / 2.0, m_iconSize, m_iconSize));
-    const QString asset = iconAsset(item->icon.name());
+    const auto *menu = qobject_cast<const QMenu *>(widget);
+    const auto *action = menu ? menu->actionAt(item->rect.center()) : nullptr;
+    const QString suppliedAsset = action ? action->property("daisyosMenuIcon").toString() : QString();
+    const QString asset = suppliedAsset.isEmpty() ? iconAsset(item->icon.name()) : suppliedAsset;
     if (!asset.isEmpty()) {
-        const QString path = QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("daisyos/window-menu-icons/") + asset + QStringLiteral(".svg"));
-        QFile file(path);
-        if (file.open(QIODevice::ReadOnly)) {
-            auto data = file.readAll();
-            data.replace("currentColor", foreground.name(QColor::HexRgb).toUtf8());
-            QSvgRenderer renderer(data);
-            painter->setOpacity(enabled ? 1.0 : .5);
-            renderer.render(painter, iconRect);
-            painter->setOpacity(1.0);
+        const qreal dpr = painter->device()->devicePixelRatioF();
+        const QString key = asset + QLatin1Char(':') + foreground.name(QColor::HexArgb) + QLatin1Char(':') + QString::number(dpr);
+        auto cached = m_icons.constFind(key);
+        if (cached == m_icons.cend()) {
+            const QString path = QStandardPaths::locate(QStandardPaths::GenericDataLocation, QStringLiteral("daisyos/window-menu-icons/") + asset + QStringLiteral(".svg"));
+            QFile file(path);
+            if (file.open(QIODevice::ReadOnly)) {
+                auto data = file.readAll();
+                data.replace("currentColor", "#000000");
+                QSvgRenderer renderer(data);
+                QPixmap glyph(QSize(qCeil(m_iconSize * dpr), qCeil(m_iconSize * dpr)));
+                glyph.setDevicePixelRatio(dpr);
+                glyph.fill(Qt::transparent);
+                QPainter iconPainter(&glyph);
+                renderer.render(&iconPainter, QRectF(0, 0, m_iconSize, m_iconSize));
+                // Shared HugeIcons include both currentColor and literal strokes.
+                // Tint the rendered alpha, exactly as the shell's mono icon control.
+                iconPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+                iconPainter.fillRect(QRectF(0, 0, m_iconSize, m_iconSize), foreground);
+                iconPainter.end();
+                cached = m_icons.insert(key, glyph);
+            }
         }
+        if (cached != m_icons.cend()) painter->drawPixmap(iconRect.topLeft(), cached.value());
     }
     // A real checkmark replaces Qt's checkbox-style window-state indicator.
     const QRectF checkRect = visualRect(QRectF(bounds.left() + 8 + m_iconSize + 10, bounds.center().y() - 7, 14, 14));

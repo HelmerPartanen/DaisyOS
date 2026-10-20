@@ -113,6 +113,11 @@
   </UserControl.Styles>
 
   <Grid HorizontalAlignment="Center" ClipToBounds="False">
+    <LayoutTransformControl x:Name="TaskbarScaleHost" UseLayoutRounding="False" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+      <LayoutTransformControl.LayoutTransform>
+        <ScaleTransform ScaleX="{DynamicResource TaskbarScale}" ScaleY="{DynamicResource TaskbarScale}" />
+      </LayoutTransformControl.LayoutTransform>
+      <Grid UseLayoutRounding="False">
     <controls:ShellFrameBorder x:Name="TaskbarBody"
             Height="{DynamicResource ShellChromeHeight}"
             HorizontalAlignment="Center"
@@ -224,12 +229,15 @@
       </controls:ShellFrameBorder>
     </controls:ShellFrameBorder>
 
+      </Grid>
+    </LayoutTransformControl>
+
     <!-- Taskbar Context Menu Host (floats above the 56px bottom panel with unified rounded cartouche) -->
     <controls:CartoucheBorder x:Name="TaskbarContextMenuHost"
                               IsVisible="False"
                               HorizontalAlignment="Left"
                               VerticalAlignment="Bottom"
-                              Margin="0,0,0,55"
+                              Margin="{DynamicResource TaskbarMenuInset}"
                               ZIndex="200"
                               MinWidth="180"
                               MaxWidth="260"

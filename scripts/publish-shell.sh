@@ -89,11 +89,11 @@ dotnet publish src/DaisyOS.Shell/DaisyOS.Shell.csproj \
 
 install -m755 "$repo_root/services/DaisyLaunch/build/daisy-launch" "$output_dir/daisy-launch"
 install -m755 "$repo_root/src/native/daisy_busy_cursor/build/daisyos-busy-cursor-v1.so" "$output_dir/daisyos-busy-cursor-v1.so"
-install -m755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menus-v1.so" "$output_dir/daisyos-window-menus-v1.so"
+install -m755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menus-v4.so" "$output_dir/daisyos-window-menus-v4.so"
 "$repo_root/scripts/install-window-menu-icons.sh" --root "$output_dir/window-menus-root"
-install -Dm755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menus-v1.so" "$output_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v1.so"
+install -Dm755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menus-v4.so" "$output_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so"
 install -d "$output_dir/window-menus-root/etc/xdg"
-kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v1Enabled --type bool true
+kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v4Enabled --type bool true
 
 mkdir -p "$output_dir/cursor-themes"
 cp -a "$repo_root/artifacts/cursors/"DaisyOS-* "$output_dir/cursor-themes/"

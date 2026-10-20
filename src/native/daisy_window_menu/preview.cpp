@@ -43,7 +43,9 @@ int main(int argc, char **argv)
     auto *below = more->addAction(QIcon::fromTheme("window-keep-below"), "Keep Below Others");
     below->setCheckable(true);
     more->addAction(QIcon::fromTheme("view-fullscreen"), "Fullscreen")->setCheckable(true);
-    more->addAction(QIcon::fromTheme("edit-none-border"), "No Titlebar and Frame")->setCheckable(true);
+    auto *border = more->addAction(QIcon::fromTheme("edit-none-border"), "No Titlebar and Frame");
+    border->setCheckable(true);
+    border->setProperty("daisyosMenuIcon", QStringLiteral("square-dashed"));
     more->addSeparator();
     more->addAction(QIcon::fromTheme("configure-shortcuts"), "Set Window Shortcut…");
     more->addAction(QIcon::fromTheme("preferences-system-windows-actions"), "Configure Special Window Settings…");
@@ -69,7 +71,8 @@ int main(int argc, char **argv)
     if (!image.save(QString::fromLocal8Bit(argv[2]))) return 3;
     // Painting must preserve command identity, checked/disabled state and shortcuts.
     move->trigger();
-    if (called != 1 || maximize->isEnabled() || !above->isChecked()
+    if (menu.font().featureValue("tnum") != 0 || menu.font().featureValue("pnum") != 1
+        || called != 1 || maximize->isEnabled() || !above->isChecked()
         || minimize->shortcut() != QKeySequence("Meta+PgDown") || close->shortcut() != QKeySequence("Alt+F4")) return 4;
     qInfo() << "DaisyOS native menu rendering and action-state checks passed" << image.size() << menu.font().family();
     return 0;

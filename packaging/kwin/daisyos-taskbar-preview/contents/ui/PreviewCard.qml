@@ -45,6 +45,7 @@ RoundedPreviewFrame {
         x: 34; y: 0; height: 32
         width: parent.width - x - 36
         text: client ? client.caption : ""
+        font.features: ({ "tnum": 0, "pnum": 1 })
         font.family: "Atkinson Hyperlegible"; font.pixelSize: 13
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight

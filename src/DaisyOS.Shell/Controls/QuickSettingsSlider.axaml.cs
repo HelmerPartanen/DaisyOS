@@ -28,8 +28,23 @@ public partial class QuickSettingsSlider : UserControl
     public static readonly StyledProperty<double> MaximumProperty =
         AvaloniaProperty.Register<QuickSettingsSlider, double>(nameof(Maximum), 100d);
 
+    public static readonly StyledProperty<double> StepFrequencyProperty =
+        AvaloniaProperty.Register<QuickSettingsSlider, double>(nameof(StepFrequency), 0d);
+    public static readonly StyledProperty<bool> ShowTicksProperty =
+        AvaloniaProperty.Register<QuickSettingsSlider, bool>(nameof(ShowTicks));
+    public static readonly StyledProperty<bool> ShowIconProperty =
+        AvaloniaProperty.Register<QuickSettingsSlider, bool>(nameof(ShowIcon), true);
+
+    public double StepFrequency { get => GetValue(StepFrequencyProperty); set => SetValue(StepFrequencyProperty, value); }
+    public bool ShowTicks { get => GetValue(ShowTicksProperty); set => SetValue(ShowTicksProperty, value); }
+    public bool ShowIcon { get => GetValue(ShowIconProperty); set => SetValue(ShowIconProperty, value); }
+
+    private double Snap(double value) => StepFrequency > 0
+        ? Math.Clamp(Minimum + Math.Round((value - Minimum) / StepFrequency) * StepFrequency, Minimum, Maximum)
+        : value;
+
     public static readonly StyledProperty<double> ValueProperty =
-        AvaloniaProperty.Register<QuickSettingsSlider, double>(nameof(Value), 0d, defaultBindingMode: BindingMode.TwoWay);
+        AvaloniaProperty.Register<QuickSettingsSlider, double>(nameof(Value), 0d, defaultBindingMode: BindingMode.TwoWay, coerce: (slider, value) => ((QuickSettingsSlider)slider).Snap(value));
 
     public static readonly StyledProperty<bool> ShowThumbProperty =
         AvaloniaProperty.Register<QuickSettingsSlider, bool>(nameof(ShowThumb), true);
@@ -55,7 +70,15 @@ public partial class QuickSettingsSlider : UserControl
         _trackBackground = this.FindControl<Border>("TrackBackground");
         _progressFill = this.FindControl<Border>("ProgressFill");
         _progressThumb = this.FindControl<Border>("ProgressThumb");
-        SizeChanged += (_, _) => UpdateProgressFill();
+        SizeChanged += (_, _) => { UpdateProgressFill(); UpdateTicks(); };
+        PropertyChanged += (_, e) =>
+        {
+            if (e.Property == ShowTicksProperty || e.Property == StepFrequencyProperty || e.Property == MinimumProperty || e.Property == MaximumProperty)
+            {
+                CoerceValue(ValueProperty);
+                UpdateTicks();
+            }
+        };
         AddHandler(PointerPressedEvent, OnTrackPointerPressed, RoutingStrategies.Tunnel);
         AddHandler(PointerMovedEvent, OnTrackPointerMoved, RoutingStrategies.Tunnel);
         AddHandler(PointerReleasedEvent, OnTrackPointerReleased, RoutingStrategies.Tunnel);
@@ -105,6 +128,23 @@ public partial class QuickSettingsSlider : UserControl
     {
         get => GetValue(TrackBorderThicknessProperty);
         set => SetValue(TrackBorderThicknessProperty, value);
+    }
+
+    private void UpdateTicks()
+    {
+        var ticks = this.FindControl<Canvas>("TickMarks");
+        if (ticks is null) return;
+        ticks.Children.Clear();
+        if (!ShowTicks || StepFrequency <= 0 || Maximum <= Minimum) return;
+        var count = Math.Min(100, (int)Math.Floor((Maximum - Minimum) / StepFrequency));
+        if (count < 1) return;
+        for (var index = 0; index <= count; index++)
+        {
+            var mark = new Border { Width = 2, Height = 4, CornerRadius = new CornerRadius(1) };
+            mark.Bind(Border.BackgroundProperty, this.GetResourceObservable("ContentTertiaryBrush"));
+            Canvas.SetLeft(mark, Math.Max(0, ticks.Bounds.Width - 2) * index / count);
+            ticks.Children.Add(mark);
+        }
     }
 
     private void UpdateProgressFill()

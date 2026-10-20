@@ -50,7 +50,7 @@
         Ordinary borders and dividers keep Stroke*.
     -->
     <Color x:Key="ShellFrameOuterEdgeColor">#33000000</Color>
-    <Color x:Key="ShellFrameInnerHighlightColor">#1AFFFFFF</Color>
+    <Color x:Key="ShellFrameInnerHighlightColor">#26FFFFFF</Color>
     <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
 
     <!-- Interaction states -->
@@ -265,7 +265,7 @@
 
 
       <Color x:Key="ShellFrameOuterEdgeColor">#99000000</Color>
-      <Color x:Key="ShellFrameInnerHighlightColor">#14FFFFFF</Color>
+      <Color x:Key="ShellFrameInnerHighlightColor">#1AFFFFFF</Color>
       <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
       <Color x:Key="DesktopHoverColor">#33FFFFFF</Color>
       <Color x:Key="StatePressedColor">#24FFFFFF</Color>
@@ -294,8 +294,8 @@
       <Color x:Key="StatusDangerContainerColor">#FF491B23</Color>
       <Color x:Key="StatusInfoColor">#FF85B6FF</Color>
       <Color x:Key="StatusInfoContainerColor">#FF1C355E</Color>
-      <Color x:Key="AccentOptionDefaultColor">#FF148BE8</Color>
-      <Color x:Key="AccentOptionBlueColor">#FF148BE8</Color>
+      <Color x:Key="AccentOptionDefaultColor">#FF0059D1</Color>
+      <Color x:Key="AccentOptionBlueColor">#FF0059D1</Color>
       <Color x:Key="AccentOptionPurpleColor">#FFBB9CFF</Color>
       <Color x:Key="AccentOptionPinkColor">#FFFF9AC6</Color>
       <Color x:Key="AccentOptionRedColor">#FFFF9B91</Color>
@@ -469,6 +469,8 @@
   <!-- KWin owns server-side titlebars. Keep their hit targets generous while
        allowing their visual density to remain calmer than DaisyOS app chrome. -->
   <!-- App dock stays compact; crowded items shrink within this screen-clamped width. -->
+  <x:Double x:Key="TaskbarScale">1</x:Double>
+  <Thickness x:Key="TaskbarMenuInset">0,0,0,55</Thickness>
   <x:Double x:Key="TaskbarMaximumWidth">1200</x:Double>
   <x:Double x:Key="KWinDecorationTitleBarHeight">32</x:Double>
   <x:Double x:Key="KWinDecorationCaptionButtonWidth">46</x:Double>

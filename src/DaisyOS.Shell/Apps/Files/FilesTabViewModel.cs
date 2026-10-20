@@ -78,8 +78,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             {
                 _loadingCursor?.Dispose();
                 _loadingCursor = value && !_disposed ? DaisyOS.System.Processes.BusyCursor.Begin() : null;
-                OnPropertyChanged(nameof(IsEmpty));
-                OnPropertyChanged(nameof(ShowSkeleton));
+                NotifyEmptyState();
                 UpdateStatusText();
             }
         }
@@ -98,6 +97,19 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
     
     public ObservableCollection<FileEntryViewModel> SelectedItems { get; } = new();
     public ObservableCollection<BreadcrumbSegment> Breadcrumbs { get; } = new();
+    private IReadOnlyList<BreadcrumbSegment> _visibleBreadcrumbs = Array.Empty<BreadcrumbSegment>();
+    public IReadOnlyList<BreadcrumbSegment> VisibleBreadcrumbs
+    {
+        get => _visibleBreadcrumbs;
+        private set { if (!_visibleBreadcrumbs.SequenceEqual(value)) SetProperty(ref _visibleBreadcrumbs, value); }
+    }
+
+    internal void SetVisibleBreadcrumbs(int suffixCount, bool includeOverflow)
+    {
+        var visible = Breadcrumbs.Skip(Math.Max(0, Breadcrumbs.Count - suffixCount)).ToList();
+        if (includeOverflow) visible.Insert(0, new BreadcrumbSegment("…", "/", true, false, IsOverflow: true));
+        VisibleBreadcrumbs = visible.Select((segment, index) => segment with { IsFirst = index == 0 }).ToArray();
+    }
 
     public FileEntryViewModel? SelectedEntry
     {
@@ -108,7 +120,33 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
     public bool HasSelectedEntry => SelectedEntry is not null;
 
     public bool IsEmpty => !IsLoading && FilteredEntries.Count == 0;
-    public bool ShowSkeleton => IsLoading && FilteredEntries.Count == 0;
+    private string? _loadError;
+    public string? LoadError
+    {
+        get => _loadError;
+        private set { if (SetProperty(ref _loadError, value)) NotifyEmptyState(); }
+    }
+    public bool HasLoadError => !string.IsNullOrEmpty(LoadError);
+    public bool HasHiddenEntriesOnly => !HasSearchQuery && !ShowHiddenFiles && Entries.Count > 0 && FilteredEntries.Count == 0;
+    private bool IsTrashLocation => FileLocationPresentation.Resolve(CurrentPath).Kind == FileLocationKind.Trash;
+    public string EmptyTitle => HasLoadError ? Loc.Get("Couldn’t open this folder")
+        : HasSearchQuery ? Loc.Get("No matching files")
+        : HasHiddenEntriesOnly ? Loc.Get("No visible files") : IsTrashLocation ? Loc.Get("Trash is empty") : Loc.Get("This folder is empty");
+    public string EmptyMessage => LoadError ?? (HasSearchQuery ? Loc.Get("Try a different search or clear the filter.")
+        : HasHiddenEntriesOnly ? Loc.Get("Show hidden files to see the items in this folder.") : string.Empty);
+    public bool ShowSearchClearInStatusBar => HasSearchQuery && !IsEmpty;
+    public bool HasEmptyMessage => EmptyMessage.Length > 0;
+    public bool HasEmptyAction => HasLoadError || HasSearchQuery || HasHiddenEntriesOnly || !IsTrashLocation;
+    public string EmptyIcon => HasLoadError ? "warning-circle" : HasSearchQuery ? "magnifying-glass" : IsTrashLocation ? "trash" : "folder-open";
+    public string EmptyActionLabel => HasLoadError ? Loc.Get("Try again") : HasSearchQuery ? Loc.Get("Clear search") : HasHiddenEntriesOnly ? Loc.Get("Show hidden files") : Loc.Get("New folder");
+    public string EmptyActionIcon => HasLoadError ? "arrow-clockwise" : HasSearchQuery ? "x" : HasHiddenEntriesOnly ? "eye" : "folder-plus";
+
+    private void NotifyEmptyState()
+    {
+        foreach (var name in new[] { nameof(IsEmpty), nameof(ShowSearchClearInStatusBar), nameof(HasLoadError), nameof(HasHiddenEntriesOnly), nameof(EmptyTitle), nameof(EmptyMessage),
+            nameof(HasEmptyMessage), nameof(HasEmptyAction), nameof(EmptyIcon), nameof(EmptyActionLabel), nameof(EmptyActionIcon) })
+            OnPropertyChanged(name);
+    }
 
     public bool IsSortByName => string.Equals(SortColumn, "Name", StringComparison.OrdinalIgnoreCase);
     public bool IsSortByDate => string.Equals(SortColumn, "Date", StringComparison.OrdinalIgnoreCase);
@@ -221,6 +259,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             if (SetProperty(ref _searchQuery, value))
             {
                 OnPropertyChanged(nameof(HasSearchQuery));
+                NotifyEmptyState();
                 ApplyFilterAndSort();
             }
         }
@@ -353,6 +392,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
                 IsFirst: index == 0,
                 IsCurrent: index == segments.Count - 1));
         }
+        SetVisibleBreadcrumbs(Breadcrumbs.Count, false);
     }
 
     public async Task NavigateToAsync(string path, bool addHistory = true, string? selectPath = null)
@@ -381,8 +421,9 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             _pendingSelectionPath = selectPath;
             SelectedItems.Clear();
             IsLoading = true;
+            LoadError = null;
             if (FilteredEntries.Count > 0) FilteredEntries.ReplaceAll([]);
-            OnPropertyChanged(nameof(ShowSkeleton));
+            NotifyEmptyState();
             var cached = _recent.Take(fullPath);
             if (cached != null)
             {
@@ -454,8 +495,8 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             {
                 if (session != null && IsCurrent(session))
                 {
+                    LoadError = FilesErrorMessages.Describe("Couldn’t open this folder", ex);
                     IsLoading = false;
-                    StatusText = FilesErrorMessages.Describe("Couldn’t open this folder", ex);
                     session.Dispose();
                 }
             });
@@ -1107,8 +1148,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             if (FilteredEntries.Contains(item) && !SelectedItems.Contains(item)) SelectedItems.Add(item);
         ProjectionChanged?.Invoke();
         CurrentSession?.Performance.Count("UI collection notifications");
-        OnPropertyChanged(nameof(IsEmpty));
-        OnPropertyChanged(nameof(ShowSkeleton));
+        NotifyEmptyState();
         UpdateStatusText();
     }
 
@@ -1184,8 +1224,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
         session.Performance.Count("Entries changed", delta.Count);
         if (!batch) session.Performance.Count("UI collection notifications", FilteredEntries.NotificationCount - beforeNotifications);
         OnPropertyChanged(nameof(Entries));
-        OnPropertyChanged(nameof(IsEmpty));
-        OnPropertyChanged(nameof(ShowSkeleton));
+        NotifyEmptyState();
         UpdateStatusText();
         EntriesChanged?.Invoke();
     }
@@ -1235,6 +1274,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
 
     private void OnLanguageChanged(object? sender, EventArgs args)
     {
+        NotifyEmptyState();
         UpdateTitle();
         UpdateStatusText();
     }
@@ -1255,6 +1295,11 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
 
     private void UpdateStatusText()
     {
+        if (HasLoadError && !IsLoading)
+        {
+            StatusText = LoadError!;
+            return;
+        }
         if (IsLoading)
         {
             StatusText = Loc.Get("Loading…");

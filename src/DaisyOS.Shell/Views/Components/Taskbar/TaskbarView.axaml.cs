@@ -499,7 +499,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         protected override Size MeasureOverride(Size availableSize)
         {
             var limit = this.TryFindResource("TaskbarMaximumWidth", out var resource) && resource is double value ? value : 1200;
-            var available = Math.Min(limit, double.IsFinite(availableSize.Width) ? Math.Max(0, availableSize.Width - 24) : limit);
+            var taskbarScale = this.TryFindResource("TaskbarScale", out var scaleResource) && scaleResource is double configuredScale ? configuredScale : 1;
+            var available = Math.Min(limit, double.IsFinite(availableSize.Width) ? Math.Max(0, availableSize.Width - 24) : limit) / taskbarScale;
             if (Math.Abs(_availableWidth - available) > 0.1)
             {
                 _availableWidth = available;
@@ -1538,19 +1539,20 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 screenWidth = root.Bounds.Width;
             }
 
+            var taskbarScale = this.TryFindResource("TaskbarScale", out var scaleResource) && scaleResource is double configuredScale ? configuredScale : 1;
             var taskbarWidth = _taskbarBody?.Bounds.Width > 0 ? _taskbarBody.Bounds.Width : ((_canvas?.Width ?? 0) + 58);
-            var taskbarLeft = Math.Max(0, (screenWidth - taskbarWidth) / 2);
+            var taskbarLeft = Math.Max(0, (screenWidth - taskbarWidth * taskbarScale) / 2);
             var iconLeft = Canvas.GetLeft(icon);
             // 50px offset = outer body padding (1px) + inner border (1px) + pad (4px) + StartButton (40px) + spacing (4px)
-            var iconCenterOnScreen = taskbarLeft + 50 + iconLeft + (ItemWidth / 2);
+            var iconCenterOnScreen = taskbarLeft + (50 + iconLeft + (ItemWidth / 2)) * taskbarScale;
 
             const double estimatedMenuWidth = 200.0;
             var menuLeft = Math.Clamp(iconCenterOnScreen - (estimatedMenuWidth / 2), 12, screenWidth - estimatedMenuWidth - 12);
 
             _contextMenuHost.TailX = iconCenterOnScreen - menuLeft;
             _contextMenuHost.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
-            // A 55px bottom margin places the menu 3px lower relative to the taskbar.
-            _contextMenuHost.Margin = new Thickness(menuLeft, 0, 0, 55);
+            // Keep the menu above the scaled taskbar, with its original 3px gap.
+            _contextMenuHost.Margin = new Thickness(menuLeft, 0, 0, 52 * taskbarScale + 3);
         }
 
 

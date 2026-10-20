@@ -33,6 +33,8 @@ public sealed class AppearanceSettings
 
     public int TextScalePercent { get; set; } = 100;
 
+    public int TaskbarSize { get; set; } = 1;
+
     public bool TaskbarAutoHide { get; set; }
 
     public bool SystemBarAutoHide { get; set; }
