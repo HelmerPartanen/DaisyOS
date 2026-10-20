@@ -9,7 +9,11 @@ required_files=(
   src/DaisyOS.Shell/Assets/Brand/favicon.svg
   src/DaisyOS.Shell/Assets/Sounds/StartupSound.mp3
   src/DaisyOS.Shell/Assets/Sounds/manifest.json
-  "src/DaisyOS.Shell/Assets/fonts/Inter-VariableFont_opsz,wght.ttf"
+  src/DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-Regular.ttf
+  src/DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-Bold.ttf
+  src/DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-Italic.ttf
+  src/DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible/AtkinsonHyperlegible-BoldItalic.ttf
+  src/DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible/OFL.txt
   os/branding/boot/daisyos-logo.png
   os/branding/boot/daisyos.plymouth
   os/branding/boot/daisyos.script

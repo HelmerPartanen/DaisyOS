@@ -50,10 +50,13 @@ coherent.
 
 ## Typography
 
-Inter is the DaisyOS interface family and is bundled as a variable font. The
-fallback stack is Segoe UI, SF Pro Display, Noto Sans, and Arial. Material
-Symbols Rounded is the system glyph family. `OSTypography.axaml` defines the
-approved display, title, subtitle, body, caption, and link hierarchy.
+Atkinson Hyperlegible is the DaisyOS interface family. Its original regular,
+bold, italic and bold-italic TTF faces are bundled with their SIL OFL license
+and installed for native Qt/GTK applications. Noto Sans and DejaVu Sans supply
+missing scripts, with Noto CJK and emoji fonts in the ISO. `TypographyPolicy`
+measures shaped text and updates the shared type and control-height resources.
+Grayscale antialiasing, strong hinting and aligned baselines keep text clear on
+opaque and translucent surfaces. Inter remains available as an optional family.
 
 Do not introduce a second UI typeface for individual applications. Monospace is
 appropriate only for code, terminal content, identifiers, and diagnostics.

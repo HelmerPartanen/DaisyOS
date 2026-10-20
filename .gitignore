@@ -92,3 +92,11 @@ src/native/daisy_portal_shortcuts/build/
 
 !packaging/xdg-desktop-portal/
 !packaging/xdg-desktop-portal/*
+
+# Licensed system typography defaults are source assets.
+!packaging/fonts/
+!packaging/fonts/60-daisyos-fonts.conf
+!packaging/fonts/90-daisyos.gschema.override
+
+# Native window-menu renderer build output.
+src/native/daisy_window_menu/build/

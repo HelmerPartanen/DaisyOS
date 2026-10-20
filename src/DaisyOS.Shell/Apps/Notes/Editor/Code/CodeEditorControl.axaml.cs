@@ -164,11 +164,12 @@ public partial class CodeEditorControl : UserControl
 
         if (format.UsesMonospace)
         {
+            Editor.ClearValue(FontFamilyProperty);
             Editor.FontFamily = new FontFamily("JetBrains Mono, Cascadia Code, Consolas, monospace");
         }
         else
         {
-            Editor.FontFamily = new FontFamily("Inter, Segoe UI, Roboto, sans-serif");
+            Editor.Bind(FontFamilyProperty, this.GetResourceObservable("ShellFontFamily"));
         }
 
         if (_textMateInstallation != null && _registryOptions != null)

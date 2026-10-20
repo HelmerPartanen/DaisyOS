@@ -218,6 +218,9 @@ start_user_services() {
     pipewire-pulse.service \
     wireplumber.service >/dev/null 2>&1 || true
   mkdir -p "$state_dir"
+  if ! "$source_root/scripts/install-system-fonts.sh" --user >> "$session_log" 2>&1; then
+    log_message "System font installation failed; native applications may use a fallback font."
+  fi
   if ! "$source_root/scripts/prepare-screen-sharing.sh" >> "$session_log" 2>&1; then
     log_message "Screen capture preparation failed; OBS and screen sharing need portal diagnostics."
   fi
@@ -600,6 +603,9 @@ start_compositor_and_shell() {
   "$source_root/scripts/install-cursor-themes.sh" >> "$session_log" 2>&1 || log_message "Native cursor theme installation failed."
   if ! "$source_root/scripts/install-busy-cursor.sh" >> "$session_log" 2>&1; then
     log_message "Native busy cursor installation failed; retaining the existing launch feedback configuration."
+  fi
+  if ! "$source_root/scripts/install-window-menus.sh" >> "$session_log" 2>&1; then
+    log_message "DaisyOS native window-menu installation failed."
   fi
   configure_kwin_for_daisyos
   refresh_desktop_service_cache

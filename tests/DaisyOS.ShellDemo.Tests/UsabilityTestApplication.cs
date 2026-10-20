@@ -17,7 +17,7 @@ public sealed class UsabilityTestApplication : Application
     {
         Styles.Add(new FluentTheme());
         DaisyOS.Shell.Services.Localization.Loc.Apply(Resources, "en-US");
-        Resources["ShellFontFamily"] = new Avalonia.Media.FontFamily("avares://DaisyOS.Shell/Assets/fonts#Inter");
+        Resources["ShellFontFamily"] = new Avalonia.Media.FontFamily("avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible");
         Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://DaisyOS.Shell/"))
         {
             Source = new Uri("avares://DaisyOS.Shell/Themes/DaisyTheme.axaml")
@@ -46,5 +46,6 @@ public sealed class UsabilityTestApplication : Application
     }
 
     public static AppBuilder BuildAvaloniaApp() => AppBuilder.Configure<UsabilityTestApplication>()
-        .UseSkia().UseHarfBuzz().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
+        .UseSkia().UseHarfBuzz().With(new Avalonia.Media.FontManagerOptions
+        { DefaultFamilyName = DaisyOS.Shell.Services.Theming.TypographyPolicy.BundledDefaultFamilyName }).UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false });
 }

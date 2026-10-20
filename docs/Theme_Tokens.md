@@ -117,7 +117,7 @@ dynamic bindings on nested animation objects.
 loading user preferences. All sizes are whole pixels; natural HarfBuzz/Skia line
 metrics can increase the minimum line height. `ControlHeightStandard`, compact/
 comfortable aliases, hit targets and search heights share one 4px-grid height:
-32px for normal Inter, increasing together when larger type needs it.
+32px for normal Atkinson Hyperlegible, increasing together when larger type needs it.
 `ShellChromeHeight` follows that control height. Consumers must use dynamic
 resources rather than cache a numeric height or a font size.
 

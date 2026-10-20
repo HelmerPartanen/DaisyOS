@@ -264,7 +264,7 @@ public partial class RichEditorView : UserControl
             }
         }
         FontFamilyCombo.SelectedItem = FontFamilyCombo.Items.OfType<ComboBoxItem>()
-            .FirstOrDefault(item => string.Equals(item.Content?.ToString(), style.FontFamily ?? "Inter", StringComparison.OrdinalIgnoreCase));
+            .FirstOrDefault(item => style.FontFamily is null ? Equals(item.Tag, "SystemFont") : string.Equals(item.Content?.ToString(), style.FontFamily, StringComparison.OrdinalIgnoreCase));
         FontWeightCombo.SelectedItem = FontWeightCombo.Items.OfType<ComboBoxItem>()
             .FirstOrDefault(item => item.Tag?.ToString() == (style.FontWeight ?? (blockKind == BlockKind.Heading ? 700 : 400)).ToString());
         }
@@ -453,7 +453,7 @@ public partial class RichEditorView : UserControl
     {
         if (!_syncingToolbar && FontFamilyCombo.SelectedItem is ComboBoxItem item && item.Content is string family)
         {
-            ApplyFormatting(s => s with { FontFamily = family });
+            ApplyFormatting(s => s with { FontFamily = Equals(item.Tag, "SystemFont") ? null : family });
             _activeEditor?.Focus();
         }
     }

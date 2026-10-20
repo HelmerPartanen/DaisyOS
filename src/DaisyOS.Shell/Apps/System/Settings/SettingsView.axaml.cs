@@ -3100,6 +3100,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             if (SystemFontPicker is null) return;
             _availableFontFamilies.Clear();
             _availableFontFamilies.Add(app.CurrentSystemFontFamily);
+            _availableFontFamilies.Add(DaisyOS.Shell.Services.Theming.TypographyPolicy.DefaultFamilyName);
             _availableFontFamilies.Add("Inter");
             _availableFontFamilies.AddRange(fonts.Select(font => font.FamilyName));
             var distinct = _availableFontFamilies.Distinct(StringComparer.CurrentCultureIgnoreCase)
@@ -3117,11 +3118,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             foreach (var family in _availableFontFamilies)
             {
                 var item = new ComboBoxItem { Content = family, Tag = family };
-                if (string.Equals(family, "Inter", StringComparison.OrdinalIgnoreCase) &&
-                    Application.Current?.FindResource("ShellFontFamily") is FontFamily bundledFamily)
-                    item.FontFamily = bundledFamily;
-                else
-                    item.FontFamily = new FontFamily(family);
+                item.FontFamily = DaisyOS.Shell.Services.Theming.TypographyPolicy.ResolveFontFamily(family);
                 SystemFontPicker.Items.Add(item);
             }
             SelectComboByTag(SystemFontPicker, app.CurrentSystemFontFamily);
@@ -3174,8 +3171,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             if (Application.Current is not App app) return;
             FontSearchBar.Text = string.Empty;
-            await ApplyTypographyAsync(app, "Inter", app.CurrentTextScalePercent);
-            SelectComboByTag(SystemFontPicker, "Inter");
+            await ApplyTypographyAsync(app, DaisyOS.Shell.Services.Theming.TypographyPolicy.DefaultFamilyName, app.CurrentTextScalePercent);
+            SelectComboByTag(SystemFontPicker, DaisyOS.Shell.Services.Theming.TypographyPolicy.DefaultFamilyName);
             app.Feedback.Show(Loc.Get("The DaisyOS system font was restored."));
         }
 
@@ -3218,7 +3215,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             SelectComboByTag(SystemBarVisibilityPicker, app.SystemBarAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(MediaWidgetVisibilityPicker, app.MediaWidgetAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(SystemFontPicker, app.CurrentSystemFontFamily);
-            RestoreDefaultFontButton.IsEnabled = !string.Equals(app.CurrentSystemFontFamily, "Inter", StringComparison.OrdinalIgnoreCase);
+            RestoreDefaultFontButton.IsEnabled = !string.Equals(app.CurrentSystemFontFamily, DaisyOS.Shell.Services.Theming.TypographyPolicy.DefaultFamilyName, StringComparison.OrdinalIgnoreCase);
             TextScalePicker.SelectedIndex = app.CurrentTextScalePercent switch { 90 => 0, 110 => 2, 125 => 3, 150 => 4, _ => 1 };
             _wallpaperSelection = app.UsesSolidWallpaper
                 ? WallpaperSelection.Solid

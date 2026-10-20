@@ -27,7 +27,7 @@ public sealed class AppearanceSettings
 
     public int CursorSize { get; set; } = 32;
 
-    public string SystemFontFamily { get; set; } = "Inter";
+    public string SystemFontFamily { get; set; } = DaisyOS.Shell.Services.Theming.TypographyPolicy.DefaultFamilyName;
 
     public string LanguageTag { get; set; } = SystemLanguages.DefaultTag;
 

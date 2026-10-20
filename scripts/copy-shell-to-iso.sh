@@ -68,11 +68,20 @@ sed 's|^ExecStart=.*|ExecStart=/opt/DaisyOS/shell/daisy-launch|' "$repo_root/pac
 printf '[D-BUS Service]\nName=org.daisyos.Launcher1\nExec=/opt/DaisyOS/shell/daisy-launch\nSystemdService=daisy-launch.service\n' > "$iso_root/usr/share/dbus-1/services/org.daisyos.Launcher1.service"
 ln -sfn ../daisy-launch.service "$iso_root/usr/lib/systemd/user/graphical-session.target.wants/daisy-launch.service"
 
+# Embed the same licensed font in Avalonia and install it for Qt/GTK/Fontconfig.
+"$repo_root/scripts/install-system-fonts.sh" --root "$iso_root"
+
 # Native Xcursor themes are consumed by KWin, GTK, Qt and XWayland.
 mkdir -p "$iso_root/usr/share/icons" "$iso_root/etc/xdg"
 cp -a "$publish_dir/cursor-themes/"DaisyOS-* "$iso_root/usr/share/icons/"
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorTheme DaisyOS-Dark
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorSize 32
+
+# KWin window menus use the native DaisyOS renderer on every request path.
+[[ -f "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v1.so" ]] || { echo 'DaisyOS native window menus are missing. Publish again.' >&2; exit 1; }
+install -Dm755 "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v1.so" "$iso_root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v1.so"
+"$repo_root/scripts/install-window-menu-icons.sh" --root "$iso_root"
+kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v1Enabled --type bool true
 
 # KWin discovers this native effect through its system Qt plugin directory.
 # Build/publish against the same KWin ABI as the target ISO.

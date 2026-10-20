@@ -5,7 +5,7 @@ DaisyOS uses Avalonia's built-in `FluentTheme` at normal density. The Fluent the
 ## Style layers
 
 - `OSColors.axaml` contains the light/dark palette, semantic brushes, and elevation resources. Views should use `DynamicResource` brushes rather than literal colors.
-- `OSTypography.axaml` defines Display, TitleLarge, Title, Subtitle, Body, BodyStrong, Caption, Secondary, and Tertiary text classes using Inter.
+- `OSTypography.axaml` defines Display, TitleLarge, Title, Subtitle, Body, BodyStrong, Caption, Secondary, and Tertiary text classes using Atkinson Hyperlegible.
 - `OSFluentControls.axaml` applies DaisyOS colors to standard Fluent controls and defines `TextField`, `SearchField`, and shared control states.
 - `ButtonStyles.axaml` defines Primary, Secondary, Tertiary, Danger, and Subtle variants while retaining Avalonia's Fluent button template and interaction behavior.
 - Component style files contain layout-specific classes for the shell, dock, launcher, settings, Files, and system bar.

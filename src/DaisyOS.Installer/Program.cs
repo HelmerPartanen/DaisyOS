@@ -9,5 +9,7 @@ internal static class Program
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
 
     public static AppBuilder BuildAvaloniaApp() =>
-        AppBuilder.Configure<App>().UsePlatformDetect().LogToTrace();
+        AppBuilder.Configure<App>().UsePlatformDetect()
+            .With(new Avalonia.Media.FontManagerOptions { DefaultFamilyName = "Atkinson Hyperlegible" })
+            .LogToTrace();
 }

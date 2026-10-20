@@ -16,8 +16,8 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class LockScreenLayoutTests
 {
     [AvaloniaTheory]
-    [InlineData(1280, 720, 100, "Inter", "en-US")]
-    [InlineData(1920, 1080, 100, "Inter", "en-US")]
+    [InlineData(1280, 720, 100, "Atkinson Hyperlegible", "en-US")]
+    [InlineData(1920, 1080, 100, "Atkinson Hyperlegible", "en-US")]
     [InlineData(640, 480, 150, "Noto Sans", "fi-FI")]
     [InlineData(360, 640, 125, "DejaVu Serif", "fi-FI")]
     public async Task ClockCredentialsAndFeedbackFitOrScrollWithoutOverlap(int width, int height, int scale, string font, string language)
@@ -64,7 +64,7 @@ public sealed class LockScreenLayoutTests
             Directory.CreateDirectory("/tmp/daisy-lock-polish");
             frame!.Save($"/tmp/daisy-lock-polish/lock-{width}-{height}-{scale}.png", PngBitmapEncoderOptions.Default);
         }
-        finally { window.Close(); Loc.Apply(resources, "en-US"); TypographyPolicy.Apply(resources, "Inter", 100); }
+        finally { window.Close(); Loc.Apply(resources, "en-US"); TypographyPolicy.Apply(resources, "Atkinson Hyperlegible", 100); }
     }
 
     private sealed class PreviewLockService : ILockScreenService

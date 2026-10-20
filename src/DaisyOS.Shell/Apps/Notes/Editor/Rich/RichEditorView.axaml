@@ -81,6 +81,7 @@
                     FontSize="{DynamicResource TypeSizeCaption}"
                     CornerRadius="{DynamicResource RadiusControlInner}"
                     SelectionChanged="OnFontFamilySelectionChanged">
+            <ComboBoxItem Content="{DynamicResource Loc_A6E7CD03E301}" Tag="SystemFont" />
             <ComboBoxItem Content="{DynamicResource Loc_30A4A5BCA8F4}" />
             <ComboBoxItem Content="{DynamicResource Loc_26C12A414C33}" />
             <ComboBoxItem Content="{DynamicResource Loc_96C4069D9BB6}" />

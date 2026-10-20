@@ -17,7 +17,7 @@
       <ControlTheme x:Key="{x:Type CheckBox}" TargetType="CheckBox" BasedOn="{StaticResource DaisyCheckBoxTheme}" />
       <ControlTheme x:Key="{x:Type RadioButton}" TargetType="RadioButton" BasedOn="{StaticResource DaisyRadioButtonTheme}" />
 
-      <FontFamily x:Key="ShellFontFamily">avares://DaisyOS.Shell/Assets/fonts#Inter</FontFamily>
+      <FontFamily x:Key="ShellFontFamily">avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible, Noto Sans, DejaVu Sans</FontFamily>
       <!-- Compatibility aliases. New code consumes the canonical TypeSize* resources. -->
       <StaticResource x:Key="TypographyCaptionSize" ResourceKey="TypeSizeCaption" />
       <StaticResource x:Key="TypographyBodySize" ResourceKey="TypeSizeBodySmall" />

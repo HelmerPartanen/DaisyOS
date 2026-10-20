@@ -606,7 +606,7 @@ public class RichTextBlockEditor : Control
 
         var defaultWeight = _block.Kind == BlockKind.Heading ? FontWeight.Bold : FontWeight.Normal;
         var defaultStyle = FontStyle.Normal;
-        var defaultFamily = _block.Kind == BlockKind.Code ? "JetBrains Mono, monospace" : (TryGetResource<FontFamily>("ShellFontFamily")?.ToString() ?? "Inter, sans-serif");
+        var defaultFamily = _block.Kind == BlockKind.Code ? "JetBrains Mono, monospace" : (TryGetResource<FontFamily>("ShellFontFamily")?.ToString() ?? DaisyOS.Shell.Services.Theming.TypographyPolicy.BundledDefaultFamilyName);
         var defaultTypeface = new Typeface(new FontFamily(defaultFamily), defaultStyle, defaultWeight);
         var defaultForeground = TryGetResource<IBrush>("ContentPrimaryBrush") ?? Brushes.White;
 

@@ -19,7 +19,7 @@
     <entry name="CaptionButtonWidth" type="Double"><default>46</default></entry>
     <entry name="CaptionGlyphSize" type="Double"><default>10</default></entry>
     <entry name="TitleFontPixels" type="Double"><default>13</default></entry>
-    <entry name="TitleFontFamily" type="String"><default>Inter</default></entry>
+    <entry name="TitleFontFamily" type="String"><default>Atkinson Hyperlegible</default></entry>
     <entry name="TileSpacing" type="Double"><default>20</default></entry>
     <entry name="OuterPadding" type="Double"><default>48</default></entry>
     <entry name="MaxPreviewScale" type="Double"><default>1</default></entry>

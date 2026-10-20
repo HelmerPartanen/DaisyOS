@@ -82,9 +82,10 @@ internal static class Program
             .LogToTrace()
             .With(new FontManagerOptions
             {
-                DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts#Inter",
+                DefaultFamilyName = Services.Theming.TypographyPolicy.BundledDefaultFamilyName,
                 FontFamilyMappings = new Dictionary<string, FontFamily>
                 {
+                    [Services.Theming.TypographyPolicy.DefaultFamilyName] = new FontFamily(Services.Theming.TypographyPolicy.BundledDefaultFamilyName),
                     ["Inter"] = new FontFamily("avares://DaisyOS.Shell/Assets/fonts#Inter")
                 }
             })

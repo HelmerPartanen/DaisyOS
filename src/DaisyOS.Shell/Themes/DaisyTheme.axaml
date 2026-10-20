@@ -265,7 +265,7 @@
 
 
       <Color x:Key="ShellFrameOuterEdgeColor">#99000000</Color>
-      <Color x:Key="ShellFrameInnerHighlightColor">#0DFFFFFF</Color>
+      <Color x:Key="ShellFrameInnerHighlightColor">#14FFFFFF</Color>
       <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
       <Color x:Key="DesktopHoverColor">#33FFFFFF</Color>
       <Color x:Key="StatePressedColor">#24FFFFFF</Color>

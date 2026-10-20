@@ -8,6 +8,19 @@ namespace DaisyOS.Shell.Services.Theming;
 /// <summary>Integer type sizes and font-measured line/control heights shared by every app.</summary>
 public static class TypographyPolicy
 {
+    public const string DefaultFamilyName = "Atkinson Hyperlegible";
+    public const string BundledDefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible";
+
+    public static FontFamily ResolveFontFamily(string? family)
+    {
+        family = string.IsNullOrWhiteSpace(family) ? DefaultFamilyName : family.Trim();
+        var primary = family.Equals(DefaultFamilyName, StringComparison.OrdinalIgnoreCase)
+            ? BundledDefaultFamilyName
+            : family.Equals("Inter", StringComparison.OrdinalIgnoreCase)
+                ? "avares://DaisyOS.Shell/Assets/fonts#Inter" : family;
+        return new FontFamily(primary + ", Noto Sans, DejaVu Sans");
+    }
+
     private static readonly (string Role, double Size, double Line)[] Roles =
     [
         ("Caption", 12, 16), ("BodySmall", 13, 18), ("Body", 14, 20), ("BodyLarge", 16, 24),
@@ -30,9 +43,8 @@ public static class TypographyPolicy
 
     public static void Apply(IResourceDictionary resources, string family, int scalePercent)
     {
-        family = string.IsNullOrWhiteSpace(family) ? "Inter" : family.Trim();
-        var primary = family == "Inter" ? "avares://DaisyOS.Shell/Assets/fonts#Inter" : family;
-        var font = new FontFamily(primary + ", Noto Sans, DejaVu Sans");
+        family = string.IsNullOrWhiteSpace(family) ? DefaultFamilyName : family.Trim();
+        var font = ResolveFontFamily(family);
         var typeface = new Typeface(font);
         var scale = Math.Clamp(scalePercent, 90, 150) / 100d;
         resources["ShellFontFamily"] = font;

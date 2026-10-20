@@ -19,7 +19,28 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class LanguageTypographyTests
 {
     [AvaloniaTheory]
-    [InlineData("Inter", 100)]
+    [InlineData(FontWeight.Normal, FontStyle.Normal)]
+    [InlineData(FontWeight.Bold, FontStyle.Normal)]
+    [InlineData(FontWeight.Normal, FontStyle.Italic)]
+    [InlineData(FontWeight.Bold, FontStyle.Italic)]
+    public void DefaultFontUsesTheBundledFaceWithoutSyntheticStyles(FontWeight weight, FontStyle style)
+    {
+        var face = new Typeface(TypographyPolicy.ResolveFontFamily(null), style, weight).GlyphTypeface;
+        Assert.Equal(TypographyPolicy.DefaultFamilyName, face.FamilyName);
+        Assert.Equal(weight, face.Weight);
+        Assert.Equal(style, face.Style);
+        Assert.Equal(FontSimulations.None, face.FontSimulations);
+        Assert.Equal(TypographyPolicy.DefaultFamilyName, new DaisyOS.Shell.Services.Appearance.AppearanceSettings().SystemFontFamily);
+        foreach (var character in "Il1 O0 ÅÄÖ åäö Éé ß € £ — …")
+        {
+            Assert.True(face.CharacterToGlyphMap.TryGetGlyph(character, out var glyph));
+            Assert.NotEqual((ushort)0, glyph);
+        }
+    }
+
+    [AvaloniaTheory]
+    [InlineData("Atkinson Hyperlegible", 100)]
+    [InlineData("Atkinson Hyperlegible", 150)]
     [InlineData("Noto Sans", 150)]
     public void FilesSortButtonFitsAfterLanguageChanges(string family, int fontScale)
     {
@@ -57,7 +78,7 @@ public sealed class LanguageTypographyTests
         {
             window.Close();
             Loc.Apply(resources, "en-US");
-            TypographyPolicy.Apply(resources, "Inter", 100);
+            TypographyPolicy.Apply(resources, "Atkinson Hyperlegible", 100);
             Directory.Delete(folder, true);
         }
     }
@@ -85,6 +106,8 @@ public sealed class LanguageTypographyTests
     }
 
     [AvaloniaTheory]
+    [InlineData(760, "Atkinson Hyperlegible", 150)]
+    [InlineData(1280, "Atkinson Hyperlegible", 100)]
     [InlineData(760, "Noto Sans", 150)]
     [InlineData(1280, "DejaVu Serif", 125)]
     public void FinnishSettingsAndConfirmationRemainInsideTheirContent(int width, string family, int scale)
@@ -133,11 +156,12 @@ public sealed class LanguageTypographyTests
             }
             frame!.Save($"/tmp/daisy-language-rendering/confirmation-fi-{scale}.png", PngBitmapEncoderOptions.Default);
         }
-        finally { dialog?.Close(); settings.Close(); Loc.Apply(resources, "en-US"); TypographyPolicy.Apply(resources, "Inter", 100); }
+        finally { dialog?.Close(); settings.Close(); Loc.Apply(resources, "en-US"); TypographyPolicy.Apply(resources, "Atkinson Hyperlegible", 100); }
     }
 
     [AvaloniaTheory]
-    [InlineData("Inter", 100)]
+    [InlineData("Atkinson Hyperlegible", 100)]
+    [InlineData("Atkinson Hyperlegible", 150)]
     [InlineData("Noto Sans", 150)]
     [InlineData("DejaVu Serif", 125)]
     [InlineData("DejaVu Sans Mono", 90)]
@@ -158,7 +182,7 @@ public sealed class LanguageTypographyTests
             using var frame = window.CaptureRenderedFrame();
             Assert.NotNull(frame);
             var height = (double)resources["ControlHeightStandard"]!;
-            if (family == "Inter" && scale == 100) Assert.Equal(32, height);
+            if (family == "Atkinson Hyperlegible" && scale == 100) Assert.Equal(32, height);
             Assert.All(row.Children, control => Assert.Equal(control is TextBox or ComboBox or SearchBar ? height + 8 : height, control.Bounds.Height));
             Assert.Equal(TextHintingMode.Strong, TextOptions.GetTextHintingMode(window));
             Assert.Equal(BaselinePixelAlignment.Aligned, TextOptions.GetBaselinePixelAlignment(window));
@@ -174,6 +198,6 @@ public sealed class LanguageTypographyTests
             Directory.CreateDirectory("/tmp/daisy-language-rendering");
             frame.Save($"/tmp/daisy-language-rendering/{family.Replace(' ', '-')}-{scale}.png");
         }
-        finally { window.Close(); TypographyPolicy.Apply(resources, "Inter", 100); }
+        finally { window.Close(); TypographyPolicy.Apply(resources, "Atkinson Hyperlegible", 100); }
     }
 }

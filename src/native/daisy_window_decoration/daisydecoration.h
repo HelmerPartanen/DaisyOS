@@ -89,7 +89,7 @@ private:
     qreal m_captionButtonHeight = 32.0;
     qreal m_captionGlyphSize = 10.0;
     int m_titleFontPixels = 13;
-    QString m_titleFontFamily = QStringLiteral("Inter");
+    QString m_titleFontFamily = QStringLiteral("Atkinson Hyperlegible");
     DaisyFrameMetrics m_frameMetrics;
     qreal m_visibleCaptionButtonsWidth = 0.0;
 };

@@ -11,17 +11,17 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class DisplayTextRenderingTests
 {
     [AvaloniaTheory]
-    [InlineData("Inter", 1d)]
-    [InlineData("Inter", 1.25d)]
-    [InlineData("Inter", 1.5d)]
-    [InlineData("Inter", 1.75d)]
-    [InlineData("Inter", 2d)]
-    [InlineData("Inter", 3d)]
+    [InlineData("Atkinson Hyperlegible", 1d)]
+    [InlineData("Atkinson Hyperlegible", 1.25d)]
+    [InlineData("Atkinson Hyperlegible", 1.5d)]
+    [InlineData("Atkinson Hyperlegible", 1.75d)]
+    [InlineData("Atkinson Hyperlegible", 2d)]
+    [InlineData("Atkinson Hyperlegible", 3d)]
     [InlineData("DejaVu Serif", 1.25d)]
     [InlineData("DejaVu Sans Mono", 1.5d)]
     public void TextRasterizesAtTheCurrentDisplayScaleWithoutColorFringes(string family, double scale)
     {
-        var text = new TextBlock { Text = "ÅÉgjpq 012345 日本語 العربية", FontFamily = new FontFamily(family),
+        var text = new TextBlock { Text = "ÅÉgjpq 012345 日本語 العربية", FontFamily = DaisyOS.Shell.Services.Theming.TypographyPolicy.ResolveFontFamily(family),
             FontSize = 14, Foreground = Brushes.Black, Margin = new Thickness(12) };
         var window = new Window { Width = 400, Height = 80, Background = Brushes.White, Content = text };
         window.Show();

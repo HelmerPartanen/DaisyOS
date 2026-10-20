@@ -89,7 +89,7 @@ public sealed class WindowDecorationThemeService
             ("CaptionButtonWidth", ResolveDouble(application, theme, "KWinDecorationCaptionButtonWidth", 46).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
             ("CaptionButtonHeight", ResolveDouble(application, theme, "KWinDecorationCaptionButtonHeight", 32).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
             ("CaptionGlyphSize", ResolveDouble(application, theme, "KWinDecorationCaptionGlyphSize", 10).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
-            ("TitleFontFamily", ResolveString(application, theme, "SystemFontFamilyName", "Inter")),
+            ("TitleFontFamily", ResolveString(application, theme, "SystemFontFamilyName", TypographyPolicy.DefaultFamilyName)),
             ("TitleFontPixels", ResolveDouble(application, theme, "KWinDecorationTitleFontPixels", 13).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
             ("ActionPrimary", ToArgb(ResolveColor(application, theme, "ActionPrimaryBrush", "ActionPrimaryColor", theme == ThemeVariant.Light ? "#FF1598FF" : "#FF148BE8"))),
             ("ReduceMotion", application is App app && app.ReduceMotionEnabled ? "true" : "false"),
@@ -102,6 +102,30 @@ public sealed class WindowDecorationThemeService
             builder.Append(key).Append('=').Append(value).Append('\n');
         }
 
+        // KWin's native QMenus use the same semantic menu contract as Avalonia.
+        // Native compositor widgets use an opaque material base; their text and
+        // frames must remain readable without a layer-shell blur surface.
+        var menuValues = new (string Key, string Value)[]
+        {
+            ("Surface", ToArgb(Opaque(ResolveColor(application, theme, "ContextMenuBackgroundBrush", "ContextMenuBackgroundColor", "#FF212121")))),
+            ("FrameOuter", ToArgb(ResolveColor(application, theme, "ShellFrameOuterEdgeBrush", "ShellFrameOuterEdgeColor", "#99000000"))),
+            ("FrameInner", ToArgb(ResolveColor(application, theme, "ShellFrameInnerHighlightBrush", "ShellFrameInnerHighlightColor", "#14FFFFFF"))),
+            ("ContentPrimary", ToArgb(ResolveColor(application, theme, "ContentPrimaryBrush", "ContentPrimaryColor", "#FFFFFFFF"))),
+            ("ContentSecondary", ToArgb(ResolveColor(application, theme, "ContentSecondaryBrush", "ContentSecondaryColor", "#CCFFFFFF"))),
+            ("ContentDisabled", ToArgb(ResolveColor(application, theme, "ContentDisabledBrush", "ContentDisabledColor", "#66FFFFFF"))),
+            ("StateHover", ToArgb(ResolveColor(application, theme, "StateHoverBrush", "StateHoverColor", "#14FFFFFF"))),
+            ("StatePressed", ToArgb(ResolveColor(application, theme, "StatePressedBrush", "StatePressedColor", "#24FFFFFF"))),
+            ("Separator", ToArgb(ResolveColor(application, theme, "StrokeDefaultBrush", "StrokeDefaultColor", "#26FFFFFF"))),
+            ("FontFamily", ResolveString(application, theme, "SystemFontFamilyName", TypographyPolicy.DefaultFamilyName)),
+            ("FontPixels", ResolveDouble(application, theme, "TypeSizeBodySmall", 13).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("ItemHeight", ResolveDouble(application, theme, "HitTargetCompact", 32).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("IconSize", ResolveDouble(application, theme, "IconSizeStandard", 18).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("MinWidth", ResolveDouble(application, theme, "MenuMinWidth", 184).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("CornerRadius", ResolveDouble(application, theme, "RoundedLGValue", 14).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            ("ItemCornerRadius", (application.TryGetResource("RadiusControlInner", theme, out var radius) && radius is CornerRadius corner ? corner.TopLeft : 8).ToString(global::System.Globalization.CultureInfo.InvariantCulture))
+        };
+        builder.Append("\n[Menus]\n");
+        foreach (var (key, value) in menuValues) builder.Append(key).Append('=').Append(value).Append('\n');
         return builder.ToString();
     }
 
@@ -124,7 +148,7 @@ public sealed class WindowDecorationThemeService
             new("TitleBarHeight", ResolveDouble(application, theme, "KWinDecorationTitleBarHeight", 32).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
             new("CaptionButtonWidth", ResolveDouble(application, theme, "KWinDecorationCaptionButtonWidth", 46).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
             new("CaptionGlyphSize", ResolveDouble(application, theme, "KWinDecorationCaptionGlyphSize", 10).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
-            new("TitleFontFamily", ResolveString(application, theme, "SystemFontFamilyName", "Inter")),
+            new("TitleFontFamily", ResolveString(application, theme, "SystemFontFamilyName", TypographyPolicy.DefaultFamilyName)),
             new("TitleFontPixels", ResolveDouble(application, theme, "KWinDecorationTitleFontPixels", 13).ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
             new("TileSpacing", "20"),
             new("OuterPadding", "48"),
