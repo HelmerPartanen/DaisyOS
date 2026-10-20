@@ -90,6 +90,7 @@ public partial class FilesWindow : Window
         AddHandler(PointerMovedEvent, OnEntryPointerMoved, RoutingStrategies.Bubble, handledEventsToo: true);
         AddHandler(PointerReleasedEvent, OnEntryPointerReleased, RoutingStrategies.Bubble, handledEventsToo: true);
 
+        Activated += (_, _) => _viewModel.RefreshVolumes();
         Loaded += (_, _) =>
         {
             HookActiveTab();
@@ -1393,11 +1394,24 @@ public partial class FilesWindow : Window
         }
     }
 
+    private async void OnVolumeClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: VolumeInfo volume }) return;
+        try
+        {
+            var path = await VolumeService.MountAsync(volume);
+            _viewModel.RefreshVolumes();
+            if (_viewModel.ActiveTab is { } tab) await tab.NavigateToAsync(path);
+        }
+        catch (Exception ex) { ReportFeedback(FilesErrorMessages.Describe("Couldn’t open drive", ex)); }
+    }
+
     private async void OnEjectVolumeClicked(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { Tag: string path })
+        if (sender is Button { DataContext: VolumeInfo volume })
         {
-            var result = await new DaisyOS.System.Processes.SafeCommandRunner().RunAsync("udisksctl", ["unmount", "-p", path], TimeSpan.FromSeconds(5));
+            var path = volume.Path;
+            var result = await new DaisyOS.System.Processes.SafeCommandRunner().RunAsync("udisksctl", ["unmount", "--block-device", volume.DevicePath], TimeSpan.FromSeconds(5));
             if (!result.Succeeded)
             {
                 result = await new DaisyOS.System.Processes.SafeCommandRunner().RunAsync("umount", [path], TimeSpan.FromSeconds(5));

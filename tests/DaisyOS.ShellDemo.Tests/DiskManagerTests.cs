@@ -31,6 +31,9 @@ public class DiskManagerTests
             for (var i = 0; i < 100 && list.ItemCount == 0; i++) { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
             Assert.True(list.ItemCount > 0);
             Assert.IsType<DiskItem>(list.SelectedItem);
+            var physical = list.Items.OfType<DiskItem>().First(x => x.Type == "disk" && !x.ReadOnly);
+            list.SelectedItem = physical;
+            Assert.True(window.FindControl<WrapPanel>("ActionToolbar")!.Children.OfType<Button>().Single(x => x.Name == "ActionErase").IsEnabled);
             Assert.Equal(WindowDecorations.None, window.WindowDecorations);
             Assert.Single(window.GetVisualDescendants().OfType<AppWindowTitleBar>());
             Assert.Equal(255, Assert.IsAssignableFrom<ISolidColorBrush>(window.Background).Color.A);

@@ -6259,4 +6259,12 @@ Used by: DaisyLaunch</comment>
     <comment>Source: Bottom media widget
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   </data>
+  <data name="Loc_7D48657C36CD" xml:space="preserve">
+    <value>Disks</value>
+    <comment>Source: Disks</comment>
+  </data>
+  <data name="Loc_A845AEBCD70D" xml:space="preserve">
+    <value>Couldn’t open drive</value>
+    <comment>Source: Couldn’t open drive</comment>
+  </data>
 </root>

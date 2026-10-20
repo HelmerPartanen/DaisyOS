@@ -316,19 +316,19 @@
 
                       <StackPanel Spacing="4" IsVisible="{Binding HasVolumes}">
                         <Rectangle Height="1" Fill="{DynamicResource StrokeSubtleBrush}" Margin="12,0"/>
-                        <TextBlock Text="{DynamicResource Loc_6D42B8A54F63}" FontWeight="Bold" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="12,4,0,4"/>
+                        <TextBlock Text="{DynamicResource Loc_7D48657C36CD}" FontWeight="Bold" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="12,4,0,4"/>
                         <ItemsControl ItemsSource="{Binding Volumes}">
                           <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                           <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="services:VolumeInfo">
                               <Grid ColumnDefinitions="*,Auto">
-                                <Button Grid.Column="0" Classes="Large SettingsNavItem" Tag="{Binding Path}" Click="OnSidebarLocationClicked" DragDrop.AllowDrop="True" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
+                                <Button Grid.Column="0" Classes="Large SettingsNavItem" Tag="{Binding Path}" Click="OnVolumeClicked" DragDrop.AllowDrop="{Binding IsMounted}" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
                                   <StackPanel Orientation="Horizontal">
                                     <controls:DaisyIcon Icon="hard-drives" Size="{DynamicResource IconSizeStandard}" Width="24" Foreground="{DynamicResource StatusSuccessBrush}"/>
                                     <TextBlock Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" Margin="12,0,0,0" TextTrimming="CharacterEllipsis"/>
                                   </StackPanel>
                                 </Button>
-                                <Button Grid.Column="1" Classes="SubtleIcon" Tag="{Binding Path}" IsVisible="{Binding IsRemovable}" Click="OnEjectVolumeClicked" ToolTip.Tip="{DynamicResource Loc_F1995545C646}" Width="28" Height="28" Margin="0,0,4,0">
+                                <Button Grid.Column="1" Classes="SubtleIcon" Tag="{Binding Path}" IsVisible="{Binding CanEject}" Click="OnEjectVolumeClicked" ToolTip.Tip="{DynamicResource Loc_F1995545C646}" Width="28" Height="28" Margin="0,0,4,0">
                                   <controls:DaisyIcon Icon="eject" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
                                 </Button>
                               </Grid>

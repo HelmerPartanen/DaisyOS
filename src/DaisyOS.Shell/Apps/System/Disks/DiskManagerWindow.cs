@@ -38,7 +38,7 @@ public sealed partial class DiskManagerWindow : Window
             var button = new Button { Name = "Action" + action.Replace(" / ", "").Replace(" ", ""), Classes = { "Secondary" } };
             button.Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { new DaisyIcon { Icon = icon, Size = 16 }, new TextBlock { Text = action, VerticalAlignment = VerticalAlignment.Center } } };
             ToolTip.SetTip(button, action);
-            button.Click += async (_, _) => await Action(action == "Mount" && _list.SelectedItem is DiskItem { Mounted: true } ? "Unmount" : action);
+            button.Click += async (_, _) => await Action(action == "Mount" && _list.SelectedItem is DiskItem selected && DiskService.ResolveMountVolume(selected, _items)?.Mounted == true ? "Unmount" : action);
             _toolbar.Children.Add(button); _actions[action] = button;
         }
         _list.SelectionChanged += (_, _) => { ShowDetails(); this.FindControl<ScrollViewer>("DetailsScroll")!.Offset = new Vector(); };
@@ -55,7 +55,7 @@ public sealed partial class DiskManagerWindow : Window
             {
                 var action = entry.Header as string;
                 entry.IsEnabled = !_busy && selected is not null && (action == "Unmount"
-                    ? selected.Mounted : action == "Mount" ? !selected.Mounted && selected.Format.Length > 0
+                    ? DiskService.ResolveMountVolume(selected, _items)?.Mounted == true : action == "Mount" ? DiskService.ResolveMountVolume(selected, _items) is { Mounted: false }
                     : action is not null && _actions[action].IsEnabled);
             }
         };
@@ -122,11 +122,12 @@ public sealed partial class DiskManagerWindow : Window
             }
             _details.Children.Add(new StackPanel { Spacing = 12, Children = { Label("Volumes", "TypeSizeBody", weight: FontWeight.SemiBold), Card(volumeRows, new Thickness(4)) } });
         }
-        _details.Children.Add(Label(item.Type == "disk" ? "Select a volume in the sidebar to format, mount, or repair it." : "First Aid checks this volume for filesystem errors. Health checks the physical disk.", "TypeSizeBodySmall", true));
-        if (_actions["Mount"].Content is StackPanel mountContent && mountContent.Children[1] is TextBlock mountLabel) mountLabel.Text = item.Mounted ? "Unmount" : "Mount";
+        _details.Children.Add(Label(item.Type == "disk" ? "Erase resets this whole disk. Select a volume to format or repair only that volume." : "First Aid checks this volume for filesystem errors. Health checks the physical disk.", "TypeSizeBodySmall", true));
+        var mountTarget = DiskService.ResolveMountVolume(item, _items);
+        if (_actions["Mount"].Content is StackPanel mountContent && mountContent.Children[1] is TextBlock mountLabel) mountLabel.Text = mountTarget?.Mounted == true ? "Unmount" : "Mount";
         _actions["Partition"].IsEnabled &= item.Type == "disk";
-        _actions["Erase"].IsEnabled &= item.Type == "part" && !item.ReadOnly;
-        _actions["Mount"].IsEnabled &= item.Mounted || item.Format.Length > 0;
+        _actions["Erase"].IsEnabled &= item.Type is ("disk" or "part") && !item.ReadOnly;
+        _actions["Mount"].IsEnabled &= mountTarget is not null;
         _actions["First Aid"].IsEnabled &= item.Format.Length > 0;
     }
     private TextBlock Label(string text, string size, bool secondary = false, FontWeight? weight = null)
@@ -154,9 +155,9 @@ public sealed partial class DiskManagerWindow : Window
             var operation = action; var option = ""; DiskItem? source = null;
             if (action == "Erase")
             {
-                var formats = new ComboBox { ItemsSource = new[] { "ext4", "vfat" }, SelectedIndex = 0 };
-                if (!await Options("Erase", $"All files on {item.Name} ({item.Path}) will be permanently lost. Choose the new format.", formats, "Erase", true)) return;
-                option = (string)formats.SelectedItem!;
+                var formats = new ComboBox { ItemsSource = new[] { "FAT32 (USB drives and firmware)", "ext4 (Linux)" }, SelectedIndex = 0 };
+                if (!await Options("Erase", $"All {(item.Type == "disk" ? "partitions and files" : "files")} on {item.Name} ({item.Path}) will be permanently lost. Mounted volumes will be unmounted. Choose the new format.", formats, "Erase", true)) return;
+                option = formats.SelectedIndex == 0 ? "vfat" : "ext4";
             }
             else if (action == "Partition")
             {
@@ -178,6 +179,9 @@ public sealed partial class DiskManagerWindow : Window
             _status.Text = $"{operation} in progress on {item.Path}. Complete administrator authentication if requested.";
             await _service.Operate(item, operation, option, source, message => Dispatcher.UIThread.Post(() => { _status.Text = message; if (operation == "Health") _health[item.Root] = message; }));
             await Refresh();
+            if (operation == "Erase" && item.Type == "disk" && _list.SelectedItem is DiskItem refreshed &&
+                DiskService.ResolveMountVolume(refreshed, _items) is { } volume)
+                _list.SelectedItem = volume;
             _status.Text = operation == "Partition" ? "Success: partition created. Select the new partition and choose Erase to format it." : $"Success: {operation} completed on {item.Path}. You can select another action.";
         }
         catch (Exception ex) { _status.Text = "Could not complete the action. " + ex.Message; }

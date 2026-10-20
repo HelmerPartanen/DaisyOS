@@ -6250,4 +6250,12 @@ Used by: DaisyLaunch</comment>
     <value>Alareunan mediawidget</value>
     <comment>Source: Bottom media widget</comment>
   </data>
+  <data name="Loc_7D48657C36CD" xml:space="preserve">
+    <value>Levyt</value>
+    <comment>Source: Disks</comment>
+  </data>
+  <data name="Loc_A845AEBCD70D" xml:space="preserve">
+    <value>Asemaa ei voitu avata</value>
+    <comment>Source: Couldn’t open drive</comment>
+  </data>
 </root>

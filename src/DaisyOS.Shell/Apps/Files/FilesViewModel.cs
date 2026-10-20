@@ -148,14 +148,16 @@ public sealed class FilesViewModel : INotifyPropertyChanged
         return location is not null && PinnedLocations.Remove(location);
     }
 
-    public void RefreshVolumes()
+    private Task _volumeRefresh = Task.CompletedTask;
+    public void RefreshVolumes() => _ = RefreshVolumesAsync();
+    public Task RefreshVolumesAsync() => !_volumeRefresh.IsCompleted ? _volumeRefresh :
+        _volumeRefresh = RefreshVolumesCoreAsync();
+    private async Task RefreshVolumesCoreAsync()
     {
+        var volumes = (await VolumeService.GetVolumesAsync()).OrderBy(x => x.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+        if (Volumes.SequenceEqual(volumes)) return;
         Volumes.Clear();
-        foreach (var volume in VolumeService.GetVolumes()
-                     .OrderBy(volume => volume.Name, StringComparer.CurrentCultureIgnoreCase))
-        {
-            Volumes.Add(volume);
-        }
+        foreach (var volume in volumes) Volumes.Add(volume);
     }
 
     private void LoadPinnedLocations(string[] pinnedPaths)
