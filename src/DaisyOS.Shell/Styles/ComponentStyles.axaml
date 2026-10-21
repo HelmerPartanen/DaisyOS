@@ -236,6 +236,10 @@
     <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
   </Style>
   <Style Selector="Button.Primary /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Primary /template/ ContentPresenter#PART_ContentPresenter">
+    <!-- Draw inside the existing bounds, over the accent fill. -->
+    <Setter Property="BackgroundSizing" Value="OuterBorderEdge" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource ActionPrimaryInsetBorderBrush}" />
     <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />
     <Setter Property="TextBlock.Foreground" Value="{DynamicResource ContentOnPrimaryActionBrush}" />
   </Style>

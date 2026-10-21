@@ -10,8 +10,22 @@
     <Style Selector="Border#LargeArtworkFrame">
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
     </Style>
-    <Style Selector="Grid.portrait Border#LargeArtworkFrame">
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedXXL}" />
+    <Style Selector="StackPanel#LargeMetadata">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="Margin" Value="32,0" />
+    </Style>
+    <Style Selector="TextBlock.mediaMetadata">
+      <Setter Property="HorizontalAlignment" Value="Center" />
+      <Setter Property="TextAlignment" Value="Center" />
+    </Style>
+    <!-- The artwork is inset 18px inside the 32px outer frame: concentric 14px corners. -->
+    <Style Selector="Grid.portrait StackPanel#LargeMetadata">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Margin" Value="0,0,40,0" />
+    </Style>
+    <Style Selector="Grid.portrait TextBlock.mediaMetadata">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="TextAlignment" Value="Left" />
     </Style>
     <Style Selector="desktopWidgets|MediaWidget">
       <Setter Property="Transitions">
@@ -206,13 +220,13 @@
         <Grid x:Name="LargeDetails" Grid.Column="1" Margin="16,0,0,0" RowDefinitions="Auto,Auto,Auto"
               RowSpacing="10" VerticalAlignment="Center">
           <Grid Grid.Row="0">
-            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2" Margin="32,0">
-              <TextBlock x:Name="LargeTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
+            <StackPanel x:Name="LargeMetadata" VerticalAlignment="Center" Spacing="2">
+              <TextBlock x:Name="LargeTitle" Classes="mediaMetadata" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
                          Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
-                         TextAlignment="Center" HorizontalAlignment="Center" />
-              <TextBlock x:Name="LargeArtist" FontSize="{DynamicResource TypeSizeCaption}"
+                          />
+              <TextBlock x:Name="LargeArtist" Classes="mediaMetadata" FontSize="{DynamicResource TypeSizeCaption}"
                          Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
-                         TextAlignment="Center" HorizontalAlignment="Center" />
+                          />
             </StackPanel>
             <Canvas x:Name="LargeSpectrumCanvas" Width="28" Height="28"
                     VerticalAlignment="Center" HorizontalAlignment="Right" IsHitTestVisible="False" />

@@ -114,7 +114,7 @@ public partial class MediaWidget : UserControl
             var details = this.FindControl<Grid>("LargeDetails")!;
             Grid.SetColumn(details, portrait ? 0 : 1);
             Grid.SetRow(details, portrait ? 1 : 0);
-            details.Margin = portrait ? new Thickness(4, 0, 4, 6) : new Thickness(16, 0, 0, 0);
+            details.Margin = portrait ? new Thickness(0, 0, 0, 6) : new Thickness(16, 0, 0, 0);
         }
 
         if (_columnSpan <= 3 && !portrait)

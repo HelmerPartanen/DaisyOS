@@ -187,18 +187,16 @@ public sealed class SelectionControlTests
             await Task.Delay(250);
             using (window.CaptureRenderedFrame()) { }
             Assert.Equal(((ISolidColorBrush)surface.Background!).Color, ((ISolidColorBrush)indicator.Background!).Color);
-            Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, ((ISolidColorBrush)indicator.BorderBrush!).Color);
-            Assert.Equal(surface.BorderThickness, indicator.BorderThickness);
+            Assert.Equal(new Thickness(0), surface.BorderThickness);
             window.MouseMove(check.TranslatePoint(new Point(12, 16), window)!.Value);
             await Task.Delay(250);
             using (window.CaptureRenderedFrame()) { }
             var hoverBackground = ((ISolidColorBrush)indicator.Background!).Color;
-            var hoverBorder = ((ISolidColorBrush)indicator.BorderBrush!).Color;
             window.MouseMove(combo.TranslatePoint(new Point(12, 16), window)!.Value);
             await Task.Delay(250);
             using (window.CaptureRenderedFrame()) { }
             Assert.Equal(((ISolidColorBrush)surface.Background!).Color, hoverBackground);
-            Assert.Equal(((ISolidColorBrush)surface.BorderBrush!).Color, hoverBorder);
+            Assert.Equal(new Thickness(0), surface.BorderThickness);
             check.IsChecked = true;
             window.MouseMove(new Point(310, 230));
             await Task.Delay(250);

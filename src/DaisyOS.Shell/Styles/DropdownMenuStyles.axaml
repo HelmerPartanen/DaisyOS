@@ -104,8 +104,8 @@
   <Style Selector="ComboBox">
     <Setter Property="controls:ComboBoxBehavior.UseAdaptiveWidth" Value="True" />
     <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
-    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="BorderBrush" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
     <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
     <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
     <Setter Property="Padding" Value="14,0" />
@@ -246,11 +246,9 @@
 
   <Style Selector="ComboBox:pointerover /template/ Border#Background, ComboBox:dropdownopen /template/ Border#Background">
     <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
-    <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
   </Style>
   <Style Selector="ComboBox:focus-visible /template/ Border#Background">
-    <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
-    <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessFocus}" />
+    <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
   </Style>
 
   <Style Selector="ComboBox:pressed /template/ Border#Background">
@@ -310,7 +308,7 @@
 
   <Style Selector="ComboBox /template/ Border#Background">
       <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
     </Style>
 

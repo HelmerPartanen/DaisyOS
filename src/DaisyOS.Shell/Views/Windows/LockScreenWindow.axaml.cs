@@ -155,6 +155,13 @@ public partial class LockScreenWindow : Window
     private string? _canvasTrackKey;
     private string? _resolvedCanvasVideoPath;
     private bool _canvasVideoAttached;
+    private readonly DispatcherTimer _canvasRevealTimer = new(DispatcherPriority.Render)
+        { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly global::System.Diagnostics.Stopwatch _canvasRevealTime = new();
+    private double _canvasReveal;
+    private double _canvasRevealStart;
+    private double _canvasRevealTarget;
+
     private bool _hasMediaSession;
     private bool _isPlaying;
     private double _mediaPositionSeconds;
@@ -357,6 +364,7 @@ public partial class LockScreenWindow : Window
 
         _lockCanvasWallpaper.SuppressFailureFeedback = true;
         _lockCanvasWallpaper.FollowDesktopWallpaper = false;
+        _canvasRevealTimer.Tick += (_, _) => ApplyVisualState();
         _lockCanvasWallpaper.PresentationCompleted += (_, _) => Dispatcher.UIThread.Post(ApplyVisualState);
 
         _presenceTimer.Tick += (_, _) => AdvancePresence();
@@ -472,6 +480,7 @@ public partial class LockScreenWindow : Window
             _presenceTimer.Stop();
             _mediaPresenceTimer.Stop();
             _mediaExpandTimer.Stop();
+            _canvasRevealTimer.Stop();
             _spectrumTimer.Stop();
             _mediaPositionTimer.Stop();
             _presenceCompletion?.TrySetResult();
@@ -1660,6 +1669,7 @@ public partial class LockScreenWindow : Window
             var canvasAlpha = showMedia ? presence * mediaPresence * expand : 0;
             if (canvasAlpha <= 0.001)
             {
+                UpdateCanvasReveal(false, immediate: true);
                 _lockCanvasLayer.IsVisible = false;
                 _lockCanvasLayer.Opacity = 0;
                 _lockCanvasWallpaper.IsVisible = false;
@@ -1678,16 +1688,19 @@ public partial class LockScreenWindow : Window
                 var hasVideoPath = !string.IsNullOrWhiteSpace(_resolvedCanvasVideoPath);
                 _lockCanvasWallpaper.IsVisible = hasVideoPath;
 
-                LockWallpaper.Opacity = 1;
                 _lockCanvasLayer.Opacity = canvasAlpha;
                 var videoPresented = hasVideoPath
                     && _lockCanvasWallpaper.PresentationState == WallpaperLayer.WallpaperPresentationState.Presented;
                 // A native subsurface sits beneath the Avalonia scene. Reveal it
                 // through the desktop wallpaper; visual-tree video fades normally.
                 var nativeVideo = videoPresented && _lockCanvasWallpaper.UsesNativeSubsurface;
-                LockWallpaper.Opacity = nativeVideo ? 1 - canvasAlpha : 1;
-                _lockCanvasWallpaper.Opacity = videoPresented ? 1 : 0;
-                _lockCanvasFallbackPanel.Opacity = videoPresented ? 0 : 1;
+                UpdateCanvasReveal(videoPresented, immediate: !hasVideoPath);
+                // Native video is below the entire scene. Fade both opaque covers
+                // with the same clock; independent transitions expose the desktop
+                // wallpaper between artwork and video, producing a flash.
+                LockWallpaper.Opacity = nativeVideo ? 1 - canvasAlpha * _canvasReveal : 1;
+                _lockCanvasWallpaper.Opacity = nativeVideo ? 1 : _canvasReveal;
+                _lockCanvasFallbackPanel.Opacity = 1 - _canvasReveal;
             }
         }
 
@@ -1695,6 +1708,29 @@ public partial class LockScreenWindow : Window
         // advanced, rather than several partially updated masks per frame.
         if (_nativeBlur is { } blur) blur.UpdateGeometry(Update);
         else Update();
+    }
+
+    private void UpdateCanvasReveal(bool ready, bool immediate = false)
+    {
+        var target = ready ? 1d : 0d;
+        if (immediate || Application.Current is App { ReduceMotionEnabled: true })
+        {
+            _canvasReveal = _canvasRevealTarget = target;
+            _canvasRevealTimer.Stop();
+            return;
+        }
+        if (_canvasRevealTarget != target)
+        {
+            _canvasRevealStart = _canvasReveal;
+            _canvasRevealTarget = target;
+            _canvasRevealTime.Restart();
+            _canvasRevealTimer.Start();
+        }
+        if (!_canvasRevealTimer.IsEnabled) return;
+        var progress = Math.Clamp(_canvasRevealTime.Elapsed.TotalMilliseconds / 240, 0, 1);
+        var eased = progress * progress * (3 - 2 * progress);
+        _canvasReveal = _canvasRevealStart + (target - _canvasRevealStart) * eased;
+        if (progress >= 1) _canvasRevealTimer.Stop();
     }
 
     private Rect GetRestingCollapsedArtworkRect()

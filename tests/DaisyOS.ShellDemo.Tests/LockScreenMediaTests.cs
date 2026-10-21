@@ -164,6 +164,9 @@ public sealed class LockScreenMediaTests
             Assert.False(credentials.IsHitTestVisible);
 
             var expandedTitle = window.FindControl<TextBlock>("ExpandedTitleText")!;
+            Assert.Equal(TextAlignment.Left, expandedTitle.TextAlignment);
+            Assert.Equal(TextAlignment.Left, window.FindControl<TextBlock>("ExpandedArtistText")!.TextAlignment);
+
             var expandedArtist = window.FindControl<TextBlock>("ExpandedArtistText")!;
             var elapsedText = window.FindControl<TextBlock>("ExpandedElapsedText")!;
             var remainingText = window.FindControl<TextBlock>("ExpandedRemainingText")!;

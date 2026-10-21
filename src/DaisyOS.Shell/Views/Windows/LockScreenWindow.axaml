@@ -68,11 +68,6 @@
              IsVisible="False"
              IsHitTestVisible="False">
         <Panel x:Name="LockCanvasFallbackPanel">
-          <Panel.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
-            </Transitions>
-          </Panel.Transitions>
           <Border Background="{DynamicResource LockScreenMediaBackdropBrush}" />
           <Image x:Name="LockCanvasFallbackImage"
                  Stretch="UniformToFill"
@@ -89,11 +84,6 @@
         <wallpaper:WallpaperLayer x:Name="LockCanvasWallpaper"
                                   IgnoreDesktopOcclusion="True"
                                   IsVisible="False">
-          <wallpaper:WallpaperLayer.Transitions>
-            <Transitions>
-              <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
-            </Transitions>
-          </wallpaper:WallpaperLayer.Transitions>
         </wallpaper:WallpaperLayer>
         <Border Background="{DynamicResource LockScreenMediaScrimBrush}" IsHitTestVisible="False" />
       </Panel>
@@ -638,12 +628,12 @@
                 <Grid Margin="20,14,20,14"
                       RowDefinitions="Auto,Auto,Auto"
                       RowSpacing="10">
-                  <!-- Row 0: Centered Title & Artist + Top-Right Spectrum -->
+                  <!-- Row 0: Metadata with reserved space for the spectrum -->
                   <Grid Grid.Row="0">
-                    <StackPanel HorizontalAlignment="Center"
+                    <StackPanel HorizontalAlignment="Stretch"
                                 VerticalAlignment="Center"
                                 Spacing="2"
-                                Margin="32,0">
+                                Margin="0,0,40,0">
                       <TextBlock x:Name="ExpandedTitleText"
                                  Text="{DynamicResource Loc_A92C2C9ABECA}"
                                  FontSize="{DynamicResource TypeSizeBody}"
@@ -651,15 +641,15 @@
                                  Foreground="{DynamicResource ContentPrimaryBrush}"
                                  TextTrimming="CharacterEllipsis"
                                  MaxLines="1"
-                                 TextAlignment="Center"
-                                 HorizontalAlignment="Center" />
+                                 TextAlignment="Left"
+                                 HorizontalAlignment="Stretch" />
                       <TextBlock x:Name="ExpandedArtistText"
                                  FontSize="{DynamicResource TypeSizeCaption}"
                                  Foreground="{DynamicResource ContentSecondaryBrush}"
                                  TextTrimming="CharacterEllipsis"
                                  MaxLines="1"
-                                 TextAlignment="Center"
-                                 HorizontalAlignment="Center" />
+                                 TextAlignment="Left"
+                                 HorizontalAlignment="Stretch" />
                     </StackPanel>
 
                     <Canvas x:Name="ExpandedSpectrumCanvas"

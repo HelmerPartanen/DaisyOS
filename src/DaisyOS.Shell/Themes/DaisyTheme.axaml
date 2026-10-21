@@ -414,6 +414,8 @@
 
   </ResourceDictionary.ThemeDictionaries>
 
+  <SolidColorBrush x:Key="ActionPrimaryInsetBorderBrush" Color="#FFFFFF" Opacity="0.05" />
+
   <DropShadowEffect x:Key="DesktopLabelShadow" OffsetX="0" OffsetY="1" BlurRadius="2" Color="Black" Opacity="0.65" />
   <DropShadowEffect x:Key="DesktopItemLabelShadow" OffsetX="0" OffsetY="1" BlurRadius="2" Color="Black" Opacity="0.65" />
   <BoxShadows x:Key="ElevationWindowShadow">0 1 5 0 #16000000</BoxShadows>

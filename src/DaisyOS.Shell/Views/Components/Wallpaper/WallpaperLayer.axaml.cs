@@ -658,7 +658,10 @@ public partial class WallpaperLayer : UserControl
         }
         if (_isVideoPrerolling)
         {
-            if (stats.Submitted == 0)
+            // A submitted resize can still be a black preroll buffer. State advances
+            // only after mpv supplies a real decoded frame. Occluded subsurfaces
+            // cannot require presentation feedback before their cover is removed.
+            if (stats.Submitted == 0 || stats.State == 0)
             {
                 if (DateTimeOffset.UtcNow - _lastVideoFrameAt > TimeSpan.FromSeconds(10)) ReportVideoFrameFailure();
                 return;

@@ -9,6 +9,7 @@
     <Reference Include="$(ShellOutput)/*.dll" />
     <Reference Include="$(AvaloniaOutput)/Headless/Avalonia.Headless/bin/Debug/net10.0/Avalonia.Headless.dll" />
     <Reference Include="$(AvaloniaOutput)/Avalonia.Fonts.Inter/bin/Debug/net10.0/Avalonia.Fonts.Inter.dll" />
+    <None Include="$(ShellOutput)/daisy-mpv-preview;$(ShellOutput)/libdaisy_mpv_wallpaper.so" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
     <None Include="$(ShellOutput)/runtimes/linux-x64/native/*" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

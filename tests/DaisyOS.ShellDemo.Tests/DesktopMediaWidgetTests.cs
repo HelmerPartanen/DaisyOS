@@ -192,6 +192,16 @@ public sealed class DesktopMediaWidgetTests
             var details = widget.FindControl<Grid>("LargeDetails")!;
             Assert.Equal(artwork.Bounds.Width, artwork.Bounds.Height, 2);
             Assert.True(artwork.Bounds.Width > 280);
+            Assert.Equal(new CornerRadius(14), artwork.CornerRadius);
+            var title = widget.FindControl<TextBlock>("LargeTitle")!;
+            var artist = widget.FindControl<TextBlock>("LargeArtist")!;
+            Assert.Equal(Avalonia.Media.TextAlignment.Left, title.TextAlignment);
+            Assert.Equal(Avalonia.Media.TextAlignment.Left, artist.TextAlignment);
+            Assert.Equal(artwork.TranslatePoint(default, widget)!.Value.X,
+                title.TranslatePoint(default, widget)!.Value.X, 1);
+            Assert.Equal(title.TranslatePoint(default, widget)!.Value.X,
+                artist.TranslatePoint(default, widget)!.Value.X, 1);
+
             Assert.True(artwork.Bounds.Bottom < details.Bounds.Top);
             Assert.True(details.Bounds.Bottom <= widget.FindControl<Grid>("LargeLayout")!.Bounds.Height);
             Assert.Equal(40, widget.FindControl<Button>("LargePlayPauseButton")!.Bounds.Height);
