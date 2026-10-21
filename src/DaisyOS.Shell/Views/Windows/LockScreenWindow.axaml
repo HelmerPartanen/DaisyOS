@@ -9,27 +9,94 @@
         ShowInTaskbar="False"
         CanResize="False"
         Topmost="True"
+        RequestedThemeVariant="Dark"
         Background="{DynamicResource LockScreenCanvasBrush}">
+
+  <Window.Styles>
+    <Style Selector="Border.spectrumBar">
+      <Setter Property="Background" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="Opacity" Value="0.6" />
+    </Style>
+    <Style Selector="Button.LockMediaBtn">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.LockMediaBtn:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="Button.LockMediaBtn:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.90)" />
+    </Style>
+    <Style Selector="Border.LockMediaArtwork">
+      <Setter Property="RenderTransform" Value="scale(1)" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.LockMediaArtwork:pointerover">
+      <Setter Property="RenderTransform" Value="scale(1.025)" />
+    </Style>
+    <Style Selector="Border.LockMediaArtwork:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.97)" />
+    </Style>
+  </Window.Styles>
 
   <Grid x:Name="RootGrid"
         Opacity="0">
 
     <Panel x:Name="LockBackground" Background="{DynamicResource LockScreenCanvasBrush}">
-    <!-- Background Wallpaper Layer -->
-    <wallpaper:WallpaperLayer x:Name="LockWallpaper"
-                              IgnoreDesktopOcclusion="True" />
+      <!-- Background Wallpaper Layer -->
+      <wallpaper:WallpaperLayer x:Name="LockWallpaper"
+                                IgnoreDesktopOcclusion="True" />
 
-    <!-- Subtle Vignette / Scrim Overlay for Legibility -->
-    <Border IsHitTestVisible="False">
-      <Border.Background>
-        <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-          <GradientStop Offset="0.0" Color="{DynamicResource BlackAlpha25Color}" />
-          <GradientStop Offset="0.25" Color="{DynamicResource BlackAlpha08Color}" />
-          <GradientStop Offset="0.65" Color="{DynamicResource BlackAlpha08Color}" />
-          <GradientStop Offset="1.0" Color="{DynamicResource BlackAlpha33Color}" />
-        </LinearGradientBrush>
-      </Border.Background>
-    </Border>
+      <!-- Fullscreen Spotify Canvas Video / Blurred Artwork Layer -->
+      <Panel x:Name="LockCanvasLayer"
+             Opacity="0"
+             IsVisible="False"
+             IsHitTestVisible="False">
+        <Panel x:Name="LockCanvasFallbackPanel">
+          <Border Background="#FF08090C" />
+          <Image x:Name="LockCanvasFallbackImage"
+                 Stretch="UniformToFill"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 Opacity="0.72"
+                 RenderTransform="scale(1.12)"
+                 RenderOptions.BitmapInterpolationMode="HighQuality">
+            <Image.Effect>
+              <BlurEffect Radius="44" />
+            </Image.Effect>
+          </Image>
+        </Panel>
+        <wallpaper:WallpaperLayer x:Name="LockCanvasWallpaper"
+                                  IgnoreDesktopOcclusion="True"
+                                  IsVisible="False" />
+        <Border Background="#2D000000" IsHitTestVisible="False" />
+      </Panel>
+
+      <!-- Subtle Vignette / Scrim Overlay for Legibility -->
+      <Border IsHitTestVisible="False">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0.0" Color="{DynamicResource BlackAlpha25Color}" />
+            <GradientStop Offset="0.25" Color="{DynamicResource BlackAlpha08Color}" />
+            <GradientStop Offset="0.65" Color="{DynamicResource BlackAlpha08Color}" />
+            <GradientStop Offset="1.0" Color="{DynamicResource BlackAlpha33Color}" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
 
     </Panel>
 
@@ -325,5 +392,409 @@
       </StackPanel>
     </Grid>
     </Grid>
+
+    <!-- Bottom-Left Large Desktop Media Widget -->
+    <Grid x:Name="CollapsedMediaHost"
+          HorizontalAlignment="Left"
+          VerticalAlignment="Bottom"
+          Margin="24,0,0,24"
+          IsVisible="False">
+      <controls:ShellFrameBorder x:Name="CollapsedMediaBorder"
+                                 Width="354"
+                                 Height="160"
+                                 Padding="1"
+                                 Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                                 CornerRadius="{DynamicResource RoundedXXL}"
+                                 RenderTransformOrigin="0.5,0.5">
+        <controls:ShellFrameBorder BorderThickness="1"
+                                   BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                                   BackgroundSizing="InnerBorderEdge"
+                                   Background="Transparent"
+                                   CornerRadius="{DynamicResource RoundedXXLInset}">
+          <Border Background="{DynamicResource SurfaceBaseBrush}"
+                  CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
+                  ClipToBounds="True">
+            <Grid>
+              <Border x:Name="CollapsedArtworkTint"
+                      Background="Transparent"
+                      IsHitTestVisible="False">
+                <Border.Transitions>
+                  <Transitions>
+                    <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationEnter}" Easing="CubicEaseOut" />
+                  </Transitions>
+                </Border.Transitions>
+              </Border>
+
+              <Grid Margin="16" ColumnDefinitions="Auto,*">
+                <!-- Clickable Square Album Artwork -->
+                <Border x:Name="CollapsedArtworkButton"
+                        Grid.Column="0"
+                        Classes="LockMediaArtwork"
+                        Width="126"
+                        Height="126"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Left"
+                        CornerRadius="{DynamicResource RoundedLG}"
+                        ClipToBounds="True"
+                        Cursor="Hand"
+                        Background="Transparent"
+                        PointerPressed="OnCollapsedArtworkPointerPressed">
+                  <Grid>
+                    <Image x:Name="CollapsedArtworkImage"
+                           Stretch="UniformToFill"
+                           IsVisible="False"
+                           RenderOptions.BitmapInterpolationMode="HighQuality" />
+                    <Border x:Name="CollapsedArtworkFallback"
+                            Background="{DynamicResource StateHoverBrush}">
+                      <Grid>
+                        <Image x:Name="CollapsedSourceIcon"
+                               Width="36"
+                               Height="36"
+                               IsVisible="False"
+                               RenderOptions.BitmapInterpolationMode="HighQuality" />
+                        <controls:DaisyIcon x:Name="CollapsedSourceGlyph"
+                                            Icon="music-note"
+                                            Weight="Fill"
+                                            Size="{DynamicResource IconSizeHero}"
+                                            Foreground="{DynamicResource ContentTertiaryBrush}"
+                                            HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" />
+                      </Grid>
+                    </Border>
+                  </Grid>
+                </Border>
+
+                <!-- Right Column: Spectrum, Title/Artist, Transport -->
+                <Grid Grid.Column="1" Margin="16,0,0,0" RowDefinitions="Auto,*,Auto">
+                  <Canvas Grid.Row="0"
+                          x:Name="CollapsedSpectrumCanvas"
+                          Width="28"
+                          Height="28"
+                          VerticalAlignment="Top"
+                          HorizontalAlignment="Right"
+                          IsHitTestVisible="False" />
+
+                  <StackPanel Grid.Row="1"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center"
+                              Spacing="2">
+                    <TextBlock x:Name="CollapsedTitleText"
+                               Text="{DynamicResource Loc_A92C2C9ABECA}"
+                               FontSize="{DynamicResource TypeSizeBody}"
+                               FontWeight="SemiBold"
+                               Foreground="{DynamicResource ContentPrimaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1"
+                               TextAlignment="Center"
+                               HorizontalAlignment="Center" />
+                    <TextBlock x:Name="CollapsedArtistText"
+                               FontSize="{DynamicResource TypeSizeCaption}"
+                               Foreground="{DynamicResource ContentSecondaryBrush}"
+                               TextTrimming="CharacterEllipsis"
+                               MaxLines="1"
+                               TextAlignment="Center"
+                               HorizontalAlignment="Center" />
+                  </StackPanel>
+
+                  <StackPanel Grid.Row="2"
+                              Orientation="Horizontal"
+                              Spacing="{DynamicResource Space2}"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Bottom">
+                    <Button x:Name="CollapsedPreviousButton"
+                            Classes="LockMediaBtn"
+                            Width="{DynamicResource ControlHeightStandard}"
+                            Height="{DynamicResource ControlHeightStandard}"
+                            Click="OnMediaPreviousClicked"
+                            ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+                      <controls:DaisyIcon Icon="rewind"
+                                          Weight="Fill"
+                                          Size="{DynamicResource IconSizeMedium}"
+                                          Foreground="{DynamicResource ContentPrimaryBrush}" />
+                    </Button>
+                    <Button x:Name="CollapsedPlayPauseButton"
+                            Classes="LockMediaBtn"
+                            Width="{DynamicResource ControlHeightStandard}"
+                            Height="{DynamicResource ControlHeightStandard}"
+                            Click="OnMediaPlayPauseClicked"
+                            ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+                      <controls:DaisyIcon x:Name="CollapsedPlayPauseGlyph"
+                                          Icon="play"
+                                          Weight="Fill"
+                                          Size="{DynamicResource IconSizeMedium}"
+                                          Foreground="{DynamicResource ContentPrimaryBrush}" />
+                    </Button>
+                    <Button x:Name="CollapsedNextButton"
+                            Classes="LockMediaBtn"
+                            Width="{DynamicResource ControlHeightStandard}"
+                            Height="{DynamicResource ControlHeightStandard}"
+                            Click="OnMediaNextClicked"
+                            ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+                      <controls:DaisyIcon Icon="fast-forward"
+                                          Weight="Fill"
+                                          Size="{DynamicResource IconSizeMedium}"
+                                          Foreground="{DynamicResource ContentPrimaryBrush}" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Grid>
+            </Grid>
+          </Border>
+        </controls:ShellFrameBorder>
+      </controls:ShellFrameBorder>
+    </Grid>
+
+    <!-- Fullscreen Media Mode Overlay (Center Artwork + Bottom Control Card) -->
+    <Grid x:Name="ExpandedMediaHost"
+          HorizontalAlignment="Stretch"
+          VerticalAlignment="Stretch"
+          IsVisible="False">
+      <StackPanel x:Name="ExpandedMediaStack"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Bottom"
+                  Spacing="28"
+                  Margin="24,0,24,36">
+        <!-- Center Large Album Artwork (Click to collapse back to normal lock screen) -->
+        <Border x:Name="ExpandedArtworkContainer"
+                Width="312"
+                Height="312"
+                HorizontalAlignment="Center"
+                CornerRadius="20"
+                BoxShadow="0 18 44 0 #66000000">
+          <Border x:Name="ExpandedArtworkButton"
+                  Classes="LockMediaArtwork"
+                  CornerRadius="20"
+                  ClipToBounds="True"
+                  Cursor="Hand"
+                  Background="Transparent"
+                  PointerPressed="OnExpandedArtworkPointerPressed">
+            <Grid>
+              <Image x:Name="ExpandedArtworkImage"
+                     Stretch="UniformToFill"
+                     IsVisible="False"
+                     RenderOptions.BitmapInterpolationMode="HighQuality" />
+              <Border x:Name="ExpandedArtworkFallback"
+                      Background="{DynamicResource SurfaceBaseBrush}">
+                <Grid>
+                  <Image x:Name="ExpandedSourceIcon"
+                         Width="64"
+                         Height="64"
+                         IsVisible="False"
+                         RenderOptions.BitmapInterpolationMode="HighQuality" />
+                  <controls:DaisyIcon x:Name="ExpandedSourceGlyph"
+                                      Icon="music-note"
+                                      Weight="Fill"
+                                      Size="56"
+                                      Foreground="{DynamicResource ContentTertiaryBrush}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Grid>
+          </Border>
+        </Border>
+
+        <!-- Expanded Media Control Card -->
+        <controls:ShellFrameBorder x:Name="ExpandedMediaBorder"
+                                   Width="354"
+                                   Padding="1"
+                                   Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                                   CornerRadius="{DynamicResource RoundedXXL}"
+                                   HorizontalAlignment="Center"
+                                   RenderTransformOrigin="0.5,0.5">
+          <controls:ShellFrameBorder BorderThickness="1"
+                                     BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                                     BackgroundSizing="InnerBorderEdge"
+                                     Background="Transparent"
+                                     CornerRadius="{DynamicResource RoundedXXLInset}">
+            <Border Background="{DynamicResource SurfaceBaseBrush}"
+                    CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
+                    ClipToBounds="True">
+              <Grid>
+                <Border x:Name="ExpandedArtworkTint"
+                        Background="Transparent"
+                        IsHitTestVisible="False">
+                  <Border.Transitions>
+                    <Transitions>
+                      <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationEnter}" Easing="CubicEaseOut" />
+                    </Transitions>
+                  </Border.Transitions>
+                </Border>
+
+                <Grid Margin="20,14,20,14"
+                      RowDefinitions="Auto,Auto,Auto"
+                      RowSpacing="10">
+                  <!-- Row 0: Centered Title & Artist + Top-Right Spectrum -->
+                  <Grid Grid.Row="0">
+                    <StackPanel HorizontalAlignment="Center"
+                                VerticalAlignment="Center"
+                                Spacing="2"
+                                Margin="32,0">
+                      <TextBlock x:Name="ExpandedTitleText"
+                                 Text="{DynamicResource Loc_A92C2C9ABECA}"
+                                 FontSize="{DynamicResource TypeSizeBody}"
+                                 FontWeight="SemiBold"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 MaxLines="1"
+                                 TextAlignment="Center"
+                                 HorizontalAlignment="Center" />
+                      <TextBlock x:Name="ExpandedArtistText"
+                                 FontSize="{DynamicResource TypeSizeCaption}"
+                                 Foreground="{DynamicResource ContentSecondaryBrush}"
+                                 TextTrimming="CharacterEllipsis"
+                                 MaxLines="1"
+                                 TextAlignment="Center"
+                                 HorizontalAlignment="Center" />
+                    </StackPanel>
+
+                    <Canvas x:Name="ExpandedSpectrumCanvas"
+                            Width="28"
+                            Height="28"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center"
+                            IsHitTestVisible="False" />
+                  </Grid>
+
+                  <!-- Row 1: Scrubber / Timeline with Elapsed and Remaining Time -->
+                  <Grid Grid.Row="1"
+                        ColumnDefinitions="Auto,*,Auto"
+                        VerticalAlignment="Center">
+                    <TextBlock x:Name="ExpandedElapsedText"
+                               Grid.Column="0"
+                               Text="0.00"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource ContentSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               MinWidth="28" />
+
+                    <Border x:Name="ExpandedProgressHitArea"
+                            Grid.Column="1"
+                            Background="Transparent"
+                            Padding="0,6"
+                            Margin="10,0"
+                            Cursor="Hand"
+                            VerticalAlignment="Center"
+                            PointerPressed="OnProgressTrackPointerPressed">
+                      <Border x:Name="ExpandedProgressTrack"
+                              Height="6"
+                              CornerRadius="3"
+                              Background="{DynamicResource WhiteAlpha20Brush}"
+                              ClipToBounds="True"
+                              HorizontalAlignment="Stretch">
+                        <Border x:Name="ExpandedProgressFill"
+                                Height="6"
+                                CornerRadius="3"
+                                Background="{DynamicResource WhiteAlpha85Brush}"
+                                HorizontalAlignment="Left"
+                                Width="0" />
+                      </Border>
+                    </Border>
+
+                    <TextBlock x:Name="ExpandedRemainingText"
+                               Grid.Column="2"
+                               Text="- 0.00"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource ContentSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               TextAlignment="Right"
+                               MinWidth="34" />
+                  </Grid>
+
+                  <!-- Row 2: Transport Buttons -->
+                  <StackPanel Grid.Row="2"
+                              Orientation="Horizontal"
+                              Spacing="16"
+                              HorizontalAlignment="Center"
+                              VerticalAlignment="Center">
+                    <Button x:Name="ExpandedPreviousButton"
+                            Classes="LockMediaBtn"
+                            Width="36"
+                            Height="36"
+                            Click="OnMediaPreviousClicked"
+                            ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+                      <controls:DaisyIcon Icon="rewind"
+                                          Weight="Fill"
+                                          Size="{DynamicResource IconSizeMedium}"
+                                          Foreground="{DynamicResource ContentPrimaryBrush}" />
+                    </Button>
+                    <Button x:Name="ExpandedPlayPauseButton"
+                            Classes="LockMediaBtn"
+                            Width="40"
+                            Height="40"
+                            Click="OnMediaPlayPauseClicked"
+                            ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+                      <controls:DaisyIcon x:Name="ExpandedPlayPauseGlyph"
+                                          Icon="play"
+                                          Weight="Fill"
+                                          Size="26"
+                                          Foreground="{DynamicResource ContentPrimaryBrush}" />
+                    </Button>
+                    <Button x:Name="ExpandedNextButton"
+                            Classes="LockMediaBtn"
+                            Width="36"
+                            Height="36"
+                            Click="OnMediaNextClicked"
+                            ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+                      <controls:DaisyIcon Icon="fast-forward"
+                                          Weight="Fill"
+                                          Size="{DynamicResource IconSizeMedium}"
+                                          Foreground="{DynamicResource ContentPrimaryBrush}" />
+                    </Button>
+                  </StackPanel>
+                </Grid>
+              </Grid>
+            </Border>
+          </controls:ShellFrameBorder>
+        </controls:ShellFrameBorder>
+      </StackPanel>
+    </Grid>
+
+    <!-- Floating FLIP Hero Artwork Bridge for Smooth Expand/Collapse Transition -->
+    <Panel x:Name="MorphingArtworkHost"
+           HorizontalAlignment="Stretch"
+           VerticalAlignment="Stretch"
+           IsHitTestVisible="False">
+      <Border x:Name="MorphingArtworkBorder"
+              Width="126"
+              Height="126"
+              HorizontalAlignment="Left"
+              VerticalAlignment="Top"
+              CornerRadius="14"
+              BoxShadow="0 14 36 0 #55000000"
+              IsVisible="False"
+              IsHitTestVisible="False">
+        <Border x:Name="MorphingArtworkInner"
+                CornerRadius="14"
+                ClipToBounds="True">
+          <Grid>
+            <Image x:Name="MorphingArtworkImage"
+                   Stretch="UniformToFill"
+                   IsVisible="False"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <Border x:Name="MorphingArtworkFallback"
+                    Background="{DynamicResource StateHoverBrush}">
+              <Grid>
+                <Image x:Name="MorphingSourceIcon"
+                       Width="44"
+                       Height="44"
+                       IsVisible="False"
+                       RenderOptions.BitmapInterpolationMode="HighQuality" />
+                <controls:DaisyIcon x:Name="MorphingSourceGlyph"
+                                    Icon="music-note"
+                                    Weight="Fill"
+                                    Size="40"
+                                    Foreground="{DynamicResource ContentTertiaryBrush}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+              </Grid>
+            </Border>
+          </Grid>
+        </Border>
+      </Border>
+    </Panel>
+
   </Grid>
 </Window>

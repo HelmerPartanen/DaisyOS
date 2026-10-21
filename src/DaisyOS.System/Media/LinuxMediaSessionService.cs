@@ -91,6 +91,21 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
         return RunControlCommandAsync("next", "Next", cancellationToken);
     }
 
+    public async Task SeekAsync(double positionSeconds, CancellationToken cancellationToken = default)
+    {
+        if (!double.IsFinite(positionSeconds) || positionSeconds < 0)
+        {
+            return;
+        }
+
+        var formattedSeconds = positionSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+        await _commandRunner.RunAsync(
+            "playerctl",
+            WithPlayer(_activePlayerName, "position", formattedSeconds),
+            CommandTimeout,
+            cancellationToken);
+    }
+
     private async Task<string> RunPlayerCommandAsync(IReadOnlyList<string> arguments, CancellationToken cancellationToken)
     {
         return await RunPlayerctlQuietAsync(WithPlayer(_activePlayerName, arguments), cancellationToken) ?? string.Empty;

@@ -13,4 +13,6 @@ public interface IMediaSessionService
     Task PlayPauseAsync(CancellationToken cancellationToken = default);
 
     Task NextAsync(CancellationToken cancellationToken = default);
+
+    Task SeekAsync(double positionSeconds, CancellationToken cancellationToken = default) => Task.CompletedTask;
 }

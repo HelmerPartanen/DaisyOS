@@ -1,21 +1,28 @@
 using System.Globalization;
+using System.IO;
+using System.Net.Http;
+using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Media.TextFormatting;
 using Avalonia.Media.Imaging;
-using System.Runtime.InteropServices;
-using Avalonia.Wayland;
-using DaisyOS.Shell.Services.Compositor;
-using DaisyOS.Shell.Services.Motion;
-using DaisyOS.Shell.Views.Components.Wallpaper;
-using DaisyOS.Shell.Services.Theming;
+using Avalonia.Media.TextFormatting;
 using Avalonia.Threading;
-using DaisyOS.Shell.Services.Shell;
+using Avalonia.Wayland;
+using DaisyOS.Core.Models;
 using DaisyOS.Core.Services;
+using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Services.Appearance;
+using DaisyOS.Shell.Services.Compositor;
+using DaisyOS.Shell.Services.Media;
+using DaisyOS.Shell.Services.Shell;
+using DaisyOS.Shell.Services.Theming;
+using DaisyOS.Shell.ViewModels;
+using DaisyOS.Shell.Views.Components.Wallpaper;
+using DaisyOS.System.Audio;
+using DaisyOS.System.Media;
 using DaisyOS.System.Power;
 using DaisyOS.System.Processes;
 using DaisyOS.System.Security;
@@ -24,36 +31,98 @@ namespace DaisyOS.Shell.Views.Windows;
 
 public partial class LockScreenWindow : Window
 {
+    private const int SpectrumColumns = 6;
+    private const int MaxInlineArtworkBytes = 4 * 1024 * 1024;
+    private static readonly HttpClient ArtworkHttpClient = new() { Timeout = TimeSpan.FromSeconds(3) };
+
     private readonly ILockScreenService _lockService;
     private readonly IPowerService _powerService;
     private readonly IBatteryStatusService _batteryService;
+    private readonly IMediaSessionService _mediaService;
     private readonly DispatcherTimer _clockTimer;
     private readonly bool _isSecondary;
     private bool _isAuthenticating;
     private bool _isShaking;
     private Task? _dismissal;
     private bool _dismissing;
+
     private readonly DispatcherTimer _presenceTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly global::System.Diagnostics.Stopwatch _presenceTime = new();
     private readonly TranslateTransform _clockPresence = new();
     private readonly TranslateTransform _credentialsPresence = new();
+    private readonly TranslateTransform _cornerControlsTransform = new();
     private TaskCompletionSource? _presenceCompletion;
     private double _presenceProgress;
     private double _presenceTarget, _presenceStart;
     private TimeSpan _presenceDuration;
+
+    private readonly DispatcherTimer _mediaPresenceTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly global::System.Diagnostics.Stopwatch _mediaPresenceTime = new();
+    private double _mediaPresenceProgress;
+    private double _mediaPresenceTarget, _mediaPresenceStart;
+    private TimeSpan _mediaPresenceDuration;
+
+    private readonly DispatcherTimer _mediaExpandTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly global::System.Diagnostics.Stopwatch _mediaExpandTime = new();
+    private TaskCompletionSource? _mediaExpandCompletion;
+    private double _mediaExpandProgress;
+    private double _mediaExpandTarget, _mediaExpandStart;
+    private TimeSpan _mediaExpandDuration;
+
+    private readonly TranslateTransform _collapsedCardTranslate = new();
+    private readonly ScaleTransform _collapsedCardScale = new(1, 1);
+    private readonly TransformGroup _collapsedCardTransform = new();
+
+    private readonly TranslateTransform _expandedCardTranslate = new();
+    private readonly ScaleTransform _expandedCardScale = new(1, 1);
+    private readonly TransformGroup _expandedCardTransform = new();
+
+    private readonly TranslateTransform _morphingArtworkTranslate = new();
+
     private readonly DispatcherTimer _clockAnimation = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly global::System.Diagnostics.Stopwatch _clockAnimationTime = new();
     private bool _clockInitialized;
     private KWinBlur? _nativeBlur;
     private readonly Dictionary<(string, Typeface, double), Rect[]> _clockGlyphBands = new();
 
+    private readonly DispatcherTimer _spectrumTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
+    private readonly DispatcherTimer _mediaPositionTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    private readonly List<Border> _collapsedSpectrumBars = [];
+    private readonly List<Border> _expandedSpectrumBars = [];
+    private readonly List<Border> _spectrumTintLayers = [];
+    private readonly double[] _spectrumSnapshot = new double[SpectrumColumns];
+    private LinuxAudioSpectrumService? _audioSpectrumService;
+    private bool _spectrumIsIdle = true;
+
+    private CancellationTokenSource? _mediaRefreshCancellation;
+    private CancellationTokenSource? _canvasResolveCancellation;
+    private Bitmap? _artwork;
+    private string? _artworkPath;
+    private string? _resolvedArtworkPath;
+    private Color? _artworkTint;
+    private string? _trackKey;
+    private string? _canvasTrackKey;
+    private string? _resolvedCanvasVideoPath;
+    private bool _hasMediaSession;
+    private bool _isPlaying;
+    private double _mediaPositionSeconds;
+    private double _mediaDurationSeconds;
+    private DateTimeOffset _lastPositionSyncAt = DateTimeOffset.UtcNow;
+    private DateTimeOffset _lastPeriodicSessionSyncAt = DateTimeOffset.UtcNow;
+
     public event Action? Dismissing;
+
+    public bool HasActiveMediaSession => _hasMediaSession;
+    public bool IsMediaExpanded => _mediaExpandTarget > 0.5;
+    public double MediaExpandProgress => _mediaExpandProgress;
+    public string? ActiveCanvasVideoPath => _resolvedCanvasVideoPath;
 
     // KWin needs the sharp wallpaper beneath a transparent foreground surface.
     // Restrict blur to material containers and clock glyphs, never the fullscreen root.
     internal static LockScreenWindow CreateNative(ILayerShellWindowBackend backend,
         LayerShellSurfaceOptions options, string? wallpaperSource, bool isSecondary = false,
-        ILockScreenService? lockService = null, WallpaperLayer? initialWallpaper = null)
+        ILockScreenService? lockService = null, WallpaperLayer? initialWallpaper = null,
+        IMediaSessionService? mediaService = null)
     {
         var wallpaper = backend.CreateWindow(options with
         {
@@ -69,7 +138,7 @@ public partial class LockScreenWindow : Window
             Background = Brushes.Black
         }, Window.TitleProperty, "DaisyOS Lock Wallpaper"));
         var window = backend.CreateWindow(options,
-            () => new LockScreenWindow(wallpaperSource, lockService, isSecondary));
+            () => new LockScreenWindow(wallpaperSource, lockService, isSecondary, mediaService));
         ThemeTransitionPolicy.SetEnabled(window, false);
         window.Background = Brushes.Transparent;
         if (initialWallpaper is not null) window.LockWallpaper.SeedFrom(initialWallpaper);
@@ -78,7 +147,13 @@ public partial class LockScreenWindow : Window
         wallpaper.Content = window.LockBackground;
         window.Closed += (_, _) => wallpaper.Close();
         window._nativeBlur = new KWinBlur(window, window.RootGrid,
-            () => new Control[] { window.AvatarBorder, window.PasswordPillBorder })
+            () => new Control[]
+            {
+                window.AvatarBorder,
+                window.PasswordPillBorder,
+                window.CollapsedMediaBorder,
+                window.ExpandedMediaBorder
+            })
         {
             AdditionalRegions = window.GetClockBlurRegions
         };
@@ -156,24 +231,60 @@ public partial class LockScreenWindow : Window
         return bands.ToArray();
     }
 
-    public LockScreenWindow() : this(null, null, false) { }
+    public LockScreenWindow() : this(null, null, false, null) { }
 
-    public LockScreenWindow(ILockScreenService lockService) : this(null, lockService, false) { }
+    public LockScreenWindow(ILockScreenService lockService) : this(null, lockService, false, null) { }
 
-    public LockScreenWindow(string? wallpaperSource = null, ILockScreenService? lockService = null, bool isSecondary = false)
+    public LockScreenWindow(
+        string? wallpaperSource = null,
+        ILockScreenService? lockService = null,
+        bool isSecondary = false,
+        IMediaSessionService? mediaService = null)
     {
         InitializeComponent();
+
+        _collapsedCardTransform.Children.Add(_collapsedCardScale);
+        _collapsedCardTransform.Children.Add(_collapsedCardTranslate);
+        CollapsedMediaBorder.RenderTransform = _collapsedCardTransform;
+
+        _expandedCardTransform.Children.Add(_expandedCardScale);
+        _expandedCardTransform.Children.Add(_expandedCardTranslate);
+        ExpandedMediaBorder.RenderTransform = _expandedCardTransform;
+
+        MorphingArtworkBorder.RenderTransform = _morphingArtworkTranslate;
+
         ClockArea.RenderTransform = _clockPresence;
         CredentialsPanel.RenderTransform = _credentialsPresence;
+        CornerControlsGrid.RenderTransform = _cornerControlsTransform;
+
+        LockCanvasWallpaper.SuppressFailureFeedback = true;
+        LockCanvasWallpaper.PresentationCompleted += (_, _) => Dispatcher.UIThread.Post(ApplyVisualState);
+
         _presenceTimer.Tick += (_, _) => AdvancePresence();
-        ApplyPresence(0);
+        _mediaPresenceTimer.Tick += (_, _) => AdvanceMediaPresence();
+        _mediaExpandTimer.Tick += (_, _) => AdvanceMediaExpansion();
+        _spectrumTimer.Tick += (_, _) => UpdateSpectrum();
+        _mediaPositionTimer.Tick += (_, _) => UpdateLiveMediaProgress();
+
         _isSecondary = isSecondary;
         _lockService = lockService ?? new LinuxLockScreenService();
         _powerService = new LinuxPowerService(new SafeCommandRunner());
         _batteryService = new LinuxBatteryStatusService();
+        _mediaService = mediaService ?? LinuxMediaSessionService.Shared;
+
+        ApplyPresence(0);
 
         UserNameText.Text = GetFormattedUserName();
-        SizeChanged += (_, _) => UpdateLockLayout();
+        SizeChanged += (_, _) =>
+        {
+            UpdateLockLayout();
+            UpdateProgressFillWidth();
+            if (_mediaExpandProgress > 0.001 && _mediaExpandProgress < 0.999)
+            {
+                ApplyVisualState();
+            }
+        };
+        ExpandedProgressTrack.SizeChanged += (_, _) => UpdateProgressFillWidth();
         PropertyChanged += (_, args) =>
         {
             if (args.Property == FontSizeProperty || args.Property == FontFamilyProperty) UpdateLockLayout();
@@ -183,7 +294,11 @@ public partial class LockScreenWindow : Window
             if (args.Property == TextBlock.FontFamilyProperty) UpdateLockLayout();
         };
         LockContentScroll.ScrollChanged += (_, _) => _nativeBlur?.RefreshImmediately();
-        Loc.RefreshOnChange(this, UpdateClock);
+        Loc.RefreshOnChange(this, () =>
+        {
+            UpdateClock();
+            if (!_isSecondary) _ = RefreshMediaAsync();
+        });
         if (Application.Current is App app)
         {
             EventHandler refreshLayout = (_, _) => UpdateLockLayout();
@@ -214,11 +329,15 @@ public partial class LockScreenWindow : Window
             CredentialsPanel.IsVisible = false;
             PowerControlsPanel.IsVisible = false;
             BatteryInfoText.IsVisible = false;
+            CollapsedMediaHost.IsVisible = false;
+            ExpandedMediaHost.IsVisible = false;
         }
         else
         {
+            BuildSpectrumBars();
             UpdateBatteryAsync();
 
+            KeyDown += OnWindowKeyDown;
             PasswordBox.KeyDown += (s, e) =>
             {
                 if (_isAuthenticating) return;
@@ -236,7 +355,12 @@ public partial class LockScreenWindow : Window
             UpdateLockLayout();
             RootGrid.Opacity = 1;
             _ = AnimatePresenceAsync(true);
-            if (!_isSecondary) PasswordBox.Focus();
+            if (!_isSecondary)
+            {
+                _mediaService.MediaChanged += OnMediaChanged;
+                _ = RefreshMediaAsync();
+                PasswordBox.Focus();
+            }
         };
 
         Closed += (_, _) =>
@@ -244,7 +368,35 @@ public partial class LockScreenWindow : Window
             _clockTimer.Stop();
             _clockAnimation.Stop();
             _presenceTimer.Stop();
+            _mediaPresenceTimer.Stop();
+            _mediaExpandTimer.Stop();
+            _spectrumTimer.Stop();
+            _mediaPositionTimer.Stop();
             _presenceCompletion?.TrySetResult();
+            _mediaExpandCompletion?.TrySetResult();
+
+            if (!_isSecondary)
+            {
+                _mediaService.MediaChanged -= OnMediaChanged;
+            }
+
+            _mediaRefreshCancellation?.Cancel();
+            _mediaRefreshCancellation?.Dispose();
+            _mediaRefreshCancellation = null;
+
+            _canvasResolveCancellation?.Cancel();
+            _canvasResolveCancellation?.Dispose();
+            _canvasResolveCancellation = null;
+
+            _audioSpectrumService?.Dispose();
+            _audioSpectrumService = null;
+
+            CollapsedArtworkImage.Source = null;
+            ExpandedArtworkImage.Source = null;
+            MorphingArtworkImage.Source = null;
+            LockCanvasFallbackImage.Source = null;
+            _artwork?.Dispose();
+            _artwork = null;
         };
         Closing += (_, e) =>
         {
@@ -253,6 +405,15 @@ public partial class LockScreenWindow : Window
                 e.Cancel = true;
             }
         };
+    }
+
+    private void OnWindowKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape && IsMediaExpanded)
+        {
+            e.Handled = true;
+            _ = SetMediaExpandedAsync(false);
+        }
     }
 
     private void UpdateLockLayout()
@@ -278,6 +439,22 @@ public partial class LockScreenWindow : Window
         if (measured.Width > width && measured.Width > 0) size *= width / measured.Width;
         ClockText.FontSize = PreviousClockText.FontSize = Math.Max(1, Math.Floor(size));
         DateText.FontSize = Math.Min(Resource("TypeSizeHeading", 24), Math.Max(18, Math.Round(size * 0.24)));
+
+        // Responsive sizing for Collapsed & Expanded Media widgets
+        var cardWidth = Math.Clamp(Math.Min(354, width), 240, 354);
+        var collapsedHeight = Math.Clamp(Math.Round(cardWidth * (160.0 / 354.0)), 120, 160);
+        var collapsedArtSize = Math.Max(84, collapsedHeight - 34);
+        CollapsedMediaBorder.Width = cardWidth;
+        CollapsedMediaBorder.Height = collapsedHeight;
+        CollapsedArtworkButton.Width = CollapsedArtworkButton.Height = collapsedArtSize;
+
+        ExpandedMediaBorder.Width = cardWidth;
+        var clockBottomEstimate = Math.Clamp(height * 0.1, 24, 96) + size + 44;
+        var availableForExpanded = Math.Max(220, height - clockBottomEstimate - 36);
+        var expandedArtSize = Math.Clamp(Math.Min(width * 0.5, availableForExpanded - 172), 148, 312);
+        ExpandedArtworkContainer.Width = ExpandedArtworkContainer.Height = Math.Round(expandedArtSize);
+        ExpandedMediaStack.Spacing = Math.Clamp(height * 0.032, 14, 28);
+        ExpandedMediaStack.Margin = new Thickness(24, 0, 24, Math.Clamp(height * 0.045, 20, 40));
     }
 
     private void LoadWallpaper(string? wallpaperSource)
@@ -358,6 +535,737 @@ public partial class LockScreenWindow : Window
         {
             // Ignore battery query failures
         }
+    }
+
+    private void OnMediaChanged(object? sender, EventArgs e) =>
+        Dispatcher.UIThread.Post(() => _ = RefreshMediaAsync());
+
+    public async Task RefreshMediaAsync()
+    {
+        if (_isSecondary || _dismissing) return;
+
+        _mediaRefreshCancellation?.Cancel();
+        _mediaRefreshCancellation?.Dispose();
+        var cancellation = _mediaRefreshCancellation = new CancellationTokenSource();
+
+        try
+        {
+            var session = await _mediaService.GetCurrentSessionAsync(cancellation.Token);
+            if (session is not null && string.IsNullOrWhiteSpace(session.Title))
+            {
+                session = null;
+            }
+
+            var trackKey = session is null ? null : $"{session.Title}\x1f{session.Artist}";
+            var trackChanged = !string.Equals(_trackKey, trackKey, StringComparison.Ordinal);
+
+            string? artworkPath;
+            if (!string.IsNullOrWhiteSpace(session?.AlbumArtPath))
+            {
+                artworkPath = session!.AlbumArtPath;
+            }
+            else if (!trackChanged && !string.IsNullOrWhiteSpace(_resolvedArtworkPath))
+            {
+                artworkPath = _resolvedArtworkPath;
+            }
+            else
+            {
+                artworkPath = session?.AlbumArtPath;
+            }
+
+            var replaceArtwork = !string.Equals(_artworkPath, artworkPath, StringComparison.Ordinal) || trackChanged;
+
+            (Bitmap Bitmap, byte[] Bytes)? artwork = null;
+            Color? tint = null;
+
+            if (replaceArtwork && !string.IsNullOrWhiteSpace(artworkPath))
+            {
+                artwork = await LoadArtworkAsync(artworkPath, cancellation.Token);
+                if (artwork is not null)
+                {
+                    tint = ArtworkColorExtractor.GetOrExtract(artworkPath, artwork.Value.Bytes);
+                }
+            }
+            else if (!replaceArtwork)
+            {
+                tint = _artworkTint;
+            }
+
+            if (cancellation.IsCancellationRequested)
+            {
+                artwork?.Bitmap.Dispose();
+                return;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+                ApplyMediaSession(session, trackKey, artworkPath, artwork?.Bitmap, tint, replaceArtwork));
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+            // Keep lock screen responsive even if media service fails
+        }
+    }
+
+    private void ApplyMediaSession(
+        MediaSession? session,
+        string? trackKey,
+        string? artworkPath,
+        Bitmap? artwork,
+        Color? tint,
+        bool replaceArtwork)
+    {
+        var trackChanged = !string.Equals(_trackKey, trackKey, StringComparison.Ordinal);
+        _trackKey = trackKey;
+
+        if (replaceArtwork)
+        {
+            if (artwork is not null || trackChanged)
+            {
+                var previousArtwork = _artwork;
+                _artwork = artwork;
+                CollapsedArtworkImage.Source = artwork;
+                ExpandedArtworkImage.Source = artwork;
+                MorphingArtworkImage.Source = artwork;
+                LockCanvasFallbackImage.Source = artwork;
+                previousArtwork?.Dispose();
+                _artworkTint = tint;
+                _artworkPath = artwork is null && !string.IsNullOrWhiteSpace(artworkPath) ? null : artworkPath;
+            }
+
+            if (artwork is not null)
+            {
+                _resolvedArtworkPath = artworkPath;
+            }
+            else if (trackChanged)
+            {
+                _resolvedArtworkPath = null;
+            }
+        }
+
+        var hadMedia = _hasMediaSession;
+        _hasMediaSession = session is not null;
+        _isPlaying = session?.IsPlaying == true;
+
+        if (session is not null)
+        {
+            _mediaDurationSeconds = Math.Max(0, session.DurationSeconds);
+            _mediaPositionSeconds = Math.Clamp(session.PositionSeconds, 0, Math.Max(0, _mediaDurationSeconds));
+            _lastPositionSyncAt = DateTimeOffset.UtcNow;
+            _lastPeriodicSessionSyncAt = DateTimeOffset.UtcNow;
+        }
+        else
+        {
+            _mediaDurationSeconds = 0;
+            _mediaPositionSeconds = 0;
+        }
+
+        var titleText = session?.Title ?? Loc.Get("Not playing");
+        var artistText = session is null
+            ? string.Empty
+            : string.IsNullOrWhiteSpace(session.Artist) ? SourceLabel(session.SourceIdentity) : session.Artist;
+        var playIcon = _isPlaying ? "pause" : "play";
+        var playTip = _isPlaying ? Loc.Get("Pause") : Loc.Get("Play");
+
+        CollapsedTitleText.Text = titleText;
+        CollapsedArtistText.Text = artistText;
+        CollapsedPlayPauseGlyph.Icon = playIcon;
+        ToolTip.SetTip(CollapsedPlayPauseButton, playTip);
+
+        ExpandedTitleText.Text = titleText;
+        ExpandedArtistText.Text = artistText;
+        ExpandedPlayPauseGlyph.Icon = playIcon;
+        ToolTip.SetTip(ExpandedPlayPauseButton, playTip);
+
+        var sourceGlyph = SourceGlyphFor(session?.SourceIdentity);
+        var sourceIcon = ResolveSourceIcon(session?.SourceIdentity);
+
+        ApplyArtworkControlState(
+            CollapsedArtworkImage, CollapsedArtworkFallback, CollapsedSourceIcon, CollapsedSourceGlyph,
+            _artwork, sourceIcon, sourceGlyph);
+        ApplyArtworkControlState(
+            ExpandedArtworkImage, ExpandedArtworkFallback, ExpandedSourceIcon, ExpandedSourceGlyph,
+            _artwork, sourceIcon, sourceGlyph);
+        ApplyArtworkControlState(
+            MorphingArtworkImage, MorphingArtworkFallback, MorphingSourceIcon, MorphingSourceGlyph,
+            _artwork, sourceIcon, sourceGlyph);
+        LockCanvasFallbackImage.IsVisible = _artwork is not null;
+
+        UpdateMediaTintLayers();
+        UpdateSpectrumBarTint();
+        UpdateProgressDisplay(_mediaPositionSeconds, _mediaDurationSeconds);
+        UpdateSpectrumAndPositionTimers();
+
+        if (_hasMediaSession != hadMedia)
+        {
+            if (!_hasMediaSession && IsMediaExpanded)
+            {
+                _ = SetMediaExpandedAsync(false);
+            }
+            AnimateMediaPresence(_hasMediaSession);
+        }
+        else
+        {
+            ApplyVisualState();
+        }
+
+        if (session is not null)
+        {
+            var canvasKey = $"{session.Title}\x1f{session.Artist}\x1f{session.SourceUrl}";
+            if (!string.Equals(_canvasTrackKey, canvasKey, StringComparison.Ordinal))
+            {
+                _canvasTrackKey = canvasKey;
+                _ = ResolveTrackCanvasAsync(session, canvasKey);
+            }
+        }
+        else
+        {
+            _canvasTrackKey = null;
+            _resolvedCanvasVideoPath = null;
+            LockCanvasWallpaper.ClearWallpaper();
+        }
+    }
+
+    private async Task ResolveTrackCanvasAsync(MediaSession session, string expectedCanvasKey)
+    {
+        _canvasResolveCancellation?.Cancel();
+        _canvasResolveCancellation?.Dispose();
+        var cancellation = _canvasResolveCancellation = new CancellationTokenSource();
+
+        try
+        {
+            var videoPath = await SpotifyCanvasResolver.ResolveAsync(session, cancellation.Token);
+            if (cancellation.IsCancellationRequested || !string.Equals(_canvasTrackKey, expectedCanvasKey, StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (!string.Equals(_canvasTrackKey, expectedCanvasKey, StringComparison.Ordinal)) return;
+
+                _resolvedCanvasVideoPath = videoPath;
+                if (!string.IsNullOrWhiteSpace(videoPath))
+                {
+                    LockCanvasWallpaper.WallpaperUri = videoPath;
+                }
+                else
+                {
+                    LockCanvasWallpaper.ClearWallpaper();
+                }
+
+                ApplyVisualState();
+            });
+        }
+        catch (OperationCanceledException)
+        {
+        }
+        catch
+        {
+        }
+    }
+
+    private static void ApplyArtworkControlState(
+        Image artworkImage,
+        Border fallbackBorder,
+        Image sourceIconImage,
+        DaisyIcon sourceGlyphIcon,
+        Bitmap? artwork,
+        IImage? sourceIcon,
+        string sourceGlyph)
+    {
+        artworkImage.Source = artwork;
+        artworkImage.IsVisible = artwork is not null;
+        fallbackBorder.IsVisible = artwork is null;
+        sourceIconImage.Source = sourceIcon;
+        sourceIconImage.IsVisible = sourceIcon is not null;
+        sourceGlyphIcon.Icon = sourceGlyph;
+        sourceGlyphIcon.Weight = sourceGlyph == "music-note" ? DaisyIconWeight.Fill : DaisyIconWeight.Regular;
+        sourceGlyphIcon.IsVisible = sourceIcon is null;
+    }
+
+    private void OnCollapsedArtworkPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        e.Handled = true;
+        _ = SetMediaExpandedAsync(true);
+    }
+
+    private void OnExpandedArtworkPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
+        e.Handled = true;
+        _ = SetMediaExpandedAsync(false);
+    }
+
+    private void OnProgressTrackPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_mediaDurationSeconds <= 0) return;
+        var point = e.GetPosition(ExpandedProgressTrack);
+        var trackWidth = ExpandedProgressTrack.Bounds.Width;
+        if (trackWidth <= 0) return;
+
+        e.Handled = true;
+        var ratio = Math.Clamp(point.X / trackWidth, 0, 1);
+        var targetSeconds = ratio * _mediaDurationSeconds;
+        _mediaPositionSeconds = targetSeconds;
+        _lastPositionSyncAt = DateTimeOffset.UtcNow;
+        UpdateProgressDisplay(_mediaPositionSeconds, _mediaDurationSeconds);
+        _ = _mediaService.SeekAsync(targetSeconds, CancellationToken.None);
+    }
+
+    public Task SetMediaExpandedAsync(bool expanded)
+    {
+        if (_isSecondary || (expanded && !_hasMediaSession))
+        {
+            return Task.CompletedTask;
+        }
+
+        _mediaExpandTimer.Stop();
+        _mediaExpandCompletion?.TrySetResult();
+        _mediaExpandCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        _mediaExpandTarget = expanded ? 1 : 0;
+        _mediaExpandDuration = Application.Current is App { ReduceMotionEnabled: true }
+            ? TimeSpan.Zero
+            : TimeSpan.FromMilliseconds(expanded ? 420 : 360);
+        _mediaExpandStart = _mediaExpandProgress;
+        _mediaExpandTime.Restart();
+
+        if (expanded)
+        {
+            CollapsedMediaHost.IsVisible = true;
+            ExpandedMediaHost.IsVisible = true;
+            UpdateLockLayout();
+            UpdateLayout();
+        }
+        else
+        {
+            CollapsedMediaHost.IsVisible = true;
+            ExpandedMediaHost.IsVisible = true;
+            UpdateLockLayout();
+            UpdateLayout();
+        }
+
+        AdvanceMediaExpansion();
+        if (!_mediaExpandCompletion.Task.IsCompleted)
+        {
+            _mediaExpandTimer.Start();
+        }
+
+        if (!expanded && !_isSecondary)
+        {
+            PasswordBox.Focus();
+        }
+
+        return _mediaExpandCompletion.Task;
+    }
+
+    private void AdvanceMediaExpansion()
+    {
+        var elapsed = _mediaExpandTime.Elapsed.TotalSeconds;
+        var progress = _mediaExpandDuration <= TimeSpan.Zero
+            ? 1
+            : Math.Clamp(elapsed / _mediaExpandDuration.TotalSeconds, 0, 1);
+
+        // Smooth quintic ease-out for silky FLIP artwork and card transitions
+        var eased = 1 - Math.Pow(1 - progress, 4);
+        var value = _mediaExpandStart + (_mediaExpandTarget - _mediaExpandStart) * eased;
+
+        if (progress >= 1 || Application.Current is App { ReduceMotionEnabled: true })
+        {
+            _mediaExpandProgress = _mediaExpandTarget;
+            ApplyVisualState();
+            _mediaExpandTimer.Stop();
+            _mediaExpandCompletion?.TrySetResult();
+        }
+        else
+        {
+            _mediaExpandProgress = Math.Clamp(value, 0, 1);
+            ApplyVisualState();
+        }
+    }
+
+    private void AnimateMediaPresence(bool visible)
+    {
+        _mediaPresenceTimer.Stop();
+        _mediaPresenceTarget = visible ? 1 : 0;
+        _mediaPresenceDuration = Application.Current is App { ReduceMotionEnabled: true }
+            ? TimeSpan.Zero
+            : DurationFromResource(visible ? "MotionDurationEnter" : "MotionDurationExit", visible ? 280 : 160);
+        _mediaPresenceStart = _mediaPresenceProgress;
+        _mediaPresenceTime.Restart();
+        AdvanceMediaPresence();
+        if (Math.Abs(_mediaPresenceProgress - _mediaPresenceTarget) > 0.001)
+        {
+            _mediaPresenceTimer.Start();
+        }
+    }
+
+    private void AdvanceMediaPresence()
+    {
+        var elapsed = _mediaPresenceTime.Elapsed.TotalSeconds;
+        var progress = _mediaPresenceDuration <= TimeSpan.Zero
+            ? 1
+            : Math.Clamp(elapsed / _mediaPresenceDuration.TotalSeconds, 0, 1);
+        var eased = 1 - Math.Pow(1 - progress, 3);
+        var value = _mediaPresenceStart + (_mediaPresenceTarget - _mediaPresenceStart) * eased;
+        if (progress >= 1 || Application.Current is App { ReduceMotionEnabled: true })
+        {
+            _mediaPresenceProgress = _mediaPresenceTarget;
+            _mediaPresenceTimer.Stop();
+        }
+        else
+        {
+            _mediaPresenceProgress = Math.Clamp(value, 0, 1);
+        }
+
+        ApplyVisualState();
+    }
+
+    private TimeSpan DurationFromResource(string key, int fallbackMs) =>
+        this.TryFindResource(key, out var resource) && resource is TimeSpan duration
+            ? duration
+            : TimeSpan.FromMilliseconds(fallbackMs);
+
+    private void UpdateLiveMediaProgress()
+    {
+        if (!_hasMediaSession) return;
+
+        var now = DateTimeOffset.UtcNow;
+        var livePosition = _mediaPositionSeconds;
+        if (_isPlaying)
+        {
+            livePosition += (now - _lastPositionSyncAt).TotalSeconds;
+            if (_mediaDurationSeconds > 0)
+            {
+                livePosition = Math.Clamp(livePosition, 0, _mediaDurationSeconds);
+            }
+
+            if ((now - _lastPeriodicSessionSyncAt).TotalSeconds >= 5)
+            {
+                _lastPeriodicSessionSyncAt = now;
+                _ = RefreshMediaAsync();
+            }
+        }
+
+        UpdateProgressDisplay(livePosition, _mediaDurationSeconds);
+    }
+
+    private void UpdateProgressDisplay(double positionSeconds, double durationSeconds)
+    {
+        var clampedPos = Math.Max(0, positionSeconds);
+        var clampedDur = Math.Max(0, durationSeconds);
+        var remaining = Math.Max(0, clampedDur - clampedPos);
+
+        ExpandedElapsedText.Text = FormatMediaTime(clampedPos, negative: false);
+        ExpandedRemainingText.Text = FormatMediaTime(remaining, negative: true);
+        UpdateProgressFillWidth(clampedPos, clampedDur);
+    }
+
+    private void UpdateProgressFillWidth()
+    {
+        var livePosition = _mediaPositionSeconds;
+        if (_isPlaying)
+        {
+            livePosition += (DateTimeOffset.UtcNow - _lastPositionSyncAt).TotalSeconds;
+        }
+        UpdateProgressFillWidth(livePosition, _mediaDurationSeconds);
+    }
+
+    private void UpdateProgressFillWidth(double positionSeconds, double durationSeconds)
+    {
+        var trackWidth = ExpandedProgressTrack.Bounds.Width;
+        if (trackWidth <= 0)
+        {
+            trackWidth = Math.Max(0, ExpandedMediaBorder.Width - 124);
+        }
+
+        var ratio = durationSeconds > 0
+            ? Math.Clamp(positionSeconds / durationSeconds, 0, 1)
+            : 0;
+        ExpandedProgressFill.Width = Math.Round(trackWidth * ratio);
+    }
+
+    internal static string FormatMediaTime(double seconds, bool negative = false)
+    {
+        if (!double.IsFinite(seconds) || seconds < 0)
+        {
+            seconds = 0;
+        }
+
+        var totalSeconds = (int)Math.Round(seconds);
+        var minutes = totalSeconds / 60;
+        var secs = totalSeconds % 60;
+        return negative ? $"- {minutes}.{secs:D2}" : $"{minutes}.{secs:D2}";
+    }
+
+    private async void OnMediaPreviousClicked(object? sender, RoutedEventArgs e) =>
+        await RunMediaCommandAsync(_mediaService.PreviousAsync);
+
+    private async void OnMediaPlayPauseClicked(object? sender, RoutedEventArgs e) =>
+        await RunMediaCommandAsync(_mediaService.PlayPauseAsync);
+
+    private async void OnMediaNextClicked(object? sender, RoutedEventArgs e) =>
+        await RunMediaCommandAsync(_mediaService.NextAsync);
+
+    private async Task RunMediaCommandAsync(Func<CancellationToken, Task> command)
+    {
+        try
+        {
+            await command(CancellationToken.None);
+            await Task.Delay(100);
+            await RefreshMediaAsync();
+        }
+        catch
+        {
+        }
+    }
+
+    private void BuildSpectrumBars()
+    {
+        if (_collapsedSpectrumBars.Count == 0 && CollapsedSpectrumCanvas is { } cCanvas)
+        {
+            const double idleScale = 0.12;
+            for (var index = 0; index < SpectrumColumns; index++)
+            {
+                var bar = CreateSpectrumBar(idleScale);
+                Canvas.SetLeft(bar, 3 + index * 4);
+                Canvas.SetTop(bar, 2);
+                cCanvas.Children.Add(bar);
+                _collapsedSpectrumBars.Add(bar);
+            }
+        }
+
+        if (_expandedSpectrumBars.Count == 0 && ExpandedSpectrumCanvas is { } eCanvas)
+        {
+            const double idleScale = 0.12;
+            for (var index = 0; index < SpectrumColumns; index++)
+            {
+                var bar = CreateSpectrumBar(idleScale);
+                Canvas.SetLeft(bar, 3 + index * 4);
+                Canvas.SetTop(bar, 2);
+                eCanvas.Children.Add(bar);
+                _expandedSpectrumBars.Add(bar);
+            }
+        }
+
+        UpdateSpectrumBarTint();
+    }
+
+    private Border CreateSpectrumBar(double idleScale)
+    {
+        var bar = new Border
+        {
+            Width = 2,
+            Height = 24,
+            CornerRadius = new CornerRadius(1),
+            RenderTransformOrigin = RelativePoint.Center,
+            RenderTransform = new ScaleTransform(1, idleScale)
+        };
+
+        var tintLayer = new Border
+        {
+            CornerRadius = new CornerRadius(1),
+            IsHitTestVisible = false,
+            Opacity = 0
+        };
+        bar.Child = tintLayer;
+        _spectrumTintLayers.Add(tintLayer);
+        bar.Classes.Add("spectrumBar");
+        return bar;
+    }
+
+    private void UpdateMediaTintLayers()
+    {
+        IBrush brush = _artworkTint is { } color
+            ? new SolidColorBrush(Color.FromArgb(ArtworkColorExtractor.DefaultTintAlpha, color.R, color.G, color.B))
+            : Brushes.Transparent;
+
+        CollapsedArtworkTint.Background = brush;
+        ExpandedArtworkTint.Background = brush;
+    }
+
+    private void UpdateSpectrumBarTint()
+    {
+        foreach (var tintLayer in _spectrumTintLayers)
+        {
+            tintLayer.Background = _artworkTint is { } color
+                ? new SolidColorBrush(color)
+                : Brushes.Transparent;
+            tintLayer.Opacity = _artworkTint is null ? 0 : 0.55;
+        }
+    }
+
+    private void UpdateSpectrumAndPositionTimers()
+    {
+        if (_hasMediaSession && _isPlaying && !_isSecondary)
+        {
+            _mediaPositionTimer.Start();
+            if (_audioSpectrumService is null)
+            {
+                try
+                {
+                    _audioSpectrumService = new LinuxAudioSpectrumService();
+                }
+                catch
+                {
+                    _audioSpectrumService = null;
+                }
+            }
+            _spectrumTimer.Start();
+            return;
+        }
+
+        _mediaPositionTimer.Stop();
+        _spectrumTimer.Stop();
+        if (_audioSpectrumService is not null)
+        {
+            _audioSpectrumService.Dispose();
+            _audioSpectrumService = null;
+        }
+
+        ResetSpectrum();
+    }
+
+    private void UpdateSpectrum()
+    {
+        var spectrumService = _audioSpectrumService;
+        if (!_isPlaying || spectrumService is null)
+        {
+            return;
+        }
+
+        try
+        {
+            spectrumService.CopySpectrum(_spectrumSnapshot);
+            _spectrumIsIdle = false;
+
+            for (var index = 0; index < SpectrumColumns; index++)
+            {
+                var amplitude = _spectrumSnapshot[index];
+                var visualAmplitude = Math.Pow(Math.Clamp(amplitude * 1.35, 0, 1), 0.58);
+                var scale = 0.12 + (visualAmplitude * 0.88);
+
+                if (index < _collapsedSpectrumBars.Count)
+                {
+                    ((ScaleTransform)_collapsedSpectrumBars[index].RenderTransform!).ScaleY = scale;
+                }
+                if (index < _expandedSpectrumBars.Count)
+                {
+                    ((ScaleTransform)_expandedSpectrumBars[index].RenderTransform!).ScaleY = scale;
+                }
+            }
+        }
+        catch
+        {
+            ResetSpectrum();
+        }
+    }
+
+    private void ResetSpectrum()
+    {
+        if (_spectrumIsIdle) return;
+
+        foreach (var bar in _collapsedSpectrumBars)
+        {
+            ((ScaleTransform)bar.RenderTransform!).ScaleY = 0.12;
+        }
+        foreach (var bar in _expandedSpectrumBars)
+        {
+            ((ScaleTransform)bar.RenderTransform!).ScaleY = 0.12;
+        }
+
+        _spectrumIsIdle = true;
+    }
+
+    private static async Task<(Bitmap Bitmap, byte[] Bytes)?> LoadArtworkAsync(string? path, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        try
+        {
+            byte[] bytes;
+            if (TryDecodeDataImageUri(path, out var inlineImage))
+            {
+                bytes = inlineImage;
+            }
+            else if (Uri.TryCreate(path, UriKind.Absolute, out var uri) && (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
+            {
+                bytes = await ArtworkHttpClient.GetByteArrayAsync(uri, cancellationToken);
+            }
+            else
+            {
+                bytes = await File.ReadAllBytesAsync(path, cancellationToken);
+            }
+
+            using var stream = new MemoryStream(bytes, writable: false);
+            return (new Bitmap(stream), bytes);
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    private static bool TryDecodeDataImageUri(string value, out byte[] bytes)
+    {
+        bytes = [];
+        const string prefix = "data:image/";
+        if (!value.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var separator = value.IndexOf(',');
+        if (separator < 0 || !value[..separator].Contains(";base64", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var payload = value[(separator + 1)..];
+        if (payload.Length > (MaxInlineArtworkBytes * 4 / 3) + 4)
+        {
+            return false;
+        }
+
+        try
+        {
+            bytes = Convert.FromBase64String(payload);
+            return bytes is { Length: > 0 and <= MaxInlineArtworkBytes };
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private static string SourceGlyphFor(string? source) => source?.ToLowerInvariant() switch
+    {
+        var value when value?.Contains("spotify") == true => "music-note",
+        var value when value?.Contains("firefox") == true || value?.Contains("chrom") == true => "globe",
+        _ => "music-note"
+    };
+
+    private static string SourceLabel(string? source) => string.IsNullOrWhiteSpace(source) ? Loc.Get("Media player") : source;
+
+    private static IImage? ResolveSourceIcon(string? source)
+    {
+        if (string.IsNullOrWhiteSpace(source))
+        {
+            return null;
+        }
+
+        var iconName = source.Contains("spotify", StringComparison.OrdinalIgnoreCase) ? "spotify"
+            : source.Contains("firefox", StringComparison.OrdinalIgnoreCase) ? "firefox"
+            : source.Contains("chrom", StringComparison.OrdinalIgnoreCase) ? "google-chrome"
+            : source.Split('.', StringSplitOptions.RemoveEmptyEntries)[0];
+        var iconPath = DesktopItemLoader.ResolveIconPath(iconName);
+        return DesktopItemLoader.LoadBitmapSafe(iconPath);
     }
 
     private void OnHintClicked(object? sender, RoutedEventArgs e)
@@ -444,6 +1352,8 @@ public partial class LockScreenWindow : Window
         if (!_isSecondary) Dismissing?.Invoke();
         _clockAnimation.Stop();
         _clockTimer.Stop();
+        _spectrumTimer.Stop();
+        _mediaPositionTimer.Stop();
         await AnimatePresenceAsync(false);
         if (!_isSecondary) _lockService.Unlock();
         Close();
@@ -484,16 +1394,170 @@ public partial class LockScreenWindow : Window
     private void ApplyPresence(double progress)
     {
         _presenceProgress = progress;
+        ApplyVisualState();
+    }
+
+    private void ApplyVisualState()
+    {
         void Update()
         {
-            ClockArea.Opacity = CredentialsPanel.Opacity = CornerControlsGrid.Opacity = progress;
-            _clockPresence.Y = -14 * (1 - progress);
-            _credentialsPresence.Y = 14 * (1 - progress);
+            var presence = _presenceProgress;
+            var mediaPresence = _mediaPresenceProgress;
+            var expand = _mediaExpandProgress;
+            var showMedia = !_isSecondary && (_hasMediaSession || mediaPresence > 0.001);
+
+            // 1. Clock Area stays anchored at top
+            ClockArea.Opacity = presence;
+            _clockPresence.Y = -14 * (1 - presence);
+
+            // 2. Credentials & Corner Controls smoothly fade/slide out when media expands to fullscreen
+            var chromeFactor = Math.Clamp(1 - expand * 1.45, 0, 1);
+            CredentialsPanel.Opacity = presence * chromeFactor;
+            CornerControlsGrid.Opacity = presence * chromeFactor;
+            _credentialsPresence.Y = 14 * (1 - presence) + 18 * expand;
+            _cornerControlsTransform.Y = 14 * (1 - presence) + 18 * expand;
+            CredentialsPanel.IsHitTestVisible = expand < 0.1;
+            CornerControlsGrid.IsHitTestVisible = expand < 0.1;
+
+            // Hide bottom-left battery text when bottom-left media widget is shown so they never collide
+            BatteryInfoText.Opacity = Math.Clamp(1 - mediaPresence * 1.6, 0, 1);
+
+            // 3. Collapsed Bottom-Left Media Widget
+            var collapsedCardOpacity = presence * mediaPresence * Math.Clamp(1 - expand * 1.65, 0, 1);
+            CollapsedMediaHost.IsVisible = showMedia && expand < 0.999;
+            CollapsedMediaHost.IsHitTestVisible = showMedia && expand < 0.1;
+            CollapsedMediaBorder.Opacity = collapsedCardOpacity;
+            _collapsedCardTranslate.X = 22 * expand;
+            _collapsedCardTranslate.Y = 14 * (1 - presence) + 12 * (1 - mediaPresence) - 16 * expand;
+            var collapsedScale = (0.96 + 0.04 * mediaPresence) * (1 - 0.05 * expand);
+            _collapsedCardScale.ScaleX = _collapsedCardScale.ScaleY = collapsedScale;
+
+            // 4. Expanded Fullscreen Media View
+            var expandedCardOpacity = presence * mediaPresence * Math.Clamp((expand - 0.18) / 0.82, 0, 1);
+            ExpandedMediaHost.IsVisible = showMedia && expand > 0.001;
+            ExpandedMediaHost.IsHitTestVisible = showMedia && expand > 0.9;
+            ExpandedMediaBorder.Opacity = expandedCardOpacity;
+            _expandedCardTranslate.Y = 24 * (1 - expand);
+            var expandedScale = 0.94 + 0.06 * expand;
+            _expandedCardScale.ScaleX = _expandedCardScale.ScaleY = expandedScale;
+
+            // 5. FLIP Hero Artwork Bridge between Collapsed and Expanded states
+            if (!showMedia)
+            {
+                MorphingArtworkBorder.IsVisible = false;
+                CollapsedArtworkButton.Opacity = 1;
+                ExpandedArtworkContainer.Opacity = 0;
+            }
+            else if (expand <= 0.001)
+            {
+                MorphingArtworkBorder.IsVisible = false;
+                CollapsedArtworkButton.Opacity = 1;
+                ExpandedArtworkContainer.Opacity = 0;
+            }
+            else if (expand >= 0.999)
+            {
+                MorphingArtworkBorder.IsVisible = false;
+                CollapsedArtworkButton.Opacity = 0;
+                ExpandedArtworkContainer.Opacity = presence * mediaPresence;
+            }
+            else
+            {
+                CollapsedArtworkButton.Opacity = 0;
+                ExpandedArtworkContainer.Opacity = 0;
+
+                var startRect = GetRestingCollapsedArtworkRect();
+                var endRect = GetRestingExpandedArtworkRect();
+                var arcLift = -Math.Sin(expand * Math.PI) * 18;
+
+                var currentX = startRect.X + (endRect.X - startRect.X) * expand;
+                var currentY = startRect.Y + (endRect.Y - startRect.Y) * expand + arcLift;
+                var currentW = Math.Max(1, startRect.Width + (endRect.Width - startRect.Width) * expand);
+                var currentH = Math.Max(1, startRect.Height + (endRect.Height - startRect.Height) * expand);
+                var currentRadius = 14 + (20 - 14) * expand;
+
+                MorphingArtworkBorder.IsVisible = true;
+                MorphingArtworkBorder.Opacity = presence * mediaPresence;
+                MorphingArtworkBorder.Width = currentW;
+                MorphingArtworkBorder.Height = currentH;
+                MorphingArtworkBorder.CornerRadius = MorphingArtworkInner.CornerRadius = new CornerRadius(currentRadius);
+                _morphingArtworkTranslate.X = currentX;
+                _morphingArtworkTranslate.Y = currentY;
+            }
+
+            // 6. Spotify Canvas Video / Fallback Blurred Artwork Wallpaper Crossfade
+            var canvasAlpha = showMedia ? presence * mediaPresence * expand : 0;
+            if (canvasAlpha <= 0.001)
+            {
+                LockCanvasLayer.IsVisible = false;
+                LockCanvasLayer.Opacity = 0;
+                LockCanvasWallpaper.IsVisible = false;
+                LockWallpaper.Opacity = 1;
+            }
+            else
+            {
+                LockCanvasLayer.IsVisible = true;
+                var hasVideoPath = !string.IsNullOrWhiteSpace(_resolvedCanvasVideoPath);
+                LockCanvasWallpaper.IsVisible = hasVideoPath;
+
+                if (hasVideoPath && LockCanvasWallpaper.UsesNativeSubsurface)
+                {
+                    LockWallpaper.Opacity = Math.Clamp(1 - canvasAlpha, 0, 1);
+                    LockCanvasLayer.Opacity = canvasAlpha;
+                    LockCanvasFallbackPanel.Opacity = 0;
+                }
+                else
+                {
+                    LockWallpaper.Opacity = 1;
+                    LockCanvasLayer.Opacity = canvasAlpha;
+                    var videoPresented = hasVideoPath
+                        && LockCanvasWallpaper.PresentationState == WallpaperLayer.WallpaperPresentationState.Presented;
+                    LockCanvasFallbackPanel.Opacity = videoPresented ? 0 : 1;
+                }
+            }
         }
+
         // Publish one coherent mask after all values and transform caches have
         // advanced, rather than several partially updated masks per frame.
         if (_nativeBlur is { } blur) blur.UpdateGeometry(Update);
         else Update();
+    }
+
+    private Rect GetRestingCollapsedArtworkRect()
+    {
+        var w = CollapsedArtworkButton.Width > 0 ? CollapsedArtworkButton.Width : 126;
+        var h = CollapsedArtworkButton.Height > 0 ? CollapsedArtworkButton.Height : 126;
+        var hostOrigin = CollapsedMediaHost.TranslatePoint(default, RootGrid);
+        var artInHost = CollapsedArtworkButton.TranslatePoint(default, CollapsedMediaBorder);
+        if (hostOrigin is { } ho && artInHost is { } ai && CollapsedMediaHost.Bounds.Width > 0)
+        {
+            return new Rect(ho.X + ai.X, ho.Y + ai.Y, w, h);
+        }
+
+        var rootH = RootGrid.Bounds.Height > 0 ? RootGrid.Bounds.Height : ClientSize.Height;
+        var cardH = CollapsedMediaBorder.Height > 0 ? CollapsedMediaBorder.Height : 160;
+        var x = 24 + 2 + 16;
+        var y = Math.Max(0, rootH - 24 - cardH + (cardH - h) / 2);
+        return new Rect(x, y, w, h);
+    }
+
+    private Rect GetRestingExpandedArtworkRect()
+    {
+        var w = ExpandedArtworkContainer.Width > 0 ? ExpandedArtworkContainer.Width : 312;
+        var h = ExpandedArtworkContainer.Height > 0 ? ExpandedArtworkContainer.Height : 312;
+        var origin = ExpandedArtworkContainer.TranslatePoint(default, RootGrid);
+        if (origin is { } o && ExpandedArtworkContainer.Bounds.Width > 0)
+        {
+            return new Rect(o.X, o.Y, w, h);
+        }
+
+        var rootW = RootGrid.Bounds.Width > 0 ? RootGrid.Bounds.Width : ClientSize.Width;
+        var rootH = RootGrid.Bounds.Height > 0 ? RootGrid.Bounds.Height : ClientSize.Height;
+        var x = (rootW - w) / 2;
+        var bottomMargin = ExpandedMediaStack.Margin.Bottom;
+        var cardH = ExpandedMediaBorder.Bounds.Height > 0 ? ExpandedMediaBorder.Bounds.Height : 136;
+        var spacing = ExpandedMediaStack.Spacing;
+        var y = Math.Max(0, rootH - bottomMargin - cardH - spacing - h);
+        return new Rect(x, y, w, h);
     }
 
     private async void OnSleepClicked(object? sender, RoutedEventArgs e)

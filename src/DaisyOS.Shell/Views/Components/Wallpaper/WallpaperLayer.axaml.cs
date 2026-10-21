@@ -86,6 +86,31 @@ public partial class WallpaperLayer : UserControl
 
     public WallpaperPresentationState PresentationState { get; private set; } = WallpaperPresentationState.Loading;
 
+    internal bool UsesNativeSubsurface =>
+        _mpvSession is not null && !_isVideoPrerolling && PresentationState == WallpaperPresentationState.Presented;
+
+    internal bool SuppressFailureFeedback { get; set; }
+
+    internal event EventHandler? PresentationCompleted;
+
+    internal void ClearWallpaper()
+    {
+        Interlocked.Increment(ref _refreshRequestVersion);
+        Interlocked.Increment(ref _loadRequestVersion);
+        _requestedWallpaperUri = null;
+        _presentedWallpaperUri = null;
+        _videoCandidateWallpaperUri = null;
+        SettleWallpaperTransition();
+        PreviousWallpaperImage.Source = null;
+        WallpaperImage.Source = null;
+        WallpaperImage.Opacity = 1;
+        SolidColorBackground.Background = Brushes.Transparent;
+        DetachWallpaperResources().Dispose();
+        _pendingVideoTransitionResources?.Dispose();
+        _pendingVideoTransitionResources = null;
+        PresentationState = WallpaperPresentationState.Loading;
+    }
+
     public static readonly StyledProperty<bool> IgnoreDesktopOcclusionProperty =
         AvaloniaProperty.Register<WallpaperLayer, bool>(nameof(IgnoreDesktopOcclusion));
 
@@ -846,6 +871,7 @@ public partial class WallpaperLayer : UserControl
         var completion = _presentationCompletion;
         _presentationCompletion = null;
         completion?.TrySetResult(succeeded);
+        PresentationCompleted?.Invoke(this, EventArgs.Empty);
     }
 
     private void FailVideoCandidate(string? candidateUri)
@@ -869,7 +895,10 @@ public partial class WallpaperLayer : UserControl
         // A failed visual asset must not be allowed to become a shell failure.
         // The current source stays on screen, and Settings can choose another file.
         global::System.Console.Error.WriteLine($"[wallpaper] {message}");
-        Dispatcher.UIThread.Post(() => _app?.Feedback.Show(message));
+        if (!SuppressFailureFeedback)
+        {
+            Dispatcher.UIThread.Post(() => _app?.Feedback.Show(message));
+        }
     }
 
     private static void CloseFileDescriptor(int fd)
