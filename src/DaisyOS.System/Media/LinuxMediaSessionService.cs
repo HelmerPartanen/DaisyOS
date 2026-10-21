@@ -62,12 +62,15 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
 
         var durationSeconds = parts.Length > 2 ? ParseMicroseconds(parts[2]) : 0;
         var positionSeconds = ParseSeconds(position);
+        var clampedPositionSeconds = durationSeconds > 0
+            ? Math.Clamp(positionSeconds, 0, durationSeconds)
+            : Math.Max(0, positionSeconds);
 
         return await EnrichBrowserArtworkAsync(new MediaSession(
             parts[0].Trim(),
             parts[1].Trim(),
             parts.Length > 3 ? NormalizeArtPath(parts[3]) : null,
-            Math.Clamp(positionSeconds, 0, Math.Max(0, durationSeconds)),
+            clampedPositionSeconds,
             Math.Max(0, durationSeconds),
             status.Trim().Equals("Playing", StringComparison.OrdinalIgnoreCase),
             parts.Length > 4 ? NullIfWhiteSpace(parts[4]) : null,
@@ -98,11 +101,73 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
             return;
         }
 
-        var formattedSeconds = positionSeconds.ToString("0.###", CultureInfo.InvariantCulture);
-        await _commandRunner.RunAsync(
-            "playerctl",
-            WithPlayer(_activePlayerName, "position", formattedSeconds),
-            CommandTimeout,
+        if (await CheckPlayerctlAvailableAsync(cancellationToken))
+        {
+            var formattedSeconds = positionSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+            var result = await _commandRunner.RunAsync(
+                "playerctl",
+                WithPlayer(_activePlayerName, "position", formattedSeconds),
+                CommandTimeout,
+                cancellationToken);
+            if (result.Succeeded)
+            {
+                return;
+            }
+        }
+
+        var playerName = await GetPreferredMprisPlayerNameAsync(_activeMprisPlayerName, cancellationToken);
+        if (playerName is null)
+        {
+            return;
+        }
+
+        _activeMprisPlayerName = playerName;
+
+        var metadata = await GetMprisPropertyAsync(playerName, "Metadata", cancellationToken);
+        var trackId = metadata is null
+            ? null
+            : FirstNonEmpty(
+                ExtractObjectPathValue(metadata, "mpris:trackid"),
+                ExtractQuotedValue(metadata, "mpris:trackid"));
+
+        var targetMicroseconds = (long)Math.Round(positionSeconds * 1_000_000d);
+        if (!string.IsNullOrWhiteSpace(trackId) && trackId.StartsWith('/'))
+        {
+            var setPosOutput = await RunGdbusQuietAsync(
+                [
+                    "call",
+                    "--session",
+                    "--dest",
+                    playerName,
+                    "--object-path",
+                    MprisObjectPath,
+                    "--method",
+                    $"{MprisPlayerInterface}.SetPosition",
+                    trackId,
+                    targetMicroseconds.ToString(CultureInfo.InvariantCulture)
+                ],
+                cancellationToken);
+            if (setPosOutput is not null)
+            {
+                return;
+            }
+        }
+
+        var currentPositionRaw = await GetMprisPropertyAsync(playerName, "Position", cancellationToken) ?? string.Empty;
+        var currentMicroseconds = (long)Math.Round(ParseMicroseconds(ExtractVariantInteger(currentPositionRaw)) * 1_000_000d);
+        var offsetMicroseconds = targetMicroseconds - currentMicroseconds;
+        await RunGdbusQuietAsync(
+            [
+                "call",
+                "--session",
+                "--dest",
+                playerName,
+                "--object-path",
+                MprisObjectPath,
+                "--method",
+                $"{MprisPlayerInterface}.Seek",
+                offsetMicroseconds.ToString(CultureInfo.InvariantCulture)
+            ],
             cancellationToken);
     }
 
@@ -180,12 +245,15 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
         var status = await GetMprisPropertyAsync(playerName, "PlaybackStatus", cancellationToken) ?? string.Empty;
         var position = await GetMprisPropertyAsync(playerName, "Position", cancellationToken) ?? string.Empty;
         var positionSeconds = ParseMicroseconds(ExtractVariantInteger(position));
+        var clampedPositionSeconds = durationSeconds > 0
+            ? Math.Clamp(positionSeconds, 0, durationSeconds)
+            : Math.Max(0, positionSeconds);
 
         return await EnrichBrowserArtworkAsync(new MediaSession(
             title,
             artist ?? string.Empty,
             artPath,
-            Math.Clamp(positionSeconds, 0, Math.Max(0, durationSeconds)),
+            clampedPositionSeconds,
             Math.Max(0, durationSeconds),
             status.Contains("Playing", StringComparison.OrdinalIgnoreCase),
             playerName,
@@ -623,6 +691,7 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
         startInfo.ArgumentList.Add("--user");
         startInfo.ArgumentList.Add("monitor");
         startInfo.ArgumentList.Add("--match=type='signal',path='/org/mpris/MediaPlayer2',interface='org.freedesktop.DBus.Properties'");
+        startInfo.ArgumentList.Add("--match=type='signal',path='/org/mpris/MediaPlayer2',interface='org.mpris.MediaPlayer2.Player'");
         startInfo.ArgumentList.Add("--match=type='signal',sender='org.freedesktop.DBus',path='/org/freedesktop/DBus',interface='org.freedesktop.DBus',member='NameOwnerChanged',arg0namespace='org.mpris.MediaPlayer2'");
 
         Process process;
@@ -650,6 +719,7 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
                     if (line.Contains("PropertiesChanged", StringComparison.Ordinal)
                         || line.Contains("Metadata", StringComparison.Ordinal)
                         || line.Contains("PlaybackStatus", StringComparison.Ordinal)
+                        || line.Contains("Seeked", StringComparison.Ordinal)
                         || line.Contains("NameOwnerChanged", StringComparison.Ordinal))
                     {
                         MediaChanged?.Invoke(this, EventArgs.Empty);
@@ -720,7 +790,8 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
                     }
 
                     if (line.Contains("PropertiesChanged", StringComparison.Ordinal)
-                        || line.Contains("Metadata", StringComparison.Ordinal))
+                        || line.Contains("Metadata", StringComparison.Ordinal)
+                        || line.Contains("Seeked", StringComparison.Ordinal))
                     {
                         MediaChanged?.Invoke(this, EventArgs.Empty);
                     }
@@ -795,15 +866,15 @@ public sealed class LinuxMediaSessionService : IMediaSessionService, IDisposable
         return match.Success ? UnescapeGdbusString(match.Groups["value"].Value) : null;
     }
 
-    private static string ExtractIntegerValue(string metadata, string key)
+    public static string ExtractIntegerValue(string metadata, string key)
     {
-        var match = Regex.Match(metadata, $@"'{Regex.Escape(key)}':\s+<int64\s+(?<value>-?\d+)>");
+        var match = Regex.Match(metadata, $@"'{Regex.Escape(key)}':\s+<u?int(?:16|32|64)\s+(?<value>-?\d+)>");
         return match.Success ? match.Groups["value"].Value : string.Empty;
     }
 
-    private static string ExtractVariantInteger(string value)
+    public static string ExtractVariantInteger(string value)
     {
-        var match = Regex.Match(value, @"<int64\s+(?<value>-?\d+)>");
+        var match = Regex.Match(value, @"<u?int(?:16|32|64)\s+(?<value>-?\d+)>");
         return match.Success ? match.Groups["value"].Value : string.Empty;
     }
 

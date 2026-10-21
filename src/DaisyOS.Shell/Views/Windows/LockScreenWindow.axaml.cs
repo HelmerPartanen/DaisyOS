@@ -652,7 +652,9 @@ public partial class LockScreenWindow : Window
         if (session is not null)
         {
             _mediaDurationSeconds = Math.Max(0, session.DurationSeconds);
-            _mediaPositionSeconds = Math.Clamp(session.PositionSeconds, 0, Math.Max(0, _mediaDurationSeconds));
+            _mediaPositionSeconds = _mediaDurationSeconds > 0
+                ? Math.Clamp(session.PositionSeconds, 0, _mediaDurationSeconds)
+                : Math.Max(0, session.PositionSeconds);
             _lastPositionSyncAt = DateTimeOffset.UtcNow;
             _lastPeriodicSessionSyncAt = DateTimeOffset.UtcNow;
         }
@@ -942,12 +944,12 @@ public partial class LockScreenWindow : Window
             {
                 livePosition = Math.Clamp(livePosition, 0, _mediaDurationSeconds);
             }
+        }
 
-            if ((now - _lastPeriodicSessionSyncAt).TotalSeconds >= 5)
-            {
-                _lastPeriodicSessionSyncAt = now;
-                _ = RefreshMediaAsync();
-            }
+        if ((now - _lastPeriodicSessionSyncAt).TotalSeconds >= 2)
+        {
+            _lastPeriodicSessionSyncAt = now;
+            _ = RefreshMediaAsync();
         }
 
         UpdateProgressDisplay(livePosition, _mediaDurationSeconds);
@@ -957,7 +959,12 @@ public partial class LockScreenWindow : Window
     {
         var clampedPos = Math.Max(0, positionSeconds);
         var clampedDur = Math.Max(0, durationSeconds);
-        var remaining = Math.Max(0, clampedDur - clampedPos);
+        if (clampedDur > 0)
+        {
+            clampedPos = Math.Min(clampedPos, clampedDur);
+        }
+
+        var remaining = clampedDur > 0 ? Math.Max(0, clampedDur - clampedPos) : 0;
 
         ExpandedElapsedText.Text = FormatMediaTime(clampedPos, negative: false);
         ExpandedRemainingText.Text = FormatMediaTime(remaining, negative: true);
@@ -1100,9 +1107,17 @@ public partial class LockScreenWindow : Window
 
     private void UpdateSpectrumAndPositionTimers()
     {
-        if (_hasMediaSession && _isPlaying && !_isSecondary)
+        if (_hasMediaSession && !_isSecondary)
         {
             _mediaPositionTimer.Start();
+        }
+        else
+        {
+            _mediaPositionTimer.Stop();
+        }
+
+        if (_hasMediaSession && _isPlaying && !_isSecondary)
+        {
             if (_audioSpectrumService is null)
             {
                 try
@@ -1118,7 +1133,6 @@ public partial class LockScreenWindow : Window
             return;
         }
 
-        _mediaPositionTimer.Stop();
         _spectrumTimer.Stop();
         if (_audioSpectrumService is not null)
         {

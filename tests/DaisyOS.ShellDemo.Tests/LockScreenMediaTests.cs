@@ -56,6 +56,20 @@ public sealed class LockScreenMediaTests
         Assert.Equal("0.05", LockScreenWindow.FormatMediaTime(5, negative: false));
     }
 
+    [Fact]
+    public void LinuxMediaSessionServiceExtractsSignedAndUnsignedMprisLengthsAndPositions()
+    {
+        const string spotifyGdbusMetadata =
+            "(<{'mpris:trackid': <'/com/spotify/track/1KcOU0q9AMXV9xi4tSzzCc'>, 'mpris:length': <uint64 256800000>, 'xesam:title': <'Let it happen'>}>,)";
+        const string browserGdbusMetadata =
+            "(<{'mpris:trackid': <objectpath '/org/mpris/MediaPlayer2/TrackList/NoTrack'>, 'mpris:length': <int64 180000000>, 'xesam:title': <'Video'>}>,)";
+
+        Assert.Equal("256800000", LinuxMediaSessionService.ExtractIntegerValue(spotifyGdbusMetadata, "mpris:length"));
+        Assert.Equal("180000000", LinuxMediaSessionService.ExtractIntegerValue(browserGdbusMetadata, "mpris:length"));
+        Assert.Equal("98000000", LinuxMediaSessionService.ExtractVariantInteger("(<int64 98000000>,)"));
+        Assert.Equal("98000000", LinuxMediaSessionService.ExtractVariantInteger("(<uint64 98000000>,)"));
+    }
+
     [AvaloniaFact]
     public async Task LockScreenShowsLargeBottomLeftWidgetAndExpandsToFullscreenCanvasMode()
     {
@@ -187,7 +201,7 @@ public sealed class LockScreenMediaTests
             // Stopping media playback smoothly hides the widget and resets state
             fakeMedia.CurrentSession = null;
             await window.RefreshMediaAsync();
-            await Task.Delay(320);
+            await Task.Delay(380);
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
 
