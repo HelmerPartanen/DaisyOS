@@ -16,12 +16,16 @@ using DaisyOS.Shell.Services.Shell;
 using DaisyOS.Shell.Services.Theming;
 using DaisyOS.Shell.Views.Components.Wallpaper;
 using DaisyOS.Shell.Views.Windows;
+using DaisyOS.Shell.Views.Components.SystemBar;
+using DaisyOS.Shell.Services.Tray;
+using Avalonia.VisualTree;
 
 // A short, self-dismissing native preview. It never locks the session or uses PAM.
 if (args.Length < 2) throw new ArgumentException("Usage: wallpaper.heic output-directory [--capture]");
 PreviewApp.Wallpaper = Path.GetFullPath(args[0]);
 PreviewApp.Output = Path.GetFullPath(args[1]);
 PreviewApp.Capture = args.Contains("--capture");
+PreviewApp.Tray = args.Contains("--tray");
 var canvasIndex = Array.IndexOf(args, "--canvas");
 if (canvasIndex >= 0) PreviewApp.Canvas = Path.GetFullPath(args[canvasIndex + 1]);
 LinuxTextLibraryIsolation.EnsureLoaded();
@@ -32,7 +36,7 @@ AppBuilder.Configure<PreviewApp>().UseSkia().UseHarfBuzz()
 public sealed class PreviewApp : Application
 {
     public static string Wallpaper = "", Output = "";
-    public static bool Capture;
+    public static bool Capture, Tray;
     public static string? Canvas;
     public override void Initialize()
     {
@@ -70,6 +74,7 @@ public sealed class PreviewApp : Application
             await Task.Delay(300);
             if (!await layer.TryPresentWallpaperAsync(Wallpaper, TimeSpan.FromSeconds(20))) throw new Exception("Preview wallpaper did not load.");
             await Task.Delay(500);
+            if (Tray) { await CheckTrayAsync(backend); return; }
             preview = LockScreenWindow.CreateNative(backend, LayerShellSurfaceOptions.LockScreen(null, false) with
             {
                 KeyboardInteractivity = LayerShellKeyboardInteractivity.None, InputPassthrough = true
@@ -96,6 +101,42 @@ public sealed class PreviewApp : Application
             Console.WriteLine("PASS: seeded native entry, HEIC theme change, authenticated dismissal and published blur geometry.");
         }
         finally { preview?.Close(); background.Close(); }
+    }
+
+    private static async Task CheckTrayAsync(AvaloniaLayerShellWindowBackend backend)
+    {
+        var bar = new SystemBarView();
+        var overlay = bar.DetachFlyoutsForNativeOverlay();
+        var surface = backend.CreateWindow(LayerShellSurfaceOptions.SystemFlyoutOverlay() with
+        { Namespace = "daisyos.overlay.tray-preview", InputPassthrough = true,
+            KeyboardInteractivity = LayerShellKeyboardInteractivity.None }, overlay);
+        using var blur = new KWinBlur(surface, surface, () =>
+            new[] { bar.AppTrayMaterialFrame }.Concat(KWinBlur.PopupMaterials(surface)));
+        await using var service = new StatusNotifierService();
+        try
+        {
+            surface.Show();
+            await service.StartAsync();
+            await Task.Delay(2500);
+            var tray = bar.FindControl<AppTrayView>("AppTrayPanel")!;
+            tray.Connect(service);
+            bar.ShowAppTrayPanel();
+            await Task.Delay(500);
+            var button = tray.FindControl<Panel>("TrayItems")!.Children.OfType<Button>().First();
+            var method = typeof(AppTrayView).GetMethod("ShowMenuAsync", BindingFlags.Instance | BindingFlags.NonPublic)!;
+            await (Task)method.Invoke(tray, new object[] { button, service.Items.First() })!;
+            await Task.Delay(500);
+            var materials = KWinBlur.PopupMaterials(surface).ToArray();
+            var published = (List<WaylandBlurRect>?)typeof(KWinBlur).GetField("_lastRegions", BindingFlags.Instance | BindingFlags.NonPublic)!.GetValue(blur);
+            Console.WriteLine($"TRAY: popup materials={materials.Length}, published={published?.Count}, calculated={blur.BuildRegions().Count}");
+            if (materials.Length == 0) throw new Exception("Tray menu has no material on the native flyout surface.");
+            if (published is null || !published.SequenceEqual(blur.BuildRegions())) throw new Exception("Tray menu blur mask is stale.");
+            await ScreenshotAsync("tray-menu");
+            button.ContextMenu?.Close();
+            await Task.Delay(100);
+            Console.WriteLine("PASS: live tray menu contributes its rounded material to the KWin blur mask.");
+        }
+        finally { surface.Close(); }
     }
 
     private static async Task CheckCanvasAsync(LockScreenWindow preview)
