@@ -45,6 +45,10 @@ public partial class LockScreenWindow : Window
     private bool _isShaking;
     private Task? _dismissal;
     private bool _dismissing;
+    private bool _closed;
+    private bool _mediaRefreshInFlight;
+    private Rect _collapsedArtworkRect;
+    private Rect _expandedArtworkRect;
 
     private readonly DispatcherTimer _presenceTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly global::System.Diagnostics.Stopwatch _presenceTime = new();
@@ -146,6 +150,8 @@ public partial class LockScreenWindow : Window
     private string? _resolvedArtworkPath;
     private Color? _artworkTint;
     private string? _trackKey;
+    private string? _sourceIdentity;
+    private IImage? _sourceIcon;
     private string? _canvasTrackKey;
     private string? _resolvedCanvasVideoPath;
     private bool _hasMediaSession;
@@ -349,6 +355,8 @@ public partial class LockScreenWindow : Window
         CornerControlsGrid.RenderTransform = _cornerControlsTransform;
 
         _lockCanvasWallpaper.SuppressFailureFeedback = true;
+        _lockCanvasWallpaper.PreferCompositedVideo = true;
+        _lockCanvasWallpaper.FollowDesktopWallpaper = false;
         _lockCanvasWallpaper.PresentationCompleted += (_, _) => Dispatcher.UIThread.Post(ApplyVisualState);
 
         _presenceTimer.Tick += (_, _) => AdvancePresence();
@@ -372,6 +380,8 @@ public partial class LockScreenWindow : Window
             UpdateProgressFillWidth();
             if (_mediaExpandProgress > 0.001 && _mediaExpandProgress < 0.999)
             {
+                _collapsedArtworkRect = GetRestingCollapsedArtworkRect();
+                _expandedArtworkRect = GetRestingExpandedArtworkRect();
                 ApplyVisualState();
             }
         };
@@ -456,6 +466,7 @@ public partial class LockScreenWindow : Window
 
         Closed += (_, _) =>
         {
+            _closed = true;
             _clockTimer.Stop();
             _clockAnimation.Stop();
             _presenceTimer.Stop();
@@ -486,8 +497,13 @@ public partial class LockScreenWindow : Window
             _expandedArtworkImage.Source = null;
             _morphingArtworkImage.Source = null;
             _lockCanvasFallbackImage.Source = null;
-            _artwork?.Dispose();
+            _ = RetireArtworkAsync(_artwork);
             _artwork = null;
+            _collapsedSourceIcon.Source = null;
+            _expandedSourceIcon.Source = null;
+            _morphingSourceIcon.Source = null;
+            _sourceIcon = null;
+            _lockCanvasWallpaper.ClearWallpaper();
         };
         Closing += (_, e) =>
         {
@@ -633,11 +649,12 @@ public partial class LockScreenWindow : Window
 
     public async Task RefreshMediaAsync()
     {
-        if (_isSecondary || _dismissing) return;
+        if (_isSecondary || _dismissing || _closed) return;
 
         _mediaRefreshCancellation?.Cancel();
         _mediaRefreshCancellation?.Dispose();
         var cancellation = _mediaRefreshCancellation = new CancellationTokenSource();
+        _mediaRefreshInFlight = true;
 
         try
         {
@@ -647,7 +664,9 @@ public partial class LockScreenWindow : Window
                 session = null;
             }
 
-            var trackKey = session is null ? null : $"{session.Title}\x1f{session.Artist}";
+            if (cancellation.IsCancellationRequested || _closed) return;
+
+            var trackKey = session is null ? null : $"{session.SourceIdentity}\x1f{session.SourceUrl}\x1f{session.Title}\x1f{session.Artist}";
             var trackChanged = !string.Equals(_trackKey, trackKey, StringComparison.Ordinal);
 
             string? artworkPath;
@@ -669,13 +688,20 @@ public partial class LockScreenWindow : Window
             (Bitmap Bitmap, byte[] Bytes)? artwork = null;
             Color? tint = null;
 
+            // Publish metadata and start Canvas resolution immediately; artwork I/O
+            // must not delay transport state or leave the previous track visible.
+            if (trackChanged)
+                ApplyMediaSession(session, trackKey, null, null, null, replaceArtwork: true);
+
             if (replaceArtwork && !string.IsNullOrWhiteSpace(artworkPath))
             {
-                artwork = await LoadArtworkAsync(artworkPath, cancellation.Token);
-                if (artwork is not null)
+                var token = cancellation.Token;
+                (artwork, tint) = await Task.Run(async () =>
                 {
-                    tint = ArtworkColorExtractor.GetOrExtract(artworkPath, artwork.Value.Bytes);
-                }
+                    var loaded = await LoadArtworkAsync(artworkPath, token);
+                    Color? color = loaded is null ? null : ArtworkColorExtractor.GetOrExtract(artworkPath, loaded.Value.Bytes);
+                    return (loaded, color);
+                }, token);
             }
             else if (!replaceArtwork)
             {
@@ -689,7 +715,14 @@ public partial class LockScreenWindow : Window
             }
 
             await Dispatcher.UIThread.InvokeAsync(() =>
-                ApplyMediaSession(session, trackKey, artworkPath, artwork?.Bitmap, tint, replaceArtwork));
+            {
+                if (cancellation.IsCancellationRequested || _closed || _dismissing)
+                {
+                    artwork?.Bitmap.Dispose();
+                    return;
+                }
+                ApplyMediaSession(session, trackKey, artworkPath, artwork?.Bitmap, tint, replaceArtwork);
+            });
         }
         catch (OperationCanceledException)
         {
@@ -697,6 +730,11 @@ public partial class LockScreenWindow : Window
         catch
         {
             // Keep lock screen responsive even if media service fails
+        }
+        finally
+        {
+            if (ReferenceEquals(_mediaRefreshCancellation, cancellation))
+                _mediaRefreshInFlight = false;
         }
     }
 
@@ -721,7 +759,7 @@ public partial class LockScreenWindow : Window
                 _expandedArtworkImage.Source = artwork;
                 _morphingArtworkImage.Source = artwork;
                 _lockCanvasFallbackImage.Source = artwork;
-                previousArtwork?.Dispose();
+                _ = RetireArtworkAsync(previousArtwork);
                 _artworkTint = tint;
                 _artworkPath = artwork is null && !string.IsNullOrWhiteSpace(artworkPath) ? null : artworkPath;
             }
@@ -773,7 +811,12 @@ public partial class LockScreenWindow : Window
         ToolTip.SetTip(_expandedPlayPauseButton, playTip);
 
         var sourceGlyph = SourceGlyphFor(session?.SourceIdentity);
-        var sourceIcon = ResolveSourceIcon(session?.SourceIdentity);
+        if (!string.Equals(_sourceIdentity, session?.SourceIdentity, StringComparison.Ordinal))
+        {
+            _sourceIdentity = session?.SourceIdentity;
+            _sourceIcon = ResolveSourceIcon(_sourceIdentity);
+        }
+        var sourceIcon = _sourceIcon;
 
         ApplyArtworkControlState(
             _collapsedArtworkImage, _collapsedArtworkFallback, _collapsedSourceIcon, _collapsedSourceGlyph,
@@ -810,11 +853,16 @@ public partial class LockScreenWindow : Window
             if (!string.Equals(_canvasTrackKey, canvasKey, StringComparison.Ordinal))
             {
                 _canvasTrackKey = canvasKey;
+                // Never show the previous track's Canvas while resolving this one.
+                _resolvedCanvasVideoPath = null;
+                _lockCanvasWallpaper.ClearWallpaper();
+                ApplyVisualState();
                 _ = ResolveTrackCanvasAsync(session, canvasKey);
             }
         }
         else
         {
+            _canvasResolveCancellation?.Cancel();
             _canvasTrackKey = null;
             _resolvedCanvasVideoPath = null;
             _lockCanvasWallpaper.ClearWallpaper();
@@ -837,12 +885,13 @@ public partial class LockScreenWindow : Window
 
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (!string.Equals(_canvasTrackKey, expectedCanvasKey, StringComparison.Ordinal)) return;
+                if (_closed || _dismissing || cancellation.IsCancellationRequested
+                    || !string.Equals(_canvasTrackKey, expectedCanvasKey, StringComparison.Ordinal)) return;
 
                 _resolvedCanvasVideoPath = videoPath;
                 if (!string.IsNullOrWhiteSpace(videoPath))
                 {
-                    _lockCanvasWallpaper.WallpaperUri = videoPath;
+                    _lockCanvasWallpaper.SetMediaVideo(videoPath);
                 }
                 else
                 {
@@ -916,6 +965,10 @@ public partial class LockScreenWindow : Window
             return Task.CompletedTask;
         }
 
+        if (_closed || _dismissing) return Task.CompletedTask;
+        if (_mediaExpandTarget == (expanded ? 1 : 0))
+            return _mediaExpandCompletion?.Task ?? Task.CompletedTask;
+
         _mediaExpandTimer.Stop();
         _mediaExpandCompletion?.TrySetResult();
         _mediaExpandCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -926,20 +979,12 @@ public partial class LockScreenWindow : Window
         _mediaExpandStart = _mediaExpandProgress;
         _mediaExpandTime.Restart();
 
-        if (expanded)
-        {
-            _collapsedMediaHost.IsVisible = true;
-            _expandedMediaHost.IsVisible = true;
-            UpdateLockLayout();
-            UpdateLayout();
-        }
-        else
-        {
-            _collapsedMediaHost.IsVisible = true;
-            _expandedMediaHost.IsVisible = true;
-            UpdateLockLayout();
-            UpdateLayout();
-        }
+        _collapsedMediaHost.IsVisible = true;
+        _expandedMediaHost.IsVisible = true;
+        UpdateLockLayout();
+        UpdateLayout();
+        _collapsedArtworkRect = GetRestingCollapsedArtworkRect();
+        _expandedArtworkRect = GetRestingExpandedArtworkRect();
 
         AdvanceMediaExpansion();
         if (!_mediaExpandCompletion.Task.IsCompleted)
@@ -1037,7 +1082,7 @@ public partial class LockScreenWindow : Window
             }
         }
 
-        if ((now - _lastPeriodicSessionSyncAt).TotalSeconds >= 2)
+        if (!_mediaRefreshInFlight && (now - _lastPeriodicSessionSyncAt).TotalSeconds >= 2)
         {
             _lastPeriodicSessionSyncAt = now;
             _ = RefreshMediaAsync();
@@ -1284,6 +1329,15 @@ public partial class LockScreenWindow : Window
         _spectrumIsIdle = true;
     }
 
+    private static async Task RetireArtworkAsync(Bitmap? bitmap)
+    {
+        if (bitmap is null) return;
+        // Image source transitions and queued layout/render work can still refer
+        // to the outgoing bitmap after all four base sources have changed.
+        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        bitmap.Dispose();
+    }
+
     private static async Task<(Bitmap Bitmap, byte[] Bytes)?> LoadArtworkAsync(string? path, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -1503,6 +1557,7 @@ public partial class LockScreenWindow : Window
 
     private void ApplyVisualState()
     {
+        if (_closed) return;
         void Update()
         {
             var presence = _presenceProgress;
@@ -1569,8 +1624,8 @@ public partial class LockScreenWindow : Window
                 _collapsedArtworkButton.Opacity = 0;
                 _expandedArtworkContainer.Opacity = 0;
 
-                var startRect = GetRestingCollapsedArtworkRect();
-                var endRect = GetRestingExpandedArtworkRect();
+                var startRect = _collapsedArtworkRect;
+                var endRect = _expandedArtworkRect;
                 var arcLift = -Math.Sin(expand * Math.PI) * 18;
 
                 var currentX = startRect.X + (endRect.X - startRect.X) * expand;
@@ -1605,20 +1660,12 @@ public partial class LockScreenWindow : Window
                 var hasVideoPath = !string.IsNullOrWhiteSpace(_resolvedCanvasVideoPath);
                 _lockCanvasWallpaper.IsVisible = hasVideoPath;
 
-                if (hasVideoPath && _lockCanvasWallpaper.UsesNativeSubsurface)
-                {
-                    LockWallpaper.Opacity = Math.Clamp(1 - canvasAlpha, 0, 1);
-                    _lockCanvasLayer.Opacity = canvasAlpha;
-                    _lockCanvasFallbackPanel.Opacity = 0;
-                }
-                else
-                {
-                    LockWallpaper.Opacity = 1;
-                    _lockCanvasLayer.Opacity = canvasAlpha;
-                    var videoPresented = hasVideoPath
-                        && _lockCanvasWallpaper.PresentationState == WallpaperLayer.WallpaperPresentationState.Presented;
-                    _lockCanvasFallbackPanel.Opacity = videoPresented ? 0 : 1;
-                }
+                LockWallpaper.Opacity = 1;
+                _lockCanvasLayer.Opacity = canvasAlpha;
+                var videoPresented = hasVideoPath
+                    && _lockCanvasWallpaper.PresentationState == WallpaperLayer.WallpaperPresentationState.Presented;
+                _lockCanvasWallpaper.Opacity = videoPresented ? 1 : 0;
+                _lockCanvasFallbackPanel.Opacity = videoPresented ? 0 : 1;
             }
         }
 

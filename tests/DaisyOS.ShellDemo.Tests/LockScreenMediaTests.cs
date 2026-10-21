@@ -184,6 +184,29 @@ public sealed class LockScreenMediaTests
                 expandedFrame!.Save("/tmp/daisy-lock-media/lock-media-expanded.png", PngBitmapEncoderOptions.Default);
             }
 
+            // A slow provider that ignores cancellation must not overwrite a newer track.
+            var staleSession = fakeMedia.CurrentSession;
+            var pending = new TaskCompletionSource<MediaSession?>();
+            fakeMedia.SessionOverride = _ => pending.Task;
+            var staleRefresh = window.RefreshMediaAsync();
+            fakeMedia.SessionOverride = null;
+            fakeMedia.CurrentSession = staleSession! with { Title = "New track", SourceUrl = "test:new" };
+            await window.RefreshMediaAsync();
+            pending.SetResult(staleSession);
+            await staleRefresh;
+            Assert.Equal("New track", expandedTitle.Text);
+            Assert.Equal("New track", collapsedTitle.Text);
+            Assert.Null(window.ActiveCanvasVideoPath);
+
+            // Rapid reversal must settle on the final request without losing artwork.
+            var collapsing = window.SetMediaExpandedAsync(false);
+            await Task.Delay(70);
+            await window.SetMediaExpandedAsync(true);
+            await collapsing;
+            Assert.Equal(1, window.MediaExpandProgress);
+            Assert.False(window.FindControl<Border>("MorphingArtworkBorder")!.IsVisible);
+            Assert.True(window.FindControl<Border>("ExpandedArtworkContainer")!.Opacity > 0.99);
+
             // Collapse back to normal lock screen mode
             await window.SetMediaExpandedAsync(false);
             await Task.Delay(50);
@@ -292,11 +315,12 @@ public sealed class LockScreenMediaTests
     {
         public MediaSession? CurrentSession { get; set; }
         public event EventHandler? MediaChanged;
+        public Func<CancellationToken, Task<MediaSession?>>? SessionOverride { get; set; }
 
         public void RaiseChanged() => MediaChanged?.Invoke(this, EventArgs.Empty);
 
         public Task<MediaSession?> GetCurrentSessionAsync(CancellationToken cancellationToken = default) =>
-            Task.FromResult(CurrentSession);
+            SessionOverride?.Invoke(cancellationToken) ?? Task.FromResult(CurrentSession);
 
         public Task PreviousAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
         public Task PlayPauseAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

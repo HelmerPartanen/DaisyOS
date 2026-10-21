@@ -91,6 +91,19 @@ public partial class WallpaperLayer : UserControl
 
     internal bool SuppressFailureFeedback { get; set; }
 
+    // Animated overlays need video inside the visual tree so parent opacity and
+    // stacking apply. Desktop wallpaper can continue using a native subsurface.
+    internal bool PreferCompositedVideo { get; set; }
+    internal bool FollowDesktopWallpaper { get; set; } = true;
+
+    internal void SetMediaVideo(string path)
+    {
+        if (string.Equals(WallpaperUri, path, StringComparison.Ordinal))
+            RequestWallpaperLoad(path);
+        else
+            WallpaperUri = path;
+    }
+
     internal event EventHandler? PresentationCompleted;
 
     internal void ClearWallpaper()
@@ -135,7 +148,7 @@ public partial class WallpaperLayer : UserControl
         {
             if (layer._isLoaded)
             {
-                var uri = e.GetNewValue<string?>() ?? layer._app?.CurrentWallpaperUri;
+                var uri = e.GetNewValue<string?>() ?? (layer.FollowDesktopWallpaper ? layer._app?.CurrentWallpaperUri : null);
                 if (!string.IsNullOrEmpty(uri))
                 {
                     layer.RequestWallpaperLoad(uri);
@@ -232,7 +245,7 @@ public partial class WallpaperLayer : UserControl
         PropertyChanged += OnLayerPropertyChanged;
         UpdateVisibilityAndPauseState();
 
-        var uri = WallpaperUri ?? _app?.CurrentWallpaperUri;
+        var uri = WallpaperUri ?? (FollowDesktopWallpaper ? _app?.CurrentWallpaperUri : null);
         if (!string.IsNullOrEmpty(uri)) RequestWallpaperLoad(uri);
     }
 
@@ -371,7 +384,7 @@ public partial class WallpaperLayer : UserControl
 
     private void OnWallpaperChanged(object? sender, string wallpaperUri)
     {
-        if (WallpaperUri is null)
+        if (FollowDesktopWallpaper && WallpaperUri is null)
         {
             RequestWallpaperLoad(wallpaperUri);
         }
@@ -465,7 +478,7 @@ public partial class WallpaperLayer : UserControl
             string resolvedPath = ResolveWallpaperPath(wallpaperUri);
             if (!string.IsNullOrEmpty(resolvedPath) && WallpaperFileTypes.IsVideo(resolvedPath))
             {
-                if (MpvWallpaperSession.Enabled && _attachedWindow is not null)
+                if (!PreferCompositedVideo && MpvWallpaperSession.Enabled && _attachedWindow is not null)
                 {
                     var metadata = await VideoMetadata.ProbeAsync(resolvedPath);
                     if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;

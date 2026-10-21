@@ -235,7 +235,7 @@
 
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
-      <Color x:Key="SurfaceBaseColor">#33282828</Color>
+      <Color x:Key="SurfaceBaseColor">#331F1F1F</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
       <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>
@@ -674,6 +674,10 @@
   <SolidColorBrush x:Key="WhiteAlpha95Brush" Color="{StaticResource WhiteAlpha95Color}" />
   <SolidColorBrush x:Key="LockScreenMutedBrush" Color="{StaticResource LockScreenMutedColor}" />
 
+  <SolidColorBrush x:Key="LockScreenMediaBackdropBrush" Color="#FF08090C" />
+  <SolidColorBrush x:Key="LockScreenMediaScrimBrush" Color="#2D000000" />
+  <BoxShadows x:Key="LockScreenMediaArtworkShadow">0 18 44 0 #66000000</BoxShadows>
+  <BoxShadows x:Key="LockScreenMediaMorphShadow">0 14 36 0 #55000000</BoxShadows>
   <Color x:Key="LockScreenCanvasColor">#FF0B0D12</Color>
   <SolidColorBrush x:Key="LockScreenCanvasBrush" Color="{StaticResource LockScreenCanvasColor}" />
   <Color x:Key="LockScreenDangerColor">#FFFF6B6B</Color>
