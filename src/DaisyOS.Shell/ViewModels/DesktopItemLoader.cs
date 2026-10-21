@@ -98,10 +98,12 @@ public static class DesktopItemLoader
             $"avares://DaisyOS.Shell/Assets/FileIcons/{(directory ? "Folder" : "Document")}.svg";
     }
 
-    public static string ResolveIconPath(string iconName)
+    public static string ResolveIconPath(string iconName) => ResolveIconPath(iconName, IsCurrentThemeLight());
+
+    internal static string ResolveIconPath(string iconName, bool isLight)
     {
         if (string.IsNullOrWhiteSpace(iconName)) return string.Empty;
-        var builtIn = GetAppIconPath(iconName, IsCurrentThemeLight());
+        var builtIn = GetAppIconPath(iconName, isLight);
         if (!string.IsNullOrWhiteSpace(builtIn)) return builtIn;
 
         return _iconPathCache.GetOrAdd(iconName, ResolveIconPathUncached);

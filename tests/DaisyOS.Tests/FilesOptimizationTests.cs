@@ -463,6 +463,73 @@ public sealed class SessionCancellationTests
 public sealed class VisualLoadingTests
 {
     [Fact]
+    public void ByteBudgetEvictsOldImagesButKeepsActiveLeasesAlive()
+    {
+        var cache = new ThumbnailCache(100, maximumBytes: 8);
+        var snapshot = FilesFixture.Snapshot("/tmp/byte-budget.png");
+        var image = new DisposableImage();
+        var first = cache.Acquire(snapshot, 1, () => new FileVisual(image, null, ""));
+        using var second = cache.Acquire(snapshot with { Length = 2 }, 1, () => new FileVisual(new DisposableImage(), null, ""));
+        using var third = cache.Acquire(snapshot with { Length = 3 }, 1, () => new FileVisual(new DisposableImage(), null, ""));
+        Assert.Equal(2, cache.Count);
+        Assert.Equal(8, cache.CachedBytes);
+        Assert.Equal(12, cache.LiveBytes);
+        Assert.False(image.Disposed);
+        first.Dispose();
+        Assert.True(image.Disposed);
+        Assert.Equal(8, cache.LiveBytes);
+        cache.Clear();
+    }
+
+    [Fact]
+    public void OversizedImageIsUncachedAndDisposedOnlyAfterItsLeaseEnds()
+    {
+        var cache = new ThumbnailCache(100, maximumBytes: 8);
+        var image = new DisposableImage();
+        var lease = cache.Acquire(FilesFixture.Snapshot("/tmp/oversized.png"), 2, () => new FileVisual(image, null, ""));
+        Assert.Equal(0, cache.Count);
+        Assert.Equal(0, cache.CachedBytes);
+        Assert.Equal(16, cache.LiveBytes);
+        Assert.False(image.Disposed);
+        lease.Dispose();
+        Assert.True(image.Disposed);
+        Assert.Equal(0, cache.LiveBytes);
+    }
+
+    [Fact]
+    public void ClearDuringDecodeDoesNotRepopulateTheCache()
+    {
+        var cache = new ThumbnailCache();
+        var image = new DisposableImage();
+        var lease = cache.Acquire(FilesFixture.Snapshot("/tmp/invalidated.png"), 1, () =>
+        {
+            cache.Clear();
+            return new FileVisual(image, null, "");
+        });
+        Assert.Equal(0, cache.Count);
+        Assert.False(image.Disposed);
+        lease.Dispose();
+        Assert.True(image.Disposed);
+        Assert.Equal(0, cache.LiveBytes);
+    }
+
+    [Fact]
+    public void PressureTrimmingKeepsLeasedImagesAndReleasesUnusedImages()
+    {
+        var cache = new ThumbnailCache();
+        var image = new DisposableImage();
+        var lease = cache.Acquire(FilesFixture.Snapshot("/tmp/pressure.png"), 1, () => new FileVisual(image, null, ""));
+        cache.TrimUnused();
+        Assert.Equal(1, cache.Count);
+        Assert.False(image.Disposed);
+        lease.Dispose();
+        cache.TrimUnused();
+        Assert.Equal(0, cache.Count);
+        Assert.Equal(0, cache.LiveBytes);
+        Assert.True(image.Disposed);
+    }
+
+    [Fact]
     public void CacheEvictionAndInvalidationRetainImagesUntilTheLastLeaseEnds()
     {
         var cache = new ThumbnailCache(1);

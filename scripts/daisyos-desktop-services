@@ -13,7 +13,14 @@ fi
 if [[ -n "${DAISYOS_DESKTOP_SERVICES_BINARY:-}" ]]; then
   desktop_binary="$DAISYOS_DESKTOP_SERVICES_BINARY"
 elif [[ -n "${DAISYOS_NATIVE_DEVELOPMENT_ROOT:-}" ]]; then
-  desktop_binary="${DAISYOS_NATIVE_DEVELOPMENT_SHELL_BINARY:-$DAISYOS_NATIVE_DEVELOPMENT_ROOT/src/DaisyOS.Shell/bin/Debug/net10.0/DaisyOS.Shell}"
+  shell_configuration="${DAISYOS_SHELL_CONFIGURATION:-}"
+  configuration_record="${XDG_RUNTIME_DIR:-/nonexistent}/daisyos-native-development/shell.configuration"
+  if [[ -z "$shell_configuration" && -r "$configuration_record" ]]; then
+    read -r shell_configuration < "$configuration_record"
+  fi
+  # Older active development supervisors have no record and still run Debug.
+  shell_configuration="${shell_configuration:-Debug}"
+  desktop_binary="${DAISYOS_NATIVE_DEVELOPMENT_SHELL_BINARY:-$DAISYOS_NATIVE_DEVELOPMENT_ROOT/src/DaisyOS.Shell/bin/$shell_configuration/net10.0/DaisyOS.Shell}"
 else
   desktop_binary=/opt/DaisyOS/shell/DaisyOS.Shell
   if [[ ! -x "$desktop_binary" && -x /usr/lib/daisyos/DaisyOS.Shell ]]; then desktop_binary=/usr/lib/daisyos/DaisyOS.Shell; fi

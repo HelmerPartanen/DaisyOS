@@ -34,7 +34,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             private set => SetAndRaise(CurrentMetricsProperty, ref _currentMetrics, value);
         }
 
-        private readonly Avalonia.Threading.DispatcherTimer _trashRefreshTimer = new() { Interval = TimeSpan.FromSeconds(1) };
+        private TrashStateObserver? _trashObserver;
         private readonly DesktopViewModel _viewModel;
         public DesktopViewModel ViewModel => _viewModel;
 
@@ -126,7 +126,6 @@ namespace DaisyOS.Shell.Views.Components.Desktop
                 foreach (var item in _viewModel.Items.Where(item => item.IsDesktopEntry))
                     item.Label = DesktopItemLoader.ParseDesktopFile(item.Id.Value).name;
             });
-            _trashRefreshTimer.Tick += (_, _) => _viewModel.RefreshTrashIcon(ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light);
             _metricsProvider = new AvaloniaMetricsProvider();
             _dragController = new DesktopDragController();
 
@@ -309,7 +308,9 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
         private void OnLoaded(object? sender, RoutedEventArgs e)
         {
-            _trashRefreshTimer.Start();
+            _trashObserver?.Dispose();
+            _trashObserver = new TrashStateObserver(DaisyOS.Shell.Apps.Files.UserTrashPaths.Files,
+                populated => _viewModel.UpdateTrashIcon(populated, ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light));
             _app = Application.Current as App;
             if (_app is not null)
             {
@@ -332,7 +333,8 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
         private void OnUnloaded(object? sender, RoutedEventArgs e)
         {
-            _trashRefreshTimer.Stop();
+            _trashObserver?.Dispose();
+            _trashObserver = null;
             ActualThemeVariantChanged -= OnThemeVariantChanged;
             var widgetLibrary = this.FindControl<WidgetLibraryOverlay>("WidgetLibrary");
             if (widgetLibrary != null)

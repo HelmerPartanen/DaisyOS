@@ -87,9 +87,12 @@ restart_shell() {
 
   echo "Building DaisyOS before restarting the native shell..."
   "$source_root/scripts/build-mpv-wallpaper.sh" || return 1
-  # Keep the shell debuggable; run standalone apps with the same optimized
-  # configuration measured by the performance suite.
-  if ! dotnet build "$source_root/src/DaisyOS.Shell/DaisyOS.Shell.csproj" -f net10.0 --no-restore --disable-build-servers -m:1 -v:minimal; then
+  # Match the supervisor's executable. Older active supervisors run Debug and
+  # have no configuration record; changing that path requires a new login.
+  local shell_configuration
+  shell_configuration="$(read_runtime_value shell.configuration || true)"
+  shell_configuration="${shell_configuration:-Debug}"
+  if ! dotnet build "$source_root/src/DaisyOS.Shell/DaisyOS.Shell.csproj" -c "$shell_configuration" -f net10.0 --no-restore --disable-build-servers -m:1 -v:minimal; then
     echo "Shell build failed. The running desktop was left untouched." >&2
     exit 1
   fi

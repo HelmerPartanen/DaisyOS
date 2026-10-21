@@ -98,7 +98,7 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
 
     private void Start()
     {
-        if (Environment.GetEnvironmentVariable("DAISYOS_PREFETCH") == "0" || MemoryPressure()) return;
+        if (Environment.GetEnvironmentVariable("DAISYOS_PREFETCH") != "1" || MemoryPressure()) return;
         lock (_gate)
         {
             if (_disposed || _suspended || _work is { IsCancellationRequested: false }) return;
@@ -115,11 +115,21 @@ internal sealed partial class RecentAppPrefetcher : IDisposable
     {
         try
         {
-            var available = File.ReadLines("/proc/meminfo").First(line => line.StartsWith("MemAvailable:"));
-            return long.Parse(available.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1]) < 1024 * 1024;
+            long total = 0, available = 0;
+            foreach (var line in File.ReadLines("/proc/meminfo"))
+            {
+                if (line.StartsWith("MemTotal:")) total = long.Parse(line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1]);
+                else if (line.StartsWith("MemAvailable:")) available = long.Parse(line.Split(' ', StringSplitOptions.RemoveEmptyEntries)[1]);
+            }
+            return HasMemoryPressure(total, available);
         }
         catch { return true; }
     }
+
+    // Keep proportional headroom without treating all 4 GiB systems as permanently
+    // under pressure or waiting until a 16 GiB game session has only 1 GiB left.
+    internal static bool HasMemoryPressure(long totalKiB, long availableKiB) =>
+        totalKiB <= 0 || availableKiB < Math.Clamp(totalKiB / 8, 512L * 1024, 2048L * 1024);
 
     private async Task RunAsync(string[] paths, CancellationTokenSource work)
     {

@@ -6,6 +6,28 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class WallpaperSourceCacheTests
 {
+    [AvaloniaFact]
+    public async Task PressureTrimmingPreservesActiveSourcesAndReleasesThemAfterUse()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "daisy-source-pressure-" + Guid.NewGuid() + ".png");
+        WritePixel(path);
+        try
+        {
+            using (var lease = await WallpaperSourceCache.AcquireAsync(path, new WallpaperDiagnostics(), CancellationToken.None))
+            {
+                Assert.NotNull(lease);
+                WallpaperSourceCache.TrimUnused();
+                using var shared = WallpaperSourceCache.TryAcquire(path);
+                Assert.NotNull(shared);
+                Assert.Same(lease.Bitmap, shared.Bitmap);
+            }
+            WallpaperSourceCache.TrimUnused();
+            using var missing = WallpaperSourceCache.TryAcquire(path);
+            Assert.Null(missing);
+        }
+        finally { File.Delete(path); }
+    }
+
     private static void WritePixel(string path)
     {
         using var bitmap = new SkiaSharp.SKBitmap(1, 1);

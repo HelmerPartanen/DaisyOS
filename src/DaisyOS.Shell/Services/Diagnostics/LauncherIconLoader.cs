@@ -12,13 +12,14 @@ namespace DaisyOS.Shell.Services.Diagnostics;
 internal sealed class LauncherIconLoader : IDisposable
 {
     private static readonly SemaphoreSlim Workers = new(4);
-    // Cache holds up to 56 MiB; current catalog items retain leases until removed.
-    private readonly ThumbnailCache _cache = new(896);
+    // Byte budget covers cache ownership; catalog leases are counted separately.
+    private readonly ThumbnailCache _cache = new(896, 16L * 1024 * 1024);
     private readonly Dictionary<LauncherItemViewModel, Request> _requests = [];
     private int _generation;
-    private sealed class Request(int generation, string iconName)
+    private sealed class Request(int generation, string iconName, bool isLight)
     {
         public readonly string IconName = iconName;
+        public readonly bool IsLight = isLight;
         public int Count = 1;
         public readonly int Generation = generation;
         public readonly CancellationTokenSource Cancellation = new();
@@ -30,7 +31,9 @@ internal sealed class LauncherIconLoader : IDisposable
     {
         if (item.IconBitmap != null) return;
         if (_requests.ContainsKey(item)) return;
-        var request = new Request(_generation, item.IconName);
+        // Capture UI-owned appearance before dispatching decode work. Workers
+        // must not synchronously invoke the UI dispatcher while holding a slot.
+        var request = new Request(_generation, item.IconName, DesktopItemLoader.IsCurrentThemeLight());
         _requests.Add(item, request);
         request.Completion = LoadAsync(item, request, scaling);
     }
@@ -56,7 +59,7 @@ internal sealed class LauncherIconLoader : IDisposable
                 {
                     token.ThrowIfCancellationRequested();
                     using var trace = ResponsivenessTrace.Measure("launcher.icon.decode", item.App.Id);
-                    var path = DesktopItemLoader.ResolveIconPath(item.IconName);
+                    var path = DesktopItemLoader.ResolveIconPath(request.IconName, request.IsLight);
                     if (string.IsNullOrWhiteSpace(path)) return null;
                     var resource = path.StartsWith("avares:", StringComparison.Ordinal);
                     var info = resource ? null : new FileInfo(path);

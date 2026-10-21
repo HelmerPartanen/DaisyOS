@@ -119,7 +119,7 @@ install -d -m 0755 "$prefix/usr/share/xdg-desktop-portal"
 install_file_atomically 0644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
   "$prefix/usr/share/xdg-desktop-portal/daisyos-portals.conf"
 "$repo_root/scripts/stage-desktop-services.sh" --root "$prefix" \
-  --capture-helper "$source_root/src/DaisyOS.Shell/bin/Debug/net10.0/daisyos-portal-capture"
+  --capture-helper "$source_root/src/DaisyOS.Shell/bin/${DAISYOS_SHELL_CONFIGURATION:-Release}/net10.0/daisyos-portal-capture"
 
 # Preserve an explicitly selected checkout when the session launcher is
 # refreshed, unless the installation itself supplies a different checkout.

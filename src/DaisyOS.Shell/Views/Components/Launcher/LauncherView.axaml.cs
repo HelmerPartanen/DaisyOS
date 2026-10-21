@@ -29,6 +29,7 @@ public partial class LauncherView : UserControl
     private readonly MenuItem? _appContextUninstallItem;
     private Button? _contextMenuButton;
     private LauncherItemViewModel? _contextMenuItem;
+    private bool _iconsReclaimed;
     public bool IsOpen { get; private set; }
     public event EventHandler<bool>? OpenStateChanged;
     public event EventHandler<bool>? PowerMenuVisibilityChanged;
@@ -194,12 +195,25 @@ public partial class LauncherView : UserControl
     }
     private void RegisterTile(Button button)
     {
+        if (_iconsReclaimed && !IsOpen) return;
         if (ReferenceEquals(button.Tag, button.DataContext)) return;
         button.Tag = button.DataContext;
         if (button.DataContext is LauncherItemViewModel item)
             _icons.Register(item, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
     }
-    private void PreloadCatalogIcons() => _icons.Preload(ViewModel.AllApps, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
+    private void PreloadCatalogIcons()
+    {
+        if (_iconsReclaimed && !IsOpen) return;
+        _iconsReclaimed = false;
+        _icons.Preload(ViewModel.AllApps, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
+    }
+
+    internal void ReclaimHiddenIcons()
+    {
+        if (IsVisible || IsOpen || _iconsReclaimed) return;
+        _iconsReclaimed = true;
+        _icons.Dispose();
+    }
 
     public LauncherViewModel ViewModel { get; }
     public event EventHandler? AppLaunchRequested;

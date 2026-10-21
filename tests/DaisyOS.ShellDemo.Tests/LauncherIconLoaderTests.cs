@@ -10,6 +10,41 @@ namespace DaisyOS.ShellDemo.Tests;
 public class LauncherIconLoaderTests
 {
     [AvaloniaFact]
+    public async Task HiddenLauncherCanReleaseIconsAndReloadThemOnNextOpen()
+    {
+        var directory = Directory.CreateTempSubdirectory("daisy-launcher-reclaim-");
+        var icon = Path.Combine(directory.FullName, "fixture.png");
+        using (var pixels = new SkiaSharp.SKBitmap(8, 8))
+        {
+            pixels.Erase(SkiaSharp.SKColors.CornflowerBlue);
+            using var encoded = pixels.Encode(SkiaSharp.SKEncodedImageFormat.Png, 100);
+            using var output = File.Create(icon);
+            encoded.SaveTo(output);
+        }
+        var model = new LauncherViewModel(new DaisyOS.Shell.Services.ShellSessionState(Path.Combine(directory.FullName, "state.json")),
+            [new AppEntry("fixture", "Fixture", "", icon, false)]);
+        var view = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(model) { IsVisible = false };
+        var window = new Avalonia.Controls.Window { Content = view, Width = 900, Height = 800 };
+        window.Show();
+        try
+        {
+            var item = Assert.Single(model.AllApps);
+            for (var i = 0; i < 250 && item.IconBitmap is null; i++)
+            { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            Assert.NotNull(item.IconBitmap);
+            view.ReclaimHiddenIcons();
+            Assert.Null(item.IconBitmap);
+            view.AnimateIn();
+            for (var i = 0; i < 250 && item.IconBitmap is null; i++)
+            { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+            Assert.NotNull(item.IconBitmap);
+            view.ReclaimHiddenIcons();
+            Assert.NotNull(item.IconBitmap);
+        }
+        finally { view.CloseImmediate(); view.ReclaimHiddenIcons(); window.Close(); directory.Delete(true); }
+    }
+
+    [AvaloniaFact]
     public async Task CatalogIconsLoadWithoutRealizedTilesAndRefreshWhenChanged()
     {
         using var loader = new LauncherIconLoader();

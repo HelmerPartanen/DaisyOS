@@ -12,6 +12,15 @@ internal static class WallpaperSourceCache
     private static readonly LinkedList<string> Order = new();
     private static long _bytes;
 
+    internal static long CachedBytes { get { lock (Gate) return _bytes; } }
+
+    internal static void TrimUnused()
+    {
+        lock (Gate)
+            foreach (var path in Entries.Where(pair => pair.Value.Leases == 0).Select(pair => pair.Key).ToArray())
+                Evict(path);
+    }
+
     internal sealed class Entry(Bitmap bitmap, long length, long ticks, LinkedListNode<string> node)
     {
         public readonly Bitmap Bitmap = bitmap;

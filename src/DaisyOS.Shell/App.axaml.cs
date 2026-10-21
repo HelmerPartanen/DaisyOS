@@ -33,6 +33,7 @@ using DaisyOS.Shell.Apps.UIKit;
 using DaisyOS.Shell.Services.Windows;
 using DaisyOS.Shell.Services.Notifications;
 using DaisyOS.Shell.Services.Compositor;
+using DaisyOS.Shell.Services.Diagnostics;
 using DaisyOS.Shell.Services.Shell;
 using DaisyOS.System.Appearance;
 using DaisyOS.System.Processes;
@@ -235,7 +236,8 @@ public partial class App : Application
 
     public App(Action<App, IClassicDesktopStyleApplicationLifetime>? applicationStartup)
     {
-        _recentPrefetch = new(enabled: applicationStartup is null);
+        _recentPrefetch = new(enabled: applicationStartup is null &&
+            Environment.GetEnvironmentVariable("DAISYOS_PREFETCH") == "1");
         _applicationStartup = applicationStartup;
         _appearanceSettings = _appearanceSettingsStore.Load();
         _automaticThemeScheduler = new AutomaticThemeScheduler(theme => _ = ApplyThemeVariantAsync(theme));
@@ -293,6 +295,16 @@ public partial class App : Application
             var traceLifetime = new CancellationTokenSource();
             StartApplicationSettingsService(traceLifetime.Token);
             _ = DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.RunAsync(traceLifetime.Token);
+            _ = Task.Run(() => ShellResourceTrace.RunAsync(traceLifetime.Token));
+            _ = ShellMemoryPressureMonitor.RunAsync(traceLifetime.Token, () =>
+            {
+                _shellView?.Launcher.ReclaimHiddenIcons();
+                if (_appStoreWindow is null && _appStoreSession is { HasActiveOperations: false } store)
+                {
+                    _appStoreSession = null;
+                    store.Dispose();
+                }
+            });
             var gamingAutomation = new GamingModeAutomation(SessionState, () =>
                 SessionState.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false",
                 telemetryVisible: () => Volatile.Read(ref _gameTelemetryVisible) != 0,

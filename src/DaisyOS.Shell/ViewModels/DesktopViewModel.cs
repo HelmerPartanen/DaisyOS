@@ -1000,10 +1000,17 @@ public class DesktopViewModel : INotifyPropertyChanged
         try
         {
             var populated = Directory.Exists(files) && Directory.EnumerateFileSystemEntries(files).Any();
-            trash.IconPath = DesktopItemLoader.GetAppIconPath(populated ? "trash_item" : "trash", isLight ?? DesktopItemLoader.IsCurrentThemeLight());
+            UpdateTrashIcon(populated, isLight);
         }
         catch (IOException) { }
         catch (UnauthorizedAccessException) { }
+    }
+
+    internal void UpdateTrashIcon(bool populated, bool? isLight = null)
+    {
+        var trash = Items.FirstOrDefault(item => item.IsTrash);
+        if (trash is not null)
+            trash.IconPath = DesktopItemLoader.GetAppIconPath(populated ? "trash_item" : "trash", isLight ?? DesktopItemLoader.IsCurrentThemeLight());
     }
 
     private Task<bool>? _emptyTrashTask;

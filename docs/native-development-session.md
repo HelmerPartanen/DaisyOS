@@ -15,7 +15,11 @@ sudo scripts/install-native-development-session.sh
 ```
 
 Sign out, select **DaisyOS (Native Development)** in the display manager, and
-sign in. The session builds the current Debug shell once during startup.
+sign in. New sessions use the optimized Release shell, building it if missing.
+Set `DAISYOS_SHELL_CONFIGURATION=Debug` in the session configuration when debugging
+requires it. Restarts rebuild the configuration recorded by the active supervisor;
+older supervisors continue using Debug until the next login with the updated
+session launcher installed.
 
 When firewalld is enabled, the installer permits LocalSend's TCP and UDP port
 `53317` on the active LAN zone. LocalSend still accepts incoming files only
