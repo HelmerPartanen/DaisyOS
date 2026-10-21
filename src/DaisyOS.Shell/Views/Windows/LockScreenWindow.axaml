@@ -555,44 +555,55 @@
                   Spacing="28"
                   Margin="24,0,24,36">
         <!-- Center Large Album Artwork (Click to collapse back to normal lock screen) -->
-        <Border x:Name="ExpandedArtworkContainer"
+        <controls:ShellFrameBorder x:Name="ExpandedArtworkContainer"
                 Width="312"
                 Height="312"
+                Padding="1"
                 HorizontalAlignment="Center"
-                CornerRadius="20"
+                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                CornerRadius="{DynamicResource RoundedXXL}"
                 BoxShadow="0 18 44 0 #66000000">
-          <Border x:Name="ExpandedArtworkButton"
-                  Classes="LockMediaArtwork"
-                  CornerRadius="20"
-                  ClipToBounds="True"
-                  Cursor="Hand"
-                  Background="Transparent"
-                  PointerPressed="OnExpandedArtworkPointerPressed">
-            <Grid>
-              <Image x:Name="ExpandedArtworkImage"
-                     Stretch="UniformToFill"
-                     IsVisible="False"
-                     RenderOptions.BitmapInterpolationMode="HighQuality" />
-              <Border x:Name="ExpandedArtworkFallback"
-                      Background="{DynamicResource SurfaceBaseBrush}">
-                <Grid>
-                  <Image x:Name="ExpandedSourceIcon"
-                         Width="64"
-                         Height="64"
-                         IsVisible="False"
-                         RenderOptions.BitmapInterpolationMode="HighQuality" />
-                  <controls:DaisyIcon x:Name="ExpandedSourceGlyph"
-                                      Icon="music-note"
-                                      Weight="Fill"
-                                      Size="56"
-                                      Foreground="{DynamicResource ContentTertiaryBrush}"
-                                      HorizontalAlignment="Center"
-                                      VerticalAlignment="Center" />
-                </Grid>
-              </Border>
-            </Grid>
-          </Border>
-        </Border>
+          <Panel>
+            <Border x:Name="ExpandedArtworkButton"
+                    Classes="LockMediaArtwork"
+                    Margin="1"
+                    CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
+                    ClipToBounds="True"
+                    Cursor="Hand"
+                    Background="{DynamicResource SurfaceBaseBrush}"
+                    PointerPressed="OnExpandedArtworkPointerPressed">
+              <Grid>
+                <Image x:Name="ExpandedArtworkImage"
+                       Stretch="UniformToFill"
+                       IsVisible="False"
+                       RenderOptions.BitmapInterpolationMode="HighQuality" />
+                <Border x:Name="ExpandedArtworkFallback"
+                        Background="{DynamicResource SurfaceBaseBrush}">
+                  <Grid>
+                    <Image x:Name="ExpandedSourceIcon"
+                           Width="64"
+                           Height="64"
+                           IsVisible="False"
+                           RenderOptions.BitmapInterpolationMode="HighQuality" />
+                    <controls:DaisyIcon x:Name="ExpandedSourceGlyph"
+                                        Icon="music-note"
+                                        Weight="Fill"
+                                        Size="56"
+                                        Foreground="{DynamicResource ContentTertiaryBrush}"
+                                        HorizontalAlignment="Center"
+                                        VerticalAlignment="Center" />
+                  </Grid>
+                </Border>
+              </Grid>
+            </Border>
+            <controls:ShellFrameBorder Background="Transparent"
+                    BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                    BorderThickness="1"
+                    BackgroundSizing="InnerBorderEdge"
+                    CornerRadius="{DynamicResource RoundedXXLInset}"
+                    IsHitTestVisible="False" />
+          </Panel>
+        </controls:ShellFrameBorder>
 
         <!-- Expanded Media Control Card -->
         <controls:ShellFrameBorder x:Name="ExpandedMediaBorder"
@@ -611,16 +622,6 @@
                     CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
                     ClipToBounds="True">
               <Grid>
-                <Border x:Name="ExpandedArtworkTint"
-                        Background="Transparent"
-                        IsHitTestVisible="False">
-                  <Border.Transitions>
-                    <Transitions>
-                      <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationEnter}" Easing="CubicEaseOut" />
-                    </Transitions>
-                  </Border.Transitions>
-                </Border>
-
                 <Grid Margin="20,14,20,14"
                       RowDefinitions="Auto,Auto,Auto"
                       RowSpacing="10">
@@ -760,39 +761,50 @@
       <Border x:Name="MorphingArtworkBorder"
               Width="126"
               Height="126"
+              Padding="1"
               HorizontalAlignment="Left"
               VerticalAlignment="Top"
+              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
               CornerRadius="14"
               BoxShadow="0 14 36 0 #55000000"
               IsVisible="False"
               IsHitTestVisible="False">
-        <Border x:Name="MorphingArtworkInner"
-                CornerRadius="14"
-                ClipToBounds="True">
-          <Grid>
-            <Image x:Name="MorphingArtworkImage"
-                   Stretch="UniformToFill"
-                   IsVisible="False"
-                   RenderOptions.BitmapInterpolationMode="HighQuality" />
-            <Border x:Name="MorphingArtworkFallback"
-                    Background="{DynamicResource StateHoverBrush}">
-              <Grid>
-                <Image x:Name="MorphingSourceIcon"
-                       Width="44"
-                       Height="44"
-                       IsVisible="False"
-                       RenderOptions.BitmapInterpolationMode="HighQuality" />
-                <controls:DaisyIcon x:Name="MorphingSourceGlyph"
-                                    Icon="music-note"
-                                    Weight="Fill"
-                                    Size="40"
-                                    Foreground="{DynamicResource ContentTertiaryBrush}"
-                                    HorizontalAlignment="Center"
-                                    VerticalAlignment="Center" />
-              </Grid>
-            </Border>
-          </Grid>
-        </Border>
+        <Panel>
+          <Border x:Name="MorphingArtworkInner"
+                  Margin="1"
+                  CornerRadius="13"
+                  ClipToBounds="True">
+            <Grid>
+              <Image x:Name="MorphingArtworkImage"
+                     Stretch="UniformToFill"
+                     IsVisible="False"
+                     RenderOptions.BitmapInterpolationMode="HighQuality" />
+              <Border x:Name="MorphingArtworkFallback"
+                      Background="{DynamicResource StateHoverBrush}">
+                <Grid>
+                  <Image x:Name="MorphingSourceIcon"
+                         Width="44"
+                         Height="44"
+                         IsVisible="False"
+                         RenderOptions.BitmapInterpolationMode="HighQuality" />
+                  <controls:DaisyIcon x:Name="MorphingSourceGlyph"
+                                      Icon="music-note"
+                                      Weight="Fill"
+                                      Size="40"
+                                      Foreground="{DynamicResource ContentTertiaryBrush}"
+                                      HorizontalAlignment="Center"
+                                      VerticalAlignment="Center" />
+                </Grid>
+              </Border>
+            </Grid>
+          </Border>
+          <Border x:Name="MorphingArtworkHighlight"
+                  Background="Transparent"
+                  BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="13"
+                  IsHitTestVisible="False" />
+        </Panel>
       </Border>
     </Panel>
 

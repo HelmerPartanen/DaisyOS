@@ -152,6 +152,7 @@ public partial class LockScreenWindow : Window
                 window.AvatarBorder,
                 window.PasswordPillBorder,
                 window.CollapsedMediaBorder,
+                window.ExpandedArtworkContainer,
                 window.ExpandedMediaBorder
             })
         {
@@ -1091,7 +1092,6 @@ public partial class LockScreenWindow : Window
             : Brushes.Transparent;
 
         CollapsedArtworkTint.Background = brush;
-        ExpandedArtworkTint.Background = brush;
     }
 
     private void UpdateSpectrumBarTint()
@@ -1487,13 +1487,15 @@ public partial class LockScreenWindow : Window
                 var currentY = startRect.Y + (endRect.Y - startRect.Y) * expand + arcLift;
                 var currentW = Math.Max(1, startRect.Width + (endRect.Width - startRect.Width) * expand);
                 var currentH = Math.Max(1, startRect.Height + (endRect.Height - startRect.Height) * expand);
-                var currentRadius = 14 + (20 - 14) * expand;
+                var currentRadius = 14 + (32 - 14) * expand;
 
                 MorphingArtworkBorder.IsVisible = true;
                 MorphingArtworkBorder.Opacity = presence * mediaPresence;
                 MorphingArtworkBorder.Width = currentW;
                 MorphingArtworkBorder.Height = currentH;
-                MorphingArtworkBorder.CornerRadius = MorphingArtworkInner.CornerRadius = new CornerRadius(currentRadius);
+                MorphingArtworkBorder.CornerRadius = new CornerRadius(currentRadius);
+                MorphingArtworkHighlight.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 1));
+                MorphingArtworkInner.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 2));
                 _morphingArtworkTranslate.X = currentX;
                 _morphingArtworkTranslate.Y = currentY;
             }
