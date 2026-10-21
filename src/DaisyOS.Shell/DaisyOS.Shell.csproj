@@ -21,6 +21,7 @@
     <DaisyGeneratedIconDirectory>$(MSBuildProjectDirectory)/obj/$(Configuration)/$(TargetFramework)/DaisyIconBundle</DaisyGeneratedIconDirectory>
     <DaisyIconManifest>$(MSBuildProjectDirectory)/IconBundle.manifest</DaisyIconManifest>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+    <AvaloniaResourcesTemporaryFilePath Condition="'$(DesignTimeBuild)' == 'true'">$(MSBuildProjectDirectory)/obj/$(Configuration)/$(TargetFramework)/Avalonia/resources.designtime</AvaloniaResourcesTemporaryFilePath>
   </PropertyGroup>
   <ItemGroup>
     <None Include="../native/daisy_portal_capture/build/daisyos-portal-capture" Link="daisyos-portal-capture" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_portal_capture/build/daisyos-portal-capture')" />
@@ -86,7 +87,7 @@
     <DaisyIconBundleInput Include="$(MSBuildProjectDirectory)/**/*.axaml" Exclude="$(MSBuildProjectDirectory)/obj/**;$(MSBuildProjectDirectory)/bin/**" />
     <DaisyIconBundleInput Include="$(MSBuildProjectDirectory)/**/*.cs" Exclude="$(MSBuildProjectDirectory)/obj/**;$(MSBuildProjectDirectory)/bin/**" />
   </ItemGroup>
-  <Target Name="GenerateDaisyIconBundle" BeforeTargets="PrepareDaisyIconResources" Inputs="@(DaisyIconBundleInput)" Outputs="$(DaisyGeneratedIconDirectory)/.bundle-stamp">
+  <Target Name="GenerateDaisyIconBundle" BeforeTargets="PrepareDaisyIconResources" Inputs="@(DaisyIconBundleInput)" Outputs="$(DaisyGeneratedIconDirectory)/.bundle-stamp" Condition="'$(DesignTimeBuild)' != 'true' Or !Exists('$(DaisyGeneratedIconDirectory)/.bundle-stamp')">
     <Exec Command="python3 &quot;$(MSBuildProjectDirectory)/../../scripts/build-icon-bundle.py&quot; --library &quot;$(DaisyIconLibraryDirectory)&quot; --output &quot;$(DaisyGeneratedIconDirectory)&quot; --manifest &quot;$(DaisyIconManifest)&quot; --aliases &quot;$(DaisyIconAliases)&quot; --scan-root &quot;$(MSBuildProjectDirectory)&quot;" />
   </Target>
   <Target Name="PrepareDaisyIconResources" BeforeTargets="GenerateAvaloniaResources" DependsOnTargets="GenerateDaisyIconBundle">

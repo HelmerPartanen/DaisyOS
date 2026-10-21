@@ -79,6 +79,51 @@ public partial class LockScreenWindow : Window
 
     private readonly TranslateTransform _morphingArtworkTranslate = new();
 
+    private readonly Panel _lockCanvasLayer;
+    private readonly Panel _lockCanvasFallbackPanel;
+    private readonly Image _lockCanvasFallbackImage;
+    private readonly WallpaperLayer _lockCanvasWallpaper;
+
+    private readonly Grid _collapsedMediaHost;
+    private readonly ShellFrameBorder _collapsedMediaBorder;
+    private readonly Border _collapsedArtworkTint;
+    private readonly Border _collapsedArtworkButton;
+    private readonly Image _collapsedArtworkImage;
+    private readonly Border _collapsedArtworkFallback;
+    private readonly Image _collapsedSourceIcon;
+    private readonly DaisyIcon _collapsedSourceGlyph;
+    private readonly Canvas _collapsedSpectrumCanvas;
+    private readonly TextBlock _collapsedTitleText;
+    private readonly TextBlock _collapsedArtistText;
+    private readonly Button _collapsedPlayPauseButton;
+    private readonly DaisyIcon _collapsedPlayPauseGlyph;
+
+    private readonly Grid _expandedMediaHost;
+    private readonly StackPanel _expandedMediaStack;
+    private readonly ShellFrameBorder _expandedArtworkContainer;
+    private readonly Image _expandedArtworkImage;
+    private readonly Border _expandedArtworkFallback;
+    private readonly Image _expandedSourceIcon;
+    private readonly DaisyIcon _expandedSourceGlyph;
+    private readonly ShellFrameBorder _expandedMediaBorder;
+    private readonly TextBlock _expandedTitleText;
+    private readonly TextBlock _expandedArtistText;
+    private readonly Canvas _expandedSpectrumCanvas;
+    private readonly TextBlock _expandedElapsedText;
+    private readonly Border _expandedProgressTrack;
+    private readonly Border _expandedProgressFill;
+    private readonly TextBlock _expandedRemainingText;
+    private readonly Button _expandedPlayPauseButton;
+    private readonly DaisyIcon _expandedPlayPauseGlyph;
+
+    private readonly Border _morphingArtworkBorder;
+    private readonly Border _morphingArtworkInner;
+    private readonly Image _morphingArtworkImage;
+    private readonly Border _morphingArtworkFallback;
+    private readonly Image _morphingSourceIcon;
+    private readonly DaisyIcon _morphingSourceGlyph;
+    private readonly Border _morphingArtworkHighlight;
+
     private readonly DispatcherTimer _clockAnimation = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly global::System.Diagnostics.Stopwatch _clockAnimationTime = new();
     private bool _clockInitialized;
@@ -151,9 +196,9 @@ public partial class LockScreenWindow : Window
             {
                 window.AvatarBorder,
                 window.PasswordPillBorder,
-                window.CollapsedMediaBorder,
-                window.ExpandedArtworkContainer,
-                window.ExpandedMediaBorder
+                window._collapsedMediaBorder,
+                window._expandedArtworkContainer,
+                window._expandedMediaBorder
             })
         {
             AdditionalRegions = window.GetClockBlurRegions
@@ -244,22 +289,67 @@ public partial class LockScreenWindow : Window
     {
         InitializeComponent();
 
+        _lockCanvasLayer = this.FindControl<Panel>("LockCanvasLayer")!;
+        _lockCanvasFallbackPanel = this.FindControl<Panel>("LockCanvasFallbackPanel")!;
+        _lockCanvasFallbackImage = this.FindControl<Image>("LockCanvasFallbackImage")!;
+        _lockCanvasWallpaper = this.FindControl<WallpaperLayer>("LockCanvasWallpaper")!;
+
+        _collapsedMediaHost = this.FindControl<Grid>("CollapsedMediaHost")!;
+        _collapsedMediaBorder = this.FindControl<ShellFrameBorder>("CollapsedMediaBorder")!;
+        _collapsedArtworkTint = this.FindControl<Border>("CollapsedArtworkTint")!;
+        _collapsedArtworkButton = this.FindControl<Border>("CollapsedArtworkButton")!;
+        _collapsedArtworkImage = this.FindControl<Image>("CollapsedArtworkImage")!;
+        _collapsedArtworkFallback = this.FindControl<Border>("CollapsedArtworkFallback")!;
+        _collapsedSourceIcon = this.FindControl<Image>("CollapsedSourceIcon")!;
+        _collapsedSourceGlyph = this.FindControl<DaisyIcon>("CollapsedSourceGlyph")!;
+        _collapsedSpectrumCanvas = this.FindControl<Canvas>("CollapsedSpectrumCanvas")!;
+        _collapsedTitleText = this.FindControl<TextBlock>("CollapsedTitleText")!;
+        _collapsedArtistText = this.FindControl<TextBlock>("CollapsedArtistText")!;
+        _collapsedPlayPauseButton = this.FindControl<Button>("CollapsedPlayPauseButton")!;
+        _collapsedPlayPauseGlyph = this.FindControl<DaisyIcon>("CollapsedPlayPauseGlyph")!;
+
+        _expandedMediaHost = this.FindControl<Grid>("ExpandedMediaHost")!;
+        _expandedMediaStack = this.FindControl<StackPanel>("ExpandedMediaStack")!;
+        _expandedArtworkContainer = this.FindControl<ShellFrameBorder>("ExpandedArtworkContainer")!;
+        _expandedArtworkImage = this.FindControl<Image>("ExpandedArtworkImage")!;
+        _expandedArtworkFallback = this.FindControl<Border>("ExpandedArtworkFallback")!;
+        _expandedSourceIcon = this.FindControl<Image>("ExpandedSourceIcon")!;
+        _expandedSourceGlyph = this.FindControl<DaisyIcon>("ExpandedSourceGlyph")!;
+        _expandedMediaBorder = this.FindControl<ShellFrameBorder>("ExpandedMediaBorder")!;
+        _expandedTitleText = this.FindControl<TextBlock>("ExpandedTitleText")!;
+        _expandedArtistText = this.FindControl<TextBlock>("ExpandedArtistText")!;
+        _expandedSpectrumCanvas = this.FindControl<Canvas>("ExpandedSpectrumCanvas")!;
+        _expandedElapsedText = this.FindControl<TextBlock>("ExpandedElapsedText")!;
+        _expandedProgressTrack = this.FindControl<Border>("ExpandedProgressTrack")!;
+        _expandedProgressFill = this.FindControl<Border>("ExpandedProgressFill")!;
+        _expandedRemainingText = this.FindControl<TextBlock>("ExpandedRemainingText")!;
+        _expandedPlayPauseButton = this.FindControl<Button>("ExpandedPlayPauseButton")!;
+        _expandedPlayPauseGlyph = this.FindControl<DaisyIcon>("ExpandedPlayPauseGlyph")!;
+
+        _morphingArtworkBorder = this.FindControl<Border>("MorphingArtworkBorder")!;
+        _morphingArtworkInner = this.FindControl<Border>("MorphingArtworkInner")!;
+        _morphingArtworkImage = this.FindControl<Image>("MorphingArtworkImage")!;
+        _morphingArtworkFallback = this.FindControl<Border>("MorphingArtworkFallback")!;
+        _morphingSourceIcon = this.FindControl<Image>("MorphingSourceIcon")!;
+        _morphingSourceGlyph = this.FindControl<DaisyIcon>("MorphingSourceGlyph")!;
+        _morphingArtworkHighlight = this.FindControl<Border>("MorphingArtworkHighlight")!;
+
         _collapsedCardTransform.Children.Add(_collapsedCardScale);
         _collapsedCardTransform.Children.Add(_collapsedCardTranslate);
-        CollapsedMediaBorder.RenderTransform = _collapsedCardTransform;
+        _collapsedMediaBorder.RenderTransform = _collapsedCardTransform;
 
         _expandedCardTransform.Children.Add(_expandedCardScale);
         _expandedCardTransform.Children.Add(_expandedCardTranslate);
-        ExpandedMediaBorder.RenderTransform = _expandedCardTransform;
+        _expandedMediaBorder.RenderTransform = _expandedCardTransform;
 
-        MorphingArtworkBorder.RenderTransform = _morphingArtworkTranslate;
+        _morphingArtworkBorder.RenderTransform = _morphingArtworkTranslate;
 
         ClockArea.RenderTransform = _clockPresence;
         CredentialsPanel.RenderTransform = _credentialsPresence;
         CornerControlsGrid.RenderTransform = _cornerControlsTransform;
 
-        LockCanvasWallpaper.SuppressFailureFeedback = true;
-        LockCanvasWallpaper.PresentationCompleted += (_, _) => Dispatcher.UIThread.Post(ApplyVisualState);
+        _lockCanvasWallpaper.SuppressFailureFeedback = true;
+        _lockCanvasWallpaper.PresentationCompleted += (_, _) => Dispatcher.UIThread.Post(ApplyVisualState);
 
         _presenceTimer.Tick += (_, _) => AdvancePresence();
         _mediaPresenceTimer.Tick += (_, _) => AdvanceMediaPresence();
@@ -285,7 +375,7 @@ public partial class LockScreenWindow : Window
                 ApplyVisualState();
             }
         };
-        ExpandedProgressTrack.SizeChanged += (_, _) => UpdateProgressFillWidth();
+        _expandedProgressTrack.SizeChanged += (_, _) => UpdateProgressFillWidth();
         PropertyChanged += (_, args) =>
         {
             if (args.Property == FontSizeProperty || args.Property == FontFamilyProperty) UpdateLockLayout();
@@ -330,8 +420,8 @@ public partial class LockScreenWindow : Window
             CredentialsPanel.IsVisible = false;
             PowerControlsPanel.IsVisible = false;
             BatteryInfoText.IsVisible = false;
-            CollapsedMediaHost.IsVisible = false;
-            ExpandedMediaHost.IsVisible = false;
+            _collapsedMediaHost.IsVisible = false;
+            _expandedMediaHost.IsVisible = false;
         }
         else
         {
@@ -392,10 +482,10 @@ public partial class LockScreenWindow : Window
             _audioSpectrumService?.Dispose();
             _audioSpectrumService = null;
 
-            CollapsedArtworkImage.Source = null;
-            ExpandedArtworkImage.Source = null;
-            MorphingArtworkImage.Source = null;
-            LockCanvasFallbackImage.Source = null;
+            _collapsedArtworkImage.Source = null;
+            _expandedArtworkImage.Source = null;
+            _morphingArtworkImage.Source = null;
+            _lockCanvasFallbackImage.Source = null;
             _artwork?.Dispose();
             _artwork = null;
         };
@@ -445,17 +535,17 @@ public partial class LockScreenWindow : Window
         var cardWidth = Math.Clamp(Math.Min(354, width), 240, 354);
         var collapsedHeight = Math.Clamp(Math.Round(cardWidth * (160.0 / 354.0)), 120, 160);
         var collapsedArtSize = Math.Max(84, collapsedHeight - 34);
-        CollapsedMediaBorder.Width = cardWidth;
-        CollapsedMediaBorder.Height = collapsedHeight;
-        CollapsedArtworkButton.Width = CollapsedArtworkButton.Height = collapsedArtSize;
+        _collapsedMediaBorder.Width = cardWidth;
+        _collapsedMediaBorder.Height = collapsedHeight;
+        _collapsedArtworkButton.Width = _collapsedArtworkButton.Height = collapsedArtSize;
 
-        ExpandedMediaBorder.Width = cardWidth;
+        _expandedMediaBorder.Width = cardWidth;
         var clockBottomEstimate = Math.Clamp(height * 0.1, 24, 96) + size + 44;
         var availableForExpanded = Math.Max(220, height - clockBottomEstimate - 36);
         var expandedArtSize = Math.Clamp(Math.Min(width * 0.5, availableForExpanded - 172), 148, 312);
-        ExpandedArtworkContainer.Width = ExpandedArtworkContainer.Height = Math.Round(expandedArtSize);
-        ExpandedMediaStack.Spacing = Math.Clamp(height * 0.032, 14, 28);
-        ExpandedMediaStack.Margin = new Thickness(24, 0, 24, Math.Clamp(height * 0.045, 20, 40));
+        _expandedArtworkContainer.Width = _expandedArtworkContainer.Height = Math.Round(expandedArtSize);
+        _expandedMediaStack.Spacing = Math.Clamp(height * 0.032, 14, 28);
+        _expandedMediaStack.Margin = new Thickness(24, 0, 24, Math.Clamp(height * 0.045, 20, 40));
     }
 
     private void LoadWallpaper(string? wallpaperSource)
@@ -627,10 +717,10 @@ public partial class LockScreenWindow : Window
             {
                 var previousArtwork = _artwork;
                 _artwork = artwork;
-                CollapsedArtworkImage.Source = artwork;
-                ExpandedArtworkImage.Source = artwork;
-                MorphingArtworkImage.Source = artwork;
-                LockCanvasFallbackImage.Source = artwork;
+                _collapsedArtworkImage.Source = artwork;
+                _expandedArtworkImage.Source = artwork;
+                _morphingArtworkImage.Source = artwork;
+                _lockCanvasFallbackImage.Source = artwork;
                 previousArtwork?.Dispose();
                 _artworkTint = tint;
                 _artworkPath = artwork is null && !string.IsNullOrWhiteSpace(artworkPath) ? null : artworkPath;
@@ -672,29 +762,29 @@ public partial class LockScreenWindow : Window
         var playIcon = _isPlaying ? "pause" : "play";
         var playTip = _isPlaying ? Loc.Get("Pause") : Loc.Get("Play");
 
-        CollapsedTitleText.Text = titleText;
-        CollapsedArtistText.Text = artistText;
-        CollapsedPlayPauseGlyph.Icon = playIcon;
-        ToolTip.SetTip(CollapsedPlayPauseButton, playTip);
+        _collapsedTitleText.Text = titleText;
+        _collapsedArtistText.Text = artistText;
+        _collapsedPlayPauseGlyph.Icon = playIcon;
+        ToolTip.SetTip(_collapsedPlayPauseButton, playTip);
 
-        ExpandedTitleText.Text = titleText;
-        ExpandedArtistText.Text = artistText;
-        ExpandedPlayPauseGlyph.Icon = playIcon;
-        ToolTip.SetTip(ExpandedPlayPauseButton, playTip);
+        _expandedTitleText.Text = titleText;
+        _expandedArtistText.Text = artistText;
+        _expandedPlayPauseGlyph.Icon = playIcon;
+        ToolTip.SetTip(_expandedPlayPauseButton, playTip);
 
         var sourceGlyph = SourceGlyphFor(session?.SourceIdentity);
         var sourceIcon = ResolveSourceIcon(session?.SourceIdentity);
 
         ApplyArtworkControlState(
-            CollapsedArtworkImage, CollapsedArtworkFallback, CollapsedSourceIcon, CollapsedSourceGlyph,
+            _collapsedArtworkImage, _collapsedArtworkFallback, _collapsedSourceIcon, _collapsedSourceGlyph,
             _artwork, sourceIcon, sourceGlyph);
         ApplyArtworkControlState(
-            ExpandedArtworkImage, ExpandedArtworkFallback, ExpandedSourceIcon, ExpandedSourceGlyph,
+            _expandedArtworkImage, _expandedArtworkFallback, _expandedSourceIcon, _expandedSourceGlyph,
             _artwork, sourceIcon, sourceGlyph);
         ApplyArtworkControlState(
-            MorphingArtworkImage, MorphingArtworkFallback, MorphingSourceIcon, MorphingSourceGlyph,
+            _morphingArtworkImage, _morphingArtworkFallback, _morphingSourceIcon, _morphingSourceGlyph,
             _artwork, sourceIcon, sourceGlyph);
-        LockCanvasFallbackImage.IsVisible = _artwork is not null;
+        _lockCanvasFallbackImage.IsVisible = _artwork is not null;
 
         UpdateMediaTintLayers();
         UpdateSpectrumBarTint();
@@ -727,7 +817,7 @@ public partial class LockScreenWindow : Window
         {
             _canvasTrackKey = null;
             _resolvedCanvasVideoPath = null;
-            LockCanvasWallpaper.ClearWallpaper();
+            _lockCanvasWallpaper.ClearWallpaper();
         }
     }
 
@@ -752,11 +842,11 @@ public partial class LockScreenWindow : Window
                 _resolvedCanvasVideoPath = videoPath;
                 if (!string.IsNullOrWhiteSpace(videoPath))
                 {
-                    LockCanvasWallpaper.WallpaperUri = videoPath;
+                    _lockCanvasWallpaper.WallpaperUri = videoPath;
                 }
                 else
                 {
-                    LockCanvasWallpaper.ClearWallpaper();
+                    _lockCanvasWallpaper.ClearWallpaper();
                 }
 
                 ApplyVisualState();
@@ -806,8 +896,8 @@ public partial class LockScreenWindow : Window
     private void OnProgressTrackPointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (_mediaDurationSeconds <= 0) return;
-        var point = e.GetPosition(ExpandedProgressTrack);
-        var trackWidth = ExpandedProgressTrack.Bounds.Width;
+        var point = e.GetPosition(_expandedProgressTrack);
+        var trackWidth = _expandedProgressTrack.Bounds.Width;
         if (trackWidth <= 0) return;
 
         e.Handled = true;
@@ -838,15 +928,15 @@ public partial class LockScreenWindow : Window
 
         if (expanded)
         {
-            CollapsedMediaHost.IsVisible = true;
-            ExpandedMediaHost.IsVisible = true;
+            _collapsedMediaHost.IsVisible = true;
+            _expandedMediaHost.IsVisible = true;
             UpdateLockLayout();
             UpdateLayout();
         }
         else
         {
-            CollapsedMediaHost.IsVisible = true;
-            ExpandedMediaHost.IsVisible = true;
+            _collapsedMediaHost.IsVisible = true;
+            _expandedMediaHost.IsVisible = true;
             UpdateLockLayout();
             UpdateLayout();
         }
@@ -967,8 +1057,8 @@ public partial class LockScreenWindow : Window
 
         var remaining = clampedDur > 0 ? Math.Max(0, clampedDur - clampedPos) : 0;
 
-        ExpandedElapsedText.Text = FormatMediaTime(clampedPos, negative: false);
-        ExpandedRemainingText.Text = FormatMediaTime(remaining, negative: true);
+        _expandedElapsedText.Text = FormatMediaTime(clampedPos, negative: false);
+        _expandedRemainingText.Text = FormatMediaTime(remaining, negative: true);
         UpdateProgressFillWidth(clampedPos, clampedDur);
     }
 
@@ -984,16 +1074,16 @@ public partial class LockScreenWindow : Window
 
     private void UpdateProgressFillWidth(double positionSeconds, double durationSeconds)
     {
-        var trackWidth = ExpandedProgressTrack.Bounds.Width;
+        var trackWidth = _expandedProgressTrack.Bounds.Width;
         if (trackWidth <= 0)
         {
-            trackWidth = Math.Max(0, ExpandedMediaBorder.Width - 124);
+            trackWidth = Math.Max(0, _expandedMediaBorder.Width - 124);
         }
 
         var ratio = durationSeconds > 0
             ? Math.Clamp(positionSeconds / durationSeconds, 0, 1)
             : 0;
-        ExpandedProgressFill.Width = Math.Round(trackWidth * ratio);
+        _expandedProgressFill.Width = Math.Round(trackWidth * ratio);
     }
 
     internal static string FormatMediaTime(double seconds, bool negative = false)
@@ -1033,7 +1123,7 @@ public partial class LockScreenWindow : Window
 
     private void BuildSpectrumBars()
     {
-        if (_collapsedSpectrumBars.Count == 0 && CollapsedSpectrumCanvas is { } cCanvas)
+        if (_collapsedSpectrumBars.Count == 0 && _collapsedSpectrumCanvas is { } cCanvas)
         {
             const double idleScale = 0.12;
             for (var index = 0; index < SpectrumColumns; index++)
@@ -1046,7 +1136,7 @@ public partial class LockScreenWindow : Window
             }
         }
 
-        if (_expandedSpectrumBars.Count == 0 && ExpandedSpectrumCanvas is { } eCanvas)
+        if (_expandedSpectrumBars.Count == 0 && _expandedSpectrumCanvas is { } eCanvas)
         {
             const double idleScale = 0.12;
             for (var index = 0; index < SpectrumColumns; index++)
@@ -1091,7 +1181,7 @@ public partial class LockScreenWindow : Window
             ? new SolidColorBrush(Color.FromArgb(ArtworkColorExtractor.DefaultTintAlpha, color.R, color.G, color.B))
             : Brushes.Transparent;
 
-        CollapsedArtworkTint.Background = brush;
+        _collapsedArtworkTint.Background = brush;
     }
 
     private void UpdateSpectrumBarTint()
@@ -1438,9 +1528,9 @@ public partial class LockScreenWindow : Window
 
             // 3. Collapsed Bottom-Left Media Widget
             var collapsedCardOpacity = presence * mediaPresence * Math.Clamp(1 - expand * 1.65, 0, 1);
-            CollapsedMediaHost.IsVisible = showMedia && expand < 0.999;
-            CollapsedMediaHost.IsHitTestVisible = showMedia && expand < 0.1;
-            CollapsedMediaBorder.Opacity = collapsedCardOpacity;
+            _collapsedMediaHost.IsVisible = showMedia && expand < 0.999;
+            _collapsedMediaHost.IsHitTestVisible = showMedia && expand < 0.1;
+            _collapsedMediaBorder.Opacity = collapsedCardOpacity;
             _collapsedCardTranslate.X = 22 * expand;
             _collapsedCardTranslate.Y = 14 * (1 - presence) + 12 * (1 - mediaPresence) - 16 * expand;
             var collapsedScale = (0.96 + 0.04 * mediaPresence) * (1 - 0.05 * expand);
@@ -1448,9 +1538,9 @@ public partial class LockScreenWindow : Window
 
             // 4. Expanded Fullscreen Media View
             var expandedCardOpacity = presence * mediaPresence * Math.Clamp((expand - 0.18) / 0.82, 0, 1);
-            ExpandedMediaHost.IsVisible = showMedia && expand > 0.001;
-            ExpandedMediaHost.IsHitTestVisible = showMedia && expand > 0.9;
-            ExpandedMediaBorder.Opacity = expandedCardOpacity;
+            _expandedMediaHost.IsVisible = showMedia && expand > 0.001;
+            _expandedMediaHost.IsHitTestVisible = showMedia && expand > 0.9;
+            _expandedMediaBorder.Opacity = expandedCardOpacity;
             _expandedCardTranslate.Y = 24 * (1 - expand);
             var expandedScale = 0.94 + 0.06 * expand;
             _expandedCardScale.ScaleX = _expandedCardScale.ScaleY = expandedScale;
@@ -1458,26 +1548,26 @@ public partial class LockScreenWindow : Window
             // 5. FLIP Hero Artwork Bridge between Collapsed and Expanded states
             if (!showMedia)
             {
-                MorphingArtworkBorder.IsVisible = false;
-                CollapsedArtworkButton.Opacity = 1;
-                ExpandedArtworkContainer.Opacity = 0;
+                _morphingArtworkBorder.IsVisible = false;
+                _collapsedArtworkButton.Opacity = 1;
+                _expandedArtworkContainer.Opacity = 0;
             }
             else if (expand <= 0.001)
             {
-                MorphingArtworkBorder.IsVisible = false;
-                CollapsedArtworkButton.Opacity = 1;
-                ExpandedArtworkContainer.Opacity = 0;
+                _morphingArtworkBorder.IsVisible = false;
+                _collapsedArtworkButton.Opacity = 1;
+                _expandedArtworkContainer.Opacity = 0;
             }
             else if (expand >= 0.999)
             {
-                MorphingArtworkBorder.IsVisible = false;
-                CollapsedArtworkButton.Opacity = 0;
-                ExpandedArtworkContainer.Opacity = presence * mediaPresence;
+                _morphingArtworkBorder.IsVisible = false;
+                _collapsedArtworkButton.Opacity = 0;
+                _expandedArtworkContainer.Opacity = presence * mediaPresence;
             }
             else
             {
-                CollapsedArtworkButton.Opacity = 0;
-                ExpandedArtworkContainer.Opacity = 0;
+                _collapsedArtworkButton.Opacity = 0;
+                _expandedArtworkContainer.Opacity = 0;
 
                 var startRect = GetRestingCollapsedArtworkRect();
                 var endRect = GetRestingExpandedArtworkRect();
@@ -1489,13 +1579,13 @@ public partial class LockScreenWindow : Window
                 var currentH = Math.Max(1, startRect.Height + (endRect.Height - startRect.Height) * expand);
                 var currentRadius = 14 + (32 - 14) * expand;
 
-                MorphingArtworkBorder.IsVisible = true;
-                MorphingArtworkBorder.Opacity = presence * mediaPresence;
-                MorphingArtworkBorder.Width = currentW;
-                MorphingArtworkBorder.Height = currentH;
-                MorphingArtworkBorder.CornerRadius = new CornerRadius(currentRadius);
-                MorphingArtworkHighlight.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 1));
-                MorphingArtworkInner.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 2));
+                _morphingArtworkBorder.IsVisible = true;
+                _morphingArtworkBorder.Opacity = presence * mediaPresence;
+                _morphingArtworkBorder.Width = currentW;
+                _morphingArtworkBorder.Height = currentH;
+                _morphingArtworkBorder.CornerRadius = new CornerRadius(currentRadius);
+                _morphingArtworkHighlight.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 1));
+                _morphingArtworkInner.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 2));
                 _morphingArtworkTranslate.X = currentX;
                 _morphingArtworkTranslate.Y = currentY;
             }
@@ -1504,30 +1594,30 @@ public partial class LockScreenWindow : Window
             var canvasAlpha = showMedia ? presence * mediaPresence * expand : 0;
             if (canvasAlpha <= 0.001)
             {
-                LockCanvasLayer.IsVisible = false;
-                LockCanvasLayer.Opacity = 0;
-                LockCanvasWallpaper.IsVisible = false;
+                _lockCanvasLayer.IsVisible = false;
+                _lockCanvasLayer.Opacity = 0;
+                _lockCanvasWallpaper.IsVisible = false;
                 LockWallpaper.Opacity = 1;
             }
             else
             {
-                LockCanvasLayer.IsVisible = true;
+                _lockCanvasLayer.IsVisible = true;
                 var hasVideoPath = !string.IsNullOrWhiteSpace(_resolvedCanvasVideoPath);
-                LockCanvasWallpaper.IsVisible = hasVideoPath;
+                _lockCanvasWallpaper.IsVisible = hasVideoPath;
 
-                if (hasVideoPath && LockCanvasWallpaper.UsesNativeSubsurface)
+                if (hasVideoPath && _lockCanvasWallpaper.UsesNativeSubsurface)
                 {
                     LockWallpaper.Opacity = Math.Clamp(1 - canvasAlpha, 0, 1);
-                    LockCanvasLayer.Opacity = canvasAlpha;
-                    LockCanvasFallbackPanel.Opacity = 0;
+                    _lockCanvasLayer.Opacity = canvasAlpha;
+                    _lockCanvasFallbackPanel.Opacity = 0;
                 }
                 else
                 {
                     LockWallpaper.Opacity = 1;
-                    LockCanvasLayer.Opacity = canvasAlpha;
+                    _lockCanvasLayer.Opacity = canvasAlpha;
                     var videoPresented = hasVideoPath
-                        && LockCanvasWallpaper.PresentationState == WallpaperLayer.WallpaperPresentationState.Presented;
-                    LockCanvasFallbackPanel.Opacity = videoPresented ? 0 : 1;
+                        && _lockCanvasWallpaper.PresentationState == WallpaperLayer.WallpaperPresentationState.Presented;
+                    _lockCanvasFallbackPanel.Opacity = videoPresented ? 0 : 1;
                 }
             }
         }
@@ -1540,17 +1630,17 @@ public partial class LockScreenWindow : Window
 
     private Rect GetRestingCollapsedArtworkRect()
     {
-        var w = CollapsedArtworkButton.Width > 0 ? CollapsedArtworkButton.Width : 126;
-        var h = CollapsedArtworkButton.Height > 0 ? CollapsedArtworkButton.Height : 126;
-        var hostOrigin = CollapsedMediaHost.TranslatePoint(default, RootGrid);
-        var artInHost = CollapsedArtworkButton.TranslatePoint(default, CollapsedMediaBorder);
-        if (hostOrigin is { } ho && artInHost is { } ai && CollapsedMediaHost.Bounds.Width > 0)
+        var w = _collapsedArtworkButton.Width > 0 ? _collapsedArtworkButton.Width : 126;
+        var h = _collapsedArtworkButton.Height > 0 ? _collapsedArtworkButton.Height : 126;
+        var hostOrigin = _collapsedMediaHost.TranslatePoint(default, RootGrid);
+        var artInHost = _collapsedArtworkButton.TranslatePoint(default, _collapsedMediaBorder);
+        if (hostOrigin is { } ho && artInHost is { } ai && _collapsedMediaHost.Bounds.Width > 0)
         {
             return new Rect(ho.X + ai.X, ho.Y + ai.Y, w, h);
         }
 
         var rootH = RootGrid.Bounds.Height > 0 ? RootGrid.Bounds.Height : ClientSize.Height;
-        var cardH = CollapsedMediaBorder.Height > 0 ? CollapsedMediaBorder.Height : 160;
+        var cardH = _collapsedMediaBorder.Height > 0 ? _collapsedMediaBorder.Height : 160;
         var x = 24 + 2 + 16;
         var y = Math.Max(0, rootH - 24 - cardH + (cardH - h) / 2);
         return new Rect(x, y, w, h);
@@ -1558,10 +1648,10 @@ public partial class LockScreenWindow : Window
 
     private Rect GetRestingExpandedArtworkRect()
     {
-        var w = ExpandedArtworkContainer.Width > 0 ? ExpandedArtworkContainer.Width : 312;
-        var h = ExpandedArtworkContainer.Height > 0 ? ExpandedArtworkContainer.Height : 312;
-        var origin = ExpandedArtworkContainer.TranslatePoint(default, RootGrid);
-        if (origin is { } o && ExpandedArtworkContainer.Bounds.Width > 0)
+        var w = _expandedArtworkContainer.Width > 0 ? _expandedArtworkContainer.Width : 312;
+        var h = _expandedArtworkContainer.Height > 0 ? _expandedArtworkContainer.Height : 312;
+        var origin = _expandedArtworkContainer.TranslatePoint(default, RootGrid);
+        if (origin is { } o && _expandedArtworkContainer.Bounds.Width > 0)
         {
             return new Rect(o.X, o.Y, w, h);
         }
@@ -1569,9 +1659,9 @@ public partial class LockScreenWindow : Window
         var rootW = RootGrid.Bounds.Width > 0 ? RootGrid.Bounds.Width : ClientSize.Width;
         var rootH = RootGrid.Bounds.Height > 0 ? RootGrid.Bounds.Height : ClientSize.Height;
         var x = (rootW - w) / 2;
-        var bottomMargin = ExpandedMediaStack.Margin.Bottom;
-        var cardH = ExpandedMediaBorder.Bounds.Height > 0 ? ExpandedMediaBorder.Bounds.Height : 136;
-        var spacing = ExpandedMediaStack.Spacing;
+        var bottomMargin = _expandedMediaStack.Margin.Bottom;
+        var cardH = _expandedMediaBorder.Bounds.Height > 0 ? _expandedMediaBorder.Bounds.Height : 136;
+        var spacing = _expandedMediaStack.Spacing;
         var y = Math.Max(0, rootH - bottomMargin - cardH - spacing - h);
         return new Rect(x, y, w, h);
     }
