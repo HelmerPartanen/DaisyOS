@@ -7,16 +7,7 @@
     KeyDown="OnSettingsKeyDown">
   <UserControl.Styles>
     <!-- Sidebar navigation button layout -->
-    <Style Selector="Button.SettingsNavItem">
-      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Left" />
-      <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="Padding" Value="12,0" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
-    </Style>
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
     <Style Selector="Button.SettingsNavItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
     </Style>
@@ -32,8 +23,8 @@
     </Style>
 
     <Style Selector="TextBlock.NavLabel">
-      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBody}" />
-      <Setter Property="FontWeight" Value="Regular" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+      <Setter Property="FontWeight" Value="Medium" />
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="Margin" Value="12,0,0,0" />
     </Style>

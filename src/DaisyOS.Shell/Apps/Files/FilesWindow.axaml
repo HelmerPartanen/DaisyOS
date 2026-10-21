@@ -74,11 +74,6 @@
       <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
     </Style>
     <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
-    <!-- Match sidebar destinations to the file-list rows, including text scaling. -->
-    <Style Selector="Button.SettingsNavItem">
-      <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
-    </Style>
     <Style Selector="Button.SettingsNavItem.DragOver /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
     </Style>

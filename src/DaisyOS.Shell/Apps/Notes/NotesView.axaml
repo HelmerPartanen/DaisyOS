@@ -15,13 +15,7 @@
 
   <UserControl.Styles>
     <!-- Sidebar navigation button layout - 100% identical to Settings app -->
-    <Style Selector="Button.SettingsNavItem">
-      <Setter Property="Height" Value="{DynamicResource ButtonHeightLarge}" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Left" />
-      <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="Padding" Value="12,0" />
-    </Style>
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
 
     <Style Selector="controls|DaisyIcon.NavIcon">
       <Setter Property="Size" Value="20" />
@@ -113,6 +107,7 @@
                   <StackPanel>
                     <Button Classes="Large SettingsNavItem"
                             HorizontalContentAlignment="Stretch"
+                            ToolTip.Tip="{Binding LastModified, StringFormat='MMM d, yyyy  HH:mm'}"
                             Classes.Active="{Binding IsSelected}"
                             Command="{Binding $parent[UserControl].DataContext.SelectNoteCommand}"
                             CommandParameter="{Binding}">
@@ -142,13 +137,10 @@
                         </ContextMenu>
                       </Button.ContextMenu>
                       <Grid VerticalAlignment="Center" HorizontalAlignment="Stretch">
-                        <Grid RowDefinitions="Auto,Auto" HorizontalAlignment="Left" Margin="12,0,24,0">
-                          <Panel Grid.Row="0">
-                            <TextBlock Text="{DynamicResource Loc_B763C5EA3C57}" Classes="NavLabel" Margin="0" TextTrimming="CharacterEllipsis" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
-                            <TextBlock Text="{Binding Title}" Classes="NavLabel" Margin="0" TextTrimming="CharacterEllipsis" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
-                          </Panel>
-                          <TextBlock Grid.Row="1" Text="{Binding LastModified, StringFormat='MMM d, yyyy  HH:mm'}" FontSize="{DynamicResource TypeSizeCaption}" Classes="SecondaryText" Margin="0,2,0,0" />
-                        </Grid>
+                        <Panel HorizontalAlignment="Stretch" Margin="12,0,24,0">
+                          <TextBlock Text="{DynamicResource Loc_B763C5EA3C57}" Classes="NavLabel" Margin="0" TextTrimming="CharacterEllipsis" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNullOrEmpty}}" />
+                          <TextBlock Text="{Binding Title}" Classes="NavLabel" Margin="0" TextTrimming="CharacterEllipsis" IsVisible="{Binding Title, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
+                        </Panel>
                         <Ellipse Width="4" Height="4" Fill="{DynamicResource ContentSecondaryBrush}"
                                  HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,24,0"
                                  IsVisible="{Binding IsDirty}" ToolTip.Tip="{DynamicResource Loc_A710C2B90913}" />
