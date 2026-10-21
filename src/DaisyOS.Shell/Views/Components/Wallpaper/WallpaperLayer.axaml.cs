@@ -91,9 +91,6 @@ public partial class WallpaperLayer : UserControl
 
     internal bool SuppressFailureFeedback { get; set; }
 
-    // Animated overlays need video inside the visual tree so parent opacity and
-    // stacking apply. Desktop wallpaper can continue using a native subsurface.
-    internal bool PreferCompositedVideo { get; set; }
     internal bool FollowDesktopWallpaper { get; set; } = true;
 
     internal void SetMediaVideo(string path)
@@ -346,8 +343,7 @@ public partial class WallpaperLayer : UserControl
                                 (!isOwnedWindowOccludingDesktop
                                  && !isExternalAppOccludingDesktop
                                  && !isLockScreenOccludingDesktop
-                                 && !_isConsoleMode
-                                 && !_isGameRunning
+                                 && (IgnoreDesktopOcclusion || (!_isConsoleMode && !_isGameRunning))
                                  && (IgnoreDesktopOcclusion || !_gamingModeActive)));
 
         if (_mpvSession is not null)
@@ -478,7 +474,7 @@ public partial class WallpaperLayer : UserControl
             string resolvedPath = ResolveWallpaperPath(wallpaperUri);
             if (!string.IsNullOrEmpty(resolvedPath) && WallpaperFileTypes.IsVideo(resolvedPath))
             {
-                if (!PreferCompositedVideo && MpvWallpaperSession.Enabled && _attachedWindow is not null)
+                if (MpvWallpaperSession.Enabled && _attachedWindow is not null)
                 {
                     var metadata = await VideoMetadata.ProbeAsync(resolvedPath);
                     if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;

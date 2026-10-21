@@ -135,7 +135,7 @@ public partial class LockScreenWindow : Window
     private readonly Dictionary<(string, Typeface, double), Rect[]> _clockGlyphBands = new();
 
     private readonly DispatcherTimer _spectrumTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
-    private readonly DispatcherTimer _mediaPositionTimer = new() { Interval = TimeSpan.FromMilliseconds(250) };
+    private readonly DispatcherTimer _mediaPositionTimer = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(250) };
     private readonly List<Border> _collapsedSpectrumBars = [];
     private readonly List<Border> _expandedSpectrumBars = [];
     private readonly List<Border> _spectrumTintLayers = [];
@@ -154,6 +154,7 @@ public partial class LockScreenWindow : Window
     private IImage? _sourceIcon;
     private string? _canvasTrackKey;
     private string? _resolvedCanvasVideoPath;
+    private bool _canvasVideoAttached;
     private bool _hasMediaSession;
     private bool _isPlaying;
     private double _mediaPositionSeconds;
@@ -355,7 +356,6 @@ public partial class LockScreenWindow : Window
         CornerControlsGrid.RenderTransform = _cornerControlsTransform;
 
         _lockCanvasWallpaper.SuppressFailureFeedback = true;
-        _lockCanvasWallpaper.PreferCompositedVideo = true;
         _lockCanvasWallpaper.FollowDesktopWallpaper = false;
         _lockCanvasWallpaper.PresentationCompleted += (_, _) => Dispatcher.UIThread.Post(ApplyVisualState);
 
@@ -855,6 +855,7 @@ public partial class LockScreenWindow : Window
                 _canvasTrackKey = canvasKey;
                 // Never show the previous track's Canvas while resolving this one.
                 _resolvedCanvasVideoPath = null;
+                _canvasVideoAttached = false;
                 _lockCanvasWallpaper.ClearWallpaper();
                 ApplyVisualState();
                 _ = ResolveTrackCanvasAsync(session, canvasKey);
@@ -865,6 +866,7 @@ public partial class LockScreenWindow : Window
             _canvasResolveCancellation?.Cancel();
             _canvasTrackKey = null;
             _resolvedCanvasVideoPath = null;
+            _canvasVideoAttached = false;
             _lockCanvasWallpaper.ClearWallpaper();
         }
     }
@@ -889,12 +891,14 @@ public partial class LockScreenWindow : Window
                     || !string.Equals(_canvasTrackKey, expectedCanvasKey, StringComparison.Ordinal)) return;
 
                 _resolvedCanvasVideoPath = videoPath;
-                if (!string.IsNullOrWhiteSpace(videoPath))
+                if (!string.IsNullOrWhiteSpace(videoPath) && IsMediaExpanded)
                 {
+                    _canvasVideoAttached = true;
                     _lockCanvasWallpaper.SetMediaVideo(videoPath);
                 }
                 else
                 {
+                    _canvasVideoAttached = false;
                     _lockCanvasWallpaper.ClearWallpaper();
                 }
 
@@ -973,6 +977,12 @@ public partial class LockScreenWindow : Window
         _mediaExpandCompletion?.TrySetResult();
         _mediaExpandCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _mediaExpandTarget = expanded ? 1 : 0;
+        UpdateMediaPositionInterval();
+        if (expanded && !_canvasVideoAttached && _resolvedCanvasVideoPath is { } videoPath)
+        {
+            _canvasVideoAttached = true;
+            _lockCanvasWallpaper.SetMediaVideo(videoPath);
+        }
         _mediaExpandDuration = Application.Current is App { ReduceMotionEnabled: true }
             ? TimeSpan.Zero
             : TimeSpan.FromMilliseconds(expanded ? 420 : 360);
@@ -1128,7 +1138,9 @@ public partial class LockScreenWindow : Window
         var ratio = durationSeconds > 0
             ? Math.Clamp(positionSeconds / durationSeconds, 0, 1)
             : 0;
-        _expandedProgressFill.Width = Math.Round(trackWidth * ratio);
+        // Preserve fractional pixels: rounding makes a slow timeline jump one
+        // whole pixel at a time even when its position is sampled every frame.
+        _expandedProgressFill.Width = trackWidth * ratio;
     }
 
     internal static string FormatMediaTime(double seconds, bool negative = false)
@@ -1240,8 +1252,17 @@ public partial class LockScreenWindow : Window
         }
     }
 
+    private void UpdateMediaPositionInterval()
+    {
+        // Only the visible, playing timeline needs frame-rate updates. Session
+        // synchronization stays on its independent two-second cadence.
+        _mediaPositionTimer.Interval = TimeSpan.FromMilliseconds(
+            IsMediaExpanded && _isPlaying ? 16 : 250);
+    }
+
     private void UpdateSpectrumAndPositionTimers()
     {
+        UpdateMediaPositionInterval();
         if (_hasMediaSession && !_isSecondary)
         {
             _mediaPositionTimer.Start();
@@ -1652,6 +1673,13 @@ public partial class LockScreenWindow : Window
                 _lockCanvasLayer.IsVisible = false;
                 _lockCanvasLayer.Opacity = 0;
                 _lockCanvasWallpaper.IsVisible = false;
+                if (_canvasVideoAttached && !IsMediaExpanded)
+                {
+                    // Native video surfaces outlive visual-tree visibility. Release
+                    // the surface after the collapse finishes, then reload on expand.
+                    _canvasVideoAttached = false;
+                    _lockCanvasWallpaper.ClearWallpaper();
+                }
                 LockWallpaper.Opacity = 1;
             }
             else
@@ -1664,6 +1692,10 @@ public partial class LockScreenWindow : Window
                 _lockCanvasLayer.Opacity = canvasAlpha;
                 var videoPresented = hasVideoPath
                     && _lockCanvasWallpaper.PresentationState == WallpaperLayer.WallpaperPresentationState.Presented;
+                // A native subsurface sits beneath the Avalonia scene. Reveal it
+                // through the desktop wallpaper; visual-tree video fades normally.
+                var nativeVideo = videoPresented && _lockCanvasWallpaper.UsesNativeSubsurface;
+                LockWallpaper.Opacity = nativeVideo ? 1 - canvasAlpha : 1;
                 _lockCanvasWallpaper.Opacity = videoPresented ? 1 : 0;
                 _lockCanvasFallbackPanel.Opacity = videoPresented ? 0 : 1;
             }

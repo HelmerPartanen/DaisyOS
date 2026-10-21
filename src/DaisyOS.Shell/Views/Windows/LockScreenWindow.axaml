@@ -38,6 +38,7 @@
       <Setter Property="RenderTransform" Value="scale(0.90)" />
     </Style>
     <Style Selector="Border.LockMediaArtwork">
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
       <Setter Property="RenderTransform" Value="scale(1)" />
       <Setter Property="Transitions">
         <Transitions>
@@ -567,6 +568,9 @@
                   Margin="24,0,24,36">
         <!-- Center Large Album Artwork (Click to collapse back to normal lock screen) -->
         <controls:ShellFrameBorder x:Name="ExpandedArtworkContainer"
+                Classes="LockMediaArtwork"
+                Cursor="Hand"
+                PointerPressed="OnExpandedArtworkPointerPressed"
                 Width="312"
                 Height="312"
                 Padding="1"
@@ -576,13 +580,11 @@
                 BoxShadow="{DynamicResource LockScreenMediaArtworkShadow}">
           <Panel>
             <Border x:Name="ExpandedArtworkButton"
-                    Classes="LockMediaArtwork"
                     Margin="1"
                     CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
                     ClipToBounds="True"
                     Cursor="Hand"
-                    Background="{DynamicResource SurfaceBaseBrush}"
-                    PointerPressed="OnExpandedArtworkPointerPressed">
+                    Background="{DynamicResource SurfaceBaseBrush}">
               <Grid>
                 <Image x:Name="ExpandedArtworkImage"
                        Stretch="UniformToFill"
