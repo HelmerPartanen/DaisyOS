@@ -10,6 +10,7 @@ using Avalonia.Animation;
 using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Threading;
@@ -26,10 +27,23 @@ namespace DaisyOS.Shell.DesktopWidgets;
 
 public partial class MediaWidget : UserControl
 {
+    internal const int ExtraLargeRows = 6;
     private const int SpectrumColumns = 6;
     private const int MaxInlineArtworkBytes = 4 * 1024 * 1024;
     private static readonly HttpClient ArtworkHttpClient = new() { Timeout = TimeSpan.FromSeconds(3) };
-    private readonly IMediaSessionService _mediaService = LinuxMediaSessionService.Shared;
+    private readonly IMediaSessionService _mediaService;
+    private readonly DispatcherTimer _positionTimer = new(DispatcherPriority.Render);
+    private readonly global::System.Diagnostics.Stopwatch _positionClock = new();
+    private readonly Border _progressTrack;
+    private readonly Border _progressFill;
+    private readonly TextBlock _elapsedText;
+    private readonly TextBlock _remainingText;
+    private double _positionSeconds;
+    private double _durationSeconds;
+    private bool _hasSession;
+    private bool _loaded;
+    private bool _refreshInFlight;
+    private DateTimeOffset _lastSessionSync;
     private readonly DispatcherTimer _spectrumTimer = new() { Interval = TimeSpan.FromMilliseconds(40) };
 
     private readonly List<Border> _largeSpectrumBars = [];
@@ -49,9 +63,25 @@ public partial class MediaWidget : UserControl
     private int _columnSpan = 5;
     private int _rowSpan = 2;
 
-    public MediaWidget()
+    public MediaWidget() : this(null) { }
+
+    internal MediaWidget(IMediaSessionService? mediaService)
     {
+        _mediaService = mediaService ?? LinuxMediaSessionService.Shared;
         InitializeComponent();
+        _progressTrack = this.FindControl<Border>("LargeProgressTrack")!;
+        _progressFill = this.FindControl<Border>("LargeProgressFill")!;
+        _elapsedText = this.FindControl<TextBlock>("LargeElapsedText")!;
+        _remainingText = this.FindControl<TextBlock>("LargeRemainingText")!;
+        _progressTrack.SizeChanged += (_, _) => UpdateProgress();
+        this.FindControl<Grid>("LargeLayout")!.SizeChanged += (_, _) => UpdateArtworkSize();
+        this.FindControl<Grid>("LargeDetails")!.SizeChanged += (_, _) => UpdateArtworkSize();
+        _positionTimer.Tick += (_, _) =>
+        {
+            UpdateProgress();
+            if (!_refreshInFlight && (DateTimeOffset.UtcNow - _lastSessionSync).TotalSeconds >= 2)
+                _ = RefreshMediaAsync();
+        };
         Loc.RefreshOnChange(this, () => _ = RefreshMediaAsync());
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
@@ -74,7 +104,20 @@ public partial class MediaWidget : UserControl
         var medium = this.FindControl<Grid>("MediumLayout");
         var large = this.FindControl<Grid>("LargeLayout");
 
-        if (_columnSpan <= 3)
+        var portrait = _rowSpan > 2;
+        if (large is not null)
+        {
+            large.Classes.Set("portrait", portrait);
+            large.ColumnDefinitions = new ColumnDefinitions(portrait ? "*" : "Auto,*");
+            large.RowDefinitions = new RowDefinitions(portrait ? "*,Auto" : "*");
+            large.RowSpacing = portrait ? 28 : 0;
+            var details = this.FindControl<Grid>("LargeDetails")!;
+            Grid.SetColumn(details, portrait ? 0 : 1);
+            Grid.SetRow(details, portrait ? 1 : 0);
+            details.Margin = portrait ? new Thickness(4, 0, 4, 6) : new Thickness(16, 0, 0, 0);
+        }
+
+        if (_columnSpan <= 3 && !portrait)
         {
             if (medium != null) medium.IsVisible = true;
             if (large != null) large.IsVisible = false;
@@ -85,11 +128,30 @@ public partial class MediaWidget : UserControl
             if (large != null) large.IsVisible = true;
         }
 
+        UpdateArtworkSize();
         UpdateSpectrumCaptureState();
+    }
+
+    private void UpdateArtworkSize()
+    {
+        var layout = this.FindControl<Grid>("LargeLayout")!;
+        var artwork = this.FindControl<Border>("LargeArtworkFrame")!;
+        if (!layout.IsVisible || layout.Bounds.Width <= 0 || layout.Bounds.Height <= 0) return;
+        var portrait = _rowSpan > 2;
+        var details = this.FindControl<Grid>("LargeDetails")!;
+        var availableHeight = portrait
+            ? Math.Max(0, layout.Bounds.Height - Math.Max(details.DesiredSize.Height, 119) - layout.RowSpacing)
+            : layout.Bounds.Height;
+        var size = portrait ? Math.Min(layout.Bounds.Width, availableHeight) : availableHeight;
+        artwork.Width = size;
+        artwork.Height = portrait ? size : double.NaN;
+        artwork.HorizontalAlignment = portrait ? Avalonia.Layout.HorizontalAlignment.Center : Avalonia.Layout.HorizontalAlignment.Left;
+        artwork.VerticalAlignment = portrait ? Avalonia.Layout.VerticalAlignment.Top : Avalonia.Layout.VerticalAlignment.Stretch;
     }
 
     private void OnLoaded(object? sender, RoutedEventArgs e)
     {
+        _loaded = true;
         Opacity = 0;
         BuildSpectrum();
         ActualThemeVariantChanged += OnThemeVariantChanged;
@@ -105,6 +167,8 @@ public partial class MediaWidget : UserControl
 
     private void OnUnloaded(object? sender, RoutedEventArgs e)
     {
+        _loaded = false;
+        _positionTimer.Stop();
         ActualThemeVariantChanged -= OnThemeVariantChanged;
         _mediaService.MediaChanged -= OnMediaChanged;
         _spectrumTimer.Stop();
@@ -120,9 +184,11 @@ public partial class MediaWidget : UserControl
 
     private async Task RefreshMediaAsync()
     {
+        if (!_loaded) return;
         _refreshCancellation?.Cancel();
         _refreshCancellation?.Dispose();
         var cancellation = _refreshCancellation = new CancellationTokenSource();
+        _refreshInFlight = true;
 
         try
         {
@@ -170,7 +236,14 @@ public partial class MediaWidget : UserControl
             }
 
             await Dispatcher.UIThread.InvokeAsync(() =>
-                ApplySession(session, trackKey, artworkPath, artwork?.Bitmap, tint, replaceArtwork));
+            {
+                if (!_loaded || cancellation.IsCancellationRequested)
+                {
+                    artwork?.Bitmap.Dispose();
+                    return;
+                }
+                ApplySession(session, trackKey, artworkPath, artwork?.Bitmap, tint, replaceArtwork);
+            });
         }
         catch (OperationCanceledException)
         {
@@ -178,6 +251,11 @@ public partial class MediaWidget : UserControl
         catch
         {
             // Best effort
+        }
+        finally
+        {
+            if (ReferenceEquals(_refreshCancellation, cancellation))
+                _refreshInFlight = false;
         }
     }
 
@@ -212,7 +290,13 @@ public partial class MediaWidget : UserControl
             }
         }
 
+        _hasSession = session is not null;
         _isPlaying = session?.IsPlaying == true;
+        _durationSeconds = Math.Max(0, session?.DurationSeconds ?? 0);
+        _positionSeconds = Math.Max(0, session?.PositionSeconds ?? 0);
+        _positionClock.Restart();
+        _lastSessionSync = DateTimeOffset.UtcNow;
+        UpdateProgress();
         UpdateSpectrumCaptureState();
 
         var titleText = session?.Title ?? Loc.Get("Not playing");
@@ -284,12 +368,20 @@ public partial class MediaWidget : UserControl
 
     private void UpdateSpectrumCaptureState()
     {
-        if (_isPlaying && _isVisuallyActive && _columnSpan > 3 && _audioSpectrumService is null)
+        _positionTimer.Interval = TimeSpan.FromMilliseconds(_isPlaying ? 16 : 250);
+        if (_loaded && _hasSession && _isVisuallyActive && (_columnSpan > 3 || _rowSpan > 2))
+        {
+            UpdateProgress();
+            _positionTimer.Start();
+        }
+        else
+            _positionTimer.Stop();
+        if (_isPlaying && _isVisuallyActive && (_columnSpan > 3 || _rowSpan > 2) && _audioSpectrumService is null)
         {
             _audioSpectrumService = new LinuxAudioSpectrumService();
         }
 
-        if (_isPlaying && _isVisuallyActive && _columnSpan > 3)
+        if (_isPlaying && _isVisuallyActive && (_columnSpan > 3 || _rowSpan > 2))
         {
             _spectrumTimer.Start();
             return;
@@ -303,6 +395,30 @@ public partial class MediaWidget : UserControl
         }
 
         ResetSpectrum();
+    }
+
+    private void UpdateProgress()
+    {
+        var position = _positionSeconds + (_isPlaying ? _positionClock.Elapsed.TotalSeconds : 0);
+        if (_durationSeconds > 0) position = Math.Min(position, _durationSeconds);
+        _elapsedText.Text = DaisyOS.Shell.Services.Media.MediaPlaybackTime.Format(position);
+        _remainingText.Text = DaisyOS.Shell.Services.Media.MediaPlaybackTime.Format(
+            Math.Max(0, _durationSeconds - position), negative: true);
+        _progressFill.Width = _durationSeconds > 0
+            ? Math.Max(0, _progressTrack.Bounds.Width) * Math.Clamp(position / _durationSeconds, 0, 1)
+            : 0;
+    }
+
+    private async void OnProgressTrackPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (_durationSeconds <= 0 || _progressTrack.Bounds.Width <= 0
+            || !e.GetCurrentPoint(_progressTrack).Properties.IsLeftButtonPressed) return;
+        e.Handled = true;
+        _positionSeconds = Math.Clamp(e.GetPosition(_progressTrack).X / _progressTrack.Bounds.Width, 0, 1) * _durationSeconds;
+        _positionClock.Restart();
+        UpdateProgress();
+        var target = _positionSeconds;
+        await RunMediaCommandAsync(token => _mediaService.SeekAsync(target, token));
     }
 
     private async void OnPreviousClicked(object? sender, RoutedEventArgs e) => await RunMediaCommandAsync(_mediaService.PreviousAsync);

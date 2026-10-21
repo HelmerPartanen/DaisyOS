@@ -151,3 +151,7 @@ regular/wifi-02
 regular/hard-drive
 regular/shield-check
 regular/arrow-clockwise
+
+# Runtime desktop widget size choices
+regular/widget_extralarge
+regular/widget_extralarge2

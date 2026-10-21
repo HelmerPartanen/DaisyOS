@@ -1143,18 +1143,8 @@ public partial class LockScreenWindow : Window
         _expandedProgressFill.Width = trackWidth * ratio;
     }
 
-    internal static string FormatMediaTime(double seconds, bool negative = false)
-    {
-        if (!double.IsFinite(seconds) || seconds < 0)
-        {
-            seconds = 0;
-        }
-
-        var totalSeconds = (int)Math.Round(seconds);
-        var minutes = totalSeconds / 60;
-        var secs = totalSeconds % 60;
-        return negative ? $"- {minutes}.{secs:D2}" : $"{minutes}.{secs:D2}";
-    }
+    internal static string FormatMediaTime(double seconds, bool negative = false) =>
+        MediaPlaybackTime.Format(seconds, negative);
 
     private async void OnMediaPreviousClicked(object? sender, RoutedEventArgs e) =>
         await RunMediaCommandAsync(_mediaService.PreviousAsync);

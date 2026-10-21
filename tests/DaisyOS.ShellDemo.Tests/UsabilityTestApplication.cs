@@ -17,7 +17,7 @@ public sealed class UsabilityTestApplication : Application
     {
         Styles.Add(new FluentTheme());
         DaisyOS.Shell.Services.Localization.Loc.Apply(Resources, "en-US");
-        Resources["ShellFontFamily"] = new Avalonia.Media.FontFamily("avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible");
+        Resources["ShellFontFamily"] = new Avalonia.Media.FontFamily("avares://DaisyOS.Shell/Assets/fonts/Inter#Inter");
         Resources.MergedDictionaries.Add(new ResourceInclude(new Uri("avares://DaisyOS.Shell/"))
         {
             Source = new Uri("avares://DaisyOS.Shell/Themes/DaisyTheme.axaml")

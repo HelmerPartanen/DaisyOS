@@ -18,7 +18,7 @@ Directory.CreateDirectory(args[1]);
 AppBuilder.Configure<FilesQaApp>()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .UseSkia().UseHarfBuzz()
-    .With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible" })
+    .With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" })
     .SetupWithoutStarting();
 var results = new List<object>();
 foreach (var dir in Directory.GetDirectories(args[0]).OrderBy(x => x))

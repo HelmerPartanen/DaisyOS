@@ -46,7 +46,7 @@ RoundedPreviewFrame {
         width: parent.width - x - 36
         text: client ? client.caption : ""
         font.features: ({ "tnum": 0, "pnum": 1 })
-        font.family: "Atkinson Hyperlegible"; font.pixelSize: 13
+        font.family: "Inter"; font.pixelSize: 13
         verticalAlignment: Text.AlignVCenter
         elide: Text.ElideRight
         color: theme.foreground

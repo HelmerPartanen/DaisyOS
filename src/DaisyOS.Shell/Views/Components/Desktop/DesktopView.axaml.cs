@@ -91,7 +91,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
         private void OnOverlaySizeSmallClicked(object? sender, RoutedEventArgs e) => ResizeContextWidget(1, 1);
         private void OnOverlaySizeMediumClicked(object? sender, RoutedEventArgs e) => ResizeContextWidget(3, 2);
         private void OnOverlaySizeLargeClicked(object? sender, RoutedEventArgs e) => ResizeContextWidget(_contextWidget?.IsMediaWidget == true ? 5 : 4, 2);
-        private void OnOverlaySizeExtraLargeClicked(object? sender, RoutedEventArgs e) => ResizeContextWidget(5, 4);
+        private void OnOverlaySizeExtraLargeClicked(object? sender, RoutedEventArgs e) => ResizeContextWidget(5, _contextWidget?.ExtraLargeRowSpan ?? 4);
         private async void OnOverlayChoosePhotosClicked(object? sender, RoutedEventArgs e)
         {
             var widget = _contextWidget;

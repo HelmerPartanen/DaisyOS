@@ -67,7 +67,9 @@ public class DesktopItemViewModel : INotifyPropertyChanged
     public bool IsSizeSmall => ColumnSpan == 1 && RowSpan == 1;
     public bool IsSizeMedium => ColumnSpan == 3 && RowSpan == 2;
     public bool IsSizeLarge => ColumnSpan >= 4 && RowSpan == 2;
-    public bool IsSizeExtraLarge => ColumnSpan == 5 && RowSpan == 4;
+    public bool IsSizeExtraLarge => IsMediaWidget ? RowSpan > 2 : ColumnSpan == 5 && RowSpan == 4;
+    public int ExtraLargeRowSpan => IsMediaWidget ? DesktopWidgets.MediaWidget.ExtraLargeRows : 4;
+    public string ExtraLargeSizeIcon => IsMediaWidget ? "widget_extralarge2" : "widget_extralarge";
 
     private bool _supportsSmallSize = true;
     public bool SupportsSmallSize
@@ -113,6 +115,9 @@ public class DesktopItemViewModel : INotifyPropertyChanged
             if (SetField(ref _widgetContent, value))
             {
                 OnPropertyChanged(nameof(IsMediaWidget));
+                OnPropertyChanged(nameof(IsSizeExtraLarge));
+                OnPropertyChanged(nameof(ExtraLargeRowSpan));
+                OnPropertyChanged(nameof(ExtraLargeSizeIcon));
                 OnPropertyChanged(nameof(IsImageWidget));
             }
         }
@@ -638,7 +643,8 @@ public class DesktopViewModel : INotifyPropertyChanged
             RowSpan = Math.Max(1, rowSpan),
             IsWidgetCard = true,
             WidgetContent = content,
-            SupportsSmallSize = false
+            SupportsSmallSize = false,
+            SupportsExtraLargeSize = content is DesktopWidgets.MediaWidget
         };
         AddItem(item);
         return item;

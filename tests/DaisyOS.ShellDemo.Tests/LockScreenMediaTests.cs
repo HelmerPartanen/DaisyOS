@@ -265,7 +265,7 @@ public sealed class LockScreenMediaTests
         }
     }
 
-    private static string CreateSyntheticCurrentsArtwork()
+    internal static string CreateSyntheticCurrentsArtwork()
     {
         var path = Path.Combine(Path.GetTempPath(), $"daisy-currents-art-{Guid.NewGuid():N}.png");
         using var bitmap = new RenderTargetBitmap(new PixelSize(320, 320), new Vector(96, 96));

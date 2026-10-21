@@ -86,7 +86,7 @@ internal static class Program
                 FontFamilyMappings = new Dictionary<string, FontFamily>
                 {
                     [Services.Theming.TypographyPolicy.DefaultFamilyName] = new FontFamily(Services.Theming.TypographyPolicy.BundledDefaultFamilyName),
-                    ["Inter"] = new FontFamily("avares://DaisyOS.Shell/Assets/fonts#Inter")
+                    ["Atkinson Hyperlegible"] = new FontFamily("avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible")
                 }
             })
             // Configure Skia GPU resource cache dynamically based on installed RAM

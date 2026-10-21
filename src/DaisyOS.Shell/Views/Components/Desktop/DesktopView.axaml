@@ -152,7 +152,7 @@
               </Button>
               <Button Classes="WidgetSizeButton" Classes.Active="{Binding IsSizeExtraLarge}"
                       IsVisible="{Binding SupportsExtraLargeSize}" Click="OnOverlaySizeExtraLargeClicked" ToolTip.Tip="{DynamicResource Loc_F44F24C71F1F}">
-                <controls:DaisyIcon Icon="widget_extralarge" Classes="WidgetSizeIcon" Width="18" Height="18" />
+                <controls:DaisyIcon Icon="{Binding ExtraLargeSizeIcon}" Classes="WidgetSizeIcon" Width="18" Height="18" />
               </Button>
             </UniformGrid>
             <Separator />

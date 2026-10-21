@@ -267,7 +267,7 @@
                       Click="OnSizeExtraLargeClicked"
                       ToolTip.Tip="{DynamicResource Loc_F44F24C71F1F}"
                       Margin="2,0">
-                <controls:DaisyIcon Icon="widget_extralarge" Classes="WidgetSizeIcon" Width="18" Height="18"
+                <controls:DaisyIcon Icon="{Binding ExtraLargeSizeIcon}" Classes="WidgetSizeIcon" Width="18" Height="18"
                                     Foreground="{DynamicResource ContentSecondaryBrush}" />
               </Button>
             </UniformGrid>

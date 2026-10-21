@@ -7,6 +7,12 @@
              VerticalAlignment="Stretch">
 
   <UserControl.Styles>
+    <Style Selector="Border#LargeArtworkFrame">
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+    </Style>
+    <Style Selector="Grid.portrait Border#LargeArtworkFrame">
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedXXL}" />
+    </Style>
     <Style Selector="desktopWidgets|MediaWidget">
       <Setter Property="Transitions">
         <Transitions>
@@ -158,15 +164,15 @@
         </Grid>
 
         <!-- Transport shares button geometry, glyphs and styling with the large layout. -->
-        <StackPanel x:Name="MediumControlsStack" Orientation="Horizontal" Spacing="{DynamicResource Space2}"
+        <StackPanel x:Name="MediumControlsStack" Orientation="Horizontal" Spacing="16"
                     HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,14">
-          <Button Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+          <Button Classes="MediaBtn MediumMediaBtn" Width="36" Height="36" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
             <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource WhiteAlpha95Brush}" />
           </Button>
-          <Button x:Name="MediumPlayPauseButton" Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
-            <controls:DaisyIcon x:Name="MediumPlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource WhiteAlpha95Brush}" />
+          <Button x:Name="MediumPlayPauseButton" Classes="MediaBtn MediumMediaBtn" Width="40" Height="40" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+            <controls:DaisyIcon x:Name="MediumPlayPauseGlyph" Icon="play" Weight="Fill" Size="26" Foreground="{DynamicResource WhiteAlpha95Brush}" />
           </Button>
-          <Button Classes="MediaBtn MediumMediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+          <Button Classes="MediaBtn MediumMediaBtn" Width="36" Height="36" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
             <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource WhiteAlpha95Brush}" />
           </Button>
         </StackPanel>
@@ -177,11 +183,9 @@
       <!-- ================================================================= -->
       <Grid x:Name="LargeLayout" IsVisible="True" Margin="16" ColumnDefinitions="Auto,*">
         <!-- Left: Square Album Artwork that dynamically takes the exact same width as the widget height -->
-        <Border Grid.Column="0"
-                Width="{Binding $self.Bounds.Height}"
+        <Border x:Name="LargeArtworkFrame" Grid.Column="0"
                 VerticalAlignment="Stretch"
                 HorizontalAlignment="Left"
-                CornerRadius="{DynamicResource RoundedLG}"
                 ClipToBounds="True">
           <Grid>
             <Image x:Name="LargeArtwork" Stretch="UniformToFill" IsVisible="False"
@@ -198,31 +202,80 @@
           </Grid>
         </Border>
 
-        <!-- Right: Top-Right Spectrum, Center Title/Artist, Bottom Transport Controls -->
-        <Grid Grid.Column="1" Margin="16,0,0,0" RowDefinitions="Auto,*,Auto">
-          <!-- Top-Right: Spectrum Visualizer -->
-          <Canvas Grid.Row="0" x:Name="LargeSpectrumCanvas" Width="28" Height="28"
-                  VerticalAlignment="Top" HorizontalAlignment="Right" IsHitTestVisible="False" />
+        <!-- Match the fullscreen lock-screen metadata, timeline and transport rhythm. -->
+        <Grid x:Name="LargeDetails" Grid.Column="1" Margin="16,0,0,0" RowDefinitions="Auto,Auto,Auto"
+              RowSpacing="10" VerticalAlignment="Center">
+          <Grid Grid.Row="0">
+            <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2" Margin="32,0">
+              <TextBlock x:Name="LargeTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
+                         Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                         TextAlignment="Center" HorizontalAlignment="Center" />
+              <TextBlock x:Name="LargeArtist" FontSize="{DynamicResource TypeSizeCaption}"
+                         Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
+                         TextAlignment="Center" HorizontalAlignment="Center" />
+            </StackPanel>
+            <Canvas x:Name="LargeSpectrumCanvas" Width="28" Height="28"
+                    VerticalAlignment="Center" HorizontalAlignment="Right" IsHitTestVisible="False" />
+          </Grid>
 
-          <!-- Center: Title & Artist -->
-          <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="2">
-            <TextBlock x:Name="LargeTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
-                       Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
-                       TextAlignment="Center" HorizontalAlignment="Center" />
-            <TextBlock x:Name="LargeArtist" FontSize="{DynamicResource TypeSizeCaption}"
-                       Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
-                       TextAlignment="Center" HorizontalAlignment="Center" />
-          </StackPanel>
+                  <Grid Grid.Row="1"
+                        ColumnDefinitions="Auto,*,Auto"
+                        VerticalAlignment="Center">
+                    <TextBlock x:Name="LargeElapsedText"
+                               Grid.Column="0"
+                               Text="0.00"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource ContentSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               MinWidth="28" />
+
+                    <Border x:Name="LargeProgressHitArea"
+                            Grid.Column="1"
+                            Background="Transparent"
+                            Padding="0,6"
+                            Margin="10,0"
+                            Cursor="Hand"
+                            VerticalAlignment="Center"
+                            PointerPressed="OnProgressTrackPointerPressed">
+                      <Border x:Name="LargeProgressTrack"
+                              Height="6"
+                              CornerRadius="3"
+                              ClipToBounds="True"
+                              HorizontalAlignment="Stretch">
+                        <Border.Background>
+                          <SolidColorBrush Color="{DynamicResource ContentPrimaryColor}" Opacity="0.20" />
+                        </Border.Background>
+                        <Border x:Name="LargeProgressFill"
+                                Height="6"
+                                CornerRadius="3"
+                                Background="{DynamicResource ContentPrimaryBrush}"
+                                Opacity="0.85"
+                                HorizontalAlignment="Left"
+                                Width="0" />
+                      </Border>
+                    </Border>
+
+                    <TextBlock x:Name="LargeRemainingText"
+                               Grid.Column="2"
+                               Text="- 0.00"
+                               FontSize="11"
+                               FontWeight="Medium"
+                               Foreground="{DynamicResource ContentSecondaryBrush}"
+                               VerticalAlignment="Center"
+                               TextAlignment="Right"
+                               MinWidth="34" />
+                  </Grid>
 
           <!-- Bottom: Equal button spacing balances the transport beneath the metadata. -->
-          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="{DynamicResource Space2}" HorizontalAlignment="Center" VerticalAlignment="Bottom">
-            <Button Classes="MediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+          <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="16" HorizontalAlignment="Center" VerticalAlignment="Bottom">
+            <Button Classes="MediaBtn" Width="36" Height="36" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
               <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentTertiaryBrush}" />
             </Button>
-            <Button x:Name="LargePlayPauseButton" Classes="MediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
-              <controls:DaisyIcon x:Name="LargePlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentTertiaryBrush}" />
+            <Button x:Name="LargePlayPauseButton" Classes="MediaBtn" Width="40" Height="40" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+              <controls:DaisyIcon x:Name="LargePlayPauseGlyph" Icon="play" Weight="Fill" Size="26" Foreground="{DynamicResource ContentTertiaryBrush}" />
             </Button>
-            <Button Classes="MediaBtn" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+            <Button Classes="MediaBtn" Width="36" Height="36" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
               <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentTertiaryBrush}" />
             </Button>
           </StackPanel>

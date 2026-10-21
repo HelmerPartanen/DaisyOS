@@ -23,10 +23,16 @@ public sealed class LanguageTypographyTests
     [InlineData(FontWeight.Bold, FontStyle.Normal)]
     [InlineData(FontWeight.Normal, FontStyle.Italic)]
     [InlineData(FontWeight.Bold, FontStyle.Italic)]
+    [InlineData(FontWeight.Medium, FontStyle.Normal)]
+    [InlineData(FontWeight.Medium, FontStyle.Italic)]
+    [InlineData(FontWeight.SemiBold, FontStyle.Normal)]
+    [InlineData(FontWeight.SemiBold, FontStyle.Italic)]
     public void DefaultFontUsesTheBundledFaceWithoutSyntheticStyles(FontWeight weight, FontStyle style)
     {
         var face = new Typeface(TypographyPolicy.ResolveFontFamily(null), style, weight).GlyphTypeface;
-        Assert.Equal(TypographyPolicy.DefaultFamilyName, face.FamilyName);
+        // Inter's static medium/semibold faces retain their legacy family names.
+        var suffix = weight == FontWeight.Medium ? " Medium" : weight == FontWeight.SemiBold ? " SemiBold" : "";
+        Assert.Equal(TypographyPolicy.DefaultFamilyName + suffix, face.FamilyName);
         Assert.Equal(weight, face.Weight);
         Assert.Equal(style, face.Style);
         Assert.Equal(FontSimulations.None, face.FontSimulations);

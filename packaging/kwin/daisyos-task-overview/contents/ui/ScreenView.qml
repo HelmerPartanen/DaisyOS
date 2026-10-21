@@ -23,7 +23,7 @@ FocusScope {
     readonly property real captionButtonWidth: Number(effect.configuration.CaptionButtonWidth || 46)
     readonly property real captionGlyphSize: Number(effect.configuration.CaptionGlyphSize || 10)
     readonly property real titleFontPixels: Number(effect.configuration.TitleFontPixels || 13)
-    readonly property string titleFontFamily: String(effect.configuration.TitleFontFamily || "Atkinson Hyperlegible")
+    readonly property string titleFontFamily: String(effect.configuration.TitleFontFamily || "Inter")
     property bool sessionPrepared: false
     property bool cardsCommitted: false
     property bool reconcilePending: false

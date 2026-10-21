@@ -174,7 +174,7 @@ void DaisyDecoration::reloadTheme()
     m_captionButtonWidth = std::clamp(group.readEntry("CaptionButtonWidth", 46.0), 32.0, 56.0);
     m_captionButtonHeight = std::clamp(group.readEntry("CaptionButtonHeight", 32.0), 28.0, 48.0);
     m_captionGlyphSize = std::clamp(group.readEntry("CaptionGlyphSize", 10.0), 8.0, 16.0);
-    m_titleFontFamily = group.readEntry("TitleFontFamily", QStringLiteral("Atkinson Hyperlegible"));
+    m_titleFontFamily = group.readEntry("TitleFontFamily", QStringLiteral("Inter"));
     m_titleFontPixels = std::clamp(group.readEntry("TitleFontPixels", 13), 10, 24);
     m_frameMetrics.cornerRadius = std::clamp(group.readEntry("CornerRadius", 12.0), 0.0, 24.0);
 

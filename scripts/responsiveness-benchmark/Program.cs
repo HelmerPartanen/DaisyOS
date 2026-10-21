@@ -14,7 +14,7 @@ using DaisyOS.Core.Models;
 
 var output = args[0];
 AppBuilder.Configure<QaApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible" }).SetupWithoutStarting();
+    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" }).SetupWithoutStarting();
 var cold = Stopwatch.StartNew();
 var view = new LauncherView();
 var window = new Window { Width=720, Height=600, Content=view, Background=Brushes.Gray };

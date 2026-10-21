@@ -10,6 +10,6 @@ internal static class Program
 
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>().UsePlatformDetect()
-            .With(new Avalonia.Media.FontManagerOptions { DefaultFamilyName = "Atkinson Hyperlegible" })
+            .With(new Avalonia.Media.FontManagerOptions { DefaultFamilyName = "Inter" })
             .LogToTrace();
 }

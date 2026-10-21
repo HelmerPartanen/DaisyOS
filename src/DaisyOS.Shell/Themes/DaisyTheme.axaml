@@ -235,7 +235,7 @@
 
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
-      <Color x:Key="SurfaceBaseColor">#331F1F1F</Color>
+      <Color x:Key="SurfaceBaseColor">#330F0F0F</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
       <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>

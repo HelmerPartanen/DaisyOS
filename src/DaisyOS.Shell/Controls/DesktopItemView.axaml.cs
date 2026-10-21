@@ -407,7 +407,7 @@ public partial class DesktopItemView : UserControl
         if (DataContext is DesktopItemViewModel vm)
         {
             var desktopView = FindParentDesktopView();
-            FindParentDesktopViewModel()?.ResizeWidget(vm, 5, 4, desktopView?.CurrentMetrics);
+            FindParentDesktopViewModel()?.ResizeWidget(vm, 5, vm.ExtraLargeRowSpan, desktopView?.CurrentMetrics);
             CloseContextMenu();
             desktopView?.InvalidateReorderPanel();
         }

@@ -40,7 +40,7 @@ void DaisyMenuStyle::reload()
     m_hover = color("StateHover", "#14ffffff");
     m_pressed = color("StatePressed", "#24ffffff");
     m_separator = color("Separator", "#26ffffff");
-    m_font = QFont(group.readEntry("FontFamily", QStringLiteral("Atkinson Hyperlegible")));
+    m_font = QFont(group.readEntry("FontFamily", QStringLiteral("Inter")));
     m_font.setPixelSize(std::clamp(group.readEntry("FontPixels", 13), 10, 40));
     m_font.setWeight(QFont::Normal);
     m_font.setFeature("tnum", 0);
