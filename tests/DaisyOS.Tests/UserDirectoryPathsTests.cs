@@ -11,6 +11,22 @@ public class UserDirectoryPathsTests : IDisposable
     public void Dispose() => Directory.Delete(_home, true);
     private string Config => Path.Combine(_home, ".config", "user-dirs.dirs");
 
+    [Theory]
+    [InlineData("Lataukset")]
+    [InlineData("Téléchargements")]
+    [InlineData("Descargas")]
+    [InlineData("ダウンロード")]
+    [InlineData("Загрузки")]
+    public void DownloadsResolutionIsIndependentOfLanguage(string localizedName)
+    {
+        File.WriteAllText(Config, $"XDG_DOWNLOAD_DIR=\"$HOME/{localizedName}\"\n");
+
+        var expected = Path.Combine(_home, localizedName);
+        Assert.Equal(expected, DaisyOS.Core.Storage.UserDirectoryPaths.Load(_home, Config)["Downloads"]);
+        Assert.Equal(expected, LocalSendService.ResolveDownloadsDirectory(_home, Config));
+        Assert.Equal(expected, UserDirectoryPaths.Load(_home, Config)["Downloads"]);
+    }
+
     [Fact]
     public void LocalizedAndAbsoluteFoldersKeepTheirActualPathsAndSemanticIcons()
     {
