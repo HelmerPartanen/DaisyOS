@@ -64,7 +64,7 @@ public static partial class DisplaySettingsHelper
         // 1. Try kscreen-doctor (Wayland / KDE)
         try
         {
-            var result = await runner.RunAsync("kscreen-doctor", ["-j"], TimeSpan.FromSeconds(3), cancellationToken);
+            var result = await runner.RunAsync("kscreen-doctor", ["-j"], TimeSpan.FromSeconds(5), cancellationToken);
             if (result.Succeeded && !string.IsNullOrWhiteSpace(result.StandardOutput))
             {
                 var detected = ParseAllDisplaysKScreenDoctorJson(result.StandardOutput);
@@ -82,7 +82,7 @@ public static partial class DisplaySettingsHelper
         // 2. Try xrandr (X11)
         try
         {
-            var result = await runner.RunAsync("xrandr", ["--query"], TimeSpan.FromSeconds(3), cancellationToken);
+            var result = await runner.RunAsync("xrandr", ["--query"], TimeSpan.FromSeconds(5), cancellationToken);
             if (result.Succeeded && !string.IsNullOrWhiteSpace(result.StandardOutput))
             {
                 var detected = ParseXrandrOutput(result.StandardOutput);
@@ -125,6 +125,13 @@ public static partial class DisplaySettingsHelper
     {
         try
         {
+            var firstBrace = json.IndexOf('{');
+            var lastBrace = json.LastIndexOf('}');
+            if (firstBrace >= 0 && lastBrace > firstBrace)
+            {
+                json = json.Substring(firstBrace, lastBrace - firstBrace + 1);
+            }
+
             using var doc = JsonDocument.Parse(json);
             if (!doc.RootElement.TryGetProperty("outputs", out var outputs) || outputs.ValueKind != JsonValueKind.Array)
             {
@@ -157,16 +164,16 @@ public static partial class DisplaySettingsHelper
         try
         {
             var name = target.TryGetProperty("name", out var n) ? n.GetString() ?? "Display" : "Display";
-            var scale = target.TryGetProperty("scale", out var s) ? s.GetDouble() : 1.0;
-            var priority = target.TryGetProperty("priority", out var p) ? p.GetInt32() : 1;
+            var scale = target.TryGetProperty("scale", out var s) ? ScalarDouble(s, 1.0) : 1.0;
+            var priority = target.TryGetProperty("priority", out var p) ? ScalarInt(p, 1) : 1;
             var isPrimary = priority == 1;
 
             int posX = 0;
             int posY = 0;
-            if (target.TryGetProperty("pos", out var posObj))
+            if (target.TryGetProperty("pos", out var posObj) && posObj.ValueKind == JsonValueKind.Object)
             {
-                if (posObj.TryGetProperty("x", out var px)) posX = px.GetInt32();
-                if (posObj.TryGetProperty("y", out var py)) posY = py.GetInt32();
+                if (posObj.TryGetProperty("x", out var px)) posX = ScalarInt(px);
+                if (posObj.TryGetProperty("y", out var py)) posY = ScalarInt(py);
             }
 
             // KScreen has emitted both strings and numbers for mode ids across versions.
@@ -180,8 +187,13 @@ public static partial class DisplaySettingsHelper
             var wideColorGamutEnabled = target.TryGetProperty("wcg", out var wcgElement) &&
                 wcgElement.ValueKind is JsonValueKind.True or JsonValueKind.False && wcgElement.GetBoolean();
 
-            var outputWidth = target.TryGetProperty("size", out var sz) && sz.TryGetProperty("width", out var ow) ? ow.GetInt32() : 0;
-            var outputHeight = sz.TryGetProperty("height", out var oh) ? oh.GetInt32() : 0;
+            var outputWidth = 0;
+            var outputHeight = 0;
+            if (target.TryGetProperty("size", out var sz) && sz.ValueKind == JsonValueKind.Object)
+            {
+                if (sz.TryGetProperty("width", out var ow)) outputWidth = ScalarInt(ow);
+                if (sz.TryGetProperty("height", out var oh)) outputHeight = ScalarInt(oh);
+            }
 
             var modesList = new List<DisplayModeInfo>();
             if (target.TryGetProperty("modes", out var modes) && modes.ValueKind == JsonValueKind.Array)
@@ -189,9 +201,14 @@ public static partial class DisplaySettingsHelper
                 foreach (var mode in modes.EnumerateArray())
                 {
                     var id = mode.TryGetProperty("id", out var mid) ? ScalarText(mid) ?? string.Empty : string.Empty;
-                    var rate = mode.TryGetProperty("refreshRate", out var r) ? r.GetDouble() : 60.0;
-                    var mw = mode.TryGetProperty("size", out var msz) && msz.TryGetProperty("width", out var mwidth) ? mwidth.GetInt32() : 0;
-                    var mh = msz.TryGetProperty("height", out var mheight) ? mheight.GetInt32() : 0;
+                    var rate = mode.TryGetProperty("refreshRate", out var r) ? ScalarDouble(r, 60.0) : 60.0;
+                    var mw = 0;
+                    var mh = 0;
+                    if (mode.TryGetProperty("size", out var msz) && msz.ValueKind == JsonValueKind.Object)
+                    {
+                        if (msz.TryGetProperty("width", out var mwidth)) mw = ScalarInt(mwidth);
+                        if (msz.TryGetProperty("height", out var mheight)) mh = ScalarInt(mheight);
+                    }
 
                     if (mw > 0 && mh > 0)
                     {
@@ -394,11 +411,20 @@ public static partial class DisplaySettingsHelper
             availableRates.Add(Math.Round(selectedRate));
         }
 
+        var fallbackScale = 1.0;
+        var savedScalePref = (Avalonia.Application.Current as App)?.GetPreference("display.scale");
+        if (!string.IsNullOrWhiteSpace(savedScalePref) &&
+            double.TryParse(savedScalePref.TrimEnd('%'), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsedPct) &&
+            parsedPct > 0)
+        {
+            fallbackScale = parsedPct / 100.0;
+        }
+
         return new DetectedDisplay(
             selectedOutput,
             selectedWidth,
             selectedHeight,
-            1.0,
+            fallbackScale,
             selectedRate,
             availableResolutions,
             availableRates,
@@ -451,6 +477,30 @@ public static partial class DisplaySettingsHelper
         return Math.Abs(refreshRate - nearestInteger) < 0.1
             ? nearestInteger.ToString("0", CultureInfo.InvariantCulture)
             : refreshRate.ToString("0.##", CultureInfo.InvariantCulture);
+    }
+
+    private static int ScalarInt(JsonElement element, int fallback = 0)
+    {
+        if (element.ValueKind == JsonValueKind.Number)
+        {
+            if (element.TryGetInt32(out var i)) return i;
+            if (element.TryGetDouble(out var d)) return (int)Math.Round(d);
+        }
+        else if (element.ValueKind == JsonValueKind.String &&
+                 double.TryParse(element.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var d))
+        {
+            return (int)Math.Round(d);
+        }
+        return fallback;
+    }
+
+    private static double ScalarDouble(JsonElement element, double fallback = 0.0)
+    {
+        if (element.ValueKind == JsonValueKind.Number && element.TryGetDouble(out var d)) return d;
+        if (element.ValueKind == JsonValueKind.String &&
+            double.TryParse(element.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out var parsed))
+            return parsed;
+        return fallback;
     }
 
     private static string? ScalarText(JsonElement value) => value.ValueKind switch

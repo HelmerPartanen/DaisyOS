@@ -388,6 +388,13 @@ class WSurface : IPersistentWaylandObject, IWSurface, IWaylandFramebufferSurface
             FractionalScale.Dispose();
             FractionalScale = null;
         }
+        if (_backgroundEffect != null)
+        {
+            _backgroundEffect.Destroy();
+            _backgroundEffect.Dispose();
+            _backgroundEffect = null;
+        }
+        _appliedBlurRegions = null;
         WlSurface?.Tags.Remove(typeof(WSurface));
         WlSurface?.Destroy();
         WlSurface = null;

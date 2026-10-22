@@ -140,6 +140,12 @@ fi
 if [[ "$prefix" == "/" ]]; then
   configure_localsend_firewall
 
+  if systemctl list-unit-files bluetooth.service --no-legend >/dev/null 2>&1; then
+    if ! systemctl enable --now bluetooth.service; then
+      echo "Warning: bluetooth.service could not be enabled." >&2
+    fi
+  fi
+
   if systemctl list-unit-files systemd-oomd.service --no-legend >/dev/null 2>&1; then
     if ! systemctl enable --now systemd-oomd.service; then
       echo "Warning: systemd-oomd could not be enabled. DaisyOS will still throttle apps at its memory boundary, but early OOM recovery is unavailable." >&2

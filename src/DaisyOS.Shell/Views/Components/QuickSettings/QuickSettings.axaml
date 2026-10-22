@@ -163,20 +163,7 @@
             <controls:QuickSettingTile
                 Grid.Row="0"
                 Grid.Column="1"
-                x:Name="BluetoothTile"
-                Icon="bluetooth"
-                Label="Bluetooth"
-                HasDetails="True"
-                ToolTipText="{DynamicResource Loc_DA8B2D1CD1C7}"
-                DetailsToolTipText="{DynamicResource Loc_62B2E1B18694}"
-                Toggled="OnBluetoothTileToggled"
-                DetailsClicked="OnBluetoothDevicesButtonClicked"/>
-
-            <controls:QuickSettingTile
-                Grid.Row="0"
-                Grid.Column="1"
                 x:Name="DndTile"
-                IsVisible="False"
                 Icon="bell-slash"
                 Label="Do not disturb"
                 ToolTipText="{DynamicResource Loc_0C798C5A9B24}"
@@ -203,7 +190,20 @@
             <controls:QuickSettingTile
                 Grid.Row="1"
                 Grid.Column="1"
+                x:Name="BluetoothTile"
+                Icon="bluetooth"
+                Label="Bluetooth"
+                HasDetails="True"
+                ToolTipText="{DynamicResource Loc_DA8B2D1CD1C7}"
+                DetailsToolTipText="{DynamicResource Loc_62B2E1B18694}"
+                Toggled="OnBluetoothTileToggled"
+                DetailsClicked="OnBluetoothDevicesButtonClicked"/>
+
+            <controls:QuickSettingTile
+                Grid.Row="1"
+                Grid.Column="1"
                 x:Name="ThemeTile"
+                IsVisible="False"
                 Icon="circle-half"
                 Label="Theme"
                 ToolTipText="{DynamicResource Loc_DB1DE510BCB2}"

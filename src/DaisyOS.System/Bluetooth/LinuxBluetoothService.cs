@@ -88,7 +88,7 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
                 // Fetch all device info concurrently instead of sequentially — avoids
                 // N × (50–150 ms) stall when many devices are paired.
                 var infoTasks = deviceEntries.Select(entry =>
-                    _commandRunner.RunAsync("bluetoothctl", ["--timeout", "2", "info", entry.Address], TimeSpan.FromSeconds(2), cancellationToken));
+                    _commandRunner.RunAsync("bluetoothctl", ["--timeout", "2", "info", entry.Address], TimeSpan.FromSeconds(3), cancellationToken));
 
                 var infoResults = await Task.WhenAll(infoTasks);
 
@@ -140,20 +140,32 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
         var resultShow = await _commandRunner.RunAsync(
             "bluetoothctl",
             ["--timeout", "2", "show"],
-            TimeSpan.FromSeconds(2),
+            TimeSpan.FromSeconds(3),
             cancellationToken);
         if (!resultShow.Succeeded)
         {
-            var diagnostic = string.Concat(resultShow.StandardOutput, "\n", resultShow.StandardError);
-            if (diagnostic.Contains("no default controller", StringComparison.OrdinalIgnoreCase) ||
-                diagnostic.Contains("no controller available", StringComparison.OrdinalIgnoreCase))
+            var serviceCheck = await _commandRunner.RunAsync("systemctl", ["is-active", "--quiet", "bluetooth.service"], TimeSpan.FromSeconds(1), cancellationToken);
+            if (!serviceCheck.Succeeded)
             {
-                return new BluetoothStatus(false, false, false, Array.Empty<BluetoothDevice>(),
-                    "Bluetooth isn’t available on this device.");
-            }
+                await _commandRunner.RunAsync("systemctl", ["enable", "--now", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
+                await _commandRunner.RunAsync("systemctl", ["start", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
 
-            return new BluetoothStatus(false, false, false, Array.Empty<BluetoothDevice>(),
-                BuildFailureDetail(resultShow, "Bluetooth status query"));
+                var recheck = await _commandRunner.RunAsync("systemctl", ["is-active", "--quiet", "bluetooth.service"], TimeSpan.FromSeconds(1), cancellationToken);
+                if (recheck.Succeeded)
+                {
+                    resultShow = await _commandRunner.RunAsync(
+                        "bluetoothctl",
+                        ["--timeout", "2", "show"],
+                        TimeSpan.FromSeconds(3),
+                        cancellationToken);
+                }
+            }
+        }
+
+        if (!resultShow.Succeeded)
+        {
+            return new BluetoothStatus(true, false, false, Array.Empty<BluetoothDevice>(),
+                "Bluetooth is turned off.");
         }
 
         var isEnabled = ParseShowOutput(resultShow.StandardOutput);
@@ -193,21 +205,49 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
 
     public async Task<bool> SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
-        var action = enabled ? "on" : "off";
+        if (!enabled)
+        {
+            await _commandRunner.RunAsync("rfkill", ["block", "bluetooth"], CommandTimeout, cancellationToken);
+            await _commandRunner.RunAsync(
+                "bluetoothctl",
+                ["power", "off"],
+                CommandTimeout,
+                cancellationToken);
+            return true;
+        }
+
+        // 1. Unblock rfkill first (doesn't require root permissions)
+        await _commandRunner.RunAsync("rfkill", ["unblock", "bluetooth"], CommandTimeout, cancellationToken);
+
+        // 2. Check if bluetooth.service is active; if not, try to start and enable it
+        var serviceCheck = await _commandRunner.RunAsync("systemctl", ["is-active", "--quiet", "bluetooth.service"], TimeSpan.FromSeconds(1), cancellationToken);
+        if (!serviceCheck.Succeeded)
+        {
+            await _commandRunner.RunAsync("systemctl", ["enable", "--now", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
+            var startRes = await _commandRunner.RunAsync("systemctl", ["start", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
+            if (!startRes.Succeeded)
+            {
+                await _commandRunner.RunAsync("pkexec", ["systemctl", "start", "bluetooth.service"], TimeSpan.FromSeconds(5), cancellationToken);
+            }
+            await Task.Delay(300, cancellationToken);
+        }
+
         var result = await _commandRunner.RunAsync(
             "bluetoothctl",
-            ["power", action],
+            ["power", "on"],
             CommandTimeout,
             cancellationToken);
 
-        if (enabled && !result.Succeeded &&
-            (result.StandardError.Contains("rfkill", StringComparison.OrdinalIgnoreCase) ||
-             result.StandardOutput.Contains("Blocked", StringComparison.OrdinalIgnoreCase)))
+        if (!result.Succeeded)
         {
-            var unblock = await _commandRunner.RunAsync("rfkill", ["unblock", "bluetooth"], CommandTimeout, cancellationToken);
-            if (unblock.Succeeded)
-                result = await _commandRunner.RunAsync("bluetoothctl", ["power", "on"], CommandTimeout, cancellationToken);
+            await Task.Delay(500, cancellationToken);
+            result = await _commandRunner.RunAsync(
+                "bluetoothctl",
+                ["power", "on"],
+                CommandTimeout,
+                cancellationToken);
         }
+
         return result.Succeeded;
     }
 

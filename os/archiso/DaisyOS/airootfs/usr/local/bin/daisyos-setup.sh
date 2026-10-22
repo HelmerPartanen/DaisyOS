@@ -23,4 +23,6 @@ mkdir -p /home/daisyos/.config/DaisyOS
 chown -R daisyos:users /home/daisyos
 printf 'daisyos-live\n' > /etc/hostname
 
+systemctl enable --now bluetooth.service 2>/dev/null || true
+
 echo "DaisyOS live environment is ready."

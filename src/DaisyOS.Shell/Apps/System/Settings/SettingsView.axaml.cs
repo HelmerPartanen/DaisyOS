@@ -283,8 +283,19 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             var buttonsByCategory = NavigationItems.Children
                 .OfType<Button>()
+                .Concat(GetNavigationButtons())
                 .Where(button => button.Tag is string)
+                .Distinct()
                 .ToDictionary(button => (string)button.Tag!, StringComparer.Ordinal);
+
+            foreach (var button in buttonsByCategory.Values)
+            {
+                if (button.Parent is Panel parent)
+                {
+                    parent.Children.Remove(button);
+                }
+            }
+
             NavigationItems.Children.Clear();
 
             foreach (var (title, categories) in NavigationGroups)
@@ -717,10 +728,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 ? display.AvailableRefreshRates.Select(r => $"{DisplaySettingsHelper.FormatRefreshRate(r)} Hz").Distinct().ToArray()
                 : new[] { currentRefreshText };
 
-            var app = Application.Current as App;
-            app?.SetPreference("display.resolution", currentResolutionText);
-            app?.SetPreference("display.refresh-rate", currentRefreshText);
-
             var displayRows = new List<Control>();
             displayRows.Add(InfoRow(Loc.Get("Selected display"), $"{display.Name} ({display.Width} × {display.Height}){(display.IsPrimary ? " • Main Display" : "")}"));
 
@@ -795,9 +802,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
             return DisplaySettingsHelper.BuildKScreenModeArgument(display.Name, mode, display.Width, display.Height, display.RefreshRate);
         }
 
-        private async Task RunDisplayChangeAsync(Func<Task<bool>> apply, Func<Task<bool>> restore, int buildVersion)
+        private async Task<DisplayChangeResult> RunDisplayChangeAsync(Func<Task<bool>> apply, Func<Task<bool>> restore, int buildVersion)
         {
-            if (_displayChangeGuard.IsBusy) return;
+            if (_displayChangeGuard.IsBusy) return DisplayChangeResult.Busy;
             var token = _displayLifetime.Token;
             DisplayChangeResult result;
             CategoryContent.IsEnabled = false;
@@ -812,13 +819,14 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 result = await _pendingDisplayChange;
             }
             finally { CategoryContent.IsEnabled = true; }
-            if (result == DisplayChangeResult.Busy) return;
+            if (result == DisplayChangeResult.Busy) return result;
             if (result == DisplayChangeResult.RestoreFailed)
                 (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t restore the previous display settings. Check the connected display and try again."));
             else if (result == DisplayChangeResult.Failed)
                 (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t apply the display setting. The previous settings were restored."));
             if (!token.IsCancellationRequested && buildVersion == _categoryBuildVersion)
                 ShowCategory("Displays");
+            return result;
         }
 
         private async void OnDisplayOwnerClosing(object? sender, WindowClosingEventArgs e)
@@ -842,25 +850,30 @@ namespace DaisyOS.Shell.Apps.System.Settings
             DetectedDisplay? previous = null;
             var usedXrandr = false;
             var runner = new SafeCommandRunner();
-            await RunDisplayChangeAsync(async () =>
+            var result = await RunDisplayChangeAsync(async () =>
             {
                 previous = (await DisplaySettingsHelper.DetectAllDisplaysAsync()).FirstOrDefault(d => d.Name == outputName);
                 if (previous is null) return false;
                 var mode = DisplaySettingsHelper.FindBestModeForResolution(previous.Modes, width, height, previous.RefreshRate);
-                var result = await runner.RunAsync("kscreen-doctor",
-                    [DisplaySettingsHelper.BuildKScreenModeArgument(outputName, mode, width, height, previous.RefreshRate)], TimeSpan.FromSeconds(3));
-                if (result.Succeeded) return true;
+                var cmdResult = await runner.RunAsync("kscreen-doctor",
+                    [DisplaySettingsHelper.BuildKScreenModeArgument(outputName, mode, width, height, previous.RefreshRate)], TimeSpan.FromSeconds(5));
+                if (cmdResult.Succeeded) return true;
                 // XRandR changes the real display only in an X11 session, never XWayland.
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))) return false;
                 usedXrandr = true;
-                return (await runner.RunAsync("xrandr", ["--output", outputName, "--mode", $"{width}x{height}"], TimeSpan.FromSeconds(3))).Succeeded;
+                return (await runner.RunAsync("xrandr", ["--output", outputName, "--mode", $"{width}x{height}"], TimeSpan.FromSeconds(5))).Succeeded;
             }, async () =>
             {
                 if (previous is null) return true;
                 return usedXrandr
-                    ? (await runner.RunAsync("xrandr", ["--output", outputName, "--mode", $"{previous.Width}x{previous.Height}", "--rate", previous.RefreshRate.ToString(global::System.Globalization.CultureInfo.InvariantCulture)], TimeSpan.FromSeconds(3))).Succeeded
-                    : (await runner.RunAsync("kscreen-doctor", [ModeArgument(previous)], TimeSpan.FromSeconds(3))).Succeeded;
+                    ? (await runner.RunAsync("xrandr", ["--output", outputName, "--mode", $"{previous.Width}x{previous.Height}", "--rate", previous.RefreshRate.ToString(global::System.Globalization.CultureInfo.InvariantCulture)], TimeSpan.FromSeconds(5))).Succeeded
+                    : (await runner.RunAsync("kscreen-doctor", [ModeArgument(previous)], TimeSpan.FromSeconds(5))).Succeeded;
             }, buildVersion);
+
+            if (result == DisplayChangeResult.Kept)
+            {
+                (Application.Current as App)?.SetPreference("display.resolution", selectedResolution);
+            }
         }
 
         private async Task ApplyKScreenSettingAsync(string outputName, string settingName, Func<DetectedDisplay, string> argument, int buildVersion)
@@ -868,14 +881,33 @@ namespace DaisyOS.Shell.Apps.System.Settings
             DetectedDisplay? previous = null;
             var runner = new SafeCommandRunner();
             // Use current compositor state rather than the snapshot used to build the page.
-            await RunDisplayChangeAsync(async () =>
+            var result = await RunDisplayChangeAsync(async () =>
             {
                 previous = (await DisplaySettingsHelper.DetectAllDisplaysAsync()).FirstOrDefault(d => d.Name == outputName);
                 if (previous is null) return false;
-                return (await runner.RunAsync("kscreen-doctor", [argument(previous)], TimeSpan.FromSeconds(3))).Succeeded;
+                return (await runner.RunAsync("kscreen-doctor", [argument(previous)], TimeSpan.FromSeconds(5))).Succeeded;
             }, async () => previous is null || (await runner.RunAsync("kscreen-doctor",
-                [settingName == "display scale" ? $"output.{outputName}.scale.{previous.Scale.ToString(global::System.Globalization.CultureInfo.InvariantCulture)}" : ModeArgument(previous)], TimeSpan.FromSeconds(3))).Succeeded,
+                [settingName == "display scale" ? $"output.{outputName}.scale.{previous.Scale.ToString(global::System.Globalization.CultureInfo.InvariantCulture)}" : ModeArgument(previous)], TimeSpan.FromSeconds(5))).Succeeded,
                 buildVersion);
+
+            if (result == DisplayChangeResult.Kept)
+            {
+                var app = Application.Current as App;
+                var updated = (await DisplaySettingsHelper.DetectAllDisplaysAsync()).FirstOrDefault(d => d.Name == outputName);
+                if (updated is not null)
+                {
+                    if (settingName == "display scale")
+                    {
+                        var scaleStr = $"{(int)Math.Round(updated.Scale * 100)}%";
+                        app?.SetPreference("display.scale", scaleStr);
+                    }
+                    else if (settingName == "refresh rate")
+                    {
+                        var rateStr = $"{DisplaySettingsHelper.FormatRefreshRate(updated.RefreshRate)} Hz";
+                        app?.SetPreference("display.refresh-rate", rateStr);
+                    }
+                }
+            }
         }
 
         private async Task ApplyHdrSettingAsync(string outputName, bool enabled, int buildVersion)
@@ -2579,6 +2611,18 @@ namespace DaisyOS.Shell.Apps.System.Settings
             // Never let an old shell preference override newer changes made by the system,
             // another settings tool, or a hardware event.
             var saved = fallback;
+            if (options.Length > 0 && Array.IndexOf(options, saved) < 0)
+            {
+                var pref = (Application.Current as App)?.GetPreference(key);
+                if (!string.IsNullOrEmpty(pref) && Array.IndexOf(options, pref) >= 0)
+                    saved = pref;
+            }
+            else if (saved == "100%" && key == "display.scale")
+            {
+                var pref = (Application.Current as App)?.GetPreference(key);
+                if (!string.IsNullOrEmpty(pref) && Array.IndexOf(options, pref) >= 0)
+                    saved = pref;
+            }
             var picker = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new ComboBox
             {
                 Width = double.NaN,
@@ -2608,7 +2652,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 if (picker.SelectedItem is ComboBoxItem { Tag: string selected })
                 {
                     ToolTip.SetTip(picker, selected);
-                    onChanged?.Invoke(selected);
+                    Dispatcher.UIThread.Post(() => onChanged?.Invoke(selected));
                 }
             };
             return PreferenceRow(Loc.Get(title), null, picker);

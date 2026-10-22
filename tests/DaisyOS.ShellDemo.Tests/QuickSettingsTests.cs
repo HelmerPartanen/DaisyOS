@@ -39,7 +39,7 @@ public sealed class QuickSettingsTests
             window.UpdateLayout();
             await Task.Delay(300);
             Assert.True(panel.FindControl<StackPanel>("AirPodsControls")!.IsVisible);
-            Assert.False(panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("BluetoothTile")!.IsVisible);
+            Assert.True(panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("BluetoothTile")!.IsVisible);
             Assert.True(panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("DndTile")!.IsVisible);
             Assert.True(panel.FindControl<ToggleButton>("AirPodsAnc")!.IsChecked);
             Assert.False(panel.FindControl<ToggleButton>("AirPodsAdaptive")!.IsEnabled);

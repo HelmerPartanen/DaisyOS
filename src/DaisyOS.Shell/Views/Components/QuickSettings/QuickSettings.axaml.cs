@@ -187,7 +187,7 @@ public partial class QuickSettings : UserControl
         if (!await _bluetoothService.SetEnabledAsync(tile.IsChecked))
         {
             tile.IsChecked = !tile.IsChecked;
-            ReportFailure("Couldn’t change Bluetooth. Check that Bluetooth is available.");
+            ReportFailure(tile.IsChecked ? "Couldn’t turn off Bluetooth." : "Couldn’t turn on Bluetooth. Run 'sudo systemctl enable --now bluetooth' in terminal.");
         }
         RefreshStatus();
     }
@@ -356,23 +356,15 @@ public partial class QuickSettings : UserControl
         var grid = this.FindControl<Grid>("QuickSettingsTiles");
         if (grid is null) return;
 
-        var bluetoothTile = this.FindControl<QuickSettingTile>("BluetoothTile");
-        if (this.FindControl<QuickSettingTile>("DndTile") is { } dndTile)
-        {
-            // When Bluetooth hardware is missing, DndTile seamlessly occupies the slot to ensure a balanced 3x2 grid.
-            dndTile.IsVisible = bluetoothTile?.IsVisible != true;
-        }
-
         var tiles = new[]
         {
             this.FindControl<QuickSettingTile>("WifiTile"),
             this.FindControl<QuickSettingTile>("EthernetTile"),
-            this.FindControl<QuickSettingTile>("BluetoothTile"),
+            this.FindControl<QuickSettingTile>("DndTile"),
             this.FindControl<QuickSettingTile>("LocalSendTile"),
             this.FindControl<QuickSettingTile>("NightLightTile"),
-            this.FindControl<QuickSettingTile>("ThemeTile"),
-            this.FindControl<QuickSettingTile>("GamingTile"),
-            this.FindControl<QuickSettingTile>("DndTile")
+            this.FindControl<QuickSettingTile>("BluetoothTile"),
+            this.FindControl<QuickSettingTile>("GamingTile")
         }.Where(tile => tile?.IsVisible == true).Cast<QuickSettingTile>().ToArray();
 
         grid.RowDefinitions = new RowDefinitions(string.Join(',', Enumerable.Repeat("Auto", Math.Max(1, (int)Math.Ceiling(tiles.Length / 3d)))));
@@ -901,10 +893,17 @@ public partial class QuickSettings : UserControl
         }
         if (this.FindControl<QuickSettingTile>("BluetoothTile") is { } bluetoothTile)
         {
-            bluetoothTile.IsVisible = !bluetoothReceiverMissing && !HasConnectedAirPods;
-            bluetoothTile.IsEnabled = bluetooth.IsAvailable;
+            bluetoothTile.IsVisible = true;
+            bluetoothTile.IsEnabled = true;
             bluetoothTile.IsChecked = bluetooth.IsEnabled;
             bluetoothTile.ToolTipText = Loc.Get(bluetooth.IsEnabled ? "Turn off Bluetooth" : "Turn on Bluetooth");
+        }
+        if (this.FindControl<QuickSettingTile>("DndTile") is { } dndTile)
+        {
+            dndTile.IsVisible = true;
+            var isDnd = (Application.Current as App)?.SessionState.DoNotDisturb == true;
+            dndTile.IsChecked = isDnd;
+            dndTile.ToolTipText = Loc.Get(isDnd ? "Turn off Do Not Disturb" : "Turn on Do Not Disturb");
         }
         UpdateQuickSettingsTileLayout();
         UpdateAirPodsPresentation();
@@ -922,7 +921,7 @@ public partial class QuickSettings : UserControl
             ToolTip.SetTip(controls, string.IsNullOrEmpty(status.Battery) ? status.Name : $"{status.Name} · {status.Battery}");
         }
         if (this.FindControl<QuickSettingTile>("BluetoothTile") is { } bluetooth)
-            bluetooth.IsVisible = _bluetoothAvailable && !status.IsConnected;
+            bluetooth.IsVisible = true;
         foreach (var mode in Enum.GetValues<AirPodsNoiseMode>())
         {
             if (this.FindControl<ToggleButton>("AirPods" + mode) is not { } button) continue;
