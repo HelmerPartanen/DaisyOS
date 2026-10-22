@@ -295,9 +295,18 @@ public sealed class DaisyScreenshotService
     private static bool IsNativeHelper(string executable) => Path.GetFileName(executable) == "daisy-screenshot-helper";
     private static string? FindCaptureBackend()
     {
-        // Older installed helpers can deadlock on their pipe. Only opt in after reinstalling the fixed version.
-        const string helper = "/usr/local/libexec/daisyos/daisy-screenshot-helper";
-        if (File.Exists(helper) && File.Exists(helper + ".api-v3")) return helper;
+        var localHelper = Path.Combine(AppContext.BaseDirectory, "daisy-screenshot-helper");
+        if (File.Exists(localHelper)) return localHelper;
+
+        var sourceHelper = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../src/native/daisy_screenshot/build/daisy-screenshot-helper"));
+        if (File.Exists(sourceHelper)) return sourceHelper;
+
+        const string systemHelper = "/usr/local/libexec/daisyos/daisy-screenshot-helper";
+        if (File.Exists(systemHelper)) return systemHelper;
+
+        var pathHelper = FindExecutable("daisy-screenshot-helper");
+        if (pathHelper is not null) return pathHelper;
+
         return FindExecutable("spectacle");
     }
     public Task<ScreenshotCaptureResult> CaptureActiveScreenAsync(bool includeCursor = false, CancellationToken cancellationToken = default)

@@ -415,10 +415,29 @@ ensure_idle_monitor() {
   fi
 }
 
+ensure_screenshot_helper() {
+  local helper_src="$source_root/src/native/daisy_screenshot"
+  local helper_build="$helper_src/build/daisy-screenshot-helper"
+  if [[ ! -f "$helper_build" ]]; then
+    log_message "Building native screenshot helper..."
+    if command -v cmake >/dev/null 2>&1; then
+      cmake -S "$helper_src" -B "$helper_src/build" -DCMAKE_BUILD_TYPE=Release >> "$session_log" 2>&1 || true
+      cmake --build "$helper_src/build" >> "$session_log" 2>&1 || true
+    fi
+  fi
+  local shell_bin_release="$source_root/src/DaisyOS.Shell/bin/Release/net10.0"
+  local shell_bin_debug="$source_root/src/DaisyOS.Shell/bin/Debug/net10.0"
+  if [[ -f "$helper_build" ]]; then
+    [[ -d "$shell_bin_release" ]] && cp -f "$helper_build" "$shell_bin_release/" 2>/dev/null || true
+    [[ -d "$shell_bin_debug" ]] && cp -f "$helper_build" "$shell_bin_debug/" 2>/dev/null || true
+  fi
+}
+
 ensure_shell_binary() {
   export DAISYOS_APP_CONFIGURATION="${DAISYOS_APP_CONFIGURATION:-Release}"
   write_runtime_value shell.configuration "$shell_configuration"
   ensure_idle_monitor
+  ensure_screenshot_helper
   local shell_binary
   shell_binary="$(native_shell_binary)"
   if [[ -x "$shell_binary" ]]; then
