@@ -56,7 +56,7 @@ public partial class GamingOverlay : UserControl
             });
             if (!IsVisible || generation != _generation) return;
             Set("CPU", status.CpuUsagePercent is { } cpu ? $"{cpu:0}%" : "—");
-            Set("MEM", status.MemoryUsedBytes is { } memory ? $"{memory / 1073741824d:0.0} GB" : "—");
+            Set("MEM", status.MemoryUsedBytes is { } memory ? $"{memory / 1073741824d:0.0} GiB" : "—");
             Set("GPU", telemetry.Item2 is { } gpu ? $"{gpu:0}%" : "—");
             Set("FPS", telemetry.Item1 is { } fps ? $"{fps:0}" : "—");
         }

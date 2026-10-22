@@ -32,7 +32,7 @@
             <TextBlock x:Name="GPUValue" Text="—"/>
           </StackPanel>
           <StackPanel Grid.Column="3" Spacing="2">
-            <TextBlock Text="MEM"/>
+            <TextBlock Text="SYS RAM"/>
             <TextBlock x:Name="MEMValue" Text="—"/>
           </StackPanel>
         </Grid>

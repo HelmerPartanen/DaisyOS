@@ -4,9 +4,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 app_configuration="${DAISYOS_APP_CONFIGURATION:-Release}"
 [[ "$app_configuration" == Release || "$app_configuration" == Debug ]] || { echo "DAISYOS_APP_CONFIGURATION must be Release or Debug." >&2; exit 1; }
 "$repo_root/scripts/install-files-app.sh" "${1:-$repo_root/src/DaisyOS.Files/bin/$app_configuration/net10.0/DaisyOS.Files}"
-install -Dm0755 "$repo_root/scripts/daisyos-game-launcher" "$HOME/.local/bin/daisyos-game-launcher"
-install -Dm0644 "$repo_root/scripts/daisyos-gaming-environment" "$HOME/.local/bin/daisyos-gaming-environment"
-install -Dm0755 "$repo_root/scripts/daisyos-game" "$HOME/.local/bin/daisyos-game"
+python3 "$repo_root/scripts/install-user-gaming-integration.py"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 for application in Notes Settings DiskManager; do
   binary="$repo_root/src/DaisyOS.$application/bin/$app_configuration/net10.0/DaisyOS.$application"

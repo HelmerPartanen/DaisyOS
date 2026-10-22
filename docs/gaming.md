@@ -39,7 +39,7 @@ Compare the same in-game scene and settings, recording frame times, per-thread C
 
 Press **Meta + R** to toggle the top-right FPS / CPU / GPU / MEM pill. It uses the taskbar's theme-aware material and KWin blur on a passive Wayland overlay layer above fullscreen games. It does not take focus or intercept game input. Sampling runs once per second while visible.
 
-CPU is total system utilization and MEM is used system memory in GiB. GPU utilization comes from supported DRM drivers, NVIDIA’s NVML library, or MangoHud telemetry; unavailable readings show **—**. FPS requires game telemetry, and never reports the shell's frame rate.
+CPU is total system utilization and **SYS RAM** is whole-system memory in GiB (total minus MemAvailable), including the game, desktop, Steam, and any open developer tools. It is not game-only memory. GPU utilization comes from supported DRM drivers, NVIDIA’s NVML library, or MangoHud telemetry; unavailable readings show **—**. FPS requires game telemetry, and never reports the shell's frame rate.
 
 FPS capture is built into the shipped desktop session. The image includes native and 32-bit MangoHud libraries, and the bundled Steam/Lutris launchers carry Vulkan and OpenGL telemetry into their games. Users open the monitor with **Meta + R**; they do not edit Steam launch options, install telemetry packages, set environment variables, or press a logging hotkey.
 
@@ -48,6 +48,11 @@ The shell discovers each renderer's per-process control socket and starts hidden
 The telemetry folder is selected automatically under the user's runtime directory, with a cache fallback. Explicit directory overrides and `daisyos-game` remain available for developer diagnostics or launching games outside the normal desktop routes, rather than user setup requirements. The signed local-runtime installer supports development machines; the ISO uses distribution packages.
 
 The verified automatic routes are the bundled native Steam/Lutris desktop entries and command launchers, session-inherited native Vulkan applications, and the shipped Wine command wrapper. Flatpak launchers and sandbox-specific telemetry extensions are outside this host-runtime path and need separate integration before being advertised as automatic.
+
+Development installs also wrap native Steam/Lutris desktop entries at the user
+level through `install-system-apps.sh`. Existing localized names, arguments, and
+desktop actions are retained. An already-running Steam process must exit and
+reopen to inherit telemetry; this does not change per-game Steam launch options.
 
 See the [2026-10-15 gaming validation](validation/gaming-2026-10-15.md) for the measured hardware, live interaction checks, and remaining administrator setup.
 
