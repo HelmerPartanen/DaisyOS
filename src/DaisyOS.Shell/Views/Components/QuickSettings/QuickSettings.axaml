@@ -127,7 +127,7 @@
                 Grid.Row="0"
                 Grid.Column="0"
                 x:Name="WifiTile"
-                Icon="wifi-high"
+                Icon="wifi-02"
                 Label="Wi-Fi"
                 HasDetails="True"
                 ToolTipText="{DynamicResource Loc_079C143D59D9}"

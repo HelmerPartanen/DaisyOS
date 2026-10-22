@@ -14,6 +14,14 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class QuickSettingsTests
 {
     [AvaloniaFact]
+    public void WifiTileUsesSettingsWifiIcon()
+    {
+        var panel = new DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings();
+
+        Assert.Equal("wifi-02", panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("WifiTile")!.Icon);
+    }
+
+    [AvaloniaFact]
     public void OutputRowsWrapLongNamesAndMarkTheSelectedDevice()
     {
         var panel = new DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings();

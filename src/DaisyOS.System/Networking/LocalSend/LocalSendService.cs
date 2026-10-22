@@ -44,12 +44,14 @@ public sealed class LocalSendService : ILocalSendService
     public LocalSendService(string? alias = null, string? downloadsDirectory = null)
     {
         _alias = string.IsNullOrWhiteSpace(alias) ? Environment.MachineName : alias.Trim();
-        _downloadsDirectory = downloadsDirectory ?? Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
+        _downloadsDirectory = downloadsDirectory ?? ResolveDownloadsDirectory();
         _stagingDirectory = Path.Combine(_downloadsDirectory, ".daisyos-localsend");
         _certificate = LoadOrCreateCertificate();
         _fingerprint = Convert.ToHexString(SHA256.HashData(_certificate.RawData));
     }
+
+    internal static string ResolveDownloadsDirectory(string? homePath = null, string? configPath = null) =>
+        DaisyOS.Core.Storage.UserDirectoryPaths.Load(homePath, configPath)["Downloads"];
 
     public event EventHandler? DevicesChanged;
     public event EventHandler<LocalSendIncomingTransfer>? IncomingTransferRequested;

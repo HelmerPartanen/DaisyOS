@@ -1,4 +1,5 @@
 using DaisyOS.Shell.Apps.Files;
+using DaisyOS.System.Networking.LocalSend;
 using Xunit;
 
 namespace DaisyOS.Tests;
@@ -17,6 +18,7 @@ public class UserDirectoryPathsTests : IDisposable
         File.WriteAllText(Config, $"XDG_DOWNLOAD_DIR=\"$HOME/Lataukset\"\nXDG_DESKTOP_DIR=\"${{HOME}}/Työpöytä\"\nXDG_DOCUMENTS_DIR=\"{documents}\"\n");
         var paths = UserDirectoryPaths.Load(_home);
         Assert.Equal(Path.Combine(_home, "Lataukset"), paths["Downloads"]);
+        Assert.Equal(Path.Combine(_home, "Lataukset"), LocalSendService.ResolveDownloadsDirectory(_home, Config));
         Assert.Equal(Path.Combine(_home, "Työpöytä"), paths["Desktop"]);
         Assert.Equal(documents, paths["Documents"]);
         var presentation = FileLocationPresentation.Resolve(paths["Downloads"], _home);
