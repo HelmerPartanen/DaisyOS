@@ -136,6 +136,8 @@ echo ""
 } > "$output_dir/wallpaper-dependencies.txt"
 
 "$repo_root/scripts/stage-gaming-integration.sh" --root "$output_dir/gaming-root"
+"$repo_root/scripts/build-librepods.sh"
+"$repo_root/scripts/stage-airpods.sh" --root "$output_dir/airpods-root"
 "$repo_root/scripts/install-system-fonts.sh" --root "$output_dir/fonts-root"
 
 shell_binary="$output_dir/DaisyOS.Shell"

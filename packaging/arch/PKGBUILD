@@ -5,12 +5,14 @@ pkgdesc="DaisyOS custom C#/.NET Avalonia shell"
 arch=('x86_64')
 url="https://github.com/helmeri/DottOS"
 license=('custom')
-depends=('dotnet-runtime' 'kwin' 'qt5-wayland' 'qt6-wayland' 'gamemode' 'lib32-gamemode' 'mangohud' 'lib32-mangohud')
+depends=('bluez' 'bluez-utils' 'qt6-connectivity' 'qt6-declarative' 'libpulse' 'openssl' 'dotnet-runtime' 'kwin' 'qt5-wayland' 'qt6-wayland' 'gamemode' 'lib32-gamemode' 'mangohud' 'lib32-mangohud')
 backup=('etc/daisyos/settings.json')
 source=("$pkgname-$pkgver.tar.gz")
 sha256sums=('SKIP')
 
 package() {
+  [[ -x "$srcdir/airpods-root/usr/lib/daisyos/librepods" ]] || { echo "Missing AirPods companion payload" >&2; return 1; }
+  cp -a "$srcdir/airpods-root/." "$pkgdir/"
   if [[ ! -d "$srcdir/gaming-root/usr/local/lib/daisyos" ]]; then
     echo "Missing automatic gaming integration; publish the current release payload first." >&2
     return 1

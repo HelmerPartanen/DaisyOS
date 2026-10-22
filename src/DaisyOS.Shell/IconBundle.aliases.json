@@ -137,5 +137,10 @@
   "file-dashed": "file-not-found",
   "highlighter-circle": "highlighter",
   "text-b": "text-bold",
-  "text-clear-format": "text-clear"
+  "text-clear-format": "text-clear",
+  "airpods": "AirPods",
+  "noisecontrol_off": "NoiseControl_Off",
+  "noisecontrol_anc": "NoiseControl_ANC",
+  "noisecontrol_transparency": "NoiseControl_Transparency",
+  "noisecontrol_adaptive": "NoiseControl_Adaptive"
 }

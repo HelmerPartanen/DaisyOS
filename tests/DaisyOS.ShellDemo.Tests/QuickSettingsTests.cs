@@ -14,6 +14,50 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class QuickSettingsTests
 {
     [AvaloniaFact]
+    public async Task AirPodsControlsShowConfirmedModeCapabilitiesAndRestoreBluetooth()
+    {
+        var panel = new DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings();
+        var window = new Window { Width = 340, SizeToContent = SizeToContent.Height, Content = panel,
+            RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark };
+        window.Show();
+        try
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            if (panel.GetType().GetField("_statusRefreshTask", BindingFlags.NonPublic | BindingFlags.Instance)!.GetValue(panel) is Task refresh)
+                await refresh;
+            panel.GetType().GetField("_bluetoothAvailable", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(panel, true);
+            panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("WifiTile")!.IsVisible = false;
+            panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("EthernetTile")!.IsVisible = true;
+            var apply = panel.GetType().GetMethod("ApplyAirPodsStatus", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var status = new AirPodsStatus(true, true, "AA:BB:CC:DD:EE:FF", "Alex’s AirPods", AirPodsNoiseMode.Anc,
+                [AirPodsNoiseMode.Off, AirPodsNoiseMode.Anc, AirPodsNoiseMode.Transparency], "Left 80%, Right 75%");
+            panel.GetType().GetField("_defaultAudioName", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(panel, status.Name);
+            apply.Invoke(panel, [status]);
+            panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("EthernetTile")!.IsEnabled = true;
+            panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("EthernetTile")!.IsChecked = true;
+            panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("LocalSendTile")!.IsChecked = true;
+            window.UpdateLayout();
+            await Task.Delay(300);
+            Assert.True(panel.FindControl<StackPanel>("AirPodsControls")!.IsVisible);
+            Assert.False(panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("BluetoothTile")!.IsVisible);
+            Assert.True(panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("DndTile")!.IsVisible);
+            Assert.True(panel.FindControl<ToggleButton>("AirPodsAnc")!.IsChecked);
+            Assert.False(panel.FindControl<ToggleButton>("AirPodsAdaptive")!.IsEnabled);
+            Assert.Equal("AirPods", panel.FindControl<DaisyOS.Shell.Controls.QuickSettingsSlider>("VolumeSlider")!.Icon);
+            var buttons = new[] { "Off", "Transparency", "Anc", "Adaptive" }.Select(mode => panel.FindControl<ToggleButton>("AirPods" + mode)!).ToArray();
+            Assert.All(buttons, button => Assert.True(button.Bounds.Width >= 60));
+            Assert.Single(buttons.Where(button => button.IsChecked == true));
+            using var frame = window.CaptureRenderedFrame();
+            frame!.Save("/tmp/daisy-airpods-quick-settings.png");
+            apply.Invoke(panel, [AirPodsStatus.Unavailable]);
+            Assert.False(panel.FindControl<StackPanel>("AirPodsControls")!.IsVisible);
+            Assert.True(panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("BluetoothTile")!.IsVisible);
+            Assert.Equal("speaker-high", panel.FindControl<DaisyOS.Shell.Controls.QuickSettingsSlider>("VolumeSlider")!.Icon);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public void WifiTileUsesSettingsWifiIcon()
     {
         var panel = new DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings();

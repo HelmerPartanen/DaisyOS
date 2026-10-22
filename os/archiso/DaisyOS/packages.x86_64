@@ -12,6 +12,12 @@ pipewire
 pipewire-pulse
 ffmpeg
 wireplumber
+bluez
+bluez-utils
+qt6-connectivity
+qt6-declarative
+libpulse
+openssl
 alsa-utils
 mesa
 libglvnd

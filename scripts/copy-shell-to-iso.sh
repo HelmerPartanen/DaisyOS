@@ -59,6 +59,8 @@ install -d "$iso_root/usr/share/xdg-desktop-portal"
 install -m644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
   "$iso_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
 "$repo_root/scripts/stage-desktop-services.sh" --root "$iso_root"
+[[ -x "$publish_dir/airpods-root/usr/lib/daisyos/librepods" ]] || { echo "Missing AirPods release payload. Publish again." >&2; exit 1; }
+cp -a "$publish_dir/airpods-root/." "$iso_root/"
 
 # Persistent standards-aware launch service and supported one-shot fallback.
 mkdir -p "$iso_root/usr/lib/systemd/user/graphical-session.target.wants"

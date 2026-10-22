@@ -121,6 +121,49 @@ public sealed class LinuxBluetoothServiceTests
         Assert.Equal(["power", action], call.Arguments);
     }
 
+    [Fact]
+    public async Task PairingReportsTrustAndConnectionFailures()
+    {
+        var trustFailure = new LinuxBluetoothService(new ScriptedCommandRunner(Succeeded(), Failed("denied")));
+        Assert.False(await trustFailure.PairDeviceAsync("AA:BB:CC:DD:EE:11"));
+        var connectionFailure = new LinuxBluetoothService(new ScriptedCommandRunner(Succeeded(), Succeeded(), Failed("unreachable")));
+        Assert.False(await connectionFailure.PairDeviceAsync("AA:BB:CC:DD:EE:12"));
+    }
+
+    [Fact]
+    public async Task ManualDisconnectSuppressesReconnectUntilExplicitConnect()
+    {
+        const string address = "AA:BB:CC:DD:EE:13";
+        var runner = new ScriptedCommandRunner(Succeeded());
+        var service = new LinuxBluetoothService(runner);
+        Assert.True(await service.SetConnectedAsync(address, false));
+        Assert.False(LinuxBluetoothService.CanAutoConnect(address));
+        Assert.True(await service.SetConnectedAsync(address, true));
+        Assert.True(LinuxBluetoothService.CanAutoConnect(address));
+        Assert.True(runner.Calls[1].Timeout > TimeSpan.FromSeconds(15));
+    }
+
+    [Fact]
+    public async Task RecognizesRenamedAirPodsByServiceUuid()
+    {
+        var runner = new ScriptedCommandRunner(Succeeded("Powered: yes"),
+            Succeeded("Device AA:BB:CC:DD:EE:14 My earbuds"),
+            Succeeded("Paired: yes\nRSSI: -45\nUUID: 74ec2172-0bad-4d01-8f77-997b2be0722a"));
+        var device = Assert.Single((await new LinuxBluetoothService(runner).GetStatusAsync()).Devices);
+        Assert.Equal("AirPods", device.Type);
+        Assert.True(device.IsNearby);
+    }
+
+    [Fact]
+    public async Task ExplicitEnableCanRecoverASoftBlockedRadio()
+    {
+        var runner = new ScriptedCommandRunner(new CommandResult(1, "org.bluez.Error.Blocked", "", false), Succeeded(), Succeeded());
+        Assert.True(await new LinuxBluetoothService(runner).SetEnabledAsync(true));
+        Assert.Equal("rfkill", runner.Calls[1].FileName);
+        Assert.Equal(["unblock", "bluetooth"], runner.Calls[1].Arguments);
+        Assert.Equal(["power", "on"], runner.Calls[2].Arguments);
+    }
+
     private static CommandResult Succeeded(string output = "") => new(0, output, string.Empty, TimedOut: false);
 
     private static CommandResult Failed(string error) => new(1, string.Empty, error, TimedOut: false);

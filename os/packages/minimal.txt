@@ -7,6 +7,12 @@ networkmanager
 pipewire
 pipewire-pulse
 wireplumber
+bluez
+bluez-utils
+qt6-connectivity
+qt6-declarative
+libpulse
+openssl
 mesa
 libglvnd
 noto-fonts

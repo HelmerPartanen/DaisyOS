@@ -1,0 +1,15 @@
+[Unit]
+Description=DaisyOS AirPods companion (LibrePods)
+PartOf=graphical-session.target
+After=graphical-session.target
+ConditionPathExists=/usr/lib/daisyos/librepods
+
+[Service]
+ExecStart=/usr/lib/daisyos/librepods --hide
+Restart=on-failure
+RestartSec=5
+Environment=QT_QPA_PLATFORM=offscreen
+UMask=0077
+
+[Install]
+WantedBy=graphical-session.target

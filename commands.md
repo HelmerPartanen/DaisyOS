@@ -29,3 +29,10 @@ daisyos-native-development decoration enable
 python3 scripts/benchmark-os-performance.py run --build --output artifacts/performance/after.json
 
 python3 scripts/benchmark-os-performance.py compare artifacts/performance/baseline.json artifacts/performance/after.json
+
+# AIRPODS / LIBREPODS (one-time laptop setup)
+# Dependencies and hardware verification: docs/airpods.md
+scripts/build-librepods.sh
+sudo scripts/install-airpods.sh --install
+systemctl --user daemon-reload
+systemctl --user start daisyos-librepods.service

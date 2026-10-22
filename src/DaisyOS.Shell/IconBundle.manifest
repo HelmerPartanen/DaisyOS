@@ -155,3 +155,6 @@ regular/arrow-clockwise
 # Runtime desktop widget size choices
 regular/widget_extralarge
 regular/widget_extralarge2
+
+# AirPods notification and listening controls
+regular/airpods

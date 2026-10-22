@@ -4,6 +4,18 @@
              x:Class="DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings"
              Width="340" ClipToBounds="False">
   <UserControl.Styles>
+    <Style Selector="ToggleButton.AirPodsMode">
+      <Setter Property="Height" Value="{DynamicResource QuickSettingsControlHeight}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="ToggleButton.AirPodsMode:checked">
+      <Setter Property="Background" Value="{DynamicResource QuickSettingActiveSurfaceBrush}" />
+    </Style>
+
 <!-- ========================================================= -->
 <!-- OUTPUT DEVICES                                            -->
 <!-- ========================================================= -->
@@ -245,6 +257,7 @@
 
                 <controls:DaisyIcon
                     Icon="caret-right"
+                    Foreground="{DynamicResource ContentSecondaryBrush}"
                     Size="{DynamicResource IconSizeStandard}"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"/>
@@ -252,6 +265,45 @@
               </Button>
             </Grid>
           </Border>
+
+          <StackPanel x:Name="AirPodsControls" IsVisible="False" Spacing="8">
+            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
+              <StackPanel Grid.Column="0" Spacing="4">
+                <ToggleButton x:Name="AirPodsOff" Classes="ShellButton QuickSetting AirPodsMode" Tag="Off"
+                              AutomationProperties.Name="Off" ToolTip.Tip="Off"
+                              Click="OnAirPodsModeClicked">
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Off" Size="24" />
+                </ToggleButton>
+                <TextBlock Text="Off" FontSize="11" HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Grid.Column="1" Spacing="4">
+                <ToggleButton x:Name="AirPodsTransparency" Classes="ShellButton QuickSetting AirPodsMode" Tag="Transparency"
+                              AutomationProperties.Name="Transparency" ToolTip.Tip="Transparency"
+                              Click="OnAirPodsModeClicked">
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Transparency" Size="24" />
+                </ToggleButton>
+                <TextBlock Text="Transparency" FontSize="11" HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Grid.Column="2" Spacing="4">
+                <ToggleButton x:Name="AirPodsAnc" Classes="ShellButton QuickSetting AirPodsMode" Tag="Anc"
+                              AutomationProperties.Name="ANC" ToolTip.Tip="ANC"
+                              Click="OnAirPodsModeClicked">
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_ANC" Size="24" />
+                </ToggleButton>
+                <TextBlock Text="ANC" FontSize="11" HorizontalAlignment="Center" />
+              </StackPanel>
+              <StackPanel Grid.Column="3" Spacing="4">
+                <ToggleButton x:Name="AirPodsAdaptive" Classes="ShellButton QuickSetting AirPodsMode" Tag="Adaptive"
+                              AutomationProperties.Name="Adaptive" ToolTip.Tip="Adaptive"
+                              Click="OnAirPodsModeClicked">
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Adaptive" Size="24" />
+                </ToggleButton>
+                <TextBlock Text="Adaptive" FontSize="11" HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+            <TextBlock x:Name="AirPodsDetail" IsVisible="False" TextWrapping="Wrap" FontSize="11"
+                       Foreground="{DynamicResource ContentSecondaryBrush}" />
+          </StackPanel>
 
         </StackPanel>
 
@@ -269,6 +321,7 @@
               Title="{DynamicResource Loc_3D1E662940E7}"
               BackClicked="OnOutputDevicesBackClicked"/>
 
+          <Button Content="Bluetooth devices" Classes="ShellButton" Click="OnBluetoothDevicesButtonClicked" />
           <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="OutputDevicesHost"

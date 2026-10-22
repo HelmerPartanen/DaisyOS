@@ -15,6 +15,12 @@ foot
 mesa-utils
 pipewire
 wireplumber
+bluez
+bluez-utils
+qt6-connectivity
+qt6-declarative
+libpulse
+openssl
 wl-clipboard
 wayland-utils
 xterm

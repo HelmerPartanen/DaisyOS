@@ -100,3 +100,5 @@ src/native/daisy_portal_shortcuts/build/
 
 # Native window-menu renderer build output.
 src/native/daisy_window_menu/build/
+!packaging/librepods/
+!packaging/librepods/**

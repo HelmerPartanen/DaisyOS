@@ -36,6 +36,10 @@ public partial class QuickSettings : UserControl
     private bool _isUpdatingVolumeFromService;
     private string? _demoConnectedWifi = "DaisyOS Guest";
     private Task? _statusRefreshTask;
+    private bool _airPodsModePending;
+    private bool _bluetoothAvailable = true;
+    private string _defaultAudioName = "";
+    private bool HasConnectedAirPods => (Application.Current as App)?.AirPods?.Status.IsConnected == true;
 
     public event EventHandler? DismissRequested;
     public event EventHandler? ConsoleModeRequested;
@@ -53,6 +57,7 @@ public partial class QuickSettings : UserControl
             {
                 app.Notifications.DoNotDisturbChanged += OnDoNotDisturbChanged;
                 app.LocalSendReceivingChanged += OnLocalSendReceivingChanged;
+                if (app.AirPods is { } pods) pods.Changed += UpdateAirPodsPresentation;
             }
             ApplyLocalSettings();
             RefreshStatus();
@@ -64,6 +69,7 @@ public partial class QuickSettings : UserControl
             {
                 app.Notifications.DoNotDisturbChanged -= OnDoNotDisturbChanged;
                 app.LocalSendReceivingChanged -= OnLocalSendReceivingChanged;
+                if (app.AirPods is { } pods) pods.Changed -= UpdateAirPodsPresentation;
             }
         };
     }
@@ -117,6 +123,7 @@ public partial class QuickSettings : UserControl
             }
         }
         UpdateQuickSettingsTileLayout();
+        UpdateAirPodsPresentation();
     }
 
     private void OnDoNotDisturbChanged(object? sender, bool isDnd)
@@ -283,13 +290,15 @@ public partial class QuickSettings : UserControl
             var bluetoothTask = _bluetoothService.GetAdapterStatusAsync();
             var batteryTask = _batteryService.GetStatusAsync();
             var volumeTask = _audioService.GetVolumeAsync();
-            await Task.WhenAll(networkTask, wifiTask, bluetoothTask, batteryTask, volumeTask);
+            var audioDevicesTask = _audioService.GetAudioDevicesAsync();
+            await Task.WhenAll(networkTask, wifiTask, bluetoothTask, batteryTask, volumeTask, audioDevicesTask);
 
             var network = await networkTask;
             var wifi = await wifiTask;
             var bluetooth = await bluetoothTask;
             var battery = await batteryTask;
             var volume = await volumeTask;
+            _defaultAudioName = (await audioDevicesTask).FirstOrDefault(device => device.IsDefault)?.Name ?? "";
             UpdateNetworkPresentation(network, wifi, bluetooth);
             if (this.FindControl<QuickSettingTile>("LocalSendTile") is { } localSendTile) localSendTile.IsChecked = (Application.Current as App)?.IsLocalSendReceivingEnabled == true;
             if (this.FindControl<QuickSettingTile>("GamingTile") is { } gamingTile) gamingTile.IsChecked = _sessionState.GamingMode;
@@ -359,11 +368,11 @@ public partial class QuickSettings : UserControl
             this.FindControl<QuickSettingTile>("WifiTile"),
             this.FindControl<QuickSettingTile>("EthernetTile"),
             this.FindControl<QuickSettingTile>("BluetoothTile"),
-            this.FindControl<QuickSettingTile>("DndTile"),
             this.FindControl<QuickSettingTile>("LocalSendTile"),
             this.FindControl<QuickSettingTile>("NightLightTile"),
             this.FindControl<QuickSettingTile>("ThemeTile"),
-            this.FindControl<QuickSettingTile>("GamingTile")
+            this.FindControl<QuickSettingTile>("GamingTile"),
+            this.FindControl<QuickSettingTile>("DndTile")
         }.Where(tile => tile?.IsVisible == true).Cast<QuickSettingTile>().ToArray();
 
         grid.RowDefinitions = new RowDefinitions(string.Join(',', Enumerable.Repeat("Auto", Math.Max(1, (int)Math.Ceiling(tiles.Length / 3d)))));
@@ -450,7 +459,9 @@ public partial class QuickSettings : UserControl
         var content = new Grid { ColumnDefinitions = new ColumnDefinitions("20,*,20") };
         var outputIcon = new DaisyIcon
         {
-            Icon = MapAudioIcon(device.IconGlyph),
+            Icon = device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(device.Name, (Application.Current as App)?.AirPods?.Status.Name, StringComparison.OrdinalIgnoreCase)
+                ? "AirPods" : MapAudioIcon(device.IconGlyph),
             Size = 18,
             VerticalAlignment = VerticalAlignment.Center
         };
@@ -535,6 +546,7 @@ public partial class QuickSettings : UserControl
     private async Task RefreshOutputDevicesAsync()
     {
         await LoadOutputDevicesAsync();
+        RefreshStatus();
     }
 
     private async Task LoadWifiNetworksAsync()
@@ -790,7 +802,10 @@ public partial class QuickSettings : UserControl
         button.Classes.Set("ConnectedBluetoothDevice", device.IsConnected);
         button.Click += async (_, _) =>
         {
-            if (!await _bluetoothService.SetConnectedAsync(device.Address, !device.IsConnected))
+            button.IsEnabled = false;
+            if (!(device.IsPaired
+                ? await _bluetoothService.SetConnectedAsync(device.Address, !device.IsConnected)
+                : await _bluetoothService.PairDeviceAsync(device.Address)))
             {
                 ToolTip.SetTip(button, Loc.Get("Couldn’t change this device connection."));
                 ReportFailure("Couldn’t change that Bluetooth connection.");
@@ -821,6 +836,7 @@ public partial class QuickSettings : UserControl
     {
         var type = device.Type;
         var name = device.Name;
+        if (Contains(type, "AirPods") || Contains(name, "AirPods")) return "AirPods";
         if (Contains(type, "audio") || Contains(type, "headphone") || Contains(type, "headset") || Contains(name, "bud")) return "headphones";
         if (Contains(type, "keyboard") || Contains(name, "keyboard") || Contains(name, "keychron")) return "keyboard";
         if (Contains(type, "mouse") || Contains(name, "mouse") || Contains(name, "master")) return "mouse";
@@ -867,6 +883,7 @@ public partial class QuickSettings : UserControl
         var ethernetIsActive = network.IsConnected && network.ConnectionKind == NetworkConnectionKind.Ethernet;
         var wifiReceiverMissing = !wifi.IsAvailable;
         var bluetoothReceiverMissing = !bluetooth.IsAvailable;
+        _bluetoothAvailable = bluetooth.IsAvailable;
 
         if (this.FindControl<QuickSettingTile>("WifiTile") is { } wifiTile)
         {
@@ -884,14 +901,62 @@ public partial class QuickSettings : UserControl
         }
         if (this.FindControl<QuickSettingTile>("BluetoothTile") is { } bluetoothTile)
         {
-            bluetoothTile.IsVisible = !bluetoothReceiverMissing;
+            bluetoothTile.IsVisible = !bluetoothReceiverMissing && !HasConnectedAirPods;
             bluetoothTile.IsEnabled = bluetooth.IsAvailable;
             bluetoothTile.IsChecked = bluetooth.IsEnabled;
             bluetoothTile.ToolTipText = Loc.Get(bluetooth.IsEnabled ? "Turn off Bluetooth" : "Turn on Bluetooth");
         }
         UpdateQuickSettingsTileLayout();
+        UpdateAirPodsPresentation();
         NetworkStatusChanged?.Invoke(network, wifi, bluetooth);
 
+    }
+
+    private void UpdateAirPodsPresentation() => ApplyAirPodsStatus((Application.Current as App)?.AirPods?.Status ?? AirPodsStatus.Unavailable);
+
+    private void ApplyAirPodsStatus(AirPodsStatus status)
+    {
+        if (this.FindControl<StackPanel>("AirPodsControls") is { } controls)
+        {
+            controls.IsVisible = status.IsConnected;
+            ToolTip.SetTip(controls, string.IsNullOrEmpty(status.Battery) ? status.Name : $"{status.Name} · {status.Battery}");
+        }
+        if (this.FindControl<QuickSettingTile>("BluetoothTile") is { } bluetooth)
+            bluetooth.IsVisible = _bluetoothAvailable && !status.IsConnected;
+        foreach (var mode in Enum.GetValues<AirPodsNoiseMode>())
+        {
+            if (this.FindControl<ToggleButton>("AirPods" + mode) is not { } button) continue;
+            button.IsChecked = status.NoiseMode == mode;
+            button.IsEnabled = !_airPodsModePending && status.IsConnected && status.SupportedModes.Contains(mode);
+        }
+        if (this.FindControl<TextBlock>("AirPodsDetail") is { } detail)
+        {
+            detail.Text = !status.IsAvailable ? "AirPods connected. Listening controls are unavailable; check the LibrePods service."
+                : status.SupportedModes.Count == 0 ? "Listening controls are not available for this AirPods model." : "";
+            detail.IsVisible = status.IsConnected && detail.Text.Length > 0;
+        }
+        if (this.FindControl<QuickSettingsSlider>("VolumeSlider") is { } volume)
+        {
+            var airPodsOutput = status.IsConnected && (string.Equals(_defaultAudioName, status.Name, StringComparison.OrdinalIgnoreCase)
+                || _defaultAudioName.Contains("AirPods", StringComparison.OrdinalIgnoreCase));
+            volume.Icon = airPodsOutput ? "AirPods" : "speaker-high";
+            ToolTip.SetTip(volume, string.IsNullOrEmpty(_defaultAudioName) ? Loc.Get("Volume") : _defaultAudioName);
+        }
+        UpdateQuickSettingsTileLayout();
+    }
+
+    private async void OnAirPodsModeClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not ToggleButton button || !Enum.TryParse<AirPodsNoiseMode>(button.Tag?.ToString(), out var mode)
+            || (Application.Current as App)?.AirPods is not { } pods || _airPodsModePending) return;
+        _airPodsModePending = true;
+        UpdateAirPodsPresentation();
+        try
+        {
+            if (!await pods.SetModeAsync(mode))
+                ReportFailure("Your AirPods didn’t confirm that listening mode. Check that they’re in your ears and try again.");
+        }
+        finally { _airPodsModePending = false; UpdateAirPodsPresentation(); }
     }
 
     private enum QuickSettingsPage

@@ -5,7 +5,8 @@ public sealed record BluetoothDevice(
     string Name,
     bool IsConnected,
     bool IsPaired,
-    string Type = "Unknown");
+    string Type = "Unknown",
+    bool IsNearby = false);
 
 public sealed record BluetoothStatus(
     bool IsAvailable,

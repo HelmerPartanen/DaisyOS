@@ -9,6 +9,36 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
 {
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(5);
     private readonly ICommandRunner _commandRunner;
+    private static readonly global::System.Collections.Concurrent.ConcurrentDictionary<string, byte> ManualDisconnects = new(StringComparer.OrdinalIgnoreCase);
+
+    public static bool CanAutoConnect(string address) => !ManualDisconnects.ContainsKey(address)
+        && (DisconnectMarker(address) is not { } marker || !File.Exists(marker));
+
+    private static string? DisconnectMarker(string address)
+    {
+        if (!DeviceAddressRegex().IsMatch(address)) return null;
+        var runtime = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR");
+        return string.IsNullOrEmpty(runtime) ? null : Path.Combine(runtime, "daisyos-bluetooth", address + ".disconnected");
+    }
+
+    private void RememberConnectionChoice(string address, bool connected)
+    {
+        if (connected) ManualDisconnects.TryRemove(address, out _);
+        else ManualDisconnects[address] = 0;
+        // The standalone Settings app and shell must share explicit disconnects.
+        // Runtime storage expires with the login session; test runners stay in memory.
+        if (_commandRunner is not SafeCommandRunner || DisconnectMarker(address) is not { } marker) return;
+        try
+        {
+            if (connected) File.Delete(marker);
+            else
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(marker)!);
+                File.WriteAllText(marker, "manual disconnect");
+            }
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+    }
 
     public LinuxBluetoothService(ICommandRunner commandRunner)
     {
@@ -78,7 +108,8 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
                         type = ParseDeviceType(resultInfo.StandardOutput);
                     }
 
-                    devices.Add(new BluetoothDevice(address, name, isConnected, isPaired, type));
+                    devices.Add(new BluetoothDevice(address, name, isConnected, isPaired, type,
+                        resultInfo.Succeeded && resultInfo.StandardOutput.Contains("RSSI:", StringComparison.Ordinal)));
                 }
             }
             else
@@ -169,21 +200,25 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
             CommandTimeout,
             cancellationToken);
 
-        if (!result.Succeeded)
+        if (enabled && !result.Succeeded &&
+            (result.StandardError.Contains("rfkill", StringComparison.OrdinalIgnoreCase) ||
+             result.StandardOutput.Contains("Blocked", StringComparison.OrdinalIgnoreCase)))
         {
-            return false;
+            var unblock = await _commandRunner.RunAsync("rfkill", ["unblock", "bluetooth"], CommandTimeout, cancellationToken);
+            if (unblock.Succeeded)
+                result = await _commandRunner.RunAsync("bluetoothctl", ["power", "on"], CommandTimeout, cancellationToken);
         }
-
-        return true;
+        return result.Succeeded;
     }
 
     public async Task<bool> SetConnectedAsync(string address, bool connected, CancellationToken cancellationToken = default)
     {
         if (!DeviceAddressRegex().IsMatch(address)) return false;
+        RememberConnectionChoice(address, connected);
         var result = await _commandRunner.RunAsync(
             "bluetoothctl",
-            ["--timeout", "5", connected ? "connect" : "disconnect", address],
-            CommandTimeout,
+            ["--timeout", "15", connected ? "connect" : "disconnect", address],
+            TimeSpan.FromSeconds(16),
             cancellationToken);
         return result.Succeeded;
     }
@@ -224,20 +259,23 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
         }
 
         // Trust device so it reconnects automatically
-        await _commandRunner.RunAsync(
+        var trustResult = await _commandRunner.RunAsync(
             "bluetoothctl",
             ["--timeout", "3", "trust", address],
             TimeSpan.FromSeconds(4),
             cancellationToken);
 
-        // Connect immediately after pairing
-        await _commandRunner.RunAsync(
+        if (!trustResult.Succeeded) return false;
+
+        // Connect immediately after pairing and report the actual outcome.
+        var connectResult = await _commandRunner.RunAsync(
             "bluetoothctl",
             ["--timeout", "10", "connect", address],
             TimeSpan.FromSeconds(11),
             cancellationToken);
 
-        return true;
+        if (connectResult.Succeeded) RememberConnectionChoice(address, true);
+        return connectResult.Succeeded;
     }
 
     public async Task<bool> ForgetDeviceAsync(string address, CancellationToken cancellationToken = default)
@@ -259,6 +297,7 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
 
     private static string ParseDeviceType(string output)
     {
+        if (output.Contains("74ec2172-0bad-4d01-8f77-997b2be0722a", StringComparison.OrdinalIgnoreCase)) return "AirPods";
         var icon = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .FirstOrDefault(line => line.StartsWith("Icon:", StringComparison.OrdinalIgnoreCase));
 

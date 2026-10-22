@@ -170,6 +170,7 @@ public partial class App : Application
     public ShellSessionState SessionState { get; } = new();
     public ShellFeedbackService Feedback { get; } = new();
     public NotificationService Notifications { get; } = new();
+    public AirPodsCoordinator? AirPods { get; private set; }
     public NativeAppWindowTracker WindowTracker => _nativeWindowTracker;
     // The persisted preference must be available before the first native
     // background surface maps. A native shell restart constructs that surface
@@ -316,6 +317,7 @@ public partial class App : Application
             {
                 traceLifetime.Cancel();
                 gamingAutomation.Dispose();
+                AirPods?.Dispose();
                 _ = AppTray.DisposeAsync();
                 SessionState.Changed -= OnGamingPrefetchPolicyChanged;
                 _recentPrefetch.Dispose();
@@ -324,6 +326,11 @@ public partial class App : Application
                 _blurEffects.Clear();
             };
             StartNotificationDaemonService();
+            if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("DAISYOS_SHELL_DEMO") != "1")
+            {
+                AirPods = new AirPodsCoordinator(this);
+                AirPods.Start();
+            }
             if (IsNativeShellSession) _ = AppTray.StartAsync();
             StartLocalSendService();
             StartIdleLockService();
@@ -2039,6 +2046,12 @@ public partial class App : Application
 
     private void OnNotificationActionTriggered(object? sender, NotificationItem notification)
     {
+        const string airPodsPrefix = "airpods-connect:";
+        if (notification.ActionId?.StartsWith(airPodsPrefix, StringComparison.Ordinal) == true)
+        {
+            if (AirPods is { } pods) _ = pods.ConnectAsync(notification.ActionId[airPodsPrefix.Length..]);
+            return;
+        }
         const string forceQuitPrefix = "force-quit:";
         if (notification.ActionId?.StartsWith(forceQuitPrefix, StringComparison.Ordinal) == true)
         {
