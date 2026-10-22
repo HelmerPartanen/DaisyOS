@@ -128,4 +128,34 @@ public sealed class BottomChromeTests
         shell.SetBottomBarAutoHide(false, false, false);
         desktop.ViewModel.BottomMediaWidgetVisible = false;
     }
+
+    [AvaloniaFact]
+    public void LockScreenSuppressesAllBottomChromeAndEdgeReveal()
+    {
+        var shell = new ShellView();
+        shell.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
+        shell.Resources["MotionDurationShellExit"] = TimeSpan.Zero;
+        shell.FindControl<DesktopView>("Desktop")!.ViewModel.BottomMediaWidgetVisible = true;
+        shell.SetBottomBarAutoHide(false, false, false);
+
+        Assert.True(shell.Taskbar.IsVisible);
+        Assert.True(shell.SystemBar.IsVisible);
+        Assert.True(shell.MediaWidget.IsVisible);
+
+        shell.SetLockScreenActive(true);
+
+        Assert.False(shell.Taskbar.IsVisible);
+        Assert.False(shell.SystemBar.IsVisible);
+        Assert.False(shell.MediaWidget.IsVisible);
+        Assert.True(shell.IsBottomPanelInputPassthrough);
+        Assert.False(shell.IsBottomEdgeSensorEnabled);
+        shell.RevealBottomBarAt(640, 1280);
+        Assert.True(shell.IsBottomPanelInputPassthrough);
+
+        shell.SetLockScreenActive(false);
+
+        Assert.True(shell.Taskbar.IsVisible);
+        Assert.True(shell.SystemBar.IsVisible);
+        Assert.True(shell.MediaWidget.IsVisible);
+    }
 }

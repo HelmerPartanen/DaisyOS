@@ -61,6 +61,8 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
 
     internal override WSurfaceEventSinkProxy EventSink => _eventSink;
 
+    protected override void OnScaleChanged(double scale) => _eventSink.OnScaleChanged(scale);
+
     public override void OnConnected(WaylandConnection connection, WaylandGlobals globals)
     {
         var options = _options ?? throw new InvalidOperationException(

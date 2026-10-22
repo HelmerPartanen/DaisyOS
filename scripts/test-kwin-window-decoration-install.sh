@@ -38,7 +38,11 @@ grep -Fq 'daisyos-window-decorationrc' "$repo_root/src/DaisyOS.Shell/Services/Th
 grep -Fq '.local/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so' "$repo_root/scripts/daisyos-native-development-session"
 grep -Fq '.local/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so' "$repo_root/scripts/daisyos-native-development"
 
-cmake -S "$plugin_source" -B "$temp_dir/build" -G Ninja -DCMAKE_BUILD_TYPE=Debug >/dev/null
+cmake_generator=()
+if command -v ninja >/dev/null 2>&1; then
+  cmake_generator=(-G Ninja)
+fi
+cmake -S "$plugin_source" -B "$temp_dir/build" "${cmake_generator[@]}" -DCMAKE_BUILD_TYPE=Debug >/dev/null
 cmake --build "$temp_dir/build" >/dev/null
 [[ -f "$temp_dir/build/org.daisyos.decoration.so" ]]
 grep -a -Fq 'org.daisyos.decoration' "$temp_dir/build/org.daisyos.decoration.so"

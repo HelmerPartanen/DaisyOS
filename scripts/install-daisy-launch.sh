@@ -5,7 +5,7 @@ repo_root="$(cd -- "$(dirname -- "$0")/.." && pwd)"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 config_home="${XDG_CONFIG_HOME:-$HOME/.config}"
 install -Dm755 "$repo_root/services/DaisyLaunch/build/daisy-launch" "$HOME/.local/bin/daisy-launch"
-install -Dm644 "$repo_root/packaging/systemd/daisy-launch.service" "$config_home/systemd/user/daisy-launch.service"
+install -Dm644 "$repo_root/scripts/daisy-launch.service" "$config_home/systemd/user/daisy-launch.service"
 mkdir -p "$data_home/dbus-1/services"
 cat > "$data_home/dbus-1/services/org.daisyos.Launcher1.service" <<SERVICE
 [D-BUS Service]

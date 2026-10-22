@@ -7,15 +7,17 @@ app_icon_dir="$repo_root/src/DaisyOS.Shell/Assets/AppIcons"
 application_dir="$source_dir/applications"
 prefix="/"
 build_type="Release"
+user_install=false
 
 usage() {
   cat <<'EOF'
-Usage: scripts/install-kwin-window-decoration.sh [--prefix PATH] [--debug]
+Usage: scripts/install-kwin-window-decoration.sh [--prefix PATH] [--user] [--debug]
 
 Builds and installs the DaisyOS KDecoration3 plugin. Normal installation also
 installs the DaisyOS app-ID desktop metadata and high-quality app icons that
 let KWin resolve the correct icon for each server-decorated native window.
 It therefore requires administrator privileges.
+--user installs the plugin and app metadata below ~/.local without privileges.
 --prefix is intended for staging and installer tests.
 EOF
 }
@@ -31,6 +33,10 @@ while (($# > 0)); do
       build_type="Debug"
       shift
       ;;
+    --user)
+      user_install=true
+      shift
+      ;;
     --help|-h)
       usage
       exit 0
@@ -43,12 +49,12 @@ while (($# > 0)); do
   esac
 done
 
-if [[ "$prefix" == "/" && "$EUID" -ne 0 ]]; then
+if [[ "$prefix" == "/" && "$user_install" == false && "$EUID" -ne 0 ]]; then
   echo "Administrator privileges are required. Run: sudo $0" >&2
   exit 1
 fi
 
-for command in cmake ninja c++; do
+for command in cmake c++; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "Missing build dependency: $command" >&2
     exit 1
@@ -100,7 +106,11 @@ done
 
 build_dir="$(mktemp -d "${TMPDIR:-/tmp}/daisyos-kdecoration.XXXXXX")"
 trap 'rm -rf -- "$build_dir"' EXIT
-cmake -S "$source_dir" -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE="$build_type"
+cmake_generator=()
+if command -v ninja >/dev/null 2>&1; then
+  cmake_generator=(-G Ninja)
+fi
+cmake -S "$source_dir" -B "$build_dir" "${cmake_generator[@]}" -DCMAKE_BUILD_TYPE="$build_type"
 cmake --build "$build_dir"
 
 plugin_source="$build_dir/org.daisyos.decoration.so"
@@ -114,10 +124,17 @@ if ! grep -a -Fq 'org.daisyos.decoration' "$plugin_source"; then
   exit 1
 fi
 
-install_root="$prefix$plugin_root"
-manifest_root="$prefix/etc/daisyos"
-applications_root="$prefix/usr/share/applications"
-icons_root="$prefix/usr/share/icons/hicolor/256x256/apps"
+if [[ "$user_install" == true ]]; then
+  install_root="$HOME/.local/lib/qt6/plugins/org.kde.kdecoration3"
+  manifest_root="${XDG_CONFIG_HOME:-$HOME/.config}/DaisyOS"
+  applications_root="${XDG_DATA_HOME:-$HOME/.local/share}/applications"
+  icons_root="${XDG_DATA_HOME:-$HOME/.local/share}/icons/hicolor/256x256/apps"
+else
+  install_root="$prefix$plugin_root"
+  manifest_root="$prefix/etc/daisyos"
+  applications_root="$prefix/usr/share/applications"
+  icons_root="$prefix/usr/share/icons/hicolor/256x256/apps"
+fi
 install -d -m 0755 "$install_root" "$manifest_root" "$applications_root" "$icons_root"
 install -m 0755 "$plugin_source" "$install_root/org.daisyos.decoration.so"
 
@@ -139,14 +156,14 @@ for app_id in "${!app_icons[@]}"; do
   install -m 0644 "$application_dir/org.daisyos.$app_id.desktop" "$applications_root/org.daisyos.$app_id.desktop"
 done
 
-if [[ "$prefix" == "/" ]]; then
+if [[ "$prefix" == "/" && "$user_install" == false ]]; then
   command -v gtk-update-icon-cache >/dev/null 2>&1 && gtk-update-icon-cache -f -t /usr/share/icons/hicolor || true
   command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database /usr/share/applications || true
 fi
 
 cat > "$manifest_root/kwin-window-decoration.conf" <<EOF
 DAISYOS_KWIN_DECORATION_PLUGIN=org.daisyos.decoration
-DAISYOS_KWIN_DECORATION_PATH=$plugin_root/org.daisyos.decoration.so
+DAISYOS_KWIN_DECORATION_PATH=$install_root/org.daisyos.decoration.so
 EOF
 chmod 0644 "$manifest_root/kwin-window-decoration.conf"
 

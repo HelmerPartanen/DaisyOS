@@ -38,6 +38,7 @@ internal static class Program
             DaisyOS.Shell.Program.BuildAvaloniaApp(() => new App((app, desktop) =>
             {
                 var window = ClientSideDecorationsWindow.Create(() => new FilesWindow(request.Paths.FirstOrDefault(), request.SelectItems));
+                DaisyOS.Shell.Services.NativeAppWindowSizing.Apply(window);
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
                     WaylandWindow.SetAppId(window, DaisyOS.Shell.Services.Diagnostics.ApplicationPerformanceProbe.AppId("files"));
                 DaisyOS.Shell.Services.Diagnostics.ApplicationPerformanceProbe.Attach(window, "files");

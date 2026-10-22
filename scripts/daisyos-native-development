@@ -86,7 +86,18 @@ restart_shell() {
   fi
 
   echo "Building DaisyOS before restarting the native shell..."
-  "$source_root/scripts/build-mpv-wallpaper.sh" || return 1
+  local mpv_build_status=0
+  "$source_root/scripts/build-mpv-wallpaper.sh" || mpv_build_status=$?
+  case "$mpv_build_status" in
+    0) ;;
+    3)
+      echo "Continuing without rebuilding the optional video-wallpaper backend."
+      ;;
+    *)
+      echo "Video-wallpaper backend build failed. The running desktop was left untouched." >&2
+      return "$mpv_build_status"
+      ;;
+  esac
   # Match the supervisor's executable. Older active supervisors run Debug and
   # have no configuration record; changing that path requires a new login.
   local shell_configuration

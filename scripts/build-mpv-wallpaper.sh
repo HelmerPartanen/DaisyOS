@@ -7,7 +7,9 @@ if ! pkg-config --exists mpv && [[ -d "$local_prefix/lib/pkgconfig" ]]; then
 fi
 if ! pkg-config --exists mpv; then
   echo "libmpv development files are required. Install mpv or run scripts/build-local-mpv.sh." >&2
-  exit 1
+  # Exit distinctly so development-only callers may treat an unavailable
+  # optional video-wallpaper backend differently from an actual build error.
+  exit 3
 fi
 cmake -S "$repo_root/src/native/daisy_mpv_wallpaper" -B "$repo_root/src/native/daisy_mpv_wallpaper/build" -DCMAKE_BUILD_TYPE=Release -U '*MPV*'
 cmake --build "$repo_root/src/native/daisy_mpv_wallpaper/build" -j 4

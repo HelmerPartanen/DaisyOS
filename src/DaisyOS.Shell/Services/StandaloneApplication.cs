@@ -34,6 +34,7 @@ public static class StandaloneApplication
             Program.BuildAvaloniaApp(() => new App((app, desktop) =>
             {
                 var window = ClientSideDecorationsWindow.Create(() => create(app));
+                NativeAppWindowSizing.Apply(window);
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
                     WaylandWindow.SetAppId(window, Diagnostics.ApplicationPerformanceProbe.AppId(id));
                 Diagnostics.ApplicationPerformanceProbe.Attach(window, id);

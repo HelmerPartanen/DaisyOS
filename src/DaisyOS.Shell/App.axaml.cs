@@ -2618,6 +2618,8 @@ public partial class App : Application
         _lockScreenWindow.Closed += (_, _) =>
         {
             _lockScreenWindow = null;
+            _shellView?.SetLockScreenActive(false);
+            if (_shellView is not null) ApplyNativeBottomChromeState(_shellView);
             DesktopOcclusionChanged?.Invoke(this, EventArgs.Empty);
             foreach (var win in _secondaryLockScreens)
             {
@@ -2626,6 +2628,8 @@ public partial class App : Application
             _secondaryLockScreens.Clear();
             _idleLockService?.StartMonitoring();
         };
+        _shellView?.SetLockScreenActive(true);
+        if (_shellView is not null) ApplyNativeBottomChromeState(_shellView);
         _lockScreenWindow.Show();
         DesktopOcclusionChanged?.Invoke(this, EventArgs.Empty);
 
@@ -2675,6 +2679,7 @@ public partial class App : Application
     private void ShowNormalApplicationWindow(Window window)
     {
         DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.Mark("app.window.show", window.GetType().Name);
+        NativeAppWindowSizing.Apply(window);
         window.AddHandler(InputElement.PointerPressedEvent, (_, _) => _recentPrefetch.Interaction(), RoutingStrategies.Tunnel, handledEventsToo: true);
         window.AddHandler(InputElement.KeyDownEvent, (_, _) => _recentPrefetch.Interaction(), RoutingStrategies.Tunnel, handledEventsToo: true);
         if (IsNativeShellSession)
@@ -2801,6 +2806,11 @@ public partial class App : Application
     {
         if (_useDesktopSettings) { await ApplyDesktopSettingAsync("image-wallpaper"); return; }
         var source = GetSafeWallpaperUri(_appearanceSettings.WallpaperUri);
+        if (WallpaperSource.TryGetSolidColor(source, out _) && TryGetDefaultImageWallpaper() is { } defaultImage)
+        {
+            source = defaultImage;
+            _appearanceSettings.WallpaperUri = defaultImage;
+        }
         _appearanceSettings.UseSolidWallpaper = false;
         if (_wallpaperService is not null)
         {
@@ -2809,6 +2819,19 @@ public partial class App : Application
 
         await PersistAppearanceAsync();
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    private static string? TryGetDefaultImageWallpaper()
+    {
+        var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+        var installed = Path.Combine(home, ".config", "DaisyOS", "wallpaper.jpg");
+        if (File.Exists(installed)) return installed;
+
+        var output = new DirectoryInfo(AppContext.BaseDirectory);
+        var repository = output.Parent?.Parent?.Parent?.Parent?.Parent;
+        var development = repository is null ? null : Path.Combine(repository.FullName,
+            "os", "archiso", "DaisyOS", "airootfs", "etc", "skel", ".config", "DaisyOS", "wallpaper.jpg");
+        return development is not null && File.Exists(development) ? development : null;
     }
 
     private static ThemeVariant ToThemeVariant(ThemeMode mode) =>
@@ -3008,6 +3031,6 @@ public partial class App : Application
                (0.0722 * Linearize(color.B));
     }
 
-    private static readonly string[] NativeAppIds = ["notes", "calendar", "calculator", "settings", "files", "uikit", "appstore", "diskmanager"];
+    private static readonly string[] NativeAppIds = ["notes", "calendar", "calculator", "settings", "files", "uikit", "appstore", "taskmanager", "diskmanager"];
 
 }

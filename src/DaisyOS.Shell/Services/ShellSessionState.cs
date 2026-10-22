@@ -9,6 +9,13 @@ namespace DaisyOS.Shell.Services;
 /// </summary>
 public sealed class ShellSessionState
 {
+    public static readonly IReadOnlyList<string> DefaultDockOrder =
+    [
+        "org.daisyos.files", "org.daisyos.notes", "org.daisyos.calendar",
+        "org.daisyos.calculator", "org.daisyos.settings", "org.daisyos.appstore",
+        "org.daisyos.taskmanager", "org.daisyos.diskmanager", "org.daisyos.uikit"
+    ];
+
     private readonly string _path;
     private PersistedShellState _state;
     private readonly object _sync = new();
@@ -35,6 +42,12 @@ public sealed class ShellSessionState
                 ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state"),
             "DaisyOS", "shell-state.json");
         _state = Load();
+        if (_state.DockDefaultsInitialized != true)
+        {
+            _state.DockOrder = DefaultDockOrder.ToList();
+            _state.DockDefaultsInitialized = true;
+            Save(_state);
+        }
     }
 
     public bool DoNotDisturb { get => _state.DoNotDisturb; set { if (RemoteWrite is { } remote) remote("dnd", [value.ToString()]); else Update(s => s.DoNotDisturb = value); } }
@@ -180,6 +193,7 @@ public sealed class ShellSessionState
         public bool ShowDateInSystemBar { get; set; }
         public double? LastKnownVolume { get; set; }
         public List<string> DockOrder { get; set; } = [];
+        public bool? DockDefaultsInitialized { get; set; }
         public Dictionary<string, string> Preferences { get; set; } = new(StringComparer.Ordinal);
         public Dictionary<string, ApplicationUsageState> ApplicationUsage { get; set; } = new(StringComparer.Ordinal);
     }

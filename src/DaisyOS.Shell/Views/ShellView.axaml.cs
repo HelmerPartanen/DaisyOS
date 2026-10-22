@@ -60,6 +60,7 @@ namespace DaisyOS.Shell.Views
         private bool _taskbarRevealed;
         private bool _systemBarRevealed;
         private bool _externalFullscreenActive;
+        private bool _lockScreenActive;
         private bool _bottomBarVisibilityInitialized;
 
         public ShellView()
@@ -169,8 +170,8 @@ namespace DaisyOS.Shell.Views
             (_mediaAutoHide || !Desktop.ViewModel.BottomMediaWidgetVisible);
         public bool IsBottomPanelInputPassthrough =>
             !TaskbarContent.IsVisible && !SystemBarContent.IsVisible && !MediaWidgetContent.IsVisible;
-        public bool IsBottomEdgeSensorEnabled => _taskbarAutoHide || _systemBarAutoHide ||
-            (!_externalFullscreenActive && _mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible);
+        public bool IsBottomEdgeSensorEnabled => !_lockScreenActive && (_taskbarAutoHide || _systemBarAutoHide ||
+            (!_externalFullscreenActive && _mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible));
         public bool IsExternalFullscreenActive => _externalFullscreenActive;
 
         private bool IsTaskbarVisibleByPreference => !_taskbarAutoHide || _taskbarRevealed || IsLauncherVisible;
@@ -204,6 +205,24 @@ namespace DaisyOS.Shell.Views
             }
         }
 
+        /// <summary>Suppresses desktop chrome while the session lock surface is active.</summary>
+        public void SetLockScreenActive(bool isActive)
+        {
+            if (_lockScreenActive == isActive) return;
+            _lockScreenActive = isActive;
+            if (isActive)
+            {
+                _taskbarAutoHideTimer.Stop();
+                _systemBarAutoHideTimer.Stop();
+                _mediaAutoHideTimer.Stop();
+                _taskbarRevealed = false;
+                _systemBarRevealed = false;
+                _mediaRevealed = false;
+                _bottomTooltips.Dismiss();
+            }
+            ApplyBottomBarVisibility(immediate: true);
+        }
+
         public void SetBottomBarAutoHide(bool taskbarAutoHide, bool systemBarAutoHide, bool mediaAutoHide = false)
         {
             var initialConfiguration = !_bottomBarVisibilityInitialized;
@@ -223,7 +242,7 @@ namespace DaisyOS.Shell.Views
 
         public void RevealBottomBarAt(double pointerX, double outputWidth)
         {
-            if (!IsBottomEdgeSensorEnabled || outputWidth <= 0) return;
+            if (_lockScreenActive || !IsBottomEdgeSensorEnabled || outputWidth <= 0) return;
             var position = pointerX / outputWidth;
             if (_mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible && position < 0.30)
             {
@@ -276,8 +295,8 @@ namespace DaisyOS.Shell.Views
 
         private void ApplyBottomBarVisibility(bool immediate = false)
         {
-            var taskbarVisible = (!_externalFullscreenActive || _taskbarAutoHide) && IsTaskbarVisibleByPreference;
-            var systemBarVisible = (!_externalFullscreenActive || _systemBarAutoHide) && (!_systemBarAutoHide || _systemBarRevealed);
+            var taskbarVisible = !_lockScreenActive && (!_externalFullscreenActive || _taskbarAutoHide) && IsTaskbarVisibleByPreference;
+            var systemBarVisible = !_lockScreenActive && (!_externalFullscreenActive || _systemBarAutoHide) && (!_systemBarAutoHide || _systemBarRevealed);
             _ = GuiMotion.SetVisibleAsync(
                 TaskbarContent,
                 TaskbarContent.FindControl<Border>("TaskbarBody")!,
@@ -294,7 +313,7 @@ namespace DaisyOS.Shell.Views
                 immediate,
                 GuiMotion.ShellSlideDistance,
                 GuiMotion.ShellSlideDuration(this, systemBarVisible), fadeOnExit: false, fadeOnEnter: false);
-            SetBottomMediaWidgetVisible(!_externalFullscreenActive && Desktop.ViewModel.BottomMediaWidgetVisible &&
+            SetBottomMediaWidgetVisible(!_lockScreenActive && !_externalFullscreenActive && Desktop.ViewModel.BottomMediaWidgetVisible &&
                 (!_mediaAutoHide || _mediaRevealed), immediate);
             NotifyBottomChromeStateChanged();
         }

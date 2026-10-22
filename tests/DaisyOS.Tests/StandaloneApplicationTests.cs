@@ -1,10 +1,55 @@
 using DaisyOS.Shell.Services;
+using Avalonia;
 using Xunit;
 
 namespace DaisyOS.Tests;
 
 public sealed class StandaloneApplicationTests
 {
+    [Theory]
+    [InlineData(1280, 720, 760, 560, 1536, 864, 1.25, 1024, 576)]
+    [InlineData(1040, 680, 740, 480, 1536, 864, 1.25, 832, 544)]
+    [InlineData(960, 640, 720, 480, 1536, 864, 1.0, 960, 640)]
+    public void NativeAppStartupSizeCompensatesForFractionalDisplayScale(
+        double width, double height, double minWidth, double minHeight,
+        double workWidth, double workHeight, double scaling, double expectedWidth, double expectedHeight)
+    {
+        var result = NativeAppWindowSizing.Calculate(width, height, minWidth, minHeight,
+            new Size(workWidth, workHeight), scaling);
+
+        Assert.Equal(expectedWidth, result.Width);
+        Assert.Equal(expectedHeight, result.Height);
+    }
+
+    [Fact]
+    public void NativeAppStartupSizeNeverExceedsLaptopWorkArea()
+    {
+        var result = NativeAppWindowSizing.Calculate(1280, 720, 760, 560,
+            new Size(1024, 640), 1.25);
+
+        Assert.True(result.Width <= 1024 * 0.92);
+        Assert.True(result.Height <= 640 * 0.92);
+        Assert.True(result.MinWidth <= result.Width);
+        Assert.True(result.MinHeight <= result.Height);
+    }
+
+    [Fact]
+    public void NewDesktopPinsEveryNativeApplicationExactlyOnce()
+    {
+        var path = Path.Combine(Path.GetTempPath(), "daisy-state-" + Guid.NewGuid().ToString("N"), "state.json");
+        try
+        {
+            var state = new ShellSessionState(path);
+            Assert.Equal(ShellSessionState.DefaultDockOrder, state.DockOrder);
+            Assert.Equal(ShellSessionState.DefaultDockOrder.Count,
+                ShellSessionState.DefaultDockOrder.Distinct(StringComparer.OrdinalIgnoreCase).Count());
+
+            state.SetDockOrder([]);
+            Assert.Empty(new ShellSessionState(path).DockOrder);
+        }
+        finally { if (Directory.Exists(Path.GetDirectoryName(path))) Directory.Delete(Path.GetDirectoryName(path)!, true); }
+    }
+
     [Theory]
     [InlineData("settings", "Asetukset")]
     [InlineData("files", "Tiedostot")]

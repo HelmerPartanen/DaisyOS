@@ -19,7 +19,7 @@ plugin_root="$HOME/.local/lib/qt6/plugins"
 plugin_dir="$plugin_root/kwin/effects/plugins"
 shader_dir="$HOME/.local/share/kwin/shaders"
 
-for command in cmake git ninja kwriteconfig6 python3; do
+for command in cmake git kwriteconfig6 python3; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "$command is required to install the DaisyOS KWin frame effect." >&2
     exit 1
@@ -36,8 +36,12 @@ checkout_pinned() {
 }
 
 mkdir -p "$cache_root"
+cmake_generator=()
+if command -v ninja >/dev/null 2>&1; then
+  cmake_generator=(-G Ninja)
+fi
 checkout_pinned https://github.com/KDE/extra-cmake-modules.git "$ecm_source" "$ecm_commit"
-cmake -S "$ecm_source" -B "$cache_root/ecm-build" -G Ninja \
+cmake -S "$ecm_source" -B "$cache_root/ecm-build" "${cmake_generator[@]}" \
   -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$ecm_prefix"
 cmake --build "$cache_root/ecm-build"
 cmake --install "$cache_root/ecm-build"
@@ -46,7 +50,7 @@ checkout_pinned https://github.com/KhronosGroup/Vulkan-Headers.git "$vulkan_sour
 checkout_pinned https://github.com/matinlotfali/KDE-Rounded-Corners.git "$source_dir" "$effect_commit"
 git -C "$source_dir" apply --check "$repo_root/src/native/kwin_frame_effect/daisyos-layer-surfaces.patch"
 git -C "$source_dir" apply "$repo_root/src/native/kwin_frame_effect/daisyos-layer-surfaces.patch"
-cmake -S "$source_dir" -B "$build_dir" -G Ninja \
+cmake -S "$source_dir" -B "$build_dir" "${cmake_generator[@]}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="$ecm_prefix" \
   -DVulkan_INCLUDE_DIR="$vulkan_source/include"

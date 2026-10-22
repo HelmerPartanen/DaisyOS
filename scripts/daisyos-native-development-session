@@ -459,6 +459,24 @@ ensure_shell_binary() {
   "$source_root/scripts/install-system-apps.sh" >> "$session_log" 2>&1
 }
 
+ensure_application_launcher() {
+  local launcher="$HOME/.local/bin/daisy-launch"
+  local service="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/daisy-launch.service"
+  local source="$source_root/services/DaisyLaunch/main.cpp"
+  if [[ ! -x "$launcher" || ! -f "$service" || "$source" -nt "$launcher" ]]; then
+    log_message "Installing the DaisyOS application launch service."
+    "$source_root/scripts/install-daisy-launch.sh" >> "$session_log" 2>&1 || {
+      log_message "DaisyOS could not install its application launch service."
+      return 1
+    }
+  elif ! systemctl --user is-active --quiet daisy-launch.service; then
+    systemctl --user start daisy-launch.service >> "$session_log" 2>&1 || {
+      log_message "DaisyOS could not start its application launch service."
+      return 1
+    }
+  fi
+}
+
 native_shell_binary() {
   printf '%s\n' "${DAISYOS_NATIVE_DEVELOPMENT_SHELL_BINARY:-$source_root/src/DaisyOS.Shell/bin/$shell_configuration/net10.0/DaisyOS.Shell}"
 }
@@ -604,6 +622,10 @@ start_compositor_and_shell() {
   fi
 
   "$source_root/scripts/install-cursor-themes.sh" >> "$session_log" 2>&1 || log_message "Native cursor theme installation failed."
+  if [[ ! -s "$HOME/.local/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so" ]]; then
+    "$source_root/scripts/install-kwin-window-decoration.sh" --user >> "$session_log" 2>&1 \
+      || log_message "DaisyOS KWin window decoration could not be installed for this user."
+  fi
   if ! "$source_root/scripts/install-busy-cursor.sh" >> "$session_log" 2>&1; then
     log_message "Native busy cursor installation failed; retaining the existing launch feedback configuration."
   fi
@@ -633,6 +655,9 @@ start_compositor_and_shell() {
   publish_session_environment
   if ! ensure_shell_binary; then
     log_message "DaisyOS could not build for the native development session. Returning to the display manager."
+    return 1
+  fi
+  if ! ensure_application_launcher; then
     return 1
   fi
   start_user_services
