@@ -6292,8 +6292,195 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
     <comment>Source: Show hidden files to see the items in this folder.
 Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
   </data>
-  <data name="Loc_86C9A2D06EFC" xml:space="preserve"><value>Taskbar size</value><comment>Source: Taskbar size</comment></data>
-  <data name="Loc_735BEEE2E390" xml:space="preserve"><value>Minimum</value><comment>Source: Minimum</comment></data>
-  <data name="Loc_66C9AB177708" xml:space="preserve"><value>Maximum</value><comment>Source: Maximum</comment></data>
-  <data name="Loc_31315D9BDE97" xml:space="preserve"><value>Minimum, default or maximum</value><comment>Source: Minimum, default or maximum</comment></data>
+  <data name="Loc_86C9A2D06EFC" xml:space="preserve">
+    <value>Taskbar size</value>
+    <comment>Source: Taskbar size</comment>
+  </data>
+  <data name="Loc_735BEEE2E390" xml:space="preserve">
+    <value>Minimum</value>
+    <comment>Source: Minimum</comment>
+  </data>
+  <data name="Loc_66C9AB177708" xml:space="preserve">
+    <value>Maximum</value>
+    <comment>Source: Maximum</comment>
+  </data>
+  <data name="Loc_31315D9BDE97" xml:space="preserve">
+    <value>Minimum, default or maximum</value>
+    <comment>Source: Minimum, default or maximum</comment>
+  </data>
+  <data name="Loc_D619D9327C17" xml:space="preserve">
+    <value>A selected folder is no longer available.</value>
+    <comment>Source: A selected folder is no longer available.
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_2DA341AE4773" xml:space="preserve">
+    <value>AVAILABLE ACCESSORIES</value>
+    <comment>Source: AVAILABLE ACCESSORIES
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_D73E78E103D1" xml:space="preserve">
+    <value>Add this folder</value>
+    <comment>Source: Add this folder
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_2212860E3E2D" xml:space="preserve">
+    <value>Authenticate</value>
+    <comment>Source: Authenticate
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationAgent.cs</comment>
+  </data>
+  <data name="Loc_0FCFB12DFAD0" xml:space="preserve">
+    <value>Authentication required</value>
+    <comment>Source: Authentication required
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationAgent.cs</comment>
+  </data>
+  <data name="Loc_6FDD777B41A7" xml:space="preserve">
+    <value>Choose a name and location.</value>
+    <comment>Source: Choose a name and location.
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_4E31598077AF" xml:space="preserve">
+    <value>Choose an account to continue.</value>
+    <comment>Source: Choose an account to continue.
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationAgent.cs</comment>
+  </data>
+  <data name="Loc_3DB741003E46" xml:space="preserve">
+    <value>Choose folder</value>
+    <comment>Source: Choose folder
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_DB984EB32103" xml:space="preserve">
+    <value>Choose this folder.</value>
+    <comment>Source: Choose this folder.
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_BA1ACFFE104C" xml:space="preserve">
+    <value>Connected to {0}.</value>
+    <comment>Source: Connected to {0}.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_C95A7105B666" xml:space="preserve">
+    <value>Copies</value>
+    <comment>Source: Copies
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/PrintPortal.cs</comment>
+  </data>
+  <data name="Loc_C0245217DA4E" xml:space="preserve">
+    <value>Couldn’t pair with {0}. Ensure it is in pairing mode and try again.</value>
+    <comment>Source: Couldn’t pair with {0}. Ensure it is in pairing mode and try again.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_C9EB6D2B2A24" xml:space="preserve">
+    <value>Devices you have connected before appear here, even when Bluetooth is off.</value>
+    <comment>Source: Devices you have connected before appear here, even when Bluetooth is off.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_CB2B6A572A85" xml:space="preserve">
+    <value>Disconnecting…</value>
+    <comment>Source: Disconnecting…
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_8916CBBF4304" xml:space="preserve">
+    <value>GAMING</value>
+    <comment>Source: GAMING
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_CB3F9476ED60" xml:space="preserve">
+    <value>Gaming Mode</value>
+    <comment>Source: Gaming Mode
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_BF00A5EE6470" xml:space="preserve">
+    <value>Gaming Mode boosts performance with GameMode and quiets popups while you play.</value>
+    <comment>Source: Gaming Mode boosts performance with GameMode and quiets popups while you play.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_9D6E1F2B69DB" xml:space="preserve">
+    <value>Listening controls are not available for this AirPods model.</value>
+    <comment>Source: Listening controls are not available for this AirPods model.
+Used by: src/DaisyOS.Shell/Views/Components/QuickSettings/QuickSettings.axaml.cs</comment>
+  </data>
+  <data name="Loc_E7BBF0F17A06" xml:space="preserve">
+    <value>Listening controls are unavailable.</value>
+    <comment>Source: Listening controls are unavailable.
+Used by: src/DaisyOS.Shell/Views/Components/QuickSettings/QuickSettings.axaml.cs</comment>
+  </data>
+  <data name="Loc_5BECC6C6EFA8" xml:space="preserve">
+    <value>Looking for nearby Bluetooth devices in pairing mode…</value>
+    <comment>Source: Looking for nearby Bluetooth devices in pairing mode…
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_3FF34B1146EC" xml:space="preserve">
+    <value>Nearby devices ready to pair.</value>
+    <comment>Source: Nearby devices ready to pair.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_20E0AF921CC8" xml:space="preserve">
+    <value>PAIRED ACCESSORIES</value>
+    <comment>Source: PAIRED ACCESSORIES
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_989DA04B0AAA" xml:space="preserve">
+    <value>Pair</value>
+    <comment>Source: Pair
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_468C8AF9E04B" xml:space="preserve">
+    <value>Paired accessories</value>
+    <comment>Source: Paired accessories
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_EC9F969D1008" xml:space="preserve">
+    <value>Pairing…</value>
+    <comment>Source: Pairing…
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_024EAC5B1A63" xml:space="preserve">
+    <value>Printer</value>
+    <comment>Source: Printer
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/PrintPortal.cs</comment>
+  </data>
+  <data name="Loc_54BC3187BB46" xml:space="preserve">
+    <value>Ready to pair</value>
+    <comment>Source: Ready to pair
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_1509F561F241" xml:space="preserve">
+    <value>Save</value>
+    <comment>Source: Save
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_D8829BC32C81" xml:space="preserve">
+    <value>Scan for accessories</value>
+    <comment>Source: Scan for accessories
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_021B869B3A1F" xml:space="preserve">
+    <value>Scanning for accessories…</value>
+    <comment>Source: Scanning for accessories…
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_C31723AB3302" xml:space="preserve">
+    <value>Searching…</value>
+    <comment>Source: Searching…
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_B2C78147ED57" xml:space="preserve">
+    <value>Stop sharing</value>
+    <comment>Source: Stop sharing
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/InputCapturePortal.cs, src/DaisyOS.Shell/Services/DesktopIntegration/ScreenCastPortal.cs</comment>
+  </data>
+  <data name="Loc_0316889734E2" xml:space="preserve">
+    <value>This image can’t be used as a wallpaper. Your current wallpaper is still active.</value>
+    <comment>Source: This image can’t be used as a wallpaper. Your current wallpaper is still active.
+Used by: src/DaisyOS.Shell/App.axaml.cs</comment>
+  </data>
+  <data name="Loc_C3FFA8CA3A41" xml:space="preserve">
+    <value>Turn on automatically when a game starts</value>
+    <comment>Source: Turn on automatically when a game starts
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_19D3D6D2A3CF" xml:space="preserve">
+    <value>{0} folders selected</value>
+    <comment>Source: {0} folders selected
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
 </root>

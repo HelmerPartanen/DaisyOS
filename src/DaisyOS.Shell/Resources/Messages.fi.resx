@@ -1,3 +1,4 @@
+<?xml version='1.0' encoding='utf-8'?>
 <root>
   <resheader name="resmimetype">
     <value>text/microsoft-resx</value>
@@ -6283,8 +6284,125 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
     <comment>Source: Show hidden files to see the items in this folder.
 Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
   </data>
-  <data name="Loc_86C9A2D06EFC" xml:space="preserve"><value>Tehtäväpalkin koko</value><comment>Source: Taskbar size</comment></data>
-  <data name="Loc_735BEEE2E390" xml:space="preserve"><value>Pienin</value><comment>Source: Minimum</comment></data>
-  <data name="Loc_66C9AB177708" xml:space="preserve"><value>Suurin</value><comment>Source: Maximum</comment></data>
-  <data name="Loc_31315D9BDE97" xml:space="preserve"><value>Pienin, oletus tai suurin</value><comment>Source: Minimum, default or maximum</comment></data>
+  <data name="Loc_86C9A2D06EFC" xml:space="preserve">
+    <value>Tehtäväpalkin koko</value>
+    <comment>Source: Taskbar size</comment>
+  </data>
+  <data name="Loc_735BEEE2E390" xml:space="preserve">
+    <value>Pienin</value>
+    <comment>Source: Minimum</comment>
+  </data>
+  <data name="Loc_66C9AB177708" xml:space="preserve">
+    <value>Suurin</value>
+    <comment>Source: Maximum</comment>
+  </data>
+  <data name="Loc_31315D9BDE97" xml:space="preserve">
+    <value>Pienin, oletus tai suurin</value>
+    <comment>Source: Minimum, default or maximum</comment>
+  </data>
+  <data name="Loc_021B869B3A1F" xml:space="preserve">
+    <value>Etsitään lisälaitteita…</value>
+  </data>
+  <data name="Loc_024EAC5B1A63" xml:space="preserve">
+    <value>Tulostin</value>
+  </data>
+  <data name="Loc_0316889734E2" xml:space="preserve">
+    <value>Tätä kuvaa ei voida käyttää taustakuvana. Nykyinen taustakuvasi on edelleen käytössä.</value>
+  </data>
+  <data name="Loc_0FCFB12DFAD0" xml:space="preserve">
+    <value>Todennus vaaditaan</value>
+  </data>
+  <data name="Loc_1509F561F241" xml:space="preserve">
+    <value>Tallenna</value>
+  </data>
+  <data name="Loc_19D3D6D2A3CF" xml:space="preserve">
+    <value>{0} kansiota valittu</value>
+  </data>
+  <data name="Loc_20E0AF921CC8" xml:space="preserve">
+    <value>PARITETUT LISÄLAITTEET</value>
+  </data>
+  <data name="Loc_2212860E3E2D" xml:space="preserve">
+    <value>Todenna</value>
+  </data>
+  <data name="Loc_2DA341AE4773" xml:space="preserve">
+    <value>SAATAVILLA OLEVAT LISÄLAITTEET</value>
+  </data>
+  <data name="Loc_3DB741003E46" xml:space="preserve">
+    <value>Valitse kansio</value>
+  </data>
+  <data name="Loc_3FF34B1146EC" xml:space="preserve">
+    <value>Lähellä olevat laitteet valmiina paritettavaksi.</value>
+  </data>
+  <data name="Loc_468C8AF9E04B" xml:space="preserve">
+    <value>Paritetut lisälaitteet</value>
+  </data>
+  <data name="Loc_4E31598077AF" xml:space="preserve">
+    <value>Valitse tili jatkaaksesi.</value>
+  </data>
+  <data name="Loc_54BC3187BB46" xml:space="preserve">
+    <value>Valmis paritettavaksi</value>
+  </data>
+  <data name="Loc_5BECC6C6EFA8" xml:space="preserve">
+    <value>Etsitään lähellä olevia Bluetooth-laitteita paritustilassa…</value>
+  </data>
+  <data name="Loc_6FDD777B41A7" xml:space="preserve">
+    <value>Valitse nimi ja sijainti.</value>
+  </data>
+  <data name="Loc_8916CBBF4304" xml:space="preserve">
+    <value>PELAAMINEN</value>
+  </data>
+  <data name="Loc_989DA04B0AAA" xml:space="preserve">
+    <value>Parita</value>
+  </data>
+  <data name="Loc_9D6E1F2B69DB" xml:space="preserve">
+    <value>Kuuntelusäätimet eivät ole saatavilla tälle AirPods-mallille.</value>
+  </data>
+  <data name="Loc_B2C78147ED57" xml:space="preserve">
+    <value>Lopeta jakaminen</value>
+  </data>
+  <data name="Loc_BA1ACFFE104C" xml:space="preserve">
+    <value>Yhdistetty kohteeseen {0}.</value>
+  </data>
+  <data name="Loc_BF00A5EE6470" xml:space="preserve">
+    <value>Pelitila tehostaa suorituskykyä GameModen avulla ja hiljentää ponnahdusikkunat pelaamisen aikana.</value>
+  </data>
+  <data name="Loc_C0245217DA4E" xml:space="preserve">
+    <value>Ei voitu muodostaa laiteparia laitteen {0} kanssa. Varmista, että se on paritustilassa ja yritä uudelleen.</value>
+  </data>
+  <data name="Loc_C31723AB3302" xml:space="preserve">
+    <value>Etsitään…</value>
+  </data>
+  <data name="Loc_C3FFA8CA3A41" xml:space="preserve">
+    <value>Ota käyttöön automaattisesti pelin käynnistyessä</value>
+  </data>
+  <data name="Loc_C95A7105B666" xml:space="preserve">
+    <value>Kopiot</value>
+  </data>
+  <data name="Loc_C9EB6D2B2A24" xml:space="preserve">
+    <value>Aiemmin yhdistämäsi laitteet näkyvät tässä myös silloin, kun Bluetooth on pois päältä.</value>
+  </data>
+  <data name="Loc_CB2B6A572A85" xml:space="preserve">
+    <value>Katkaistaan yhteyttä…</value>
+  </data>
+  <data name="Loc_CB3F9476ED60" xml:space="preserve">
+    <value>Pelitila</value>
+  </data>
+  <data name="Loc_D619D9327C17" xml:space="preserve">
+    <value>Valittu kansio ei ole enää saatavilla.</value>
+  </data>
+  <data name="Loc_D73E78E103D1" xml:space="preserve">
+    <value>Lisää tämä kansio</value>
+  </data>
+  <data name="Loc_D8829BC32C81" xml:space="preserve">
+    <value>Etsi lisälaitteita</value>
+  </data>
+  <data name="Loc_DB984EB32103" xml:space="preserve">
+    <value>Valitse tämä kansio.</value>
+  </data>
+  <data name="Loc_E7BBF0F17A06" xml:space="preserve">
+    <value>Kuuntelusäätimet eivät ole käytettävissä.</value>
+  </data>
+  <data name="Loc_EC9F969D1008" xml:space="preserve">
+    <value>Paritetaan…</value>
+  </data>
 </root>
