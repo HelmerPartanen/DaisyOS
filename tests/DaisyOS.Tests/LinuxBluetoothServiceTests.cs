@@ -41,6 +41,7 @@ public sealed class LinuxBluetoothServiceTests
         var runner = new ScriptedCommandRunner(
             Succeeded("Controller 00:11:22:33:44:55\nPowered: yes\nDiscovering: yes"),
             Succeeded($"Device {headphonesAddress} Headphones\nDevice {headphonesAddress} Duplicate\nDevice {keyboardAddress} Keyboard"),
+            Succeeded($"Device {headphonesAddress} Headphones\nDevice {headphonesAddress} Duplicate\nDevice {keyboardAddress} Keyboard"),
             Succeeded("Connected: yes\nPaired: yes\nIcon: audio-headset"),
             Succeeded("Connected: no\nPaired: yes\nIcon: input-keyboard"));
         var service = new LinuxBluetoothService(runner);
@@ -76,6 +77,7 @@ public sealed class LinuxBluetoothServiceTests
     {
         var runner = new ScriptedCommandRunner(
             Succeeded("Powered: yes\nDiscovering: no"),
+            Failed("org.bluez unavailable"),
             Failed("org.bluez unavailable"));
         var service = new LinuxBluetoothService(runner);
 
@@ -93,16 +95,14 @@ public sealed class LinuxBluetoothServiceTests
         const string address = "AA:BB:CC:DD:EE:03";
         var runner = new ScriptedCommandRunner(
             Succeeded("Powered: yes"),
+            Succeeded(),
             Succeeded($"Device {address} Unknown device"),
             Failed("device disappeared"));
         var service = new LinuxBluetoothService(runner);
 
         var status = await service.GetStatusAsync();
 
-        var device = Assert.Single(status.Devices);
-        Assert.False(device.IsConnected);
-        Assert.False(device.IsPaired);
-        Assert.Equal("Unknown", device.Type);
+        Assert.Empty(status.Devices);
     }
 
     [Theory]
@@ -140,13 +140,14 @@ public sealed class LinuxBluetoothServiceTests
         Assert.False(LinuxBluetoothService.CanAutoConnect(address));
         Assert.True(await service.SetConnectedAsync(address, true));
         Assert.True(LinuxBluetoothService.CanAutoConnect(address));
-        Assert.True(runner.Calls[1].Timeout > TimeSpan.FromSeconds(15));
+        Assert.True(runner.Calls[2].Timeout > TimeSpan.FromSeconds(15));
     }
 
     [Fact]
     public async Task RecognizesRenamedAirPodsByServiceUuid()
     {
         var runner = new ScriptedCommandRunner(Succeeded("Powered: yes"),
+            Succeeded("Device AA:BB:CC:DD:EE:14 My earbuds"),
             Succeeded("Device AA:BB:CC:DD:EE:14 My earbuds"),
             Succeeded("Paired: yes\nRSSI: -45\nUUID: 74ec2172-0bad-4d01-8f77-997b2be0722a"));
         var device = Assert.Single((await new LinuxBluetoothService(runner).GetStatusAsync()).Devices);
@@ -162,6 +163,41 @@ public sealed class LinuxBluetoothServiceTests
         Assert.Equal("rfkill", runner.Calls[1].FileName);
         Assert.Equal(["unblock", "bluetooth"], runner.Calls[1].Arguments);
         Assert.Equal(["power", "on"], runner.Calls[2].Arguments);
+    }
+
+    [Fact]
+    public async Task PairedDevicesRemainVisibleWhenRadioIsOff()
+    {
+        const string address = "AA:BB:CC:DD:EE:15";
+        var runner = new ScriptedCommandRunner(
+            Succeeded("Powered: no\nDiscovering: no"),
+            Succeeded($"Device {address} My Phone"),
+            Succeeded("Paired: yes\nConnected: no\nIcon: phone"));
+
+        var status = await new LinuxBluetoothService(runner).GetStatusAsync();
+
+        Assert.False(status.IsEnabled);
+        var device = Assert.Single(status.Devices);
+        Assert.True(device.IsPaired);
+        Assert.Equal("Phone", device.Type);
+        Assert.Equal(["--timeout", "2", "devices", "Paired"], runner.Calls[1].Arguments);
+    }
+
+    [Fact]
+    public async Task PersistentPairedListIsMergedWithNearbyDiscoveryWithoutDuplicates()
+    {
+        const string address = "AA:BB:CC:DD:EE:16";
+        var runner = new ScriptedCommandRunner(
+            Succeeded("Powered: yes"),
+            Succeeded($"Device {address} Saved Headphones"),
+            Succeeded($"Device {address} Saved Headphones"),
+            Succeeded("Paired: yes\nConnected: no\nRSSI: -54\nIcon: audio-headset"));
+
+        var device = Assert.Single((await new LinuxBluetoothService(runner).GetStatusAsync()).Devices);
+
+        Assert.True(device.IsPaired);
+        Assert.True(device.IsNearby);
+        Assert.Equal("Audio", device.Type);
     }
 
     private static CommandResult Succeeded(string output = "") => new(0, output, string.Empty, TimedOut: false);

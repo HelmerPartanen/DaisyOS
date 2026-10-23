@@ -60,85 +60,64 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
         var isDiscovering = adapter.IsDiscovering;
 
         var devices = new List<BluetoothDevice>();
-        var deviceQueryFailed = false;
-        if (isEnabled)
+
+        // "devices" is BlueZ's transient cache, while "devices Paired" is its
+        // persistent bond list. Some BlueZ versions omit powered-off or long-idle
+        // accessories from the former, which made previously paired devices vanish
+        // from Settings. Always query the bond list, even while the radio is off, and
+        // merge nearby advertisements into it while the radio is on.
+        var pairedTask = _commandRunner.RunAsync(
+            "bluetoothctl", ["--timeout", "2", "devices", "Paired"], TimeSpan.FromSeconds(3), cancellationToken);
+        Task<CommandResult>? nearbyTask = isEnabled
+            ? _commandRunner.RunAsync("bluetoothctl", ["--timeout", "2", "devices"], TimeSpan.FromSeconds(3), cancellationToken)
+            : null;
+        if (nearbyTask is not null) await Task.WhenAll(pairedTask, nearbyTask);
+        var pairedResult = await pairedTask;
+        var nearbyResult = nearbyTask is null ? null : await nearbyTask;
+        var deviceQueryFailed = !pairedResult.Succeeded && (nearbyResult is null || !nearbyResult.Succeeded);
+
+        var entries = new Dictionary<string, (string Name, bool ListedAsPaired)>(StringComparer.OrdinalIgnoreCase);
+        AddDeviceEntries(pairedResult, listedAsPaired: true, entries);
+        if (nearbyResult is not null) AddDeviceEntries(nearbyResult, listedAsPaired: false, entries);
+
+        var deviceEntries = entries.Select(entry => (Address: entry.Key, entry.Value.Name, entry.Value.ListedAsPaired)).ToArray();
+        var infoTasks = deviceEntries.Select(entry =>
+            _commandRunner.RunAsync("bluetoothctl", ["--timeout", "2", "info", entry.Address], TimeSpan.FromSeconds(3), cancellationToken));
+        var infoResults = await Task.WhenAll(infoTasks);
+
+        for (var i = 0; i < deviceEntries.Length; i++)
         {
-            var resultDevices = await _commandRunner.RunAsync(
-                "bluetoothctl",
-                ["--timeout", "2", "devices"],
-                CommandTimeout,
-                cancellationToken);
+            var (address, name, listedAsPaired) = deviceEntries[i];
+            var resultInfo = infoResults[i];
+            var isConnected = false;
+            var isPaired = listedAsPaired;
+            var isNearby = false;
+            var type = "Unknown";
+            var displayName = name;
 
-            if (resultDevices.Succeeded)
+            if (resultInfo.Succeeded)
             {
-                var lines = resultDevices.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-                var seenAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var info = resultInfo.StandardOutput;
+                isConnected = info.Contains("Connected: yes", StringComparison.OrdinalIgnoreCase);
+                isPaired |= info.Contains("Paired: yes", StringComparison.OrdinalIgnoreCase)
+                    || info.Contains("Bonded: yes", StringComparison.OrdinalIgnoreCase);
+                isNearby = info.Contains("RSSI:", StringComparison.Ordinal);
+                type = ParseDeviceType(info);
+                displayName = ParseInfoAlias(info) ?? ParseInfoName(info) ?? name;
 
-                // Collect the unique (address, name) pairs first. BlueZ caches every
-                // advertisement it has seen; anonymous BLE beacons (including the
-                // rotating random addresses AirPods advertise from) carry no name and
-                // BlueZ falls back to the address ("52-48-…"). Those are never
-                // user-facing accessories, so drop them before querying details.
-                var deviceEntries = new List<(string Address, string Name)>();
-                foreach (var line in lines)
-                {
-                    var match = DeviceLineRegex().Match(line);
-                    if (!match.Success || !seenAddresses.Add(match.Groups[1].Value)) continue;
-                    var entryName = match.Groups[2].Value.Trim();
-                    if (IsAnonymousName(entryName)) continue;
-                    deviceEntries.Add((match.Groups[1].Value, entryName));
-                }
+                // BlueZ retains stale advertisements. Only bonds and devices with a
+                // current RSSI belong in a user-facing picker.
+                if (!isPaired && !isConnected && (!isNearby || IsAnonymousName(displayName))) continue;
 
-                // Fetch all device info concurrently instead of sequentially — avoids
-                // N × (50–150 ms) stall when many devices are paired.
-                var infoTasks = deviceEntries.Select(entry =>
-                    _commandRunner.RunAsync("bluetoothctl", ["--timeout", "2", "info", entry.Address], TimeSpan.FromSeconds(3), cancellationToken));
-
-                var infoResults = await Task.WhenAll(infoTasks);
-
-                for (var i = 0; i < deviceEntries.Count; i++)
-                {
-                    var (address, name) = deviceEntries[i];
-                    var resultInfo = infoResults[i];
-
-                    var isConnected = false;
-                    var isPaired = false;
-                    var isNearby = false;
-                    var type = "Unknown";
-                    var displayName = name;
-
-                    if (resultInfo.Succeeded)
-                    {
-                        var info = resultInfo.StandardOutput;
-                        isConnected = info.Contains("Connected: yes", StringComparison.OrdinalIgnoreCase);
-                        isPaired = info.Contains("Paired: yes", StringComparison.OrdinalIgnoreCase)
-                            || info.Contains("Bonded: yes", StringComparison.OrdinalIgnoreCase);
-                        isNearby = info.Contains("RSSI:", StringComparison.Ordinal);
-                        type = ParseDeviceType(info);
-                        displayName = ParseInfoAlias(info) ?? ParseInfoName(info) ?? name;
-
-                        // Unpaired devices are only offered while they are actually in range
-                        // and advertise a real name; stale cache entries are hidden.
-                        if (!isPaired && !isConnected && (!isNearby || IsAnonymousName(displayName))) continue;
-
-                        // Paired accessories must be trusted, otherwise BlueZ refuses the
-                        // device-initiated reconnect (opening the AirPods case, powering on
-                        // a keyboard) and the user has to reconnect manually every time.
-                        if (isPaired && info.Contains("Trusted: no", StringComparison.OrdinalIgnoreCase))
-                            _ = _commandRunner.RunAsync("bluetoothctl", ["--timeout", "3", "trust", address], TimeSpan.FromSeconds(4), CancellationToken.None);
-                    }
-                    else if (IsAnonymousName(displayName))
-                    {
-                        continue;
-                    }
-
-                    devices.Add(new BluetoothDevice(address, displayName, isConnected, isPaired, type, isNearby));
-                }
+                if (isPaired && info.Contains("Trusted: no", StringComparison.OrdinalIgnoreCase))
+                    _ = _commandRunner.RunAsync("bluetoothctl", ["--timeout", "3", "trust", address], TimeSpan.FromSeconds(4), CancellationToken.None);
             }
-            else
+            else if (!isPaired || IsAnonymousName(displayName))
             {
-                deviceQueryFailed = true;
+                continue;
             }
+
+            devices.Add(new BluetoothDevice(address, displayName, isConnected, isPaired, type, isNearby));
         }
 
         var detailText = !isEnabled
@@ -167,28 +146,11 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
             cancellationToken);
         if (!resultShow.Succeeded)
         {
-            var serviceCheck = await _commandRunner.RunAsync("systemctl", ["is-active", "--quiet", "bluetooth.service"], TimeSpan.FromSeconds(1), cancellationToken);
-            if (!serviceCheck.Succeeded)
-            {
-                await _commandRunner.RunAsync("systemctl", ["enable", "--now", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
-                await _commandRunner.RunAsync("systemctl", ["start", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
-
-                var recheck = await _commandRunner.RunAsync("systemctl", ["is-active", "--quiet", "bluetooth.service"], TimeSpan.FromSeconds(1), cancellationToken);
-                if (recheck.Succeeded)
-                {
-                    resultShow = await _commandRunner.RunAsync(
-                        "bluetoothctl",
-                        ["--timeout", "2", "show"],
-                        TimeSpan.FromSeconds(3),
-                        cancellationToken);
-                }
-            }
-        }
-
-        if (!resultShow.Succeeded)
-        {
-            return new BluetoothStatus(true, false, false, Array.Empty<BluetoothDevice>(),
-                "Bluetooth is turned off.");
+            var detail = string.Concat(resultShow.StandardOutput, " ", resultShow.StandardError).Trim();
+            return new BluetoothStatus(false, false, false, Array.Empty<BluetoothDevice>(),
+                detail.Contains("No default controller", StringComparison.OrdinalIgnoreCase)
+                    ? "Bluetooth isn’t available on this device."
+                    : BuildFailureDetail(resultShow, "Bluetooth status"));
         }
 
         var isEnabled = ParseShowOutput(resultShow.StandardOutput);
@@ -228,50 +190,23 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
 
     public async Task<bool> SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
-        if (!enabled)
-        {
-            await _commandRunner.RunAsync("rfkill", ["block", "bluetooth"], CommandTimeout, cancellationToken);
-            await _commandRunner.RunAsync(
-                "bluetoothctl",
-                ["power", "off"],
-                CommandTimeout,
-                cancellationToken);
-            return true;
-        }
-
-        // 1. Unblock rfkill first (doesn't require root permissions)
-        await _commandRunner.RunAsync("rfkill", ["unblock", "bluetooth"], CommandTimeout, cancellationToken);
-
-        // 2. Check if bluetooth.service is active; if not, try to start and enable it
-        var serviceCheck = await _commandRunner.RunAsync("systemctl", ["is-active", "--quiet", "bluetooth.service"], TimeSpan.FromSeconds(1), cancellationToken);
-        if (!serviceCheck.Succeeded)
-        {
-            await _commandRunner.RunAsync("systemctl", ["enable", "--now", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
-            var startRes = await _commandRunner.RunAsync("systemctl", ["start", "bluetooth.service", "--no-ask-password"], TimeSpan.FromSeconds(2), cancellationToken);
-            if (!startRes.Succeeded)
-            {
-                await _commandRunner.RunAsync("pkexec", ["systemctl", "start", "bluetooth.service"], TimeSpan.FromSeconds(5), cancellationToken);
-            }
-            await Task.Delay(300, cancellationToken);
-        }
-
         var result = await _commandRunner.RunAsync(
             "bluetoothctl",
-            ["power", "on"],
+            ["power", enabled ? "on" : "off"],
             CommandTimeout,
             cancellationToken);
 
-        if (!result.Succeeded)
+        // A soft rfkill is the common recoverable failure. Do not invoke privileged
+        // service management from a toggle; the session service owns daemon startup.
+        if (enabled && !result.Succeeded && string.Concat(result.StandardOutput, result.StandardError)
+                .Contains("Blocked", StringComparison.OrdinalIgnoreCase))
         {
-            await Task.Delay(500, cancellationToken);
+            await _commandRunner.RunAsync("rfkill", ["unblock", "bluetooth"], CommandTimeout, cancellationToken);
             result = await _commandRunner.RunAsync(
-                "bluetoothctl",
-                ["power", "on"],
-                CommandTimeout,
-                cancellationToken);
+                "bluetoothctl", ["power", "on"], CommandTimeout, cancellationToken);
         }
 
-        if (result.Succeeded)
+        if (enabled && result.Succeeded)
         {
             _ = Task.Run(() => RestorePairedDevicesAsync(CancellationToken.None));
         }
@@ -404,6 +339,26 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
     private static bool ParseShowOutput(string output)
     {
         return output.Contains("Powered: yes", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static void AddDeviceEntries(
+        CommandResult result,
+        bool listedAsPaired,
+        IDictionary<string, (string Name, bool ListedAsPaired)> entries)
+    {
+        if (!result.Succeeded) return;
+        foreach (var line in result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var match = DeviceLineRegex().Match(line);
+            if (!match.Success) continue;
+            var address = match.Groups[1].Value;
+            var name = match.Groups[2].Value.Trim();
+            if (IsAnonymousName(name)) continue;
+            if (entries.TryGetValue(address, out var existing))
+                entries[address] = (existing.Name, existing.ListedAsPaired || listedAsPaired);
+            else
+                entries[address] = (name, listedAsPaired);
+        }
     }
 
     private static string ParseDeviceType(string output)

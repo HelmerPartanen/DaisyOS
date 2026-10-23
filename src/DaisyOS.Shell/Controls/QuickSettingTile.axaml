@@ -104,6 +104,14 @@
     <Style Selector="ToggleButton.QuickSetting:checked controls|DaisyIcon.QuickSettingIcon, Button.QuickSettingDetails.Active controls|DaisyIcon.QuickSettingIcon">
       <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
     </Style>
+    <Style Selector="controls|WifiSignalIcon.QuickSettingWifiIcon">
+      <Setter Property="ActiveBrush" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="InactiveBrush" Value="{DynamicResource ContentTertiaryBrush}" />
+    </Style>
+    <Style Selector="ToggleButton.QuickSetting:checked controls|WifiSignalIcon.QuickSettingWifiIcon">
+      <Setter Property="ActiveBrush" Value="{DynamicResource ActionPrimaryBrush}" />
+      <Setter Property="InactiveBrush" Value="{DynamicResource ContentTertiaryBrush}" />
+    </Style>
   </UserControl.Styles>
 
   <StackPanel Spacing="5" Width="96" HorizontalAlignment="Center">
@@ -115,8 +123,15 @@
                     IsChecked="{Binding IsChecked, ElementName=Root, Mode=TwoWay}"
                     Click="OnSingleToggleClick">
         <ToolTip.Tip><TextBlock Text="{Binding ToolTipText, ElementName=Root}" Foreground="{DynamicResource ContentPrimaryBrush}" FontWeight="Normal"/></ToolTip.Tip>
-        <controls:DaisyIcon Classes="QuickSettingIcon"
-                            Icon="{Binding Icon, ElementName=Root}"/>
+        <Grid>
+          <controls:DaisyIcon Classes="QuickSettingIcon"
+                              Icon="{Binding Icon, ElementName=Root}"
+                              IsVisible="{Binding !UseWifiSignalIcon, ElementName=Root}"/>
+          <controls:WifiSignalIcon Classes="QuickSettingWifiIcon"
+                                   Width="18" Height="18"
+                                   IsVisible="{Binding UseWifiSignalIcon, ElementName=Root}"
+                                   SignalPercent="{Binding WifiSignalPercent, ElementName=Root}"/>
+        </Grid>
       </ToggleButton>
     </Grid>
 
@@ -130,8 +145,15 @@
                       IsChecked="{Binding IsChecked, ElementName=Root, Mode=TwoWay}"
                       Click="OnSplitToggleClick">
         <ToolTip.Tip><TextBlock Text="{Binding ToolTipText, ElementName=Root}" Foreground="{DynamicResource ContentPrimaryBrush}" FontWeight="Normal"/></ToolTip.Tip>
-          <controls:DaisyIcon Classes="QuickSettingIcon"
-                              Icon="{Binding Icon, ElementName=Root}"/>
+          <Grid>
+            <controls:DaisyIcon Classes="QuickSettingIcon"
+                                Icon="{Binding Icon, ElementName=Root}"
+                                IsVisible="{Binding !UseWifiSignalIcon, ElementName=Root}"/>
+            <controls:WifiSignalIcon Classes="QuickSettingWifiIcon"
+                                     Width="18" Height="18"
+                                     IsVisible="{Binding UseWifiSignalIcon, ElementName=Root}"
+                                     SignalPercent="{Binding WifiSignalPercent, ElementName=Root}"/>
+          </Grid>
         </ToggleButton>
 
         <Button x:Name="DetailsButton"

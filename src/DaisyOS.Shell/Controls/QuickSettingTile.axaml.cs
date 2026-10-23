@@ -25,6 +25,12 @@ public partial class QuickSettingTile : UserControl
     public static readonly StyledProperty<string> DetailsToolTipTextProperty =
         AvaloniaProperty.Register<QuickSettingTile, string>(nameof(DetailsToolTipText), string.Empty);
 
+    public static readonly StyledProperty<bool> UseWifiSignalIconProperty =
+        AvaloniaProperty.Register<QuickSettingTile, bool>(nameof(UseWifiSignalIcon));
+
+    public static readonly StyledProperty<int> WifiSignalPercentProperty =
+        AvaloniaProperty.Register<QuickSettingTile, int>(nameof(WifiSignalPercent));
+
     public event EventHandler<RoutedEventArgs>? Toggled;
     public event EventHandler<RoutedEventArgs>? DetailsClicked;
 
@@ -67,6 +73,18 @@ public partial class QuickSettingTile : UserControl
     {
         get => GetValue(DetailsToolTipTextProperty);
         set => SetValue(DetailsToolTipTextProperty, value);
+    }
+
+    public bool UseWifiSignalIcon
+    {
+        get => GetValue(UseWifiSignalIconProperty);
+        set => SetValue(UseWifiSignalIconProperty, value);
+    }
+
+    public int WifiSignalPercent
+    {
+        get => GetValue(WifiSignalPercentProperty);
+        set => SetValue(WifiSignalPercentProperty, Math.Clamp(value, 0, 100));
     }
 
     /// <summary>Moves controller/keyboard focus to the primary action.</summary>

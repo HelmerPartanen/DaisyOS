@@ -1322,6 +1322,67 @@ namespace DaisyOS.Shell.Apps.System.Settings
             AddSection(Loc.Get("BLUETOOTH"), Loc.Get("Bluetooth changes are applied through the system adapter."),
                 Toggle("Bluetooth", "bluetooth.enabled", adapter.IsEnabled, value => { _ = SetBluetooth(value); }));
 
+            var pairedDevices = adapter.Devices.Where(d => d.IsPaired)
+                .OrderByDescending(d => d.IsConnected)
+                .ThenBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
+                .ToList();
+            var pairedRows = new List<Control>();
+            foreach (var device in pairedDevices)
+            {
+                var statusText = device.IsConnected ? Loc.Get("Connected") : Loc.Get("Paired");
+                var actionButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
+                {
+                    Content = Loc.Get(device.IsConnected ? "Disconnect" : "Connect"),
+                    Classes = { "Subtle" },
+                    Height = 32,
+                    Padding = new Thickness(12, 0),
+                    VerticalAlignment = VerticalAlignment.Center,
+                    IsEnabled = adapter.IsEnabled
+                });
+                var dev = device;
+                actionButton.Click += async (_, _) =>
+                {
+                    actionButton.IsEnabled = false;
+                    actionButton.Content = Loc.Get(dev.IsConnected ? "Disconnecting…" : "Connecting…");
+                    var success = await bluetoothService.SetConnectedAsync(dev.Address, !dev.IsConnected);
+                    if (!success)
+                    {
+                        (Application.Current as App)?.Feedback.Show(dev.IsConnected
+                            ? Loc.Format("Couldn’t disconnect {0}.", dev.Name)
+                            : Loc.Format("Couldn’t connect to {0}.", dev.Name));
+                    }
+                    RefreshBluetooth();
+                };
+
+                var forgetButton = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
+                {
+                    Content = "Forget",
+                    Classes = { "Ghost" },
+                    Height = 32,
+                    Padding = new Thickness(10, 0),
+                    VerticalAlignment = VerticalAlignment.Center
+                }), Button.ContentProperty, "Forget");
+                forgetButton.Click += async (_, _) =>
+                {
+                    forgetButton.IsEnabled = false;
+                    if (!await bluetoothService.ForgetDeviceAsync(dev.Address))
+                        (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t forget {0}.", dev.Name));
+                    RefreshBluetooth();
+                };
+
+                pairedRows.Add(PreferenceRow(device.Name, statusText, new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 6,
+                    VerticalAlignment = VerticalAlignment.Center,
+                    Children = { actionButton, forgetButton }
+                }, BluetoothIconFor(device)));
+            }
+            if (pairedRows.Count == 0)
+                pairedRows.Add(InfoRow(Loc.Get("Paired accessories"), Loc.Get("No paired devices found.")));
+
+            AddSection(Loc.Get("PAIRED ACCESSORIES"), Loc.Get("Devices you have connected before appear here, even when Bluetooth is off."), pairedRows.ToArray());
+
             if (adapter.IsEnabled)
             {
                 var scanButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
@@ -1358,74 +1419,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 AddSection(Loc.Get("PAIR NEW ACCESSORY"), Loc.Get("Find and pair nearby Bluetooth devices."),
                     PreferenceRow(Loc.Get("Find nearby devices"), Loc.Get("Search for headphones, keyboards, and mice."), scanButton));
 
-                var pairedDevices = adapter.Devices.Where(d => d.IsPaired).ToList();
-                var availableDevices = adapter.Devices.Where(d => !d.IsPaired && !LinuxBluetoothService.IsAnonymousName(d.Name)).ToList();
-
-                var pairedRows = new List<Control>();
-                if (pairedDevices.Count > 0)
-                {
-                    foreach (var device in pairedDevices)
-                    {
-                        var statusText = device.IsConnected ? Loc.Get("Connected") : Loc.Get("Not connected");
-                        var actionButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
-                        {
-                            Content = Loc.Get(device.IsConnected ? "Disconnect" : "Connect"),
-                            Classes = { "Subtle" },
-                            Height = 32,
-                            Padding = new Thickness(12, 0),
-                            VerticalAlignment = VerticalAlignment.Center
-                        });
-                        var dev = device;
-                        actionButton.Click += async (_, _) =>
-                        {
-                            actionButton.IsEnabled = false;
-                            actionButton.Content = Loc.Get(dev.IsConnected ? "Disconnecting…" : "Connecting…");
-                            var success = await bluetoothService.SetConnectedAsync(dev.Address, !dev.IsConnected);
-                            if (!success)
-                            {
-                                (Application.Current as App)?.Feedback.Show(dev.IsConnected
-                                    ? Loc.Format("Couldn’t disconnect {0}.", dev.Name)
-                                    : Loc.Format("Couldn’t connect to {0}.", dev.Name));
-                            }
-                            RefreshBluetooth();
-                        };
-
-                        var forgetButton = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
-                        {
-                            Content = "Forget",
-                            Classes = { "Ghost" },
-                            Height = 32,
-                            Padding = new Thickness(10, 0),
-                            VerticalAlignment = VerticalAlignment.Center
-                        }), Button.ContentProperty, "Forget");
-                        forgetButton.Click += async (_, _) =>
-                        {
-                            forgetButton.IsEnabled = false;
-                            if (!await bluetoothService.ForgetDeviceAsync(dev.Address))
-                            {
-                                (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t forget {0}.", dev.Name));
-                            }
-                            RefreshBluetooth();
-                        };
-
-                        var actionsPanel = new StackPanel
-                        {
-                            Orientation = Orientation.Horizontal,
-                            Spacing = 6,
-                            VerticalAlignment = VerticalAlignment.Center
-                        };
-                        actionsPanel.Children.Add(actionButton);
-                        actionsPanel.Children.Add(forgetButton);
-
-                        pairedRows.Add(PreferenceRow(device.Name, statusText, actionsPanel));
-                    }
-                }
-                else
-                {
-                    pairedRows.Add(InfoRow(Loc.Get("Paired accessories"), Loc.Get("No paired devices found.")));
-                }
-
-                AddSection(Loc.Get("PAIRED ACCESSORIES"), Loc.Get("Manage connected wireless accessories."), pairedRows.ToArray());
+                var availableDevices = adapter.Devices
+                    .Where(d => !d.IsPaired && !LinuxBluetoothService.IsAnonymousName(d.Name))
+                    .OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
+                    .ToList();
 
                 if (availableDevices.Count > 0 || _isScanningBluetooth)
                 {
@@ -1459,7 +1456,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                                 RefreshBluetooth();
                             };
 
-                            availableRows.Add(PreferenceRow(device.Name, Loc.Get("Ready to pair"), pairButton));
+                            availableRows.Add(PreferenceRow(device.Name, Loc.Get("Ready to pair"), pairButton, BluetoothIconFor(device)));
                         }
                     }
                     else if (_isScanningBluetooth)
@@ -2767,9 +2764,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
             return PreferenceRow(title, input ? Loc.Get("Microphone") : Loc.Get("System output"), slider);
         }
 
-        private Border PreferenceRow(string title, string? description, Control? trailing)
+        private Border PreferenceRow(string title, string? description, Control? trailing, string? iconOverride = null)
         {
-            var icon = GetSettingIcon(Loc.Original(title));
+            var icon = iconOverride is null ? GetSettingIcon(Loc.Original(title)) : new SettingIcon(iconOverride);
             var content = new Grid
             {
                 ColumnDefinitions = new ColumnDefinitions(icon is null ? "*,Auto" : "Auto,*,Auto"),
@@ -2873,6 +2870,24 @@ namespace DaisyOS.Shell.Apps.System.Settings
             "Desktop session" => new("desktop"),
             _ => null
         };
+
+        private static string BluetoothIconFor(BluetoothDevice device)
+        {
+            var type = device.Type;
+            var name = device.Name;
+            if (ContainsIgnoreCase(type, "AirPods") || ContainsIgnoreCase(name, "AirPods")) return "AirPods";
+            if (ContainsIgnoreCase(type, "audio") || ContainsIgnoreCase(type, "headphone") || ContainsIgnoreCase(type, "headset")
+                || ContainsIgnoreCase(name, "buds") || ContainsIgnoreCase(name, "headphone")) return "headphones";
+            if (ContainsIgnoreCase(type, "keyboard") || ContainsIgnoreCase(name, "keyboard") || ContainsIgnoreCase(name, "keychron")) return "keyboard";
+            if (ContainsIgnoreCase(type, "mouse") || ContainsIgnoreCase(name, "mouse") || ContainsIgnoreCase(name, "trackpad")) return "mouse";
+            if (ContainsIgnoreCase(type, "phone") || ContainsIgnoreCase(name, "phone")) return "device-mobile";
+            if (ContainsIgnoreCase(type, "controller") || ContainsIgnoreCase(type, "gamepad")
+                || ContainsIgnoreCase(name, "controller") || ContainsIgnoreCase(name, "dualsense")) return "game-controller";
+            return "bluetooth";
+        }
+
+        private static bool ContainsIgnoreCase(string value, string fragment) =>
+            value.Contains(fragment, StringComparison.OrdinalIgnoreCase);
 
         private void UpdateContentWidth()
         {

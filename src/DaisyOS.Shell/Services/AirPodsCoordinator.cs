@@ -17,6 +17,8 @@ public sealed class AirPodsCoordinator : IDisposable
     private readonly HashSet<string> _prompted = new(StringComparer.OrdinalIgnoreCase);
     private readonly SemaphoreSlim _connectionGate = new(1, 1);
     private DateTimeOffset _nextBluetoothQuery;
+    private DateTimeOffset _nextPairedRestore;
+    private Task? _pairedRestoreTask;
     private AirPodsStatus? _bluetoothFallback;
     private bool _refreshing;
     private bool _changingMode;
@@ -30,7 +32,7 @@ public sealed class AirPodsCoordinator : IDisposable
     {
         try
         {
-            _ = Task.Run(() => _bluetooth.RestorePairedDevicesAsync(_lifetime.Token));
+            QueuePairedDeviceRestore();
             var userBinary = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "lib", "daisyos", "librepods");
             var hasCompanion = File.Exists("/usr/lib/daisyos/librepods") || File.Exists(userBinary);
             if (hasCompanion)
@@ -56,6 +58,10 @@ public sealed class AirPodsCoordinator : IDisposable
         _refreshing = true;
         try
         {
+            // BlueZ handles device-initiated reconnects for trusted accessories. This
+            // periodic pass also covers phones and headsets that expect the host to
+            // initiate after they are switched on later in the session.
+            QueuePairedDeviceRestore();
             var status = await _pods.GetStatusAsync(_lifetime.Token);
             if (!status.IsConnected && (DateTimeOffset.UtcNow >= _nextBluetoothQuery || (Status.IsConnected && _bluetoothFallback is null)))
             {
@@ -82,7 +88,6 @@ public sealed class AirPodsCoordinator : IDisposable
                         {
                             _nextAttempt[device.Address] = DateTimeOffset.UtcNow.AddMinutes(2);
                             if (await ConnectAsync(device.Address, automatic: true)) break;
-                            Prompt(device);
                         }
                         else if (!device.IsPaired) Prompt(device);
                     }
@@ -139,11 +144,29 @@ public sealed class AirPodsCoordinator : IDisposable
 
     private void Prompt(BluetoothDevice device)
     {
-        if (LinuxBluetoothService.IsAnonymousName(device.Name) || !_prompted.Add(device.Address)) return;
+        // Pairing prompts are discovery affordances, not reconnect reminders. Paired
+        // AirPods reconnect silently through the trusted-device path above.
+        if (!ShouldOfferPairingPrompt(device) || !_prompted.Add(device.Address)) return;
         _app.Notifications.Add(new NotificationItem($"Connect to \"{device.Name}\"?",
-            device.IsPaired ? "Your AirPods are nearby." : "Put your AirPods in pairing mode to connect.", DateTimeOffset.Now,
+            "AirPods in pairing mode were detected nearby.", DateTimeOffset.Now,
             SystemIconGlyph: "AirPods", Category: NotificationCategory.Network,
             ActionLabel: "Connect", ActionId: "airpods-connect:" + device.Address, TimeoutSeconds: 12));
+    }
+
+    internal static bool ShouldOfferPairingPrompt(BluetoothDevice device) =>
+        !device.IsPaired && device.IsNearby && !LinuxBluetoothService.IsAnonymousName(device.Name);
+
+    private void QueuePairedDeviceRestore()
+    {
+        var now = DateTimeOffset.UtcNow;
+        if (now < _nextPairedRestore || _pairedRestoreTask is { IsCompleted: false }) return;
+        _nextPairedRestore = now.AddMinutes(1);
+        _pairedRestoreTask = Task.Run(async () =>
+        {
+            try { await _bluetooth.RestorePairedDevicesAsync(_lifetime.Token); }
+            catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
+            catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"Bluetooth reconnect: {ex.Message}"); }
+        });
     }
 
     public async Task<bool> ConnectAsync(string address, bool automatic = false)

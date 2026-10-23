@@ -37,6 +37,7 @@ public partial class QuickSettings : UserControl
     private string? _demoConnectedWifi = "DaisyOS Guest";
     private Task? _statusRefreshTask;
     private bool _airPodsModePending;
+    private bool _bluetoothDiscoveryPending;
     private bool _bluetoothAvailable = true;
     private string _defaultAudioName = "";
     private bool HasConnectedAirPods => (Application.Current as App)?.AirPods?.Status.IsConnected == true;
@@ -397,6 +398,7 @@ public partial class QuickSettings : UserControl
     {
         SetQuickSettingsPage(QuickSettingsPage.BluetoothDevices);
         await LoadBluetoothDevicesAsync();
+        await DiscoverBluetoothDevicesAsync();
     }
 
     private void OnBluetoothDevicesBackClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
@@ -737,13 +739,25 @@ public partial class QuickSettings : UserControl
         }
 
         host.Children.Clear();
-        if (!status.IsAvailable || !status.IsEnabled || status.Devices.Count == 0)
+        if (!status.IsAvailable)
         {
             host.Children.Add(CreateStatusText(status.Detail));
             return;
         }
 
-        foreach (var device in status.Devices.Where(d => !DaisyOS.System.Bluetooth.LinuxBluetoothService.IsAnonymousName(d.Name)).OrderByDescending(device => device.IsConnected).ThenBy(device => device.Name, StringComparer.CurrentCultureIgnoreCase))
+        if (!status.IsEnabled)
+            host.Children.Add(CreateStatusText("Bluetooth is off. Paired devices are still available below."));
+        if (status.Devices.Count == 0)
+        {
+            if (status.IsEnabled) host.Children.Add(CreateStatusText(status.Detail));
+            return;
+        }
+
+        foreach (var device in status.Devices
+                     .Where(d => !LinuxBluetoothService.IsAnonymousName(d.Name))
+                     .OrderByDescending(device => device.IsConnected)
+                     .ThenByDescending(device => device.IsPaired)
+                     .ThenBy(device => device.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             host.Children.Add(CreateBluetoothDeviceButton(device));
         }
@@ -795,9 +809,11 @@ public partial class QuickSettings : UserControl
         button.Click += async (_, _) =>
         {
             button.IsEnabled = false;
-            if (!(device.IsPaired
-                ? await _bluetoothService.SetConnectedAsync(device.Address, !device.IsConnected)
-                : await _bluetoothService.PairDeviceAsync(device.Address)))
+            var status = await _bluetoothService.GetAdapterStatusAsync();
+            var ready = status.IsEnabled || await _bluetoothService.SetEnabledAsync(true);
+            if (!ready || !(device.IsPaired
+                    ? await _bluetoothService.SetConnectedAsync(device.Address, !device.IsConnected)
+                    : await _bluetoothService.PairDeviceAsync(device.Address)))
             {
                 ToolTip.SetTip(button, Loc.Get("Couldn’t change this device connection."));
                 ReportFailure("Couldn’t change that Bluetooth connection.");
@@ -805,6 +821,32 @@ public partial class QuickSettings : UserControl
             await LoadBluetoothDevicesAsync();
         };
         return button;
+    }
+
+    private async Task DiscoverBluetoothDevicesAsync()
+    {
+        if (_bluetoothDiscoveryPending) return;
+        _bluetoothDiscoveryPending = true;
+        var started = false;
+        try
+        {
+            var adapter = await _bluetoothService.GetAdapterStatusAsync();
+            if (!adapter.IsEnabled) return;
+            var host = this.FindControl<StackPanel>("BluetoothDevicesHost");
+            host?.Children.Insert(0, CreateStatusText("Searching for nearby devices…"));
+            if (!(started = await _bluetoothService.StartDiscoveryAsync()))
+            {
+                await LoadBluetoothDevicesAsync();
+                ReportFailure("Couldn’t search for nearby Bluetooth devices.");
+                return;
+            }
+            await LoadBluetoothDevicesAsync();
+        }
+        finally
+        {
+            if (started) await _bluetoothService.StopDiscoveryAsync();
+            _bluetoothDiscoveryPending = false;
+        }
     }
 
     private static bool IsDemoBluetoothEnabled() =>
@@ -832,7 +874,7 @@ public partial class QuickSettings : UserControl
         if (Contains(type, "audio") || Contains(type, "headphone") || Contains(type, "headset") || Contains(name, "bud")) return "headphones";
         if (Contains(type, "keyboard") || Contains(name, "keyboard") || Contains(name, "keychron")) return "keyboard";
         if (Contains(type, "mouse") || Contains(name, "mouse") || Contains(name, "master")) return "mouse";
-        if (Contains(type, "phone") || Contains(name, "phone")) return "smartphone";
+        if (Contains(type, "phone") || Contains(name, "phone")) return "device-mobile";
         if (Contains(type, "controller") || Contains(type, "gamepad") || Contains(name, "controller") || Contains(name, "dualsense")) return "game-controller";
         return "bluetooth";
     }
@@ -882,6 +924,9 @@ public partial class QuickSettings : UserControl
             wifiTile.IsVisible = !wifiReceiverMissing && !ethernetIsActive;
             wifiTile.IsEnabled = wifi.IsAvailable;
             wifiTile.IsChecked = wifi.IsEnabled;
+            wifiTile.WifiSignalPercent = network.ConnectionKind == NetworkConnectionKind.WiFi
+                ? network.SignalPercent ?? 0
+                : 0;
             wifiTile.ToolTipText = Loc.Get(wifi.IsEnabled ? "Turn off Wi-Fi" : "Turn on Wi-Fi");
         }
         if (this.FindControl<QuickSettingTile>("EthernetTile") is { } ethernetTile)

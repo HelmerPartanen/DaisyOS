@@ -58,11 +58,12 @@ public sealed class QuickSettingsTests
     }
 
     [AvaloniaFact]
-    public void WifiTileUsesSettingsWifiIcon()
+    public void WifiTileUsesTheSystemBarSignalIcon()
     {
         var panel = new DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings();
 
-        Assert.Equal("wifi-02", panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("WifiTile")!.Icon);
+        var tile = panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("WifiTile")!;
+        Assert.True(tile.UseWifiSignalIcon);
     }
 
     [AvaloniaFact]
