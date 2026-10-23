@@ -191,28 +191,46 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
 
     public async Task<bool> SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default)
     {
+        // BlueZ may report only org.bluez.Error.Failed when a controller is
+        // soft-blocked, so waiting for the word "Blocked" in its error loses
+        // the only recovery path. Clearing a soft block is harmless when the
+        // radio is already unblocked and does not require privileged service
+        // management.
+        if (enabled)
+        {
+            await _commandRunner.RunAsync(
+                "rfkill", ["unblock", "bluetooth"], CommandTimeout, cancellationToken);
+        }
+
         var result = await _commandRunner.RunAsync(
             "bluetoothctl",
             ["power", enabled ? "on" : "off"],
             CommandTimeout,
             cancellationToken);
 
-        // A soft rfkill is the common recoverable failure. Do not invoke privileged
-        // service management from a toggle; the session service owns daemon startup.
-        if (enabled && !result.Succeeded && string.Concat(result.StandardOutput, result.StandardError)
-                .Contains("Blocked", StringComparison.OrdinalIgnoreCase))
+        var changed = result.Succeeded;
+        if (!changed && string.Concat(result.StandardOutput, result.StandardError)
+                .Contains("Busy", StringComparison.OrdinalIgnoreCase))
         {
-            await _commandRunner.RunAsync("rfkill", ["unblock", "bluetooth"], CommandTimeout, cancellationToken);
-            result = await _commandRunner.RunAsync(
-                "bluetoothctl", ["power", "on"], CommandTimeout, cancellationToken);
+            // BlueZ can answer Busy while an rfkill unblock has already started
+            // the requested transition. Confirm the settled controller state
+            // instead of reverting the UI even though the radio turns on.
+            for (var attempt = 0; attempt < 5 && !changed; attempt++)
+            {
+                await Task.Delay(100, cancellationToken);
+                var status = await _commandRunner.RunAsync(
+                    "bluetoothctl", ["--timeout", "2", "show"],
+                    TimeSpan.FromSeconds(3), cancellationToken);
+                changed = status.Succeeded && ParseShowOutput(status.StandardOutput) == enabled;
+            }
         }
 
-        if (enabled && result.Succeeded)
+        if (enabled && changed)
         {
             _ = Task.Run(() => RestorePairedDevicesAsync(CancellationToken.None));
         }
 
-        return result.Succeeded;
+        return changed;
     }
 
     public async Task<bool> SetConnectedAsync(string address, bool connected, CancellationToken cancellationToken = default)

@@ -506,6 +506,7 @@ public partial class SystemBarView : UserControl
         if (this.FindControl<BatteryStatusView>("SystemBarBattery") is not { } batteryView) return;
         batteryView.IsVisible = battery.IsPresent && battery.ChargePercent.HasValue;
         if (battery.ChargePercent is { } charge) batteryView.ChargePercent = charge;
+        batteryView.IsCharging = BatteryStatusView.IsChargingState(battery.State);
         batteryView.StateText = Loc.Get(battery.State);
         ToolTip.SetTip(batteryView, battery.Detail);
     }

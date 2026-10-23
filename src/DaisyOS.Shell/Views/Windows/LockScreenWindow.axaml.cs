@@ -650,6 +650,7 @@ public partial class LockScreenWindow : Window
             if (status.IsPresent && status.ChargePercent.HasValue)
             {
                 BatteryInfo.ChargePercent = status.ChargePercent.Value;
+                BatteryInfo.IsCharging = BatteryStatusView.IsChargingState(status.State);
                 BatteryInfo.StateText = Loc.Get(status.State);
                 BatteryInfo.IsVisible = true;
                 ToolTip.SetTip(BatteryInfo, status.Detail);

@@ -11,6 +11,8 @@ public partial class BatteryStatusView : UserControl
         AvaloniaProperty.Register<BatteryStatusView, string>(nameof(StateText), string.Empty);
     public static readonly StyledProperty<bool> ShowStateProperty =
         AvaloniaProperty.Register<BatteryStatusView, bool>(nameof(ShowState));
+    public static readonly StyledProperty<bool> IsChargingProperty =
+        AvaloniaProperty.Register<BatteryStatusView, bool>(nameof(IsCharging));
     public static readonly StyledProperty<double> IconWidthProperty =
         AvaloniaProperty.Register<BatteryStatusView, double>(nameof(IconWidth), 28);
     public static readonly StyledProperty<double> IconHeightProperty =
@@ -21,6 +23,7 @@ public partial class BatteryStatusView : UserControl
     static BatteryStatusView()
     {
         ChargePercentProperty.Changed.AddClassHandler<BatteryStatusView>((view, _) => view.UpdatePresentation());
+        IsChargingProperty.Changed.AddClassHandler<BatteryStatusView>((view, _) => view.UpdatePresentation());
     }
 
     public BatteryStatusView()
@@ -36,6 +39,7 @@ public partial class BatteryStatusView : UserControl
     }
     public string StateText { get => GetValue(StateTextProperty); set => SetValue(StateTextProperty, value); }
     public bool ShowState { get => GetValue(ShowStateProperty); set => SetValue(ShowStateProperty, value); }
+    public bool IsCharging { get => GetValue(IsChargingProperty); set => SetValue(IsChargingProperty, value); }
     public double IconWidth { get => GetValue(IconWidthProperty); set => SetValue(IconWidthProperty, value); }
     public double IconHeight { get => GetValue(IconHeightProperty); set => SetValue(IconHeightProperty, value); }
     public double LabelFontSize { get => GetValue(LabelFontSizeProperty); set => SetValue(LabelFontSizeProperty, value); }
@@ -45,7 +49,13 @@ public partial class BatteryStatusView : UserControl
         if (this.FindControl<TextBlock>("PercentText") is { } percent)
             percent.Text = $"{Math.Clamp(ChargePercent, 0, 100)}%";
         if (this.FindControl<BatteryLevelIcon>("LevelIcon") is not { } icon) return;
+        icon.Classes.Set("Charging", IsCharging);
+        if (this.FindControl<DaisyIcon>("ChargingIcon") is { } chargingIcon)
+            chargingIcon.IsVisible = IsCharging;
         icon.Classes.Set("Low", BatteryLevelIcon.GetSeverity(ChargePercent) == BatteryLevelSeverity.Low);
         icon.Classes.Set("Critical", BatteryLevelIcon.GetSeverity(ChargePercent) == BatteryLevelSeverity.Critical);
     }
+
+    internal static bool IsChargingState(string? state) =>
+        string.Equals(state?.Trim(), "Charging", StringComparison.OrdinalIgnoreCase);
 }

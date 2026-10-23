@@ -111,7 +111,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Apps", "DEFAULT APPLICATIONS", "Default apps", "Web links and new-file defaults", "default app browser links files"),
             new("Input", "LANGUAGE", "System language", "Choose the desktop language", "language locale translation english finnish suomi kieli"),
             new("Input", "KEYBOARD LAYOUT", "Keyboard layout", "Choose the language and physical layout used while typing", "keyboard layout language typing input finnish us english"),
-            new("Input", "MOUSE & TRACKPAD", "Mouse and trackpad", "Pointer speed, natural scrolling, tap to click", "mouse trackpad pointer scrolling tap"),
+            new("Input", "MOUSE & TRACKPAD", "Mouse and trackpad", "Pointer speed, scroll speed, natural scrolling, tap to click", "mouse trackpad pointer scrolling scroll speed tap"),
+            new("Input", "MOUSE & TRACKPAD", "Trackpad scroll speed", "Slowest, default or fastest", "trackpad touchpad scroll scrolling speed slider mouse"),
             new("DateTime", "TIME", "Automatic date and time", "System time, time zone, and clock format", "date time timezone time zone clock ntp automatic"),
             new("About", "DAISYOS", "About this system", "Version and desktop-session information", "version about diagnostics support")
         ];
@@ -618,6 +619,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     var batteryView = new BatteryStatusView
                     {
                         ChargePercent = chargePercent,
+                        IsCharging = BatteryStatusView.IsChargingState(batteryStatus.State),
                         StateText = Loc.Get(batteryStatus.State),
                         ShowState = true,
                         Foreground = TryBrush("ContentSecondaryBrush"),
@@ -644,8 +646,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             var app = Application.Current as App;
             string Current(string key, string fallback) => app?.GetPreference(key, fallback) ?? fallback;
-            Action<string> Save(string key) => value => app?.SetPreference(key, value);
-            Action<bool> SaveBool(string key) => value => app?.SetPreference(key, value ? "true" : "false");
+            Action<string> Save(string pKey) => value => app?.SetPreference(pKey, value);
+            Action<bool> SaveBool(string pKey) => value => app?.SetPreference(pKey, value ? "true" : "false");
 
             // Older builds stored the lock timeout under the legacy key.
             var lockTimeout = Current(PowerPreferences.LockTimeoutKey,
@@ -1727,7 +1729,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 HorizontalAlignment = HorizontalAlignment.Right,
                 VerticalAlignment = VerticalAlignment.Center,
                 Foreground = TryBrush("ContentSecondaryBrush"),
-                Content = new DaisyIcon { Icon = "more-vertical", Size = 18, Foreground = TryBrush("ContentSecondaryBrush") }
+                Content = new DaisyIcon { Icon = UIIcons.MoreVertical, Size = 18, Foreground = TryBrush("ContentSecondaryBrush") }
             };
             more.Classes.Add("Ghost");
             more.Classes.Add("IconButton");
@@ -2205,6 +2207,53 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var hardwareService = new DaisyOS.System.Input.LinuxInputHardwareService();
             var status = await hardwareService.GetStatusAsync();
             if (buildVersion != _categoryBuildVersion) return;
+
+            var scrollSpeedSlider = new QuickSettingsSlider
+            {
+                Minimum = 0,
+                Maximum = 4,
+                Value = status.TrackpadScrollSpeed,
+                StepFrequency = 1,
+                ShowTicks = true,
+                ShowIcon = false,
+                Width = 220,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            Avalonia.Automation.AutomationProperties.SetName(scrollSpeedSlider, Loc.Get("Trackpad scroll speed"));
+            ToolTip.SetTip(scrollSpeedSlider, GetScrollSpeedLabel((int)Math.Round(scrollSpeedSlider.Value)));
+
+            int lastScrollSpeed = status.TrackpadScrollSpeed;
+            int scrollSpeedChangeVersion = 0;
+            var scrollSpeedUpdateLock = new SemaphoreSlim(1, 1);
+            scrollSpeedSlider.ValueChanged += async (_, _) =>
+            {
+                var speedIndex = (int)Math.Round(scrollSpeedSlider.Value);
+                ToolTip.SetTip(scrollSpeedSlider, GetScrollSpeedLabel(speedIndex));
+                if (speedIndex == lastScrollSpeed) return;
+                lastScrollSpeed = speedIndex;
+                var changeVersion = ++scrollSpeedChangeVersion;
+
+                // Coalesce drag events and serialize writes. If an older write is
+                // already running, the newest selected tick is always written last.
+                await Task.Delay(100);
+                if (changeVersion != scrollSpeedChangeVersion) return;
+
+                await scrollSpeedUpdateLock.WaitAsync();
+                try
+                {
+                    if (changeVersion != scrollSpeedChangeVersion) return;
+                    if (!await hardwareService.SetTrackpadScrollSpeedAsync(speedIndex))
+                    {
+                        (Application.Current as App)?.Feedback.Show(Loc.Get("Trackpad scroll speed was saved, but couldn’t be applied yet."));
+                    }
+                }
+                finally
+                {
+                    scrollSpeedUpdateLock.Release();
+                }
+            };
+
             AddSection(Loc.Get("MOUSE & TRACKPAD"), null,
                 Picker("Pointer speed", "input.pointer-speed", status.PointerSpeed, async speed =>
                 {
@@ -2212,6 +2261,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Pointer speed was saved, but couldn’t be applied yet."));
                     ShowCategory("Input");
                 }, "Slow", "Normal", "Fast"),
+                PreferenceRow(Loc.Get("Trackpad scroll speed"), Loc.Get("Slowest, default or fastest"), scrollSpeedSlider),
                 Toggle("Natural scrolling", "input.natural-scroll", status.NaturalScroll, async enabled =>
                 {
                     if (!await hardwareService.SetNaturalScrollAsync(enabled))
@@ -2230,6 +2280,16 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 }));
             await BuildCursorPreferencesAsync(buildVersion);
         }
+
+        private static string GetScrollSpeedLabel(int index) => index switch
+        {
+            0 => Loc.Get("Slowest"),
+            1 => Loc.Get("Slower"),
+            2 => Loc.Get("Default"),
+            3 => Loc.Get("Faster"),
+            4 => Loc.Get("Fastest"),
+            _ => Loc.Get("Default")
+        };
 
         private async Task BuildCursorPreferencesAsync(int buildVersion)
         {
@@ -2934,6 +2994,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             "Reduce motion" => new("pause-circle"),
             "Pointer speed" => new("pointer_speed"),
             "Pointer style" or "Pointer size" => new("cursor"),
+            "Trackpad scroll speed" or "Scrolling speed" => new("arrows-down-up"),
             "Natural scrolling" => new("arrows-down-up"),
             "Tap to click" => new("hand-tap"),
 

@@ -116,9 +116,15 @@ public sealed class LinuxBluetoothServiceTests
         var changed = await service.SetEnabledAsync(enabled);
 
         Assert.False(changed);
-        var call = Assert.Single(runner.Calls);
+        var call = runner.Calls[^1];
         Assert.Equal("bluetoothctl", call.FileName);
         Assert.Equal(["power", action], call.Arguments);
+        Assert.Equal(enabled ? 2 : 1, runner.Calls.Count);
+        if (enabled)
+        {
+            Assert.Equal("rfkill", runner.Calls[0].FileName);
+            Assert.Equal(["unblock", "bluetooth"], runner.Calls[0].Arguments);
+        }
     }
 
     [Fact]
@@ -177,13 +183,27 @@ public sealed class LinuxBluetoothServiceTests
     }
 
     [Fact]
-    public async Task ExplicitEnableCanRecoverASoftBlockedRadio()
+    public async Task ExplicitEnableClearsSoftBlockBeforePoweringOn()
     {
-        var runner = new ScriptedCommandRunner(new CommandResult(1, "org.bluez.Error.Blocked", "", false), Succeeded(), Succeeded());
+        var runner = new ScriptedCommandRunner(Succeeded(), Succeeded());
         Assert.True(await new LinuxBluetoothService(runner).SetEnabledAsync(true));
-        Assert.Equal("rfkill", runner.Calls[1].FileName);
-        Assert.Equal(["unblock", "bluetooth"], runner.Calls[1].Arguments);
-        Assert.Equal(["power", "on"], runner.Calls[2].Arguments);
+        Assert.Equal("rfkill", runner.Calls[0].FileName);
+        Assert.Equal(["unblock", "bluetooth"], runner.Calls[0].Arguments);
+        Assert.Equal(["power", "on"], runner.Calls[1].Arguments);
+    }
+
+    [Fact]
+    public async Task ExplicitEnableAcceptsBusyWhileControllerFinishesTurningOn()
+    {
+        var runner = new ScriptedCommandRunner(
+            Succeeded(),
+            Failed("org.bluez.Error.Busy"),
+            Succeeded("Powered: no\nPowerState: off-enabling"),
+            Succeeded("Powered: yes\nPowerState: on"));
+
+        Assert.True(await new LinuxBluetoothService(runner).SetEnabledAsync(true));
+        Assert.Equal(["--timeout", "2", "show"], runner.Calls[2].Arguments);
+        Assert.Equal(["--timeout", "2", "show"], runner.Calls[3].Arguments);
     }
 
     [Fact]

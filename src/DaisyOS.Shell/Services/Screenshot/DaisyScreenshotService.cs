@@ -298,11 +298,18 @@ public sealed class DaisyScreenshotService
         var localHelper = Path.Combine(AppContext.BaseDirectory, "daisy-screenshot-helper");
         if (File.Exists(localHelper)) return localHelper;
 
-        var sourceHelper = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../src/native/daisy_screenshot/build/daisy-screenshot-helper"));
+        // AppContext is src/DaisyOS.Shell/bin/<Configuration>/<TFM>. The native
+        // helper is a sibling of DaisyOS.Shell under src/native, so only three
+        // parent traversals are needed. The old path added a second `src` and
+        // could never find a locally built helper.
+        var sourceHelper = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../native/daisy_screenshot/build/daisy-screenshot-helper"));
         if (File.Exists(sourceHelper)) return sourceHelper;
 
         const string systemHelper = "/usr/local/libexec/daisyos/daisy-screenshot-helper";
         if (File.Exists(systemHelper)) return systemHelper;
+
+        const string packagedSystemHelper = "/usr/libexec/daisyos/daisy-screenshot-helper";
+        if (File.Exists(packagedSystemHelper)) return packagedSystemHelper;
 
         var pathHelper = FindExecutable("daisy-screenshot-helper");
         if (pathHelper is not null) return pathHelper;

@@ -12,13 +12,39 @@ namespace DaisyOS.System.Input;
 public sealed record InputHardwareStatus(
     bool NaturalScroll,
     bool TapToClick,
-    string PointerSpeed);
+    string PointerSpeed,
+    int TrackpadScrollSpeed = 2);
 
 public sealed class LinuxInputHardwareService
 {
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(3);
     private readonly ICommandRunner _commandRunner;
     private readonly string _configFilePath;
+
+    public static readonly double[] ScrollFactors = [0.4, 0.7, 1.0, 1.4, 1.8];
+
+    public static int FactorToScrollSpeedIndex(double factor)
+    {
+        int closest = 2;
+        double minDiff = double.MaxValue;
+        for (int i = 0; i < ScrollFactors.Length; i++)
+        {
+            double diff = Math.Abs(ScrollFactors[i] - factor);
+            if (diff < minDiff)
+            {
+                minDiff = diff;
+                closest = i;
+            }
+        }
+        return closest;
+    }
+
+    public static double ScrollSpeedIndexToFactor(int index)
+    {
+        if (index < 0) return ScrollFactors[0];
+        if (index >= ScrollFactors.Length) return ScrollFactors[^1];
+        return ScrollFactors[index];
+    }
 
     public LinuxInputHardwareService(ICommandRunner? commandRunner = null, string? configFilePath = null)
     {
@@ -34,6 +60,7 @@ public sealed class LinuxInputHardwareService
         bool naturalScroll = false;
         bool tapToClick = true;
         string pointerSpeed = "Normal";
+        int trackpadScrollSpeed = 2;
 
         try
         {
@@ -74,6 +101,13 @@ public sealed class LinuxInputHardwareService
                             _ => "Normal"
                         };
                     }
+                    else if (string.Equals(key, "ScrollFactor", StringComparison.OrdinalIgnoreCase) &&
+                             (currentGroup.Contains("Touchpad", StringComparison.OrdinalIgnoreCase) ||
+                              string.IsNullOrEmpty(currentGroup)) &&
+                             double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var factor))
+                    {
+                        trackpadScrollSpeed = FactorToScrollSpeedIndex(factor);
+                    }
                 }
             }
         }
@@ -82,7 +116,17 @@ public sealed class LinuxInputHardwareService
             // Use defaults on read failure
         }
 
-        return new InputHardwareStatus(naturalScroll, tapToClick, pointerSpeed);
+        // KWin stores input preferences per physical device. Prefer the value
+        // reported by the active touchpad so the UI always reflects what is
+        // actually in use, while retaining the file value as an offline
+        // fallback.
+        var liveScrollFactor = await TryGetLiveKWinTouchpadScrollFactorAsync(cancellationToken);
+        if (liveScrollFactor is not null)
+        {
+            trackpadScrollSpeed = FactorToScrollSpeedIndex(liveScrollFactor.Value);
+        }
+
+        return new InputHardwareStatus(naturalScroll, tapToClick, pointerSpeed, trackpadScrollSpeed);
     }
 
     public async Task<bool> SetNaturalScrollAsync(bool enabled, CancellationToken cancellationToken = default)
@@ -90,14 +134,24 @@ public sealed class LinuxInputHardwareService
         var val = enabled ? "true" : "false";
         var mouseSaved = await WriteConfigAsync("Mouse", "NaturalScroll", val, cancellationToken);
         var touchpadSaved = await WriteConfigAsync("Touchpad", "NaturalScroll", val, cancellationToken);
-        return mouseSaved && touchpadSaved && await ReloadKWinAsync(cancellationToken);
+        var touchpadApplied = await ApplyLiveKWinTouchpadPropertyAsync(
+            "naturalScroll", "b", val, cancellationToken);
+        if (touchpadApplied) return mouseSaved && touchpadSaved;
+
+        await ReloadKWinAsync(cancellationToken);
+        return false;
     }
 
     public async Task<bool> SetTapToClickAsync(bool enabled, CancellationToken cancellationToken = default)
     {
         var val = enabled ? "true" : "false";
-        return await WriteConfigAsync("Touchpad", "TapToClick", val, cancellationToken)
-            && await ReloadKWinAsync(cancellationToken);
+        var saved = await WriteConfigAsync("Touchpad", "TapToClick", val, cancellationToken);
+        var applied = await ApplyLiveKWinTouchpadPropertyAsync(
+            "tapToClick", "b", val, cancellationToken);
+        if (applied) return saved;
+
+        await ReloadKWinAsync(cancellationToken);
+        return false;
     }
 
     public async Task<bool> SetPointerSpeedAsync(string speed, CancellationToken cancellationToken = default)
@@ -111,14 +165,132 @@ public sealed class LinuxInputHardwareService
 
         var mouseSaved = await WriteConfigAsync("Mouse", "PointerAcceleration", accel, cancellationToken);
         var touchpadSaved = await WriteConfigAsync("Touchpad", "PointerAcceleration", accel, cancellationToken);
-        return mouseSaved && touchpadSaved && await ReloadKWinAsync(cancellationToken);
+        var touchpadApplied = await ApplyLiveKWinTouchpadPropertyAsync(
+            "pointerAcceleration", "d", accel, cancellationToken);
+        if (touchpadApplied) return mouseSaved && touchpadSaved;
+
+        await ReloadKWinAsync(cancellationToken);
+        return false;
+    }
+
+    public async Task<bool> SetTrackpadScrollSpeedAsync(int speedIndex, CancellationToken cancellationToken = default)
+    {
+        var factor = ScrollSpeedIndexToFactor(speedIndex);
+        var factorStr = factor.ToString("0.0#", CultureInfo.InvariantCulture);
+
+        var touchpadSaved = await WriteConfigAsync("Touchpad", "ScrollFactor", factorStr, cancellationToken);
+        var applied = await ApplyLiveKWinTouchpadScrollFactorAsync(factor, cancellationToken);
+
+        // Setting the KWin device property applies the value immediately and
+        // makes KWin persist it in the device's real nested Libinput group.
+        // Keep the generic Touchpad entry above as DaisyOS's offline fallback.
+        if (applied)
+        {
+            return touchpadSaved;
+        }
+
+        await ReloadKWinAsync(cancellationToken);
+        return false;
+    }
+
+    private async Task<double?> TryGetLiveKWinTouchpadScrollFactorAsync(CancellationToken cancellationToken)
+    {
+        try
+        {
+            foreach (var devPath in await GetKWinInputDevicePathsAsync(cancellationToken))
+            {
+                if (!await IsKWinTouchpadAsync(devPath, cancellationToken)) continue;
+
+                var result = await _commandRunner.RunAsync(
+                    "busctl", ["--user", "get-property", "org.kde.KWin", devPath,
+                        "org.kde.KWin.InputDevice", "scrollFactor"],
+                    TimeSpan.FromMilliseconds(500), cancellationToken);
+                if (result.Succeeded &&
+                    TryParseBusctlDouble(result.StandardOutput, out var factor))
+                {
+                    return factor;
+                }
+            }
+        }
+        catch
+        {
+            // File-backed value remains available when KWin cannot be queried.
+        }
+
+        return null;
+    }
+
+    private async Task<bool> ApplyLiveKWinTouchpadScrollFactorAsync(double factor, CancellationToken cancellationToken)
+        => await ApplyLiveKWinTouchpadPropertyAsync(
+            "scrollFactor", "d", factor.ToString("0.0#", CultureInfo.InvariantCulture), cancellationToken);
+
+    private async Task<bool> ApplyLiveKWinTouchpadPropertyAsync(
+        string property,
+        string signature,
+        string value,
+        CancellationToken cancellationToken)
+    {
+        var applied = false;
+        try
+        {
+            foreach (var devPath in await GetKWinInputDevicePathsAsync(cancellationToken))
+            {
+                if (!await IsKWinTouchpadAsync(devPath, cancellationToken)) continue;
+
+                var result = await _commandRunner.RunAsync(
+                    "busctl", ["--user", "set-property", "org.kde.KWin", devPath,
+                        "org.kde.KWin.InputDevice", property, signature, value],
+                    TimeSpan.FromMilliseconds(500), cancellationToken);
+                applied |= result.Succeeded;
+            }
+        }
+        catch
+        {
+            // The saved fallback is still available if live application fails.
+        }
+
+        return applied;
+    }
+
+    private async Task<IReadOnlyList<string>> GetKWinInputDevicePathsAsync(CancellationToken cancellationToken)
+    {
+        var treeResult = await _commandRunner.RunAsync(
+            "busctl", ["--user", "tree", "org.kde.KWin"], CommandTimeout, cancellationToken);
+        if (!treeResult.Succeeded || string.IsNullOrWhiteSpace(treeResult.StandardOutput))
+            return [];
+
+        return treeResult.StandardOutput
+            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).LastOrDefault())
+            .Where(path => path?.Contains("/InputDevice/event", StringComparison.Ordinal) == true)
+            .Select(path => path!)
+            .Distinct(StringComparer.Ordinal)
+            .ToArray();
+    }
+
+    private async Task<bool> IsKWinTouchpadAsync(string devPath, CancellationToken cancellationToken)
+    {
+        var result = await _commandRunner.RunAsync(
+            "busctl", ["--user", "get-property", "org.kde.KWin", devPath,
+                "org.kde.KWin.InputDevice", "touchpad"],
+            TimeSpan.FromMilliseconds(500), cancellationToken);
+        return result.Succeeded &&
+               result.StandardOutput.Contains("true", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool TryParseBusctlDouble(string output, out double value)
+    {
+        value = default;
+        var parts = output.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2 &&
+               double.TryParse(parts[^1], NumberStyles.Float, CultureInfo.InvariantCulture, out value);
     }
 
     private async Task<bool> WriteConfigAsync(string group, string key, string value, CancellationToken cancellationToken)
     {
         var result = await _commandRunner.RunAsync(
             "kwriteconfig6",
-            ["--file", "kcminputrc", "--group", group, "--key", key, value],
+            ["--file", _configFilePath, "--group", group, "--key", key, value, "--notify"],
             CommandTimeout,
             cancellationToken);
 

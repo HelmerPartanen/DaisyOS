@@ -92,6 +92,7 @@ internal static class AdditionalPortals
             if (!await dialog.Present() || stop.IsCancellationRequested) return (1, []);
             var helper = global::System.IO.Path.Combine(AppContext.BaseDirectory, "daisy-screenshot-helper");
             if (!File.Exists(helper)) helper = "/usr/local/libexec/daisyos/daisy-screenshot-helper";
+            if (!File.Exists(helper)) helper = "/usr/libexec/daisyos/daisy-screenshot-helper";
             if (!File.Exists(helper) || (helper.StartsWith("/usr/local/") && !File.Exists(helper + ".api-v2"))) throw new IOException("Install the current DaisyOS screenshot helper.");
             var service = new DaisyScreenshotService(helper, global::System.IO.Path.Combine(Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR") ?? global::System.IO.Path.GetTempPath(), "daisyos-portal-screenshots"), TimeSpan.FromSeconds(10));
             var capture = await service.CaptureWithoutFallbackAsync(new ScreenshotRequest(mode.SelectedIndex == 1 && method != "PickColor" ? ScreenshotCaptureMode.Window : ScreenshotCaptureMode.Screen), stop);

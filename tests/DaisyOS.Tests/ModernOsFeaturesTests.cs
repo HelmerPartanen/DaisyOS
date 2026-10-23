@@ -23,12 +23,15 @@ public class ModernOsFeaturesTests
         public List<(string Command, IReadOnlyList<string> Arguments)> History { get; } = new();
         public string OutputToReturn { get; set; } = string.Empty;
         public bool SuccessToReturn { get; set; } = true;
+        public Func<string, IReadOnlyList<string>, CommandResult>? ResultFactory { get; set; }
 
         public Task<CommandResult> RunAsync(string command, IReadOnlyList<string> arguments, TimeSpan timeout, CancellationToken cancellationToken = default)
         {
             LastCommand = command;
             LastArguments = arguments;
             History.Add((command, arguments));
+            if (ResultFactory is not null)
+                return Task.FromResult(ResultFactory(command, arguments));
             return Task.FromResult(new CommandResult(SuccessToReturn ? 0 : 1, OutputToReturn, string.Empty, TimedOut: !SuccessToReturn));
         }
     }
@@ -142,7 +145,78 @@ Audio
 
             await service.SetTapToClickAsync(true);
             Assert.Contains(mockRunner.History, h => h.Arguments.Contains("TapToClick"));
+
+            await service.SetTrackpadScrollSpeedAsync(1);
+            Assert.Contains(mockRunner.History, h => h.Arguments.Contains("ScrollFactor") && h.Arguments.Contains("0.7"));
+            Assert.Contains(mockRunner.History, h => h.Arguments.Contains(tempFile));
             Assert.Contains(mockRunner.History, h => h.Command == "busctl" && h.Arguments.Contains("reconfigure"));
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task InputHardwareService_ReadsAndWritesTrackpadScrollSpeed()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"kcminputrc_scroll_{Guid.NewGuid():N}");
+        try
+        {
+            var mockRunner = new MockCommandRunner();
+            var service = new DaisyOS.System.Input.LinuxInputHardwareService(mockRunner, tempFile);
+
+            // Default without file or config is 2 (middle tick)
+            var status = await service.GetStatusAsync();
+            Assert.Equal(2, status.TrackpadScrollSpeed);
+
+            // Write 0.4 (slowest, tick 0) directly to file
+            await File.WriteAllLinesAsync(tempFile, ["[Touchpad]", "ScrollFactor=0.4"]);
+            status = await service.GetStatusAsync();
+            Assert.Equal(0, status.TrackpadScrollSpeed);
+
+            // Force the command fallback and verify the selected value survives
+            // a fresh read from the same config file.
+            mockRunner.SuccessToReturn = false;
+            Assert.False(await service.SetTrackpadScrollSpeedAsync(4));
+            Assert.Contains(mockRunner.History, h => h.Arguments.Contains("ScrollFactor") && h.Arguments.Contains("1.8"));
+            status = await service.GetStatusAsync();
+            Assert.Equal(4, status.TrackpadScrollSpeed);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task InputHardwareService_AppliesAndReadsActiveKWinTouchpadScrollSpeed()
+    {
+        var mockRunner = new MockCommandRunner
+        {
+            ResultFactory = (_, arguments) =>
+            {
+                var output = arguments.Contains("tree")
+                    ? "└─ /org/kde/KWin/InputDevice/event8\n"
+                    : arguments.Contains("touchpad")
+                        ? "b true\n"
+                        : arguments.Contains("scrollFactor") && arguments.Contains("get-property")
+                            ? "d 1.4\n"
+                            : string.Empty;
+                return new CommandResult(0, output, string.Empty, TimedOut: false);
+            }
+        };
+        var tempFile = Path.Combine(Path.GetTempPath(), $"kcminputrc_live_{Guid.NewGuid():N}");
+        try
+        {
+            var service = new DaisyOS.System.Input.LinuxInputHardwareService(mockRunner, tempFile);
+
+            Assert.Equal(3, (await service.GetStatusAsync()).TrackpadScrollSpeed);
+            Assert.True(await service.SetTrackpadScrollSpeedAsync(1));
+            Assert.Contains(mockRunner.History, call =>
+                call.Arguments.Contains("set-property") &&
+                call.Arguments.Contains("scrollFactor") &&
+                call.Arguments.Contains("0.7"));
         }
         finally
         {

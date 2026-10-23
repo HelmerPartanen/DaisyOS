@@ -424,6 +424,11 @@ ensure_screenshot_helper() {
   if [[ ! -f "$helper_build" ]]; then
     log_message "Building native screenshot helper..."
     if command -v cmake >/dev/null 2>&1; then
+      # A cached generator can disappear after a package/toolchain update. CMake
+      # otherwise keeps trying the missing tool forever and the helper silently
+      # remains unavailable.
+      cmake -E rm -f "$helper_src/build/CMakeCache.txt"
+      cmake -E remove_directory "$helper_src/build/CMakeFiles"
       cmake -S "$helper_src" -B "$helper_src/build" -DCMAKE_BUILD_TYPE=Release >> "$session_log" 2>&1 || true
       cmake --build "$helper_src/build" >> "$session_log" 2>&1 || true
     fi

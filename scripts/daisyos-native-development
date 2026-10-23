@@ -106,6 +106,8 @@ restart_shell() {
   local helper_src="$source_root/src/native/daisy_screenshot"
   local helper_build="$helper_src/build/daisy-screenshot-helper"
   if [[ ! -f "$helper_build" ]] && command -v cmake >/dev/null 2>&1; then
+    cmake -E rm -f "$helper_src/build/CMakeCache.txt"
+    cmake -E remove_directory "$helper_src/build/CMakeFiles"
     cmake -S "$helper_src" -B "$helper_src/build" -DCMAKE_BUILD_TYPE=Release >/dev/null 2>&1 || true
     cmake --build "$helper_src/build" >/dev/null 2>&1 || true
   fi

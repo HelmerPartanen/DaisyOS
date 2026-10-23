@@ -3,26 +3,26 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
   <Viewbox Stretch="Uniform">
-    <Canvas Width="25" Height="13">
-      <!-- The interior is the cavity of Assets/Icons/HugeIcons/battery.svg.
+    <Canvas Width="25" Height="14">
+      <!-- The interior is the cavity shared with battery-charging-01.svg.
            The fixed cavity clip preserves both rounded ends at 100%, while the
            variable-width bar keeps a square leading edge as charge grows. -->
       <Border x:Name="FillBar"
               Canvas.Left="1.5"
               Canvas.Top="1.5"
               Width="0"
-              Height="9.5"
-              Clip="M2.25 0H17.25A2.25 2.25 0 0 1 19.5 2.25V7.25A2.25 2.25 0 0 1 17.25 9.5H2.25A2.25 2.25 0 0 1 0 7.25V2.25A2.25 2.25 0 0 1 2.25 0Z"
+              Height="10.5"
+              Clip="M2.25 0H17.25A2.25 2.25 0 0 1 19.5 2.25V8.25A2.25 2.25 0 0 1 17.25 10.5H2.25A2.25 2.25 0 0 1 0 8.25V2.25A2.25 2.25 0 0 1 2.25 0Z"
               Background="{Binding FillBrush, ElementName=Root}" />
 
-      <!-- Exact outline geometry from battery.svg. -->
-      <Path Data="M0.75 8.75V3.75C0.75 2.09315 2.09315 0.75 3.75 0.75H18.75C20.4069 0.75 21.75 2.09315 21.75 3.75V8.75C21.75 10.4069 20.4069 11.75 18.75 11.75H3.75C2.09315 11.75 0.75 10.4069 0.75 8.75Z"
+      <!-- Matches battery-charging-01.svg so both states share one silhouette. -->
+      <Path Data="M0.75 9.75V3.75C0.75 2.09315 2.09315 0.75 3.75 0.75H18.75C20.4069 0.75 21.75 2.09315 21.75 3.75V9.75C21.75 11.4069 20.4069 12.75 18.75 12.75H3.75C2.09315 12.75 0.75 11.4069 0.75 9.75Z"
             Fill="Transparent"
             Stroke="{Binding OutlineBrush, ElementName=Root}"
             StrokeThickness="1.5"
             StrokeLineCap="Round"
             StrokeJoin="Round" />
-      <Path Data="M23.25 8.25V4.25C23.25 4.25 24.75 4.25 24.75 6.25C24.75 8.25 23.25 8.25 23.25 8.25Z"
+      <Path Data="M23.25 8.75V4.75C23.25 4.75 24.75 4.75 24.75 6.75C24.75 8.75 23.25 8.75 23.25 8.75Z"
             Fill="{Binding OutlineBrush, ElementName=Root}" />
     </Canvas>
   </Viewbox>

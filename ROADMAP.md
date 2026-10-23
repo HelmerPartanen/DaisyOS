@@ -3197,6 +3197,9 @@ Use this section for longer implementation notes. Keep entries here detailed; ke
 
 ## Unreleased
 
+- Added trackpad scroll speed controls to Settings > Mouse & Trackpad: implemented a 5-tick discrete QuickSettingsSlider matching the Taskbar size slider pattern (Middle tick default: 1.0, Slowest: 0.4, Slower: 0.7, Faster: 1.4, Fastest: 1.8), with tooltips, search indexing, live D-Bus property updates to active KWin touchpad devices, and persistent configuration in `kcminputrc`.
+- Added power & sleep management in Settings with display timeout, system sleep timeout, auto-lock controls, and battery-aware live wallpaper throttling; optimized OS memory footprints with glibc malloc arena caps, THP madvise, VM cache reclaim tunables, and desktop idle trimming.
+
 - Improved daily search, Files, Notes, file-picker, Wi-Fi, and App Store workflows; added interaction/render coverage and corrected missing theme resources and icons. See the 2026-09-30 UX validation report.
 
 - Added JSON-backed shell settings.

@@ -11,6 +11,8 @@ cmake_generator=()
 if command -v ninja >/dev/null 2>&1; then
   cmake_generator=(-G Ninja)
 fi
+cmake -E rm -f "$repo_root/src/native/daisy_screenshot/build/CMakeCache.txt"
+cmake -E remove_directory "$repo_root/src/native/daisy_screenshot/build/CMakeFiles"
 cmake -S "$repo_root/src/native/daisy_screenshot" -B "$repo_root/src/native/daisy_screenshot/build" "${cmake_generator[@]}" -DCMAKE_BUILD_TYPE=Release
 cmake --build "$repo_root/src/native/daisy_screenshot/build"
 cmake -S "$repo_root/src/native/daisy_portal_shortcuts" -B "$repo_root/src/native/daisy_portal_shortcuts/build" "${cmake_generator[@]}" -DCMAKE_BUILD_TYPE=Release

@@ -13,11 +13,15 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class BatteryStatusViewTests
 {
     [AvaloniaTheory]
-    [InlineData(75, "#34C759")]
+    [InlineData(75, "#8899AA")]
     [InlineData(19, "#FFCC00")]
-    public void BatteryFillUsesRequestedNormalAndLowColors(int percentage, string expected)
+    public void DischargingBatteryUsesNeutralOrWarningFill(int percentage, string expected)
     {
-        var view = new BatteryStatusView { ChargePercent = percentage };
+        var view = new BatteryStatusView
+        {
+            ChargePercent = percentage,
+            Foreground = new SolidColorBrush(Color.Parse("#8899AA"))
+        };
         var window = new Window { Content = view };
         window.Show();
         try
@@ -28,6 +32,46 @@ public sealed class BatteryStatusViewTests
         }
         finally { window.Close(); }
     }
+
+    [AvaloniaFact]
+    public void ChargingBatteryUsesPercentageFillWithNormalColoredLightning()
+    {
+        var view = new BatteryStatusView
+        {
+            ChargePercent = 75,
+            IsCharging = true,
+            Foreground = new SolidColorBrush(Color.Parse("#8899AA"))
+        };
+        var window = new Window { Content = view };
+        window.Resources["StatusSuccessBrush"] = new SolidColorBrush(Color.Parse("#34C759"));
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            var chargingIcon = view.FindControl<DaisyIcon>("ChargingIcon")!;
+            var levelIcon = view.FindControl<BatteryLevelIcon>("LevelIcon")!;
+            Assert.True(chargingIcon.IsVisible);
+            Assert.True(levelIcon.IsVisible);
+            Assert.Equal("battery-charging", chargingIcon.Icon);
+            Assert.Equal(Color.Parse("#8899AA"),
+                Assert.IsAssignableFrom<ISolidColorBrush>(chargingIcon.Foreground).Color);
+            Assert.Equal(Color.Parse("#34C759"),
+                Assert.IsAssignableFrom<ISolidColorBrush>(levelIcon.FillBrush).Color);
+            Assert.Equal(BatteryLevelIcon.GetFillWidth(75),
+                levelIcon.FindControl<Border>("FillBar")!.Width,
+                precision: 3);
+        }
+        finally { window.Close(); }
+    }
+
+    [Theory]
+    [InlineData("Charging", true)]
+    [InlineData("charging", true)]
+    [InlineData("Discharging", false)]
+    [InlineData("Not charging", false)]
+    [InlineData("Full", false)]
+    public void OnlyChargingStateUsesChargingPresentation(string state, bool expected) =>
+        Assert.Equal(expected, BatteryStatusView.IsChargingState(state));
 
     [AvaloniaFact]
     public void CriticalFillUsesTheCurrentDaisyDangerColor()
