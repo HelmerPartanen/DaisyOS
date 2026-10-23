@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Text.RegularExpressions;
 using DaisyOS.Core.Models;
 using DaisyOS.Core.Services;
@@ -260,16 +261,28 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
             "bluetoothctl", ["--timeout", "3", "pairable", "on"], TimeSpan.FromSeconds(4), cancellationToken);
         if (!pairableResult.Succeeded) return false;
 
+        await using var pairingAgent = _commandRunner is SafeCommandRunner
+            ? await BluetoothPairingAgentSession.StartAsync(cancellationToken)
+            : null;
+        if (_commandRunner is SafeCommandRunner && pairingAgent is null)
+        {
+            await _commandRunner.RunAsync(
+                "bluetoothctl", ["--timeout", "3", "pairable", "off"], TimeSpan.FromSeconds(4), CancellationToken.None);
+            return false;
+        }
+
         try
         {
-            var pairResult = await _commandRunner.RunAsync(
-                "bluetoothctl",
-                ["--agent", "NoInputNoOutput", "--timeout", "20", "pair", address],
-                TimeSpan.FromSeconds(21),
-                cancellationToken);
+            // The process that owns the agent must also issue Pair(). Starting a
+            // second bluetoothctl instance makes that instance temporarily replace
+            // the default agent; when it exits, delayed BLE confirmation and HID
+            // service setup fail with "No agent available" even though BlueZ may
+            // still report Connected=yes.
+            var pairingSucceeded = pairingAgent is not null
+                ? await pairingAgent.PairAsync(address, cancellationToken)
+                : await PairWithOneShotAgentAsync(address, cancellationToken);
 
-            if (!pairResult.Succeeded && !string.Concat(pairResult.StandardOutput, pairResult.StandardError)
-                    .Contains("AlreadyExists", StringComparison.OrdinalIgnoreCase))
+            if (!pairingSucceeded)
             {
                 return false;
             }
@@ -314,6 +327,169 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
         if (!info.Succeeded) return false;
         var isConnected = info.StandardOutput.Contains("Connected: yes", StringComparison.OrdinalIgnoreCase);
         return isConnected == connected;
+    }
+
+    private async Task<bool> PairWithOneShotAgentAsync(string address, CancellationToken cancellationToken)
+    {
+        var result = await _commandRunner.RunAsync(
+            "bluetoothctl",
+            ["--agent", "NoInputNoOutput", "--timeout", "20", "pair", address],
+            TimeSpan.FromSeconds(21),
+            cancellationToken);
+        return result.Succeeded || string.Concat(result.StandardOutput, result.StandardError)
+            .Contains("AlreadyExists", StringComparison.OrdinalIgnoreCase);
+    }
+
+    /// <summary>
+    /// Keeps a real BlueZ agent registered for the complete pairing handshake.
+    /// A one-shot `bluetoothctl --agent ... pair` can unregister its agent while
+    /// a BLE HID device is still confirming its passkey, producing BlueZ's
+    /// "No agent available for request type 2" failure.
+    /// </summary>
+    private sealed class BluetoothPairingAgentSession : IAsyncDisposable
+    {
+        private readonly Process _process;
+        private readonly object _outputLock = new();
+        private TaskCompletionSource<bool>? _pairingCompletion;
+
+        private BluetoothPairingAgentSession(Process process) => _process = process;
+
+        public static async Task<BluetoothPairingAgentSession?> StartAsync(CancellationToken cancellationToken)
+        {
+            var registered = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var madeDefault = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = "bluetoothctl",
+                RedirectStandardInput = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            startInfo.ArgumentList.Add("--agent");
+            startInfo.ArgumentList.Add("NoInputNoOutput");
+            startInfo.Environment["LC_ALL"] = "C.UTF-8";
+            startInfo.Environment["LANGUAGE"] = "C";
+
+            var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+            var session = new BluetoothPairingAgentSession(process);
+            DataReceivedEventHandler receive = (_, args) =>
+            {
+                var line = args.Data;
+                if (line?.Contains("Agent registered", StringComparison.OrdinalIgnoreCase) == true)
+                    registered.TrySetResult(true);
+                if (line?.Contains("Default agent request successful", StringComparison.OrdinalIgnoreCase) == true)
+                    madeDefault.TrySetResult(true);
+                if (line is null) return;
+
+                lock (session._outputLock)
+                {
+                    var pairing = session._pairingCompletion;
+                    if (pairing is null) return;
+                    if (line.Contains("Pairing successful", StringComparison.OrdinalIgnoreCase)
+                        || line.Contains("Paired: yes", StringComparison.OrdinalIgnoreCase)
+                        || line.Contains("AlreadyExists", StringComparison.OrdinalIgnoreCase))
+                        pairing.TrySetResult(true);
+                    else if (line.Contains("Failed to pair", StringComparison.OrdinalIgnoreCase)
+                             || line.Contains("AuthenticationFailed", StringComparison.OrdinalIgnoreCase)
+                             || line.Contains("AuthenticationCanceled", StringComparison.OrdinalIgnoreCase)
+                             || line.Contains("AuthenticationRejected", StringComparison.OrdinalIgnoreCase))
+                        pairing.TrySetResult(false);
+                }
+            };
+            process.OutputDataReceived += receive;
+            process.ErrorDataReceived += receive;
+            process.Exited += (_, _) =>
+            {
+                registered.TrySetResult(false);
+                madeDefault.TrySetResult(false);
+            };
+
+            try
+            {
+                if (!process.Start()) { process.Dispose(); return null; }
+                process.BeginOutputReadLine();
+                process.BeginErrorReadLine();
+                // Keep stdin open for the lifetime of the pairing operation.
+                // Pairing will be issued through this same process, so it retains
+                // agent ownership until BlueZ finishes the complete handshake.
+                if (!await registered.Task.WaitAsync(TimeSpan.FromSeconds(3), cancellationToken))
+                {
+                    await StopAsync(process);
+                    return null;
+                }
+                await process.StandardInput.WriteLineAsync("default-agent".AsMemory(), cancellationToken);
+                await process.StandardInput.FlushAsync(cancellationToken);
+                if (!await madeDefault.Task.WaitAsync(TimeSpan.FromSeconds(3), cancellationToken))
+                {
+                    await StopAsync(process);
+                    return null;
+                }
+                return session;
+            }
+            catch (OperationCanceledException)
+            {
+                await StopAsync(process);
+                throw;
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or global::System.ComponentModel.Win32Exception or IOException or TimeoutException)
+            {
+                await StopAsync(process);
+                return null;
+            }
+        }
+
+        public async Task<bool> PairAsync(string address, CancellationToken cancellationToken)
+        {
+            TaskCompletionSource<bool> completion;
+            lock (_outputLock)
+            {
+                if (_pairingCompletion is not null)
+                    throw new InvalidOperationException("A Bluetooth pairing operation is already active.");
+                completion = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _pairingCompletion = completion;
+            }
+
+            try
+            {
+                await _process.StandardInput.WriteLineAsync($"pair {address}".AsMemory(), cancellationToken);
+                await _process.StandardInput.FlushAsync(cancellationToken);
+                return await completion.Task.WaitAsync(TimeSpan.FromSeconds(20), cancellationToken);
+            }
+            catch (TimeoutException)
+            {
+                return false;
+            }
+            finally
+            {
+                lock (_outputLock) _pairingCompletion = null;
+            }
+        }
+
+        public async ValueTask DisposeAsync() => await StopAsync(_process);
+
+        private static async Task StopAsync(Process process)
+        {
+            try
+            {
+                if (!process.HasExited)
+                {
+                    await process.StandardInput.WriteLineAsync("agent off");
+                    await process.StandardInput.WriteLineAsync("quit");
+                    process.StandardInput.Close();
+                    using var stop = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+                    await process.WaitForExitAsync(stop.Token);
+                }
+            }
+            catch (Exception ex) when (ex is InvalidOperationException or IOException or OperationCanceledException) { }
+            finally
+            {
+                try { if (!process.HasExited) process.Kill(entireProcessTree: true); }
+                catch (Exception ex) when (ex is InvalidOperationException or global::System.ComponentModel.Win32Exception) { }
+                process.Dispose();
+            }
+        }
     }
 
     public async Task<bool> ForgetDeviceAsync(string address, CancellationToken cancellationToken = default)

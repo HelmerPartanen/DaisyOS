@@ -17,9 +17,10 @@ public sealed class BatteryLevelIconTests
 
     [Theory]
     [InlineData(0, 0)]
-    [InlineData(50, 8.25)]
-    [InlineData(100, 16.5)]
-    [InlineData(150, 16.5)]
+    [InlineData(10, 1.95)]
+    [InlineData(50, 9.75)]
+    [InlineData(100, 19.5)]
+    [InlineData(150, 19.5)]
     public void FillWidthGrowsLeftToRightAndClampsToTheSvgCavity(int percentage, double expected) =>
         Assert.Equal(expected, BatteryLevelIcon.GetFillWidth(percentage), precision: 3);
 }
