@@ -21,7 +21,8 @@ public sealed class LinuxInputHardwareService
     private readonly ICommandRunner _commandRunner;
     private readonly string _configFilePath;
 
-    public static readonly double[] ScrollFactors = [0.4, 0.7, 1.0, 1.4, 1.8];
+    // Five deliberately slower KWin touchpad scroll factors (slowest to fastest).
+    public static readonly double[] ScrollFactors = [0.1, 0.2, 0.3, 0.4, 0.5];
 
     public static int FactorToScrollSpeedIndex(double factor)
     {
