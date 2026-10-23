@@ -176,6 +176,15 @@
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center"/>
 
+              <controls:BatteryStatusView
+                  x:Name="SystemBarBattery"
+                  IsVisible="False"
+                  IconWidth="24"
+                  IconHeight="18"
+                  LabelFontSize="{DynamicResource TypeSizeBodySmall}"
+                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  VerticalAlignment="Center"/>
+
             </StackPanel>
           </Border>
         </Button>

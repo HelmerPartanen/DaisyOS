@@ -1,0 +1,36 @@
+<UserControl x:Class="DaisyOS.Shell.Controls.BatteryStatusView"
+             x:Name="Root"
+             xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <UserControl.Styles>
+    <Style Selector="controls|BatteryLevelIcon.BatteryLevel">
+      <Setter Property="FillBrush" Value="#34C759" />
+    </Style>
+    <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Low">
+      <Setter Property="FillBrush" Value="#FFCC00" />
+    </Style>
+    <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Critical">
+      <Setter Property="FillBrush" Value="{DynamicResource StatusDangerBrush}" />
+    </Style>
+  </UserControl.Styles>
+
+  <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+    <controls:BatteryLevelIcon x:Name="LevelIcon"
+                               Classes="BatteryLevel"
+                               Width="{Binding IconWidth, ElementName=Root}"
+                               Height="{Binding IconHeight, ElementName=Root}"
+                               Percentage="{Binding ChargePercent, ElementName=Root}"
+                               OutlineBrush="{Binding Foreground, ElementName=Root}" />
+    <TextBlock x:Name="PercentText"
+               FontSize="{Binding LabelFontSize, ElementName=Root}"
+               FontWeight="Medium"
+               Foreground="{Binding Foreground, ElementName=Root}"
+               VerticalAlignment="Center" />
+    <TextBlock Text="{Binding StateText, ElementName=Root}"
+               IsVisible="{Binding ShowState, ElementName=Root}"
+               FontSize="{Binding LabelFontSize, ElementName=Root}"
+               Foreground="{Binding Foreground, ElementName=Root}"
+               VerticalAlignment="Center" />
+  </StackPanel>
+</UserControl>

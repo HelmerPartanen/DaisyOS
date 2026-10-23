@@ -33,10 +33,10 @@ systemctl --user start daisyos-librepods.service
 Restart the shell with the new build. Pair AirPods once through Bluetooth
 settings while their case is in pairing mode. BlueZ trusts successfully paired
 devices and its default A2DP reconnect policy reconnects dropped links. The shell
-also retries nearby paired AirPods with a two-minute cooldown. Proximity can come
-from BlueZ or a fresh LibrePods advertisement authenticated using the pair’s
-identity key; an authenticated advertisement must report disconnected AirPods
-with the case open or a bud outside the case. It never turns
+also retries nearby paired AirPods with a two-minute cooldown. Pairing prompts
+require a fresh LibrePods advertisement authenticated using the pair’s identity
+key; cached BlueZ RSSI is never enough. An authenticated advertisement must report
+disconnected AirPods with the case open or a bud outside the case. It never turns
 Bluetooth on automatically, silently pairs unknown devices, or reconnects a
 device explicitly disconnected during this shell session. Nearby devices can
 produce an actionable “Connect to …?” notification; confirmed connections

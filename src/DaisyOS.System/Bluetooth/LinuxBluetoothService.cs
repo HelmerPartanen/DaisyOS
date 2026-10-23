@@ -217,15 +217,16 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
     public async Task<bool> SetConnectedAsync(string address, bool connected, CancellationToken cancellationToken = default)
     {
         if (!DeviceAddressRegex().IsMatch(address)) return false;
-        RememberConnectionChoice(address, connected);
         if (connected)
             await _commandRunner.RunAsync("bluetoothctl", ["--timeout", "3", "trust", address], TimeSpan.FromSeconds(4), cancellationToken);
-        var result = await _commandRunner.RunAsync(
+        await _commandRunner.RunAsync(
             "bluetoothctl",
             ["--timeout", "15", connected ? "connect" : "disconnect", address],
             TimeSpan.FromSeconds(16),
             cancellationToken);
-        return result.Succeeded;
+        var reachedRequestedState = await HasConnectionStateAsync(address, connected, cancellationToken);
+        if (reachedRequestedState) RememberConnectionChoice(address, connected);
+        return reachedRequestedState;
     }
 
     public async Task<bool> StartDiscoveryAsync(CancellationToken cancellationToken = default)
@@ -252,36 +253,67 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
     {
         if (!DeviceAddressRegex().IsMatch(address)) return false;
 
-        var pairResult = await _commandRunner.RunAsync(
-            "bluetoothctl",
-            ["--timeout", "15", "pair", address],
-            TimeSpan.FromSeconds(16),
-            cancellationToken);
+        // BlueZ commonly leaves the controller non-pairable outside a settings
+        // session. Registering a NoInputNoOutput agent is also required for
+        // JustWorks accessories such as mice, which otherwise fail authentication.
+        var pairableResult = await _commandRunner.RunAsync(
+            "bluetoothctl", ["--timeout", "3", "pairable", "on"], TimeSpan.FromSeconds(4), cancellationToken);
+        if (!pairableResult.Succeeded) return false;
 
-        if (!pairResult.Succeeded && !string.Concat(pairResult.StandardOutput, pairResult.StandardError)
-                .Contains("AlreadyExists", StringComparison.OrdinalIgnoreCase))
+        try
         {
-            return false;
+            var pairResult = await _commandRunner.RunAsync(
+                "bluetoothctl",
+                ["--agent", "NoInputNoOutput", "--timeout", "20", "pair", address],
+                TimeSpan.FromSeconds(21),
+                cancellationToken);
+
+            if (!pairResult.Succeeded && !string.Concat(pairResult.StandardOutput, pairResult.StandardError)
+                    .Contains("AlreadyExists", StringComparison.OrdinalIgnoreCase))
+            {
+                return false;
+            }
+
+            // Trust device so it reconnects automatically.
+            var trustResult = await _commandRunner.RunAsync(
+                "bluetoothctl",
+                ["--timeout", "3", "trust", address],
+                TimeSpan.FromSeconds(4),
+                cancellationToken);
+
+            if (!trustResult.Succeeded) return false;
+
+            // HID devices are usually connected by the pair operation itself.
+            // Avoid a redundant connect request, but issue one when BlueZ only
+            // created the bond. In both cases verify the actual device state.
+            if (!await HasConnectionStateAsync(address, connected: true, cancellationToken))
+            {
+                await _commandRunner.RunAsync(
+                    "bluetoothctl",
+                    ["--timeout", "15", "connect", address],
+                    TimeSpan.FromSeconds(16),
+                    cancellationToken);
+            }
+
+            var connected = await HasConnectionStateAsync(address, connected: true, cancellationToken);
+            if (connected) RememberConnectionChoice(address, true);
+            return connected;
         }
+        finally
+        {
+            // Pairability is only needed while the user is pairing an accessory.
+            await _commandRunner.RunAsync(
+                "bluetoothctl", ["--timeout", "3", "pairable", "off"], TimeSpan.FromSeconds(4), CancellationToken.None);
+        }
+    }
 
-        // Trust device so it reconnects automatically
-        var trustResult = await _commandRunner.RunAsync(
-            "bluetoothctl",
-            ["--timeout", "3", "trust", address],
-            TimeSpan.FromSeconds(4),
-            cancellationToken);
-
-        if (!trustResult.Succeeded) return false;
-
-        // Connect immediately after pairing and report the actual outcome.
-        var connectResult = await _commandRunner.RunAsync(
-            "bluetoothctl",
-            ["--timeout", "10", "connect", address],
-            TimeSpan.FromSeconds(11),
-            cancellationToken);
-
-        if (connectResult.Succeeded) RememberConnectionChoice(address, true);
-        return connectResult.Succeeded;
+    private async Task<bool> HasConnectionStateAsync(string address, bool connected, CancellationToken cancellationToken)
+    {
+        var info = await _commandRunner.RunAsync(
+            "bluetoothctl", ["--timeout", "3", "info", address], TimeSpan.FromSeconds(4), cancellationToken);
+        if (!info.Succeeded) return false;
+        var isConnected = info.StandardOutput.Contains("Connected: yes", StringComparison.OrdinalIgnoreCase);
+        return isConnected == connected;
     }
 
     public async Task<bool> ForgetDeviceAsync(string address, CancellationToken cancellationToken = default)

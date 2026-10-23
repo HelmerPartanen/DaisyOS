@@ -69,7 +69,10 @@ public sealed class AirPodsCoordinator : IDisposable
                 var bluetooth = await _bluetooth.GetStatusAsync(_lifetime.Token);
                 var devices = bluetooth.Devices.Where(IsAirPods).Select(device => device with
                 {
-                    IsNearby = device.IsNearby || device.Address.Equals(status.NearbyAddress, StringComparison.OrdinalIgnoreCase)
+                    // BlueZ keeps RSSI on cached Device objects after advertisements
+                    // disappear. Only the companion's current manufacturer-data sighting
+                    // proves that the case is actually advertising right now.
+                    IsNearby = HasCurrentAdvertisement(device, status)
                 }).ToArray();
                 var connected = devices.FirstOrDefault(d => d.IsConnected);
                 _bluetoothFallback = null;
@@ -101,11 +104,20 @@ public sealed class AirPodsCoordinator : IDisposable
             {
                 if (!string.Equals(_announcedAddress, Status.Address, StringComparison.OrdinalIgnoreCase))
                 {
-                    _announcedAddress = Status.Address;
-                    await SelectAudioOutputAsync(Status.Name);
-                    _app.SessionState.SetPreference("airpods.last-address", Status.Address);
-                    _app.Notifications.Add(new NotificationItem($"Connected to \"{Status.Name}\"", "", DateTimeOffset.Now,
-                        SystemIconGlyph: "AirPods", Category: NotificationCategory.Network, TimeoutSeconds: 5));
+                    // LibrePods and BlueZ signals can arrive out of order. Never
+                    // announce an AirPods connection merely because some Bluetooth
+                    // device connected; confirm the exact address and AirPods UUID.
+                    var bluetooth = await _bluetooth.GetStatusAsync(_lifetime.Token);
+                    var confirmed = FindConfirmedConnectedAirPods(Status, bluetooth.Devices);
+                    if (confirmed is not null)
+                    {
+                        Status = Status with { Name = confirmed.Name };
+                        _announcedAddress = confirmed.Address;
+                        await SelectAudioOutputAsync(confirmed.Name);
+                        _app.SessionState.SetPreference("airpods.last-address", confirmed.Address);
+                        _app.Notifications.Add(new NotificationItem($"Connected to \"{confirmed.Name}\"", "", DateTimeOffset.Now,
+                            SystemIconGlyph: "AirPods", Category: NotificationCategory.Network, TimeoutSeconds: 5));
+                    }
                 }
                 _prompted.Remove(Status.Address);
             }
@@ -139,8 +151,15 @@ public sealed class AirPodsCoordinator : IDisposable
 
     private bool IsAirPods(BluetoothDevice device) =>
         !LinuxBluetoothService.IsAnonymousName(device.Name) &&
-        (device.Type == "AirPods" || device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(device.Address, _app.GetPreference("airpods.last-address", ""), StringComparison.OrdinalIgnoreCase));
+        (device.Type == "AirPods" || device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase));
+
+    internal static BluetoothDevice? FindConfirmedConnectedAirPods(
+        AirPodsStatus status,
+        IEnumerable<BluetoothDevice> devices) =>
+        devices.FirstOrDefault(device => device.IsConnected
+            && device.Address.Equals(status.Address, StringComparison.OrdinalIgnoreCase)
+            && (device.Type.Equals("AirPods", StringComparison.OrdinalIgnoreCase)
+                || device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)));
 
     private void Prompt(BluetoothDevice device)
     {
@@ -155,6 +174,10 @@ public sealed class AirPodsCoordinator : IDisposable
 
     internal static bool ShouldOfferPairingPrompt(BluetoothDevice device) =>
         !device.IsPaired && device.IsNearby && !LinuxBluetoothService.IsAnonymousName(device.Name);
+
+    internal static bool HasCurrentAdvertisement(BluetoothDevice device, AirPodsStatus proximity) =>
+        !string.IsNullOrWhiteSpace(proximity.NearbyAddress)
+        && device.Address.Equals(proximity.NearbyAddress, StringComparison.OrdinalIgnoreCase);
 
     private void QueuePairedDeviceRestore()
     {

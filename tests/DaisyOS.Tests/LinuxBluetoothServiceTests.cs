@@ -124,23 +124,44 @@ public sealed class LinuxBluetoothServiceTests
     [Fact]
     public async Task PairingReportsTrustAndConnectionFailures()
     {
-        var trustFailure = new LinuxBluetoothService(new ScriptedCommandRunner(Succeeded(), Failed("denied")));
+        var trustFailure = new LinuxBluetoothService(new ScriptedCommandRunner(Succeeded(), Succeeded(), Failed("denied"), Succeeded()));
         Assert.False(await trustFailure.PairDeviceAsync("AA:BB:CC:DD:EE:11"));
-        var connectionFailure = new LinuxBluetoothService(new ScriptedCommandRunner(Succeeded(), Succeeded(), Failed("unreachable")));
+        var connectionFailure = new LinuxBluetoothService(new ScriptedCommandRunner(
+            Succeeded(), Succeeded(), Succeeded(), Succeeded("Connected: no"), Failed("unreachable"),
+            Succeeded("Connected: no"), Succeeded()));
         Assert.False(await connectionFailure.PairDeviceAsync("AA:BB:CC:DD:EE:12"));
+    }
+
+    [Fact]
+    public async Task MousePairingEnablesPairabilityAndAgentThenVerifiesConnection()
+    {
+        const string address = "AA:BB:CC:DD:EE:17";
+        var runner = new ScriptedCommandRunner(
+            Succeeded(), Succeeded("Pairing successful"), Succeeded(),
+            Succeeded("Paired: yes\nConnected: yes\nIcon: input-mouse"),
+            Succeeded("Paired: yes\nConnected: yes\nIcon: input-mouse"), Succeeded());
+
+        Assert.True(await new LinuxBluetoothService(runner).PairDeviceAsync(address));
+
+        Assert.Equal(["--timeout", "3", "pairable", "on"], runner.Calls[0].Arguments);
+        Assert.Equal(["--agent", "NoInputNoOutput", "--timeout", "20", "pair", address], runner.Calls[1].Arguments);
+        Assert.Equal(["--timeout", "3", "pairable", "off"], runner.Calls[^1].Arguments);
+        Assert.DoesNotContain(runner.Calls, call => call.Arguments.Contains("connect"));
     }
 
     [Fact]
     public async Task ManualDisconnectSuppressesReconnectUntilExplicitConnect()
     {
         const string address = "AA:BB:CC:DD:EE:13";
-        var runner = new ScriptedCommandRunner(Succeeded());
+        var runner = new ScriptedCommandRunner(
+            Succeeded(), Succeeded("Connected: no"),
+            Succeeded(), Succeeded(), Succeeded("Connected: yes"));
         var service = new LinuxBluetoothService(runner);
         Assert.True(await service.SetConnectedAsync(address, false));
         Assert.False(LinuxBluetoothService.CanAutoConnect(address));
         Assert.True(await service.SetConnectedAsync(address, true));
         Assert.True(LinuxBluetoothService.CanAutoConnect(address));
-        Assert.True(runner.Calls[2].Timeout > TimeSpan.FromSeconds(15));
+        Assert.True(runner.Calls[3].Timeout > TimeSpan.FromSeconds(15));
     }
 
     [Fact]

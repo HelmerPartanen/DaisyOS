@@ -8,10 +8,12 @@ using Avalonia.Media.Transformation;
 using Avalonia.Threading;
 using DaisyOS.Shell;
 using DaisyOS.Core.Models;
+using DaisyOS.Core.Services;
 using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Services;
 using DaisyOS.Shell.Services.Motion;
 using DaisyOS.Shell.Services.Shell;
+using DaisyOS.System.Power;
 
 namespace DaisyOS.Shell.Views.Components.SystemBar;
 
@@ -20,6 +22,7 @@ public partial class SystemBarView : UserControl
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _statusTimer;
     private readonly ShellSessionState _sessionState = (Application.Current as App)?.SessionState ?? new ShellSessionState();
+    private readonly IBatteryStatusService _batteryService = new LinuxBatteryStatusService();
     private static readonly IReadOnlyDictionary<string, string> PreferredCultureByCountry = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         ["AU"] = "en-AU", ["AT"] = "de-AT", ["BE"] = "nl-BE", ["BR"] = "pt-BR", ["CA"] = "en-CA",
@@ -484,8 +487,26 @@ public partial class SystemBarView : UserControl
             bluetoothIcon.Icon = bluetooth.IsEnabled ? "bluetooth" : "bluetooth-slash";
             ToolTip.SetTip(bluetoothIcon, bluetooth.Detail);
         }
-
     }
 
-    private void QueueStatusRefresh() => _quickSettings.RefreshStatus();
+    private void QueueStatusRefresh()
+    {
+        _quickSettings.RefreshStatus();
+        _ = RefreshBatteryAsync();
+    }
+
+    private async Task RefreshBatteryAsync()
+    {
+        try { UpdateBatteryPresentation(await _batteryService.GetStatusAsync()); }
+        catch { UpdateBatteryPresentation(new BatteryStatus(false, null, "Unavailable", "Battery status is unavailable.")); }
+    }
+
+    private void UpdateBatteryPresentation(BatteryStatus battery)
+    {
+        if (this.FindControl<BatteryStatusView>("SystemBarBattery") is not { } batteryView) return;
+        batteryView.IsVisible = battery.IsPresent && battery.ChargePercent.HasValue;
+        if (battery.ChargePercent is { } charge) batteryView.ChargePercent = charge;
+        batteryView.StateText = Loc.Get(battery.State);
+        ToolTip.SetTip(batteryView, battery.Detail);
+    }
 }

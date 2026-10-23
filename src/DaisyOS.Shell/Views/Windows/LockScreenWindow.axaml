@@ -338,11 +338,15 @@
           Margin="24,20"
           IsHitTestVisible="True"
           Opacity="0">
-      <TextBlock x:Name="BatteryInfoText"
-                 HorizontalAlignment="Left"
-                 VerticalAlignment="Center"
-                 FontSize="{DynamicResource TypeSizeCaption}"
-                 Foreground="{DynamicResource WhiteAlpha44Brush}" />
+      <controls:BatteryStatusView x:Name="BatteryInfo"
+                                  IsVisible="False"
+                                  ShowState="True"
+                                  IconWidth="30"
+                                  IconHeight="22"
+                                  LabelFontSize="{DynamicResource TypeSizeCaption}"
+                                  HorizontalAlignment="Left"
+                                  VerticalAlignment="Center"
+                                  Foreground="{DynamicResource WhiteAlpha56Brush}" />
 
       <StackPanel x:Name="PowerControlsPanel"
                   HorizontalAlignment="Right"

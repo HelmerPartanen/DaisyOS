@@ -40,6 +40,7 @@ public partial class LockScreenWindow : Window
     private readonly IBatteryStatusService _batteryService;
     private readonly IMediaSessionService _mediaService;
     private readonly DispatcherTimer _clockTimer;
+    private readonly DispatcherTimer _batteryTimer;
     private readonly bool _isSecondary;
     private bool _isAuthenticating;
     private bool _isShaking;
@@ -423,6 +424,9 @@ public partial class LockScreenWindow : Window
         };
         _clockTimer.Tick += (_, _) => UpdateClock();
         _clockTimer.Start();
+        _batteryTimer = new DispatcherTimer { Interval = TimeSpan.FromMinutes(1) };
+        _batteryTimer.Tick += (_, _) => UpdateBatteryAsync();
+        if (!_isSecondary) _batteryTimer.Start();
         UpdateClock();
         _clockAnimation.Tick += (_, _) =>
         {
@@ -437,7 +441,7 @@ public partial class LockScreenWindow : Window
         {
             CredentialsPanel.IsVisible = false;
             PowerControlsPanel.IsVisible = false;
-            BatteryInfoText.IsVisible = false;
+            BatteryInfo.IsVisible = false;
             _collapsedMediaHost.IsVisible = false;
             _expandedMediaHost.IsVisible = false;
         }
@@ -476,6 +480,7 @@ public partial class LockScreenWindow : Window
         {
             _closed = true;
             _clockTimer.Stop();
+            _batteryTimer.Stop();
             _clockAnimation.Stop();
             _presenceTimer.Stop();
             _mediaPresenceTimer.Stop();
@@ -644,8 +649,12 @@ public partial class LockScreenWindow : Window
             var status = await _batteryService.GetStatusAsync();
             if (status.IsPresent && status.ChargePercent.HasValue)
             {
-                BatteryInfoText.Text = $"⚡ {status.ChargePercent}% {Loc.Get(status.State)}";
+                BatteryInfo.ChargePercent = status.ChargePercent.Value;
+                BatteryInfo.StateText = Loc.Get(status.State);
+                BatteryInfo.IsVisible = true;
+                ToolTip.SetTip(BatteryInfo, status.Detail);
             }
+            else BatteryInfo.IsVisible = false;
         }
         catch
         {
@@ -1530,6 +1539,7 @@ public partial class LockScreenWindow : Window
         if (!_isSecondary) Dismissing?.Invoke();
         _clockAnimation.Stop();
         _clockTimer.Stop();
+        _batteryTimer.Stop();
         _spectrumTimer.Stop();
         _mediaPositionTimer.Stop();
         await AnimatePresenceAsync(false);
@@ -1599,7 +1609,7 @@ public partial class LockScreenWindow : Window
             CornerControlsGrid.IsHitTestVisible = expand < 0.1;
 
             // Hide bottom-left battery text when bottom-left media widget is shown so they never collide
-            BatteryInfoText.Opacity = Math.Clamp(1 - mediaPresence * 1.6, 0, 1);
+            BatteryInfo.Opacity = Math.Clamp(1 - mediaPresence * 1.6, 0, 1);
 
             // 3. Collapsed Bottom-Left Media Widget
             var collapsedCardOpacity = presence * mediaPresence * Math.Clamp(1 - expand * 1.65, 0, 1);

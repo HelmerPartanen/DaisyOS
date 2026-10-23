@@ -611,8 +611,27 @@ namespace DaisyOS.Shell.Apps.System.Settings
             }
 
             if (batteryStatus.IsPresent)
-                AddSection(Loc.Get("BATTERY"), Loc.Get("Live status reported by the system power supply."),
-                    InfoRow(Loc.Get("Battery"), batteryStatus.DisplayText));
+            {
+                if (batteryStatus.ChargePercent is { } chargePercent)
+                {
+                    var batteryView = new BatteryStatusView
+                    {
+                        ChargePercent = chargePercent,
+                        StateText = Loc.Get(batteryStatus.State),
+                        ShowState = true,
+                        Foreground = TryBrush("ContentSecondaryBrush"),
+                        VerticalAlignment = VerticalAlignment.Center
+                    };
+                    ToolTip.SetTip(batteryView, batteryStatus.Detail);
+                    AddSection(Loc.Get("BATTERY"), Loc.Get("Live status reported by the system power supply."),
+                        PreferenceRow(Loc.Get("Battery"), null, batteryView));
+                }
+                else
+                {
+                    AddSection(Loc.Get("BATTERY"), Loc.Get("Live status reported by the system power supply."),
+                        InfoRow(Loc.Get("Battery"), Loc.Get(batteryStatus.State)));
+                }
+            }
 
             AddSection(Loc.Get("DESKTOP"), null,
                 Toggle("Show date in the system bar", "system.show-date", false, value => { if (Application.Current is App app) app.SessionState.ShowDateInSystemBar = value; }));
