@@ -559,6 +559,9 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             const double bottomSectionHeight = 64.0;
             var usableHeight = Math.Max(0, Bounds.Height - bottomSectionHeight);
             var workArea = new DaisyOS.Core.Desktop.Rect(0, 0, Bounds.Width, usableHeight);
+            // Bounds and pointer coordinates are already Avalonia logical units.
+            // Keep the physical DPI as metadata, but request logical cell sizes;
+            // applying RenderScaling to both made icons and widgets enormous.
             var dpi = (TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0) * 96.0;
 
             double cellW = _metricsProvider.GetCellWidth(dpi);

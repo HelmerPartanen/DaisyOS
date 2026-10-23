@@ -5,21 +5,13 @@ namespace DaisyOS.System.Display;
 
 public class AvaloniaMetricsProvider : ISystemMetricsProvider
 {
-    // The standard Windows 96 DPI icon spacing metrics (approximate defaults when API is unavailable).
-    // On Windows 11, SM_CXICONSPACING is typically around 74 at 100% scale,
-    // and SM_CYICONSPACING is around 88.
+    // Avalonia layout is expressed in device-independent units. Bounds already
+    // shrink when an output uses fractional scaling, so multiplying these values
+    // by RenderScaling would scale desktop tiles twice (1.25 * 1.25 at 125%).
     private const double BaseCellWidth = 74.0;
     private const double BaseCellHeight = 88.0;
 
-    public double GetCellWidth(double dpi)
-    {
-        double scale = dpi / 96.0;
-        return Math.Round(BaseCellWidth * scale);
-    }
+    public double GetCellWidth(double dpi) => BaseCellWidth;
 
-    public double GetCellHeight(double dpi)
-    {
-        double scale = dpi / 96.0;
-        return Math.Round(BaseCellHeight * scale);
-    }
+    public double GetCellHeight(double dpi) => BaseCellHeight;
 }

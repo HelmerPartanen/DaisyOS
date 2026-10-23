@@ -170,6 +170,7 @@ public sealed class SafeProcessLauncher
             startInfo.Environment["GTK_USE_PORTAL"] = "1";
             startInfo.Environment["GIO_USE_PORTALS"] = "1";
             startInfo.Environment["QT_QPA_PLATFORMTHEME"] = "xdgdesktopportal";
+            ApplyToolkitScalingEnvironment(startInfo);
         }
         var waylandDisplay = Environment.GetEnvironmentVariable("WAYLAND_DISPLAY");
         var display = Environment.GetEnvironmentVariable("DISPLAY");
@@ -185,6 +186,24 @@ public sealed class SafeProcessLauncher
         if (!string.IsNullOrWhiteSpace(display)) startInfo.Environment["DISPLAY"] = display;
         if (!string.IsNullOrWhiteSpace(authority)) startInfo.Environment["XAUTHORITY"] = authority;
         if (!string.IsNullOrWhiteSpace(waylandDisplay)) startInfo.Environment["WAYLAND_DISPLAY"] = waylandDisplay;
+    }
+
+    internal static void ApplyToolkitScalingEnvironment(ProcessStartInfo startInfo)
+    {
+        // These variables are meaningful only to Electron's own development
+        // process. Leaking them from a host terminal can make desktop Electron
+        // applications start in Node mode or use the wrong rendering path.
+        startInfo.Environment.Remove("ELECTRON_RUN_AS_NODE");
+        startInfo.Environment.Remove("ELECTRON_NO_ATTACH_CONSOLE");
+
+        // Prefer native Wayland fractional scaling and retain X11 as a fallback.
+        // XWayland-only clients get their fractional scale from Xft.dpi, which is
+        // synchronized by daisy-launch immediately before application dispatch.
+        startInfo.Environment["ELECTRON_OZONE_PLATFORM_HINT"] = "auto";
+        startInfo.Environment["QT_SCALE_FACTOR_ROUNDING_POLICY"] = "PassThrough";
+        startInfo.Environment["QT_ENABLE_HIGHDPI_SCALING"] = "1";
+        if (!startInfo.Environment.ContainsKey("GDK_BACKEND"))
+            startInfo.Environment["GDK_BACKEND"] = "wayland,x11";
     }
 
 }

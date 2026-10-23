@@ -136,6 +136,37 @@ static void exportXWaylandDisplay() {
     qputenv("XAUTHORITY", authority.toLocal8Bit());
 }
 
+// Native Wayland clients receive fractional scale through the compositor.
+// XWayland clients instead consult the X resource database; without Plasma's
+// full session daemon that database remains at 96 DPI and applications such as
+// Spotify render tiny. Keep only that legacy bridge synchronized, avoiding a
+// forced toolkit factor that would double-scale native Wayland applications.
+static void syncApplicationScale() {
+  const auto config = KSharedConfig::openConfig("kwinrc");
+  config->reparseConfiguration();
+  const KConfigGroup xwayland(config, "Xwayland");
+  const qreal scale = std::clamp(xwayland.readEntry("Scale", 1.0), 1.0, 4.0);
+  const auto display = qEnvironmentVariable("DISPLAY");
+  static qreal appliedScale = -1;
+  static QString appliedDisplay;
+  if (display.isEmpty() ||
+      (qFuzzyCompare(scale, appliedScale) && display == appliedDisplay))
+    return;
+
+  QProcess xrdb;
+  xrdb.setProcessChannelMode(QProcess::ForwardedErrorChannel);
+  xrdb.start("xrdb", {"-merge"});
+  if (xrdb.waitForStarted(1000)) {
+    const auto dpi = QByteArray::number(qRound(96.0 * scale));
+    xrdb.write("Xft.dpi: " + dpi + "\n");
+    xrdb.closeWriteChannel();
+    if (xrdb.waitForFinished(1000) && xrdb.exitCode() == 0) {
+      appliedScale = scale;
+      appliedDisplay = display;
+    }
+  }
+}
+
 static qint64 now() {
   return std::chrono::duration_cast<std::chrono::nanoseconds>(
              std::chrono::steady_clock::now().time_since_epoch())
@@ -312,6 +343,8 @@ class Launcher : public QObject, protected QDBusContext {
     }
     state(r, "Dispatching");
     stamp(r, TraceEvent::DispatchStarted);
+    exportXWaylandDisplay();
+    syncApplicationScale();
     if (metadata.dbusActivatable) {
       QString name = app->storageId();
       if (name.endsWith(".desktop"))
@@ -342,7 +375,6 @@ class Launcher : public QObject, protected QDBusContext {
         w->deleteLater();
       });
     } else {
-      exportXWaylandDisplay();
       auto job = r->action.isEmpty() ? new KIO::ApplicationLauncherJob(app)
                                      : new KIO::ApplicationLauncherJob(action);
       QList<QUrl> urls;
@@ -567,9 +599,18 @@ signals:
 };
 int main(int argc, char **argv) {
   if (qEnvironmentVariable("XDG_CURRENT_DESKTOP").split(QLatin1Char(':')).contains(QStringLiteral("DaisyOS"), Qt::CaseInsensitive)) {
+    // A development terminal may contain Electron's internal test variables.
+    // They are never valid session-wide launch environment.
+    qunsetenv("ELECTRON_RUN_AS_NODE");
+    qunsetenv("ELECTRON_NO_ATTACH_CONSOLE");
     qputenv("GTK_USE_PORTAL", "1");
     qputenv("GIO_USE_PORTALS", "1");
     qputenv("QT_QPA_PLATFORMTHEME", "xdgdesktopportal");
+    qputenv("ELECTRON_OZONE_PLATFORM_HINT", "auto");
+    qputenv("QT_SCALE_FACTOR_ROUNDING_POLICY", "PassThrough");
+    qputenv("QT_ENABLE_HIGHDPI_SCALING", "1");
+    if (qEnvironmentVariableIsEmpty("GDK_BACKEND"))
+      qputenv("GDK_BACKEND", "wayland,x11");
   }
   QGuiApplication app(argc, argv);
   app.setApplicationName("DaisyLaunch");
