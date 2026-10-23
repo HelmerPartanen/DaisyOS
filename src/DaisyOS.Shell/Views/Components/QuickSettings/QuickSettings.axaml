@@ -37,66 +37,29 @@
 
 
 <!-- ========================================================= -->
-<!-- OUTPUT DEVICE LIST ITEMS                                  -->
+<!-- SUBPAGE LIST ITEMS (Audio, Wi-Fi, Bluetooth)              -->
 <!-- ========================================================= -->
 
-<Style Selector="Button.OutputDeviceItem">
-  <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}"/>
+<Style Selector="Button.AudioOutputItem, Button.OutputDeviceItem">
+  <Setter Property="MinHeight" Value="52"/>
+  <Setter Property="Padding" Value="12,10"/>
+  <Setter Property="CornerRadius" Value="10"/>
   <Setter Property="HorizontalAlignment" Value="Stretch"/>
-  <Setter Property="Background" Value="Transparent"/>
   <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-  <Setter Property="Padding" Value="10,0"/>
+  <Setter Property="Background" Value="Transparent"/>
 </Style>
 
-<Style Selector="Button.OutputDeviceItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+<Style Selector="Button.AudioOutputItem.SelectedOutputDevice, Button.OutputDeviceItem.SelectedOutputDevice, Button.OutputDeviceItem.ConnectedWifiNetwork, Button.OutputDeviceItem.ConnectedBluetoothDevice">
+  <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}"/>
+</Style>
+
+<Style Selector="Button.AudioOutputItem:pointerover /template/ ContentPresenter#PART_ContentPresenter, Button.OutputDeviceItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
   <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
 </Style>
 
-<Style Selector="Button.OutputDeviceItem.SelectedOutputDevice">
-  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
+<Style Selector="Button.AudioOutputItem:pressed /template/ ContentPresenter#PART_ContentPresenter, Button.OutputDeviceItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
+  <Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/>
 </Style>
-
-<Style Selector="Button.OutputDeviceItem.SelectedOutputDevice TextBlock">
-  <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/>
-</Style>
-
-<Style Selector="Button.OutputDeviceItem.SelectedOutputDevice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
-</Style>
-
-<Style Selector="Button.OutputDeviceItem.ConnectedWifiNetwork">
-  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
-</Style>
-
-<Style Selector="Button.OutputDeviceItem.ConnectedWifiNetwork:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
-</Style>
-
-<Style Selector="Button.OutputDeviceItem.ConnectedBluetoothDevice">
-  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
-</Style>
-
-<Style Selector="Button.OutputDeviceItem.ConnectedBluetoothDevice:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-  <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}"/>
-</Style>
-
-    <Style Selector="Button.AudioOutputItem">
-      <Setter Property="MinHeight" Value="52" />
-      <Setter Property="Padding" Value="12,10" />
-      <Setter Property="CornerRadius" Value="10" />
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="Button.AudioOutputItem.SelectedOutputDevice">
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
-    </Style>
-    <Style Selector="Button.AudioOutputItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
-    </Style>
-    <Style Selector="Button.AudioOutputItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
-    </Style>
   </UserControl.Styles>
 <controls:ShellFrameBorder x:Name="MaterialFrame"
         Padding="1"
@@ -355,8 +318,7 @@
           <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="WifiNetworksHost"
-                Spacing="4"
-                Margin="0,0,4,0">
+                Spacing="6">
 
               <TextBlock
                   Text="{DynamicResource Loc_A388D2A773EF}"
@@ -385,8 +347,7 @@
           <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="BluetoothDevicesHost"
-                Spacing="4"
-                Margin="0,0,4,0">
+                Spacing="6">
 
               <TextBlock
                   Text="{DynamicResource Loc_B3F4C73BD205}"

@@ -578,12 +578,7 @@ public partial class QuickSettings : UserControl
 
     private Button CreateWifiNetworkButton(WirelessNetworkInfo network)
     {
-        var content = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("18,10,*"),
-            RowDefinitions = new RowDefinitions(network.IsActive ? "20,16" : "36"),
-            VerticalAlignment = VerticalAlignment.Center,
-        };
+        var content = new Grid { ColumnDefinitions = new ColumnDefinitions("20,*,20") };
         var signalIcon = new WifiSignalIcon
         {
             SignalPercent = network.SignalPercent,
@@ -592,19 +587,28 @@ public partial class QuickSettings : UserControl
             ActiveBrush = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.White,
             InactiveBrush = this.FindResource("ContentTertiaryBrush") as IBrush ?? Brushes.Gray,
             VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center
         };
         content.Children.Add(signalIcon);
-        Grid.SetRowSpan(signalIcon, network.IsActive ? 2 : 1);
+
+        var textPanel = new StackPanel
+        {
+            Spacing = 2,
+            Margin = new Avalonia.Thickness(12, 0, 12, 0),
+            VerticalAlignment = VerticalAlignment.Center
+        };
 
         var name = DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
         {
             Text = network.Ssid,
             FontSize = 13,
+            TextWrapping = TextWrapping.Wrap,
+            MaxLines = 2,
             TextTrimming = TextTrimming.CharacterEllipsis,
-            VerticalAlignment = VerticalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
         }, "BodySmall");
-        Grid.SetColumn(name, 2);
-        content.Children.Add(name);
+        name.Bind(TextBlock.ForegroundProperty, this.GetResourceObservable("ContentPrimaryBrush"));
+        textPanel.Children.Add(name);
 
         if (network.IsActive)
         {
@@ -614,15 +618,51 @@ public partial class QuickSettings : UserControl
                 FontSize = 11,
                 Foreground = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.Gray,
                 TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
             }, "Caption"), TextBlock.TextProperty, "Connected");
-            Grid.SetRow(detail, 1);
-            Grid.SetColumn(detail, 2);
-            content.Children.Add(detail);
+            textPanel.Children.Add(detail);
         }
 
-        var button = CreateQuickSettingsListButton(content, false);
-        button.Classes.Set("ConnectedWifiNetwork", network.IsActive);
+        Grid.SetColumn(textPanel, 1);
+        content.Children.Add(textPanel);
+
+        var button = new Button
+        {
+            Content = content
+        };
+        button.Classes.Add("ShellButton");
+        button.Classes.Add("AudioOutputItem");
+        button.Classes.Add("OutputDeviceItem");
+        ToolTip.SetTip(button, network.Ssid);
+
+        if (network.IsActive)
+        {
+            button.Classes.Add("SelectedOutputDevice");
+            button.Classes.Add("ConnectedWifiNetwork");
+            var selected = new DaisyIcon
+            {
+                Icon = "check",
+                Size = 16,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            selected.Bind(DaisyIcon.ForegroundProperty, this.GetResourceObservable("ActionPrimaryBrush"));
+            Grid.SetColumn(selected, 2);
+            content.Children.Add(selected);
+        }
+        else if (!network.Security.Equals("Open", StringComparison.OrdinalIgnoreCase))
+        {
+            var lockIcon = new DaisyIcon
+            {
+                Icon = "lock",
+                Size = 14,
+                VerticalAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Center
+            };
+            lockIcon.Bind(DaisyIcon.ForegroundProperty, this.GetResourceObservable("ContentTertiaryBrush"));
+            Grid.SetColumn(lockIcon, 2);
+            content.Children.Add(lockIcon);
+        }
         if (network.IsActive)
         {
             button.Click += async (_, _) =>
