@@ -10,7 +10,7 @@ Median startup times; lower is better. Dates use Europe/Helsinki. Seven measured
 | Notes | 2.54 s |
 | Files | 2.62 s |
 
-[Full report](artifacts/performance/baseline.json)
+[Full report](../../artifacts/performance/baseline.json)
 
 ## 2026-10-13 16:00:34 — repeatability
 
@@ -20,7 +20,7 @@ Median startup times; lower is better. Dates use Europe/Helsinki. Seven measured
 | Notes | 2.53 s |
 | Files | 2.62 s |
 
-[Full report](artifacts/performance/repeatability.json)
+[Full report](../../artifacts/performance/repeatability.json)
 
 ## 2026-10-13 16:30:40 — Chrome baseline
 
@@ -28,7 +28,7 @@ Median startup times; lower is better. Dates use Europe/Helsinki. Seven measured
 | --- | --- |
 | Google Chrome | 1.33 s |
 
-[Full report](artifacts/performance/chrome-baseline.json)
+[Full report](../../artifacts/performance/chrome-baseline.json)
 
 The first two runs used unchanged code; small differences reflect measurement variation. Chrome was measured separately afterward. DaisyOS apps measure initial-content render completion; Chrome measures the local page’s first-contentful-paint callback with a fresh temporary profile. Neither measures physical screen presentation.
 
@@ -41,7 +41,7 @@ The first two runs used unchanged code; small differences reflect measurement va
 | Files | 2.67 s |
 | Google Chrome | 1.31 s |
 
-[Full report](artifacts/performance/with-chrome.json)
+[Full report](../../artifacts/performance/with-chrome.json)
 
 ## 2026-10-13 20:09:57 — launch pipeline implementation
 
@@ -52,7 +52,7 @@ The first two runs used unchanged code; small differences reflect measurement va
 | Files | 2.62 s |
 | Google Chrome | 1.33 s |
 
-[Full report](artifacts/performance/launch-optimization-verified.json)
+[Full report](../../artifacts/performance/launch-optimization-verified.json)
 OS score: **516.5**.
 
 The saved baseline used a different theme and wallpaper. These startup differences are qualified and cannot be attributed solely to launch optimization. The startup suite launches binaries directly; service dispatch is measured separately below.
@@ -67,7 +67,7 @@ The saved baseline used a different theme and wallpaper. These startup differenc
 
 Interleaved routes on the same machine, using a windowless `/bin/true` fixture and the real C# client. Dispatch acceptance is not app readiness or first presentation. The private-bus fixture does not include production systemd unit startup.
 
-[Dispatch report](artifacts/performance/launch-dispatch-verified.json)
+[Dispatch report](../../artifacts/performance/launch-dispatch-verified.json)
 
 ## Future benchmarks
 
@@ -88,7 +88,7 @@ Append a dated table like those above, using each app’s median milliseconds di
 | Desktop shortcut (GIO) | 2.44 s |
 | Persistent KIO service | 2.43 s |
 
-Three samples per route, interleaved, with identical isolated data and the same Release binary. This measures initial content rendered; it does not measure pointer input or physical presentation. No additional multi-second backend delay was observed. [Route report](artifacts/performance/gui-launch-routes-verified.json).
+Three samples per route, interleaved, with identical isolated data and the same Release binary. This measures initial content rendered; it does not measure pointer input or physical presentation. No additional multi-second backend delay was observed. [Route report](../../artifacts/performance/gui-launch-routes-verified.json).
 
 Live launchers were using Debug builds, while the standard benchmark uses Release. Diagnostic single runs before correcting the launchers:
 

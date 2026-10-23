@@ -35,8 +35,11 @@ def main():
                 raise ValueError(f"Empty translation in {path.name}: {key}")
     ui_attributes = {"Text", "Content", "Header", "Watermark", "ToolTip.Tip", "Title", "PlaceholderText",
                      "OnContent", "OffContent", "ToolTipText", "DetailsToolTipText"}
-    # Product names and mathematical notation are intentionally language-independent.
-    invariant_labels = {"LocalSend", "π"}
+    # Product names, hardware/telemetry metrics, and mathematical notation are intentionally language-independent.
+    invariant_labels = {
+        "LocalSend", "π", "Off", "Transparency", "ANC", "Adaptive", "FPS", "CPU", "GPU", "SYS RAM",
+        "Disk Manager", "Devices", "Physical disks and volumes", "Loading disks…"
+    }
     for path in (ROOT / "src/DaisyOS.Shell").rglob("*.axaml"):
         if "obj" in path.parts or "bin" in path.parts:
             continue

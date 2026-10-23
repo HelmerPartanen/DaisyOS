@@ -1,0 +1,43 @@
+# Auto detect text files and perform LF normalization on checkout
+* text=auto eol=lf
+
+# Explicit text files
+*.cs text diff=csharp
+*.axaml text
+*.c text diff=cpp
+*.cpp text diff=cpp
+*.h text diff=cpp
+*.hpp text diff=cpp
+*.sh text eol=lf
+*.py text diff=python
+*.json text
+*.xml text
+*.resx text
+*.props text
+*.targets text
+*.sln text eol=crlf
+*.md text
+*.yaml text
+*.yml text
+*.qml text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.mp3 binary
+*.mp4 binary
+*.heic binary
+*.heif binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.tar.gz binary
+*.zip binary
+*.so binary
+*.dll binary
+*.exe binary

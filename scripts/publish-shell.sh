@@ -10,13 +10,6 @@ if ! command -v dotnet >/dev/null 2>&1; then
   exit 1
 fi
 
-"$repo_root/scripts/build-desktop-services.sh"
-"$repo_root/scripts/build-mpv-wallpaper.sh"
-local_mpv_prefix="${DAISYOS_MPV_PREFIX:-${XDG_DATA_HOME:-$HOME/.local/share}/DaisyOS/mpv-gpu}"
-if ! pkg-config --exists mpv && [[ -d "$local_mpv_prefix/lib/pkgconfig" ]]; then
-  export PKG_CONFIG_PATH="$local_mpv_prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
-fi
-
 output_dir="publish/linux-x64"
 output_mode_file="${output_dir}.publish-mode"
 version="${DAISYOS_VERSION:-$(daisyos_version_from_props "$repo_root/Directory.Build.props")}"
@@ -44,6 +37,13 @@ while [[ $# -gt 0 ]]; do
       ;;
   esac
 done
+
+"$repo_root/scripts/build-desktop-services.sh"
+"$repo_root/scripts/build-mpv-wallpaper.sh"
+local_mpv_prefix="${DAISYOS_MPV_PREFIX:-${XDG_DATA_HOME:-$HOME/.local/share}/DaisyOS/mpv-gpu}"
+if ! pkg-config --exists mpv && [[ -d "$local_mpv_prefix/lib/pkgconfig" ]]; then
+  export PKG_CONFIG_PATH="$local_mpv_prefix/lib/pkgconfig${PKG_CONFIG_PATH:+:$PKG_CONFIG_PATH}"
+fi
 
 "$repo_root/scripts/build-daisy-launch.sh"
 "$repo_root/scripts/build-busy-cursor.sh"

@@ -9,6 +9,26 @@ publish/
 work/
 out/
 .codex/
+[Tt]est[Rr]esults/
+*.trx
+
+# Python bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# Native CMake & C++ build outputs
+src/native/*/build/
+services/*/build/
+**/build/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+*.ninja_deps
+*.ninja_log
+
 packaging/
 # The KWin bridge is source code installed into the user's session, not a
 # generated packaging artifact.
@@ -37,12 +57,15 @@ packaging/xdg-desktop-portal/*
 *.sln.docstates
 *.userprefs
 
-# IDEs
+# IDEs & Editors
 .idea/
 .vscode/
 .vs/
 *.swp
+*.swo
 *.*~
+.cache/
+.clangd/
 
 # OS generated files
 .DS_Store
@@ -53,17 +76,11 @@ packaging/xdg-desktop-portal/*
 ehthumbs.db
 Thumbs.db
 
-# Logs
+# Logs & Dumps
 *.log
-
-# Native GPU wallpaper build outputs
-src/native/daisy_mpv_wallpaper/build/
-
-# Native application launch service
-services/DaisyLaunch/build/
-
-# Native busy cursor plugin build outputs
-src/native/daisy_busy_cursor/build/
+core
+core.*
+*.dmp
 
 # Release definitions and gaming policy are source, not generated packages.
 !packaging/arch/
@@ -84,12 +101,6 @@ packaging/gaming/*
 # ISO launchers are source scripts; published binaries remain under ignored opt payloads.
 !os/archiso/DaisyOS/airootfs/usr/local/bin/
 
-# Desktop integration native helpers
-src/native/daisy_portal_capture/build/
-src/native/daisy_polkit_agent/build/
-src/native/daisy_screenshot/build/
-src/native/daisy_portal_shortcuts/build/
-
 !packaging/xdg-desktop-portal/
 !packaging/xdg-desktop-portal/*
 
@@ -98,7 +109,5 @@ src/native/daisy_portal_shortcuts/build/
 !packaging/fonts/60-daisyos-fonts.conf
 !packaging/fonts/90-daisyos.gschema.override
 
-# Native window-menu renderer build output.
-src/native/daisy_window_menu/build/
 !packaging/librepods/
 !packaging/librepods/**

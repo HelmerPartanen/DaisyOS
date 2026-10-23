@@ -1,0 +1,74 @@
+# Top-most EditorConfig file
+root = true
+
+# Universal settings for all files
+[*]
+charset = utf-8
+end_of_line = lf
+indent_style = space
+indent_size = 4
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# C# and .NET Source Files
+[*.cs]
+indent_size = 4
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_prefer_braces = true:suggestion
+csharp_style_namespace_declarations = file_scoped:suggestion
+csharp_style_var_for_built_in_types = true:suggestion
+csharp_style_var_when_type_is_apparent = true:suggestion
+csharp_style_expression_bodied_methods = false:suggestion
+dotnet_style_qualification_for_field = false:suggestion
+dotnet_style_qualification_for_property = false:suggestion
+dotnet_style_qualification_for_method = false:suggestion
+dotnet_style_qualification_for_event = false:suggestion
+dotnet_style_require_accessibility_modifiers = for_non_interface_members:suggestion
+dotnet_style_null_propagation = true:suggestion
+dotnet_style_coalesce_expression = true:suggestion
+dotnet_style_object_initializer = true:suggestion
+dotnet_style_collection_initializer = true:suggestion
+
+# XAML Files (Avalonia UI)
+[*.axaml]
+indent_size = 2
+trim_trailing_whitespace = true
+
+# Web / JSON / YAML / XML
+[*.{json,json5,yaml,yml,xml,props,targets,resx}]
+indent_size = 2
+trim_trailing_whitespace = true
+
+# C / C++ Native Sources & Headers
+[*.{c,h,cpp,hpp,cc,cxx}]
+indent_size = 2
+trim_trailing_whitespace = true
+
+# CMake Build Files
+[{CMakeLists.txt,*.cmake}]
+indent_size = 2
+trim_trailing_whitespace = true
+
+# Shell Scripts
+[*.sh]
+indent_size = 2
+end_of_line = lf
+trim_trailing_whitespace = true
+
+# Python Scripts
+[*.py]
+indent_size = 4
+trim_trailing_whitespace = true
+
+# QML / Qt Quick
+[*.qml]
+indent_size = 4
+trim_trailing_whitespace = true
+
+# Markdown Documentation
+[*.md]
+indent_size = 2
+trim_trailing_whitespace = false

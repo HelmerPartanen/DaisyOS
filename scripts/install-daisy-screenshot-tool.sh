@@ -44,7 +44,7 @@ if [[ "$prefix" == "/" && "$EUID" -ne 0 ]]; then
   exit 1
 fi
 
-for command in cmake ninja c++; do
+for command in cmake c++; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "Missing build dependency: $command" >&2
     exit 1
@@ -66,7 +66,12 @@ else
   applications_dir="$prefix/share/applications"
 fi
 
-cmake -S "$source_dir" -B "$build_dir" -G Ninja -DCMAKE_BUILD_TYPE="$build_type"
+cmake_generator=()
+if command -v ninja >/dev/null 2>&1; then
+  cmake_generator=(-G Ninja)
+fi
+
+cmake -S "$source_dir" -B "$build_dir" "${cmake_generator[@]}" -DCMAKE_BUILD_TYPE="$build_type"
 cmake --build "$build_dir"
 cmake --install "$build_dir" --prefix "$install_prefix"
 

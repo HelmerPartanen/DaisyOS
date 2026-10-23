@@ -39,7 +39,7 @@ before it supersedes the accepted alpha.
 - **High-Contrast Shell Controls**: Redesigned `SearchBar` and `CaptionClose` buttons for 1:1 color matching with Settings buttons and title bar controls. Synchronized audio spectrum visualizer bars with media control accents.
 - **Automated Test Gate**: Passed all 82 unit, service, ViewModel, and color contrast tests (`dotnet test`).
 
-See [ROADMAP.md](ROADMAP.MD) for detailed progress and
+See [ROADMAP.md](ROADMAP.md) for detailed progress and
 [docs/iso-build.md](docs/iso-build.md) for the live-image workflow.
 
 ## Build and test the shell
@@ -87,6 +87,10 @@ It intentionally does not claim:
 - Rollback, disk encryption, Secure Boot, or production authentication.
 - Compatibility with every GPU, Wi-Fi adapter, display, or physical computer.
 - Production readiness as a primary daily-driver operating system.
+
+## Contributing
+
+We welcome contributions! Please read our [**Contributing Guide**](CONTRIBUTING.md) for details on our code style ([`.editorconfig`](.editorconfig)), safe local build instructions, common development commands, and pull request procedures.
 
 ## Repository layout
 

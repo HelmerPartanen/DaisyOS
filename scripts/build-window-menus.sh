@@ -8,5 +8,9 @@ cmake_args=(-DCMAKE_BUILD_TYPE=Release)
 cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/daisyos/kwin-frame-effect"
 [[ ! -d "$cache_root/ecm-prefix" ]] || cmake_args+=(-DCMAKE_PREFIX_PATH="$cache_root/ecm-prefix")
 [[ ! -d "$cache_root/vulkan-headers/include" ]] || cmake_args+=(-DVulkan_INCLUDE_DIR="$cache_root/vulkan-headers/include")
-cmake -S "$repo_root/src/native/daisy_window_menu" -B "$build_dir" -G Ninja "${cmake_args[@]}"
+cmake_generator=()
+if command -v ninja >/dev/null 2>&1; then
+  cmake_generator=(-G Ninja)
+fi
+cmake -S "$repo_root/src/native/daisy_window_menu" -B "$build_dir" "${cmake_generator[@]}" "${cmake_args[@]}"
 cmake --build "$build_dir"

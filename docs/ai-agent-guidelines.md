@@ -2,7 +2,7 @@
 
 Always keep the project safe and incremental.
 
-- Update `ROADMAP.MD` when finishing tasks.
+- Update `ROADMAP.md` when finishing tasks.
 - Mark completed tasks with `[x]`.
 - Mark active tasks with `[-]`.
 - Mark blocked tasks with `[!]`.

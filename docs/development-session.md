@@ -59,3 +59,5 @@ scripts/test-development-session-install.sh
 
 This stages the display-manager entry in a temporary directory and verifies
 that the launcher resolves the configured checkout without changing the host.
+
+For a summary of everyday development commands across all environments, see [Developer Commands](development/developer-commands.md) and the [Contributing Guide](../CONTRIBUTING.md).

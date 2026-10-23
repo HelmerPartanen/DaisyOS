@@ -41,7 +41,8 @@ so two opaque frames do not overlap. Screenshot and lock dismissal is immediate.
 Reduce Motion zeros all shared durations and settles active content animations.
 Existing physical desktop drag interactions remain under DesktopMotionSettings.
 
-References: [Avalonia animations](https://docs.avaloniaui.net/docs/graphics-animation/animations),
+References: [Animation durations](architecture/animation-durations.md),
+[Avalonia animations](https://docs.avaloniaui.net/docs/graphics-animation/animations),
 [Avalonia transforms](https://docs.avaloniaui.net/docs/graphics-animation/transforms),
 [KWin effects](https://develop.kde.org/docs/plasma/kwineffect/).
 

@@ -1,5 +1,7 @@
 # DaisyOS performance benchmark
 
+Historical benchmark results and baseline measurements are tracked in [App startup times](benchmarks/app-startup-times.md).
+
 Run this inside the DaisyOS graphical session. It produces one score (higher is
 better), raw samples, median/p95 timings, and median absolute deviation (MAD).
 Keep the laptop plugged in, use the same power profile/display settings, and
