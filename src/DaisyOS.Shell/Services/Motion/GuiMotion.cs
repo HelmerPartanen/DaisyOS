@@ -118,6 +118,47 @@ public static class GuiMotion
         changed?.Invoke();
     }
 
+    /// <summary>
+    /// Shows a centered surface with the scale-and-fade treatment used for an
+    /// application opening, without changing its layout position.
+    /// </summary>
+    public static async Task SetScaleVisibleAsync(
+        Control host,
+        Control content,
+        bool visible,
+        Action? changed = null,
+        bool immediate = false,
+        double closedScale = 0.94,
+        TimeSpan? durationOverride = null,
+        Easing? easingOverride = null)
+    {
+        var state = GetState(host);
+        if (!visible && !host.IsVisible && state.Visibility is null)
+        {
+            state.RequestedVisible = false;
+            host.IsHitTestVisible = false;
+            return;
+        }
+        if (state.RequestedVisible == visible && !immediate) return;
+        using var request = new CancellationTokenSource();
+        state.Visibility = request;
+        state.RequestedVisible = visible;
+        host.IsHitTestVisible = visible;
+        if (visible) host.IsVisible = true;
+        changed?.Invoke();
+        await AnimateScaleAsync(content, visible, closedScale, immediate, request.Token,
+            durationOverride, easingOverride);
+        if (request.IsCancellationRequested || !ReferenceEquals(state.Visibility, request)) return;
+        if (!visible)
+        {
+            host.IsVisible = false;
+            content.Opacity = 1;
+            content.RenderTransform = null;
+        }
+        state.Visibility = null;
+        changed?.Invoke();
+    }
+
     public static void SettleActiveAnimations()
     {
         foreach (var entry in States) entry.Value.Animation?.Cancel();
@@ -203,5 +244,65 @@ public static class GuiMotion
         content.RenderTransform = !entering && preserveExitPosition
             ? new TranslateTransform(offset.X, offset.Y)
             : null;
+    }
+
+    private static async Task AnimateScaleAsync(
+        Control content,
+        bool entering,
+        double closedScale,
+        bool immediate,
+        CancellationToken cancellation,
+        TimeSpan? durationOverride,
+        Easing? easingOverride)
+    {
+        var state = GetState(content);
+        var interrupted = state.Animation is not null;
+        var startScale = interrupted ? content.RenderTransform?.Value.M11 ?? 1 : entering ? closedScale : 1;
+        var startOpacity = interrupted || !entering ? content.Opacity : 0;
+        state.Animation?.Cancel();
+        state.Animation?.Dispose();
+        using var current = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
+        state.Animation = current;
+        content.Opacity = startOpacity;
+        content.RenderTransform = new ScaleTransform(startScale, startScale);
+        var duration = immediate || Application.Current is App { ReduceMotionEnabled: true }
+            ? TimeSpan.Zero
+            : durationOverride ?? Duration(content, entering);
+        if (duration > TimeSpan.Zero && TopLevel.GetTopLevel(content) is { } topLevel)
+        {
+            var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            using var registration = current.Token.Register(() => completion.TrySetResult());
+            TimeSpan? lastFrame = null;
+            var animationElapsed = 0d;
+            var targetScale = entering ? 1 : closedScale;
+            var targetOpacity = entering ? 1 : 0;
+            var easing = easingOverride ??
+                (content.TryFindResource(entering ? "MotionEaseEnter" : "MotionEaseExit", out var resource) && resource is Easing configured
+                    ? configured : entering ? new CubicEaseOut() : new CubicEaseIn());
+            var transform = (ScaleTransform)content.RenderTransform;
+            void Frame(TimeSpan timestamp)
+            {
+                if (current.IsCancellationRequested || !ReferenceEquals(state.Animation, current)) return;
+                var elapsed = lastFrame is { } previous
+                    ? Math.Max(0, (timestamp - previous).TotalSeconds) : 0;
+                lastFrame = timestamp;
+                animationElapsed += elapsed;
+                var progress = Math.Clamp(animationElapsed / duration.TotalSeconds, 0, 1);
+                var eased = easing.Ease(progress);
+                var scale = startScale + (targetScale - startScale) * eased;
+                transform.ScaleX = scale;
+                transform.ScaleY = scale;
+                content.Opacity = Math.Clamp(startOpacity + (targetOpacity - startOpacity) * eased, 0, 1);
+                if (animationElapsed >= duration.TotalSeconds)
+                    completion.TrySetResult();
+                else topLevel.RequestAnimationFrame(Frame);
+            }
+            topLevel.RequestAnimationFrame(Frame);
+            await completion.Task;
+        }
+        if (!ReferenceEquals(state.Animation, current)) return;
+        state.Animation = null;
+        content.Opacity = entering ? 1 : 0;
+        content.RenderTransform = entering ? null : new ScaleTransform(closedScale, closedScale);
     }
 }

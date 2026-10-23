@@ -166,9 +166,9 @@ Audio
             var mockRunner = new MockCommandRunner();
             var service = new DaisyOS.System.Input.LinuxInputHardwareService(mockRunner, tempFile);
 
-            // Default without file or config is 2 (middle tick)
+            // DaisyOS defaults to the slowest tick when no preference exists.
             var status = await service.GetStatusAsync();
-            Assert.Equal(2, status.TrackpadScrollSpeed);
+            Assert.Equal(0, status.TrackpadScrollSpeed);
 
             // Write 0.4 (slowest, tick 0) directly to file
             await File.WriteAllLinesAsync(tempFile, ["[Touchpad]", "ScrollFactor=0.4"]);
@@ -182,6 +182,30 @@ Audio
             Assert.Contains(mockRunner.History, h => h.Arguments.Contains("ScrollFactor") && h.Arguments.Contains("1.8"));
             status = await service.GetStatusAsync();
             Assert.Equal(4, status.TrackpadScrollSpeed);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
+    public async Task InputHardwareService_AppliesSlowestDefaultWithoutOverwritingAChoice()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"kcminputrc_default_scroll_{Guid.NewGuid():N}");
+        try
+        {
+            var runner = new MockCommandRunner { SuccessToReturn = false };
+            var service = new DaisyOS.System.Input.LinuxInputHardwareService(runner, tempFile);
+
+            Assert.False(await service.EnsureDefaultTrackpadScrollSpeedAsync());
+            Assert.Contains("ScrollFactor=0.4", await File.ReadAllLinesAsync(tempFile));
+
+            await File.WriteAllLinesAsync(tempFile, ["[Touchpad]", "ScrollFactor=1.4"]);
+            runner.History.Clear();
+            Assert.True(await service.EnsureDefaultTrackpadScrollSpeedAsync());
+            Assert.DoesNotContain(runner.History, call => call.Arguments.Contains("set-property"));
+            Assert.Contains("ScrollFactor=1.4", await File.ReadAllLinesAsync(tempFile));
         }
         finally
         {

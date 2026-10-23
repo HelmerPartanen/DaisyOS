@@ -112,7 +112,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Input", "LANGUAGE", "System language", "Choose the desktop language", "language locale translation english finnish suomi kieli"),
             new("Input", "KEYBOARD LAYOUT", "Keyboard layout", "Choose the language and physical layout used while typing", "keyboard layout language typing input finnish us english"),
             new("Input", "MOUSE & TRACKPAD", "Mouse and trackpad", "Pointer speed, scroll speed, natural scrolling, tap to click", "mouse trackpad pointer scrolling scroll speed tap"),
-            new("Input", "MOUSE & TRACKPAD", "Trackpad scroll speed", "Slowest, default or fastest", "trackpad touchpad scroll scrolling speed slider mouse"),
+            new("Input", "MOUSE & TRACKPAD", "Trackpad scroll speed", "Slowest", "trackpad touchpad scroll scrolling speed slider mouse"),
             new("DateTime", "TIME", "Automatic date and time", "System time, time zone, and clock format", "date time timezone time zone clock ntp automatic"),
             new("About", "DAISYOS", "About this system", "Version and desktop-session information", "version about diagnostics support")
         ];
@@ -1451,7 +1451,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     Spacing = 6,
                     VerticalAlignment = VerticalAlignment.Center,
                     Children = { actionButton, forgetButton }
-                }, BluetoothIconFor(device)));
+                }, BluetoothDevicePresentation.IconFor(device)));
             }
             if (pairedRows.Count == 0)
                 pairedRows.Add(InfoRow(Loc.Get("Paired accessories"), Loc.Get("No paired devices found.")));
@@ -1531,7 +1531,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                                 RefreshBluetooth();
                             };
 
-                            availableRows.Add(PreferenceRow(device.Name, Loc.Get("Ready to pair"), pairButton, BluetoothIconFor(device)));
+                            availableRows.Add(PreferenceRow(device.Name, Loc.Get("Ready to pair"), pairButton, BluetoothDevicePresentation.IconFor(device)));
                         }
                     }
                     else if (_isScanningBluetooth)
@@ -2261,7 +2261,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Pointer speed was saved, but couldn’t be applied yet."));
                     ShowCategory("Input");
                 }, "Slow", "Normal", "Fast"),
-                PreferenceRow(Loc.Get("Trackpad scroll speed"), Loc.Get("Slowest, default or fastest"), scrollSpeedSlider),
+                PreferenceRow(Loc.Get("Trackpad scroll speed"), $"{Loc.Get("Slowest")} ({Loc.Get("Default")})", scrollSpeedSlider),
                 Toggle("Natural scrolling", "input.natural-scroll", status.NaturalScroll, async enabled =>
                 {
                     if (!await hardwareService.SetNaturalScrollAsync(enabled))
@@ -2283,9 +2283,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private static string GetScrollSpeedLabel(int index) => index switch
         {
-            0 => Loc.Get("Slowest"),
+            0 => $"{Loc.Get("Slowest")} ({Loc.Get("Default")})",
             1 => Loc.Get("Slower"),
-            2 => Loc.Get("Default"),
+            2 => Loc.Get("Medium"),
             3 => Loc.Get("Faster"),
             4 => Loc.Get("Fastest"),
             _ => Loc.Get("Default")
@@ -3004,21 +3004,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
             "Desktop session" => new("desktop"),
             _ => null
         };
-
-        private static string BluetoothIconFor(BluetoothDevice device)
-        {
-            var type = device.Type;
-            var name = device.Name;
-            if (ContainsIgnoreCase(type, "AirPods") || ContainsIgnoreCase(name, "AirPods")) return "AirPods";
-            if (ContainsIgnoreCase(type, "audio") || ContainsIgnoreCase(type, "headphone") || ContainsIgnoreCase(type, "headset")
-                || ContainsIgnoreCase(name, "buds") || ContainsIgnoreCase(name, "headphone")) return "headphones";
-            if (ContainsIgnoreCase(type, "keyboard") || ContainsIgnoreCase(name, "keyboard") || ContainsIgnoreCase(name, "keychron")) return "keyboard";
-            if (ContainsIgnoreCase(type, "mouse") || ContainsIgnoreCase(name, "mouse") || ContainsIgnoreCase(name, "trackpad")) return "mouse";
-            if (ContainsIgnoreCase(type, "phone") || ContainsIgnoreCase(name, "phone")) return "device-mobile";
-            if (ContainsIgnoreCase(type, "controller") || ContainsIgnoreCase(type, "gamepad")
-                || ContainsIgnoreCase(name, "controller") || ContainsIgnoreCase(name, "dualsense")) return "game-controller";
-            return "bluetooth";
-        }
 
         private static bool ContainsIgnoreCase(string value, string fragment) =>
             value.Contains(fragment, StringComparison.OrdinalIgnoreCase);

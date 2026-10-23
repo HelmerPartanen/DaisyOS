@@ -61,14 +61,10 @@ public partial class LauncherView : UserControl
         }
         if (content is not null)
         {
-            var slideDistance = GuiMotion.BottomViewportSlideDistance(content);
-            _ = GuiMotion.SetVisibleAsync(
+            _ = GuiMotion.SetScaleVisibleAsync(
                 this,
                 content,
-                true,
-                offset: slideDistance,
-                durationOverride: GuiMotion.ShellSlideDuration(this, true),
-                fadeOnEnter: false);
+                true);
         }
         Opacity = 1;
         OpenStateChanged?.Invoke(this, true);
@@ -98,15 +94,11 @@ public partial class LauncherView : UserControl
         var content = this.FindControl<Border>("LauncherRootBorder");
         if (content is not null)
         {
-            var slideDistance = GuiMotion.BottomViewportSlideDistance(content);
-            _ = GuiMotion.SetVisibleAsync(
+            _ = GuiMotion.SetScaleVisibleAsync(
                 this,
                 content,
                 false,
-                immediate: true,
-                offset: slideDistance,
-                durationOverride: GuiMotion.ShellSlideDuration(this, false),
-                fadeOnExit: false);
+                immediate: true);
         }
         ClosePowerMenu();
         CloseAppContextMenu();
@@ -140,14 +132,10 @@ public partial class LauncherView : UserControl
 
         if (content is not null)
         {
-            var slideDistance = GuiMotion.BottomViewportSlideDistance(content);
-            await GuiMotion.SetVisibleAsync(
+            await GuiMotion.SetScaleVisibleAsync(
                 this,
                 content,
-                false,
-                offset: slideDistance,
-                durationOverride: GuiMotion.ShellSlideDuration(this, false),
-                fadeOnExit: false);
+                false);
         }
         if (!cts.IsCancellationRequested && ReferenceEquals(_animationCts, cts))
         {

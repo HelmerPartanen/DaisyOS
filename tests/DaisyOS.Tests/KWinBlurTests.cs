@@ -10,20 +10,21 @@ public sealed class KWinBlurTests
     [InlineData(12)]
     [InlineData(18)]
     [InlineData(32)]
-    public void RoundedMaskIncludesAntialiasedCornerPixels(int radius)
+    public void RoundedMaskStaysBeneathAntialiasedCornerPixels(int radius)
     {
         var regions = new List<Avalonia.Wayland.WaylandBlurRect>();
         KWinBlur.AddRoundedRegion(regions, default, new Size(120, 100), radius);
-        for (var row = 0; row < radius; row++)
+        Assert.NotEmpty(regions);
+        Assert.All(regions, region =>
         {
-            var boundary = radius - Math.Sqrt(radius * radius - Math.Pow(radius - row - 0.5, 2));
-            var top = regions.Single(region => region.Y == row);
-            Assert.True(top.X <= boundary && boundary < top.X + 1);
-            Assert.Equal(120, top.X * 2 + top.Width);
-            var bottom = regions.Single(region => region.Y == 99 - row);
-            Assert.Equal(top.X, bottom.X);
-            Assert.Equal(top.Width, bottom.Width);
-        }
+            Assert.True(region.X >= 1 && region.X + region.Width <= 119);
+            Assert.True(region.Y >= 1 && region.Y + region.Height <= 99);
+        });
+        var top = regions.Single(region => region.Y == 1);
+        var bottom = regions.Single(region => region.Y == 98);
+        Assert.Equal(top.X, bottom.X);
+        Assert.Equal(top.Width, bottom.Width);
+        Assert.True(top.X > 1);
     }
     [Fact]
     public void PasswordContainerUsesItsOwnCornerRadiusAfterScaling()
@@ -31,8 +32,8 @@ public sealed class KWinBlurTests
         var regions = new List<Avalonia.Wayland.WaylandBlurRect>();
         KWinBlur.AddTransformedRegion(regions, new Size(320, 54),
             new Matrix(1.2, 0, 0, 1.2, 40, 80), 21);
-        Assert.Contains(regions, region => region.X == 40 && region.Y == 105 && region.Height == 15);
-        Assert.All(regions, region => Assert.True(region.X >= 40 && region.Y >= 80));
+        Assert.Contains(regions, region => region.X == 41 && region.Y == 105 && region.Width == 382 && region.Height == 15);
+        Assert.All(regions, region => Assert.True(region.X >= 41 && region.Y >= 81));
     }
 
     [Fact]
@@ -40,20 +41,37 @@ public sealed class KWinBlurTests
     {
         var regions = new List<Avalonia.Wayland.WaylandBlurRect>();
         KWinBlur.AddTransformedRegion(regions, new Size(100, 50), new Matrix(1.2, 0, 0, 1.2, 33, 97));
-        Assert.Contains(regions, region => region.X == 33 && region.Y == 116 && region.Width == 120 && region.Height == 22);
-        Assert.All(regions, region => Assert.True(region.Y >= 97 && region.Y + region.Height <= 157));
+        Assert.Contains(regions, region => region.X == 34 && region.Y == 116 && region.Width == 118 && region.Height == 22);
+        Assert.All(regions, region => Assert.True(region.Y >= 98 && region.Y + region.Height <= 156));
         regions.Clear();
         KWinBlur.AddTransformedRegion(regions, new Size(100, 50), Matrix.CreateTranslation(33, 30));
-        Assert.All(regions, region => Assert.True(region.Y >= 30 && region.Y + region.Height <= 80));
+        Assert.All(regions, region => Assert.True(region.Y >= 31 && region.Y + region.Height <= 79));
     }
 
     [Fact]
-    public void FractionalTransformedEdgesRoundOutwardsOnBothSides()
+    public void FractionalTransformedEdgesStayInsideThePaintedFrame()
     {
         var regions = new List<Avalonia.Wayland.WaylandBlurRect>();
         KWinBlur.AddRoundedRegion(regions, new Point(33.4, 97.4), new Size(100, 50), 16);
-        Assert.Contains(regions, region => region.X == 33 && region.Width == 101);
-        Assert.Equal(148, regions.Max(region => region.Y + region.Height));
+        Assert.All(regions, region =>
+        {
+            Assert.True(region.X >= 34 && region.X + region.Width <= 133);
+            Assert.True(region.Y >= 98 && region.Y + region.Height <= 147);
+        });
+    }
+
+    [Theory]
+    [InlineData(10.4, 20.4, 10, 20)]
+    [InlineData(10.5, 20.5, 11, 21)]
+    [InlineData(10.6, 20.6, 11, 21)]
+    public void FractionalGlyphBandSnapsWithoutGrowing(double x, double y, int expectedX, int expectedY)
+    {
+        var regions = new List<Avalonia.Wayland.WaylandBlurRect>();
+
+        KWinBlur.AddRoundedRegion(regions, new Point(x, y), new Size(24, 1), 0);
+
+        var region = Assert.Single(regions);
+        Assert.Equal(new Avalonia.Wayland.WaylandBlurRect(expectedX, expectedY, 24, 1), region);
     }
 
     [Fact]
@@ -69,7 +87,7 @@ public sealed class KWinBlurTests
             Assert.True(region.X + region.Width <= 556);
             Assert.True(region.Y + region.Height <= 240);
         });
-        Assert.Contains(regions, region => region.X == 204 && region.Width == 352 && region.Height == 104);
+        Assert.Contains(regions, region => region.X == 205 && region.Width == 350 && region.Height == 104);
     }
 
     [Fact]
@@ -79,8 +97,8 @@ public sealed class KWinBlurTests
 
         KWinBlur.AddRoundedRegion(regions, new Point(10, 20), new Size(100, 52), 16);
 
-        Assert.DoesNotContain(regions, region => region.X == 10 && region.Y == 20);
-        Assert.Contains(regions, region => region.X > 10 && region.Y == 20 && region.Width < 100);
-        Assert.Contains(regions, region => region.X == 10 && region.Y == 36 && region.Width == 100);
+        Assert.DoesNotContain(regions, region => region.X == 10 || region.Y == 20);
+        Assert.Contains(regions, region => region.X > 11 && region.Y == 21 && region.Width < 98);
+        Assert.Contains(regions, region => region.X == 11 && region.Y == 36 && region.Width == 98);
     }
 }

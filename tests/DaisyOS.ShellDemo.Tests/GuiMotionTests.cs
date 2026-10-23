@@ -12,12 +12,12 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class GuiMotionTests
 {
     [AvaloniaFact]
-    public void LauncherTranslatedCardKeepsTheWholeCardAndBlurVisible()
+    public void LauncherTransformedCardKeepsTheWholeCardAndBlurVisible()
     {
         var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
             new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
         { IsVisible = false, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom };
-        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
+        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
         var overlay = new DaisyOS.Shell.Services.Shell.BottomChromeOverlayHost();
         overlay.Viewport.Children.Add(launcher);
         var window = new Window { Width = 1280, Height = 900, Content = overlay };
@@ -34,7 +34,7 @@ public sealed class GuiMotionTests
             Assert.False(launcher.ClipToBounds);
             Assert.True(root.ClipToBounds);
             Assert.True(overlay.Viewport.ClipToBounds);
-            Assert.Equal((int)Math.Floor(cardTop), regions.Min(region => region.Y));
+            Assert.Equal((int)Math.Floor(cardTop) + 1, regions.Min(region => region.Y));
             using var frame = window.CaptureRenderedFrame();
             frame!.Save("/tmp/daisy-launcher-overshoot.png");
         }
@@ -188,53 +188,54 @@ public sealed class GuiMotionTests
     }
 
     [AvaloniaFact]
-    public async Task LauncherFirstOpenStartsFullyBelowViewportAndSlidesUpOpaque()
+    public async Task LauncherIsCenteredAndUsesApplicationStyleScaleAndFade()
     {
         var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
             new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
         {
-            IsVisible = false, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom
+            IsVisible = false,
+            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
+            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
         };
-        Assert.Equal(TimeSpan.FromMilliseconds(220), GuiMotion.ShellSlideDuration(launcher, true));
-        // Headless render work can consume most of a short entrance. Slow the
-        // test clock so its intermediate geometry can be sampled reliably.
-        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.FromSeconds(1);
-        var overlay = new DaisyOS.Shell.Services.Shell.BottomChromeOverlayHost();
-        overlay.Viewport.Children.Add(launcher);
+        launcher.Resources["MotionDurationEnter"] = TimeSpan.FromSeconds(1);
+        launcher.Resources["MotionDurationExit"] = TimeSpan.FromSeconds(1);
+        var overlay = new Grid();
+        overlay.Children.Add(launcher);
         var window = new Window { Width = 1280, Height = 900, Content = overlay };
         window.Show();
         try
         {
-            // Native overlays are already mapped before the first launcher open.
             using (window.CaptureRenderedFrame()) { }
             launcher.AnimateIn();
             var root = launcher.FindControl<Border>("LauncherRootBorder")!;
-            Assert.True(root.Bounds.Height > 500, "First-open motion must use laid-out launcher geometry.");
-            var initialOffset = root.RenderTransform!.Value.M32;
-            Assert.True(initialOffset >= root.Bounds.Height, "Launcher must begin fully below the clip edge.");
-            Assert.Equal(1, root.Opacity);
-            var initialBounds = new Rect(root.Bounds.Size).TransformToAABB(root.TransformToVisual(overlay.Viewport)!.Value);
-            Assert.True(initialBounds.Top >= overlay.Viewport.Bounds.Height - 1,
-                "The entire card must begin below the actual viewport clip edge.");
-            // Pump one UI render pass per timer tick. A timer tick alone does
-            // not pulse newly subscribed UI animations on an idle overlay.
+            Assert.Equal(680, launcher.Bounds.Width);
+            Assert.Equal(560, launcher.Bounds.Height);
+            Assert.Equal((window.Bounds.Width - launcher.Bounds.Width) / 2,
+                launcher.TranslatePoint(default, window)!.Value.X, precision: 1);
+            Assert.Equal((window.Bounds.Height - launcher.Bounds.Height) / 2,
+                launcher.TranslatePoint(default, window)!.Value.Y, precision: 1);
+            Assert.InRange(root.RenderTransform!.Value.M11, 0.939, 0.941);
+            Assert.Equal(0, root.RenderTransform.Value.M31);
+            Assert.Equal(0, root.RenderTransform.Value.M32);
+            Assert.Equal(0, root.Opacity);
             Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             await Task.Delay(30);
             Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-            Assert.InRange(root.RenderTransform!.Value.M32, 1, initialOffset - 1);
-            Assert.Equal(1, root.Opacity);
-            var intermediate = root.RenderTransform.Value.M32;
+            Assert.InRange(root.RenderTransform!.Value.M11, 0.941, 0.999);
+            Assert.InRange(root.Opacity, 0.001, 0.999);
+            var intermediateScale = root.RenderTransform.Value.M11;
+            var intermediateOpacity = root.Opacity;
             var closed = false;
             launcher.AnimateOut(() => closed = true);
             launcher.AnimateIn();
-            Assert.InRange(root.RenderTransform!.Value.M32, intermediate - 1, intermediate + 1);
+            Assert.InRange(root.RenderTransform!.Value.M11, intermediateScale - 0.001, intermediateScale + 0.001);
+            Assert.InRange(root.Opacity, intermediateOpacity - 0.001, intermediateOpacity + 0.001);
             Assert.Equal(1, launcher.Opacity);
-            Assert.Equal(1, root.Opacity);
             Assert.False(closed);
             launcher.CloseImmediate();
-            launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
+            launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
             launcher.AnimateIn();
             Assert.True(launcher.IsVisible);
             Assert.Equal(1, root.Opacity);

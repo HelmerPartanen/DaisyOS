@@ -231,7 +231,6 @@ namespace DaisyOS.Shell.Views
             _mediaAutoHide = mediaAutoHide;
             _mediaRevealed = false;
             _mediaAutoHideTimer.Stop();
-            UpdateLauncherBottomInset();
             _taskbarRevealed = false;
             _systemBarRevealed = false;
             _taskbarAutoHideTimer.Stop();
@@ -415,18 +414,14 @@ namespace DaisyOS.Shell.Views
                 parent.Children.Remove(LauncherContent);
             }
 
-            // Give the launcher the same clipped viewport and bottom edge as
-            // systembar cards, so both reveal through the same 3px clearance.
-            var overlay = new BottomChromeOverlayHost();
-            overlay.Viewport.Children.Add(LauncherContent);
-            UpdateLauncherBottomInset();
+            // The launcher is an application-like centered card. Its full-output
+            // host keeps that center independent of the bottom panel geometry.
+            var overlay = new Grid();
+            LauncherContent.Margin = default;
+            LauncherContent.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
+            LauncherContent.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
+            overlay.Children.Add(LauncherContent);
             return overlay;
-        }
-
-        private void UpdateLauncherBottomInset()
-        {
-            var nativeHosted = LauncherContent.Parent?.Parent is BottomChromeOverlayHost;
-            LauncherContent.Margin = new Thickness(0, 0, 0, nativeHosted ? 0 : ShellSurfacePlan.PrimaryPanelExclusiveZone);
         }
 
         /// <summary>

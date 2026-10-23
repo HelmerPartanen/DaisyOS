@@ -4,7 +4,7 @@
              xmlns:vm="clr-namespace:DaisyOS.Shell.ViewModels"
              x:Class="DaisyOS.Shell.Views.Components.Launcher.LauncherView"
              x:DataType="vm:LauncherViewModel"
-             Width="720" Height="620" ClipToBounds="False">
+             Width="680" Height="560" ClipToBounds="False">
 
   <UserControl.Resources>
     <DataTemplate x:Key="LauncherTileTemplate" DataType="vm:LauncherItemViewModel">
@@ -30,7 +30,7 @@
           </Panel>
           <TextBlock Text="{Binding Name}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" TextAlignment="Center"
                      Foreground="{DynamicResource ContentPrimaryBrush}"
-                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="78" HorizontalAlignment="Center"/>
+                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="74" HorizontalAlignment="Center"/>
         </StackPanel>
       </Button>
     </DataTemplate>
@@ -40,6 +40,7 @@
 
   <controls:ShellFrameBorder x:Name="LauncherRootBorder"
           Classes="LauncherRoot"
+          RenderTransformOrigin="50%,50%"
           Background="{DynamicResource ShellFrameOuterEdgeBrush}"
           Padding="1"
           CornerRadius="{DynamicResource RoundedXXL}"
@@ -77,7 +78,7 @@
               <Setter Property="Background" Value="Transparent"/>
               <Setter Property="BorderThickness" Value="0"/>
               <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
-              <Setter Property="Width" Value="88"/>
+              <Setter Property="Width" Value="84"/>
               <Setter Property="Padding" Value="4,6"/>
               <Setter Property="Margin" Value="2,2"/>
               <Setter Property="HorizontalContentAlignment" Value="Center"/>

@@ -13,7 +13,7 @@ public sealed record InputHardwareStatus(
     bool NaturalScroll,
     bool TapToClick,
     string PointerSpeed,
-    int TrackpadScrollSpeed = 2);
+    int TrackpadScrollSpeed = 0);
 
 public sealed class LinuxInputHardwareService
 {
@@ -25,7 +25,7 @@ public sealed class LinuxInputHardwareService
 
     public static int FactorToScrollSpeedIndex(double factor)
     {
-        int closest = 2;
+        int closest = 0;
         double minDiff = double.MaxValue;
         for (int i = 0; i < ScrollFactors.Length; i++)
         {
@@ -60,7 +60,7 @@ public sealed class LinuxInputHardwareService
         bool naturalScroll = false;
         bool tapToClick = true;
         string pointerSpeed = "Normal";
-        int trackpadScrollSpeed = 2;
+        int trackpadScrollSpeed = 0;
 
         try
         {
@@ -191,6 +191,34 @@ public sealed class LinuxInputHardwareService
 
         await ReloadKWinAsync(cancellationToken);
         return false;
+    }
+
+    /// <summary>
+    /// Applies DaisyOS's slowest scroll speed on first use. Existing user or
+    /// per-device KWin configuration is never overwritten.
+    /// </summary>
+    public async Task<bool> EnsureDefaultTrackpadScrollSpeedAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (File.Exists(_configFilePath))
+            {
+                var lines = await File.ReadAllLinesAsync(_configFilePath, cancellationToken);
+                if (lines.Any(line => line.Split('=', 2)[0].Trim().Equals("ScrollFactor", StringComparison.OrdinalIgnoreCase)))
+                    return true;
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch
+        {
+            // Try to establish the default even if the existing file could not
+            // be inspected; SetTrackpadScrollSpeedAsync reports persistence errors.
+        }
+
+        return await SetTrackpadScrollSpeedAsync(0, cancellationToken);
     }
 
     private async Task<double?> TryGetLiveKWinTouchpadScrollFactorAsync(CancellationToken cancellationToken)

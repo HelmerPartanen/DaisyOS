@@ -284,7 +284,9 @@ public partial class LockScreenWindow : Window
             var start = -1;
             for (var x = 0; x <= width; x++)
             {
-                var inside = x < width && pixels[(y * width + x) * 4 + 3] > 16;
+                // A binary KWin mask cannot preserve glyph antialiasing. Use the
+                // solid interior so its integer edge stays beneath the rendered text.
+                var inside = x < width && pixels[(y * width + x) * 4 + 3] >= 128;
                 if (inside && start < 0) start = x;
                 if (!inside && start >= 0) { bands.Add(new Rect(left + start, top + y, x - start, 1)); start = -1; }
             }

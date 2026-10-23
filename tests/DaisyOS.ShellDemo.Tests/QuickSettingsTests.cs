@@ -6,6 +6,9 @@ using Avalonia.Controls.Primitives;
 using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Media;
+using ShapePath = Avalonia.Controls.Shapes.Path;
+using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Views.Components.SystemBar;
 using Xunit;
 
@@ -64,6 +67,36 @@ public sealed class QuickSettingsTests
 
         var tile = panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("WifiTile")!;
         Assert.True(tile.UseWifiSignalIcon);
+    }
+
+    [AvaloniaTheory]
+    [InlineData(20, 0.3, 0.3, 1.0)]
+    [InlineData(50, 0.3, 1.0, 1.0)]
+    public void WifiSignalKeepsUnavailableBandsVisibleAtLowerOpacity(
+        int signalPercent, double expectedOuter, double expectedInner, double expectedDot)
+    {
+        var blue = new SolidColorBrush(Color.Parse("#0067D9"));
+        var icon = new WifiSignalIcon
+        {
+            SignalPercent = signalPercent,
+            ActiveBrush = blue,
+            InactiveBrush = blue,
+            InactiveBandOpacity = 0.3
+        };
+        var window = new Window { Content = icon };
+        window.Show();
+        try
+        {
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+            var bands = icon.GetVisualDescendants().OfType<ShapePath>().ToArray();
+            Assert.Equal(3, bands.Length);
+            Assert.Equal(expectedOuter, bands[0].Opacity);
+            Assert.Equal(expectedInner, bands[1].Opacity);
+            Assert.Equal(expectedDot, bands[2].Opacity);
+            Assert.All(bands, band => Assert.Equal(blue.Color,
+                Assert.IsAssignableFrom<ISolidColorBrush>(band.Fill).Color));
+        }
+        finally { window.Close(); }
     }
 
     [AvaloniaFact]

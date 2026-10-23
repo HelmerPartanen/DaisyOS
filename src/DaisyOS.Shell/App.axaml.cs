@@ -46,6 +46,7 @@ using DaisyOS.Shell.Apps.LocalSend;
 using DaisyOS.Shell.Services.Screenshot;
 using DaisyOS.Shell.ViewModels;
 using DaisyOS.Shell.Services.Idle;
+using DaisyOS.System.Input;
 
 namespace DaisyOS.Shell;
 
@@ -172,6 +173,7 @@ public partial class App : Application
     public ShellFeedbackService Feedback { get; } = new();
     public NotificationService Notifications { get; } = new();
     public AirPodsCoordinator? AirPods { get; private set; }
+    private BluetoothConnectionMonitor? _bluetoothConnectionMonitor;
     public NativeAppWindowTracker WindowTracker => _nativeWindowTracker;
     // The persisted preference must be available before the first native
     // background surface maps. A native shell restart constructs that surface
@@ -310,6 +312,7 @@ public partial class App : Application
             {
                 traceLifetime.Cancel();
                 gamingAutomation.Dispose();
+                _bluetoothConnectionMonitor?.Dispose();
                 AirPods?.Dispose();
                 _ = AppTray.DisposeAsync();
                 SessionState.Changed -= OnGamingPrefetchPolicyChanged;
@@ -323,6 +326,12 @@ public partial class App : Application
             StartNotificationDaemonService();
             if (OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("DAISYOS_SHELL_DEMO") != "1")
             {
+                // KWin owns input delivery for the shell and every system app.
+                // Applying the default at the compositor makes launcher and app
+                // ScrollViewers receive the same scaled trackpad deltas.
+                _ = new LinuxInputHardwareService().EnsureDefaultTrackpadScrollSpeedAsync();
+                _bluetoothConnectionMonitor = new BluetoothConnectionMonitor(Notifications);
+                _bluetoothConnectionMonitor.Start();
                 AirPods = new AirPodsCoordinator(this);
                 AirPods.Start();
             }

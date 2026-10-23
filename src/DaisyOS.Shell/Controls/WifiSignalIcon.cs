@@ -18,6 +18,9 @@ public sealed class WifiSignalIcon : Viewbox
     public static readonly StyledProperty<IBrush?> InactiveBrushProperty =
         AvaloniaProperty.Register<WifiSignalIcon, IBrush?>(nameof(InactiveBrush));
 
+    public static readonly StyledProperty<double> InactiveBandOpacityProperty =
+        AvaloniaProperty.Register<WifiSignalIcon, double>(nameof(InactiveBandOpacity), 1d);
+
     private readonly ShapePath _outerBand;
     private readonly ShapePath _innerBand;
     private readonly ShapePath _dot;
@@ -27,6 +30,7 @@ public sealed class WifiSignalIcon : Viewbox
         SignalPercentProperty.Changed.AddClassHandler<WifiSignalIcon>((icon, _) => icon.UpdateBandBrushes());
         ActiveBrushProperty.Changed.AddClassHandler<WifiSignalIcon>((icon, _) => icon.UpdateBandBrushes());
         InactiveBrushProperty.Changed.AddClassHandler<WifiSignalIcon>((icon, _) => icon.UpdateBandBrushes());
+        InactiveBandOpacityProperty.Changed.AddClassHandler<WifiSignalIcon>((icon, _) => icon.UpdateBandBrushes());
     }
 
     public WifiSignalIcon()
@@ -64,6 +68,12 @@ public sealed class WifiSignalIcon : Viewbox
         set => SetValue(InactiveBrushProperty, value);
     }
 
+    public double InactiveBandOpacity
+    {
+        get => GetValue(InactiveBandOpacityProperty);
+        set => SetValue(InactiveBandOpacityProperty, Math.Clamp(value, 0, 1));
+    }
+
     private static ShapePath CreateBand(string data) =>
         new()
         {
@@ -88,5 +98,6 @@ public sealed class WifiSignalIcon : Viewbox
         }
 
         band.Fill = brush;
+        band.Opacity = isActive ? 1 : InactiveBandOpacity;
     }
 }

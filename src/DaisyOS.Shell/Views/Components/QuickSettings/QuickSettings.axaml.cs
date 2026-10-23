@@ -813,7 +813,7 @@ public partial class QuickSettings : UserControl
         };
         var icon = new DaisyIcon
         {
-            Icon = BluetoothIconFor(device),
+            Icon = BluetoothDevicePresentation.IconFor(device),
             Size = 18,
             VerticalAlignment = VerticalAlignment.Center,
         };
@@ -905,19 +905,6 @@ public partial class QuickSettings : UserControl
                 new BluetoothDevice("10:24:98:7A:3B:04", "DualSense Wireless Controller", false, true, "Controller"),
             ],
             Detail: "Demo Bluetooth devices are enabled.");
-
-    private static string BluetoothIconFor(BluetoothDevice device)
-    {
-        var type = device.Type;
-        var name = device.Name;
-        if (Contains(type, "AirPods") || Contains(name, "AirPods")) return "AirPods";
-        if (Contains(type, "audio") || Contains(type, "headphone") || Contains(type, "headset") || Contains(name, "bud")) return "headphones";
-        if (Contains(type, "keyboard") || Contains(name, "keyboard") || Contains(name, "keychron")) return "keyboard";
-        if (Contains(type, "mouse") || Contains(name, "mouse") || Contains(name, "master")) return "mouse";
-        if (Contains(type, "phone") || Contains(name, "phone")) return "device-mobile";
-        if (Contains(type, "controller") || Contains(type, "gamepad") || Contains(name, "controller") || Contains(name, "dualsense")) return "game-controller";
-        return "bluetooth";
-    }
 
     private static string MapAudioIcon(string icon) => icon switch
     {

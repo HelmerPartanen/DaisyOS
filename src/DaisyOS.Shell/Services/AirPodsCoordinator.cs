@@ -115,8 +115,8 @@ public sealed class AirPodsCoordinator : IDisposable
                         _announcedAddress = confirmed.Address;
                         await SelectAudioOutputAsync(confirmed.Name);
                         _app.SessionState.SetPreference("airpods.last-address", confirmed.Address);
-                        _app.Notifications.Add(new NotificationItem($"Connected to \"{confirmed.Name}\"", "", DateTimeOffset.Now,
-                            SystemIconGlyph: "AirPods", Category: NotificationCategory.Network, TimeoutSeconds: 5));
+                        // The session-wide Bluetooth monitor announces this connection.
+                        // Keep AirPods-specific work here limited to audio routing and state.
                     }
                 }
                 _prompted.Remove(Status.Address);

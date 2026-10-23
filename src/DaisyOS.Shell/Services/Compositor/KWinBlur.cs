@@ -286,6 +286,32 @@ internal sealed class KWinBlur : IDisposable
 
     internal static void AddRoundedRegion(List<WaylandBlurRect> target, Point origin, Size size, int radius)
     {
+        if (radius == 0)
+        {
+            // Expanding both fractional edges creates a two-pixel-wide mask for
+            // one-pixel glyph bands. Snap instead so text and other hard-edged
+            // regions do not acquire a visible blur halo.
+            // Use the same half-up grid for both edges. Banker's rounding can
+            // map x+.5 and x+1.5 in opposite directions and double a 1px band.
+            var snappedLeft = (int)Math.Floor(origin.X + 0.5);
+            var snappedTop = (int)Math.Floor(origin.Y + 0.5);
+            var snappedRight = (int)Math.Floor(origin.X + size.Width + 0.5);
+            var snappedBottom = (int)Math.Floor(origin.Y + size.Height + 0.5);
+            if (snappedRight > snappedLeft && snappedBottom > snappedTop)
+                target.Add(new(snappedLeft, snappedTop, snappedRight - snappedLeft, snappedBottom - snappedTop));
+            return;
+        }
+
+        // KWin blur regions are integer scanlines and cannot represent the
+        // antialias coverage of Avalonia's rounded edge. Keep the binary mask
+        // one logical pixel beneath the painted frame so its staircase is
+        // covered by the smooth translucent border instead of leaking outside.
+        const double edgeInset = 1;
+        origin = new Point(origin.X + edgeInset, origin.Y + edgeInset);
+        size = new Size(size.Width - edgeInset * 2, size.Height - edgeInset * 2);
+        if (size.Width <= 0 || size.Height <= 0) return;
+        radius = Math.Max(0, radius - (int)edgeInset);
+
         var left = (int)Math.Floor(origin.X);
         var top = (int)Math.Floor(origin.Y);
         var width = (int)Math.Ceiling(origin.X + size.Width) - left;
