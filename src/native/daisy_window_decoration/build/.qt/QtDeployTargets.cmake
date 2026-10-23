@@ -1,2 +1,0 @@
-set(__QT_DEPLOY_TARGET_daisy_window_decoration_FILE /home/helmeri/DaisyOS/src/native/daisy_window_decoration/build/org.daisyos.decoration.so)
-set(__QT_DEPLOY_TARGET_daisy_window_decoration_TYPE MODULE_LIBRARY)

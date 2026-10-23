@@ -1,7 +1,0 @@
-{
-	"InstallScripts" : 
-	[
-		"/home/helmeri/DaisyOS/src/native/daisy_idle_monitor/build/cmake_install.cmake"
-	],
-	"Parallel" : false
-}

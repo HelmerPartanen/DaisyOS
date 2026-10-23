@@ -1,4 +1,0 @@
-/home/helmeri/DaisyOS/src/native/daisy_idle_monitor/build/CMakeFiles/daisy_idle.dir
-/home/helmeri/DaisyOS/src/native/daisy_idle_monitor/build/CMakeFiles/daisyos-idle-monitor.dir
-/home/helmeri/DaisyOS/src/native/daisy_idle_monitor/build/CMakeFiles/edit_cache.dir
-/home/helmeri/DaisyOS/src/native/daisy_idle_monitor/build/CMakeFiles/rebuild_cache.dir
