@@ -1663,14 +1663,32 @@ public partial class LockScreenWindow : Window
                 var currentW = Math.Max(1, startRect.Width + (endRect.Width - startRect.Width) * expand);
                 var currentH = Math.Max(1, startRect.Height + (endRect.Height - startRect.Height) * expand);
                 var currentRadius = 14 + (32 - 14) * expand;
+                var innerRadius = 14 + (30 - 14) * expand;
+                var frameInset = expand;
+                var shadowAlpha = (byte)Math.Round(0x66 * expand);
 
                 _morphingArtworkBorder.IsVisible = true;
                 _morphingArtworkBorder.Opacity = presence * mediaPresence;
                 _morphingArtworkBorder.Width = currentW;
                 _morphingArtworkBorder.Height = currentH;
+                // The expanded artwork has a two-stage 1 px frame, while the
+                // compact artwork is edge-to-edge. Interpolate those insets so
+                // collapse ends with the exact same crop as the resting widget.
+                _morphingArtworkBorder.Padding = new Thickness(frameInset);
+                _morphingArtworkInner.Margin = new Thickness(frameInset);
                 _morphingArtworkBorder.CornerRadius = new CornerRadius(currentRadius);
                 _morphingArtworkHighlight.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 1));
-                _morphingArtworkInner.CornerRadius = new CornerRadius(Math.Max(0, currentRadius - 2));
+                _morphingArtworkHighlight.Opacity = expand;
+                _morphingArtworkInner.CornerRadius = new CornerRadius(innerRadius);
+                // Match the large artwork shadow at the expanded endpoint and
+                // remove it continuously before handing off to the flat compact
+                // artwork. This prevents the final-frame elevation pop.
+                _morphingArtworkBorder.BoxShadow = new BoxShadows(new BoxShadow
+                {
+                    OffsetY = 18 * expand,
+                    Blur = 44 * expand,
+                    Color = Color.FromArgb(shadowAlpha, 0, 0, 0)
+                });
                 _morphingArtworkTranslate.X = currentX;
                 _morphingArtworkTranslate.Y = currentY;
             }

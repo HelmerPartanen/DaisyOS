@@ -78,6 +78,7 @@ mkdir -p "$iso_root/usr/share/icons" "$iso_root/etc/xdg"
 cp -a "$publish_dir/cursor-themes/"DaisyOS-* "$iso_root/usr/share/icons/"
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorTheme DaisyOS-Dark
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorSize 32
+kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Effect-blur --key BlurStrength 4
 
 # KWin window menus use the native DaisyOS renderer on every request path.
 [[ -f "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so" ]] || { echo 'DaisyOS native window menus are missing. Publish again.' >&2; exit 1; }

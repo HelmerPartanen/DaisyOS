@@ -243,12 +243,12 @@ public partial class DesktopItemView : UserControl
     {
         if (DataContext is DesktopItemViewModel vm && Application.Current is App app)
         {
-            var dockOrder = app.SessionState.DockOrder.ToList();
             var appId = global::System.IO.Path.GetFileNameWithoutExtension(vm.State.Id);
-            if (!dockOrder.Contains(appId))
+            if (!app.SessionState.DockOrder.Contains(appId, StringComparer.OrdinalIgnoreCase))
             {
-                dockOrder.Add(appId);
-                app.SessionState.SetDockOrder(dockOrder);
+                // This updates persistence and immediately reconciles the live
+                // taskbar (or forwards to the desktop-settings owner process).
+                app.PinApplicationToTaskbar(appId);
                 app.Feedback.Show(Loc.Format("Pinned {0} to Taskbar.", vm.Label));
             }
         }

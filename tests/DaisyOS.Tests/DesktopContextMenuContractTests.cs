@@ -148,6 +148,18 @@ public sealed class DesktopContextMenuContractTests
     }
 
     [Fact]
+    public void DesktopPinUpdatesLiveTaskbarAndTaskbarMenuDoesNotOfferUninstall()
+    {
+        var root = FindRepoRoot();
+        var desktopItem = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Controls", "DesktopItemView.axaml.cs"));
+        var taskbar = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Views", "Components", "Taskbar", "TaskbarView.axaml.cs"));
+
+        Assert.Contains("app.PinApplicationToTaskbar(appId)", desktopItem);
+        Assert.DoesNotContain("UninstallAppRequested", taskbar);
+        Assert.DoesNotContain("CreateMenuItem(\"Uninstall\"", taskbar);
+    }
+
+    [Fact]
     public void DesktopWidgetMenu_IsHostedOnNativeBlurSurface()
     {
         var root = FindRepoRoot();

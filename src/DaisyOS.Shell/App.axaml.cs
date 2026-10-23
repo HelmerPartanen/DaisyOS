@@ -1305,7 +1305,6 @@ public partial class App : Application
         shell.Taskbar.AppIconClicked += (_, appId) => LaunchTaskbarApp(appId);
         shell.Taskbar.ForceQuitRequested += (_, appId) => RequestForceQuit(appId);
         shell.Taskbar.AppInfoRequested += (_, appId) => ShowSettings("InstalledApps");
-        shell.Taskbar.UninstallAppRequested += (_, appId) => _ = UninstallTaskbarApplicationAsync(appId);
         shell.Taskbar.CloseAppRequested += (_, appId) => RequestClose(appId);
         foreach (var appId in NativeAppIds)
         {
@@ -2247,37 +2246,6 @@ public partial class App : Application
         {
             _ = _shellView.Launcher.ViewModel.ReloadApplicationsAsync();
         }
-    }
-
-    private async Task UninstallTaskbarApplicationAsync(string appId)
-    {
-        if (string.IsNullOrWhiteSpace(appId)) return;
-        var service = new InstalledApplicationService();
-        var apps = await Task.Run(() => _sharedLauncherService.Value.GetAvailableApps());
-        var shortId = DesktopApplicationMaskStore.NormalizeShortId(appId);
-        var desktopId = DesktopApplicationMaskStore.NormalizeDesktopId(appId);
-        var entry = apps.FirstOrDefault(a =>
-            string.Equals(a.Id, appId, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(a.Id, desktopId, StringComparison.OrdinalIgnoreCase)
-            || string.Equals(DesktopApplicationMaskStore.NormalizeShortId(a.Id), shortId, StringComparison.OrdinalIgnoreCase));
-        entry ??= new AppEntry(desktopId, shortId, string.Empty, shortId, false, AppLaunchKind.DesktopEntry, desktopId);
-
-        var target = await service.ResolveAsync(entry);
-        if (!target.CanManage)
-        {
-            Feedback.Show(target.UnavailableReason);
-            return;
-        }
-
-        if (!await Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(_nativePanelSurface, entry.Name))
-        {
-            return;
-        }
-
-        var removed = await service.UninstallAsync(target);
-        Feedback.Show(removed
-            ? Loc.Format("{0} was uninstalled.", entry.Name)
-            : Loc.Format("Couldn’t uninstall {0}.", entry.Name));
     }
 
     /// <summary>Opens one instance of the native DaisyOS Notes app.</summary>

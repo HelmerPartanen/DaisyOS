@@ -41,7 +41,6 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         /// <summary>Raised when Close is requested on a running app from its context menu.</summary>
         public event EventHandler<string>? CloseAppRequested;
-        public event EventHandler<string>? UninstallAppRequested;
 
         // Current slot geometry: starts at the normal 40px item / 4px gap, then fits the dock width.
         private double ItemWidth = 40;
@@ -1220,17 +1219,6 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                     CloseAppRequested?.Invoke(this, rawAppId);
                 };
                 _contextMenuItems.Children.Add(closeItem);
-            }
-
-            if (UninstallAppRequested is not null)
-            {
-                var uninstallItem = CreateMenuItem("Uninstall", "delete-02", isDanger: true);
-                uninstallItem.Click += (_, _) =>
-                {
-                    HideContextMenu();
-                    UninstallAppRequested?.Invoke(this, effectiveAppId);
-                };
-                _contextMenuItems.Children.Add(uninstallItem);
             }
 
             // 4. App Info (always at the bottom)

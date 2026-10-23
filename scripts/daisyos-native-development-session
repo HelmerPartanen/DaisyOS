@@ -253,6 +253,9 @@ configure_kwin_for_daisyos() {
   # a fresh login/reboot.
   kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
   kwriteconfig6 --file kwinrc --group Plugins --key forceblurEnabled false
+  # Keep compositor blur deliberately restrained. KWin uses an integer scale;
+  # four is DaisyOS's visual default for every native glass region.
+  kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
   kwriteconfig6 --file kwinrc --group Plugins --key shakecursorEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key shakeCursorEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shakecursorEnabled false
