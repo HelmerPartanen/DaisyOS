@@ -114,6 +114,13 @@ restart_shell() {
     cp -f "$helper_build" "$source_root/src/DaisyOS.Shell/bin/$shell_configuration/net10.0/" 2>/dev/null || true
   fi
 
+  # Ensure the AirPods companion is built and ready in user space
+  local librepods_bin="$HOME/.local/lib/daisyos/librepods"
+  if [[ ! -x "$librepods_bin" && ! -x "/usr/lib/daisyos/librepods" ]]; then
+    echo "Building AirPods companion..."
+    "$source_root/scripts/build-librepods.sh" "$HOME/.local/lib/daisyos" >/dev/null 2>&1 || true
+  fi
+
   if ! dotnet build "$source_root/src/DaisyOS.Shell/DaisyOS.Shell.csproj" -c "$shell_configuration" -f net10.0 --no-restore --disable-build-servers -m:1 -v:minimal; then
     echo "Shell build failed. The running desktop was left untouched." >&2
     exit 1

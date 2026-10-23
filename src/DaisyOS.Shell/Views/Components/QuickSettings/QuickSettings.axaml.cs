@@ -743,7 +743,7 @@ public partial class QuickSettings : UserControl
             return;
         }
 
-        foreach (var device in status.Devices.OrderByDescending(device => device.IsConnected).ThenBy(device => device.Name, StringComparer.CurrentCultureIgnoreCase))
+        foreach (var device in status.Devices.Where(d => !DaisyOS.System.Bluetooth.LinuxBluetoothService.IsAnonymousName(d.Name)).OrderByDescending(device => device.IsConnected).ThenBy(device => device.Name, StringComparer.CurrentCultureIgnoreCase))
         {
             host.Children.Add(CreateBluetoothDeviceButton(device));
         }
@@ -930,8 +930,8 @@ public partial class QuickSettings : UserControl
         }
         if (this.FindControl<TextBlock>("AirPodsDetail") is { } detail)
         {
-            detail.Text = !status.IsAvailable ? "AirPods connected. Listening controls are unavailable; check the LibrePods service."
-                : status.SupportedModes.Count == 0 ? "Listening controls are not available for this AirPods model." : "";
+            detail.Text = !status.IsAvailable ? Loc.Get("Listening controls are unavailable.")
+                : status.SupportedModes.Count == 0 ? Loc.Get("Listening controls are not available for this AirPods model.") : "";
             detail.IsVisible = status.IsConnected && detail.Text.Length > 0;
         }
         if (this.FindControl<QuickSettingsSlider>("VolumeSlider") is { } volume)

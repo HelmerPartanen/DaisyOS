@@ -30,9 +30,20 @@ public sealed class AirPodsCoordinator : IDisposable
     {
         try
         {
-            if (File.Exists("/usr/lib/daisyos/librepods"))
-                await new SafeCommandRunner().RunAsync("systemctl", ["--user", "start", "daisyos-librepods.service"],
+            _ = Task.Run(() => _bluetooth.RestorePairedDevicesAsync(_lifetime.Token));
+            var userBinary = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "lib", "daisyos", "librepods");
+            var hasCompanion = File.Exists("/usr/lib/daisyos/librepods") || File.Exists(userBinary);
+            if (hasCompanion)
+            {
+                var runner = new SafeCommandRunner();
+                var startResult = await runner.RunAsync("systemctl", ["--user", "start", "daisyos-librepods.service"],
                     TimeSpan.FromSeconds(5), _lifetime.Token);
+                if (!startResult.Succeeded)
+                {
+                    var bin = File.Exists("/usr/lib/daisyos/librepods") ? "/usr/lib/daisyos/librepods" : userBinary;
+                    _ = runner.RunAsync(bin, ["--hide"], TimeSpan.FromHours(24), _lifetime.Token);
+                }
+            }
             await RefreshAsync();
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
@@ -81,7 +92,7 @@ public sealed class AirPodsCoordinator : IDisposable
                 status = fallback;
             else if (status.IsConnected) _bluetoothFallback = null;
             Status = status;
-            if (Status.IsConnected)
+            if (Status.IsConnected && !LinuxBluetoothService.IsAnonymousName(Status.Name) && !string.IsNullOrWhiteSpace(Status.Name))
             {
                 if (!string.Equals(_announcedAddress, Status.Address, StringComparison.OrdinalIgnoreCase))
                 {
@@ -93,7 +104,7 @@ public sealed class AirPodsCoordinator : IDisposable
                 }
                 _prompted.Remove(Status.Address);
             }
-            else _announcedAddress = null;
+            else if (!Status.IsConnected) _announcedAddress = null;
             Changed?.Invoke();
         }
         catch (OperationCanceledException) when (_lifetime.IsCancellationRequested) { }
@@ -121,12 +132,14 @@ public sealed class AirPodsCoordinator : IDisposable
         }
     }
 
-    private bool IsAirPods(BluetoothDevice device) => device.Type == "AirPods" || device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)
-        || string.Equals(device.Address, _app.GetPreference("airpods.last-address", ""), StringComparison.OrdinalIgnoreCase);
+    private bool IsAirPods(BluetoothDevice device) =>
+        !LinuxBluetoothService.IsAnonymousName(device.Name) &&
+        (device.Type == "AirPods" || device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)
+        || string.Equals(device.Address, _app.GetPreference("airpods.last-address", ""), StringComparison.OrdinalIgnoreCase));
 
     private void Prompt(BluetoothDevice device)
     {
-        if (!_prompted.Add(device.Address)) return;
+        if (LinuxBluetoothService.IsAnonymousName(device.Name) || !_prompted.Add(device.Address)) return;
         _app.Notifications.Add(new NotificationItem($"Connect to \"{device.Name}\"?",
             device.IsPaired ? "Your AirPods are nearby." : "Put your AirPods in pairing mode to connect.", DateTimeOffset.Now,
             SystemIconGlyph: "AirPods", Category: NotificationCategory.Network,

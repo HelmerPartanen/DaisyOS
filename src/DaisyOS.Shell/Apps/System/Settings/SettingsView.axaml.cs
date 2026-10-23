@@ -1274,14 +1274,24 @@ namespace DaisyOS.Shell.Apps.System.Settings
             return await dialog.ShowDialog<string?>(owner);
         }
 
+        private void RefreshBluetooth()
+        {
+            var buildVersion = ++_categoryBuildVersion;
+            BuildBluetooth(buildVersion);
+        }
+
         private void BuildBluetooth(int buildVersion)
         {
-            var checking = Secondary(Loc.Get("Checking Bluetooth availability…"));
-            CategoryContent.Children.Add(checking);
+            TextBlock? checking = null;
+            if (CategoryContent.Children.Count <= 1)
+            {
+                checking = Secondary(Loc.Get("Checking Bluetooth availability…"));
+                CategoryContent.Children.Add(checking);
+            }
             _ = BuildBluetoothAvailabilityAsync(buildVersion, checking);
         }
 
-        private async Task BuildBluetoothAvailabilityAsync(int buildVersion, TextBlock checking)
+        private async Task BuildBluetoothAvailabilityAsync(int buildVersion, TextBlock? checking)
         {
             var bluetoothService = new LinuxBluetoothService(new SafeCommandRunner());
             BluetoothStatus adapter;
@@ -1295,7 +1305,14 @@ namespace DaisyOS.Shell.Apps.System.Settings
             }
 
             if (buildVersion != _categoryBuildVersion) return;
-            CategoryContent.Children.Remove(checking);
+            if (checking is not null) CategoryContent.Children.Remove(checking);
+
+            // Keep the page title/description header (index 0) and remove all existing category sections
+            while (CategoryContent.Children.Count > 1)
+            {
+                CategoryContent.Children.RemoveAt(CategoryContent.Children.Count - 1);
+            }
+
             if (!adapter.IsAvailable)
             {
                 AddUnavailableMessage(adapter.Detail);
@@ -1309,7 +1326,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 var scanButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                 {
-                    Content = _isScanningBluetooth ? "Scanning for accessories…" : "Scan for accessories",
+                    Content = _isScanningBluetooth ? Loc.Get("Scanning for accessories…") : Loc.Get("Scan for accessories"),
                     Classes = { "Subtle" },
                     IsEnabled = !_isScanningBluetooth,
                     Height = 32,
@@ -1318,8 +1335,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 });
                 scanButton.Click += async (_, _) =>
                 {
+                    if (_isScanningBluetooth) return;
                     _isScanningBluetooth = true;
-                    BuildBluetooth(_categoryBuildVersion);
+                    RefreshBluetooth();
                     var started = await bluetoothService.StartDiscoveryAsync();
                     if (started)
                     {
@@ -1331,21 +1349,27 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t start Bluetooth discovery. Check that the Bluetooth service is running."));
                     }
                     _isScanningBluetooth = false;
-                    BuildBluetooth(_categoryBuildVersion);
+                    if (string.Equals(_activeCategory, "Bluetooth", StringComparison.Ordinal))
+                    {
+                        RefreshBluetooth();
+                    }
                 };
 
                 AddSection(Loc.Get("PAIR NEW ACCESSORY"), Loc.Get("Find and pair nearby Bluetooth devices."),
                     PreferenceRow(Loc.Get("Find nearby devices"), Loc.Get("Search for headphones, keyboards, and mice."), scanButton));
 
-                var deviceRows = new List<Control>();
-                if (adapter.Devices.Count > 0)
+                var pairedDevices = adapter.Devices.Where(d => d.IsPaired).ToList();
+                var availableDevices = adapter.Devices.Where(d => !d.IsPaired && !LinuxBluetoothService.IsAnonymousName(d.Name)).ToList();
+
+                var pairedRows = new List<Control>();
+                if (pairedDevices.Count > 0)
                 {
-                    foreach (var device in adapter.Devices)
+                    foreach (var device in pairedDevices)
                     {
-                        var statusText = device.IsConnected ? Loc.Get("Connected") : Loc.Get("Paired");
+                        var statusText = device.IsConnected ? Loc.Get("Connected") : Loc.Get("Not connected");
                         var actionButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                         {
-                            Content = device.IsConnected ? "Disconnect" : "Connect",
+                            Content = Loc.Get(device.IsConnected ? "Disconnect" : "Connect"),
                             Classes = { "Subtle" },
                             Height = 32,
                             Padding = new Thickness(12, 0),
@@ -1355,11 +1379,15 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         actionButton.Click += async (_, _) =>
                         {
                             actionButton.IsEnabled = false;
-                            if (!await bluetoothService.SetConnectedAsync(dev.Address, !dev.IsConnected))
+                            actionButton.Content = Loc.Get(dev.IsConnected ? "Disconnecting…" : "Connecting…");
+                            var success = await bluetoothService.SetConnectedAsync(dev.Address, !dev.IsConnected);
+                            if (!success)
+                            {
                                 (Application.Current as App)?.Feedback.Show(dev.IsConnected
                                     ? Loc.Format("Couldn’t disconnect {0}.", dev.Name)
                                     : Loc.Format("Couldn’t connect to {0}.", dev.Name));
-                            BuildBluetooth(_categoryBuildVersion);
+                            }
+                            RefreshBluetooth();
                         };
 
                         var forgetButton = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
@@ -1374,8 +1402,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         {
                             forgetButton.IsEnabled = false;
                             if (!await bluetoothService.ForgetDeviceAsync(dev.Address))
+                            {
                                 (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t forget {0}.", dev.Name));
-                            BuildBluetooth(_categoryBuildVersion);
+                            }
+                            RefreshBluetooth();
                         };
 
                         var actionsPanel = new StackPanel
@@ -1387,15 +1417,58 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         actionsPanel.Children.Add(actionButton);
                         actionsPanel.Children.Add(forgetButton);
 
-                        deviceRows.Add(PreferenceRow(device.Name, statusText, actionsPanel));
+                        pairedRows.Add(PreferenceRow(device.Name, statusText, actionsPanel));
                     }
                 }
                 else
                 {
-                    deviceRows.Add(InfoRow(Loc.Get("Paired devices"), Loc.Get("No paired devices found.")));
+                    pairedRows.Add(InfoRow(Loc.Get("Paired accessories"), Loc.Get("No paired devices found.")));
                 }
 
-                AddSection(Loc.Get("PAIRED DEVICES"), Loc.Get("Manage connected wireless accessories."), deviceRows.ToArray());
+                AddSection(Loc.Get("PAIRED ACCESSORIES"), Loc.Get("Manage connected wireless accessories."), pairedRows.ToArray());
+
+                if (availableDevices.Count > 0 || _isScanningBluetooth)
+                {
+                    var availableRows = new List<Control>();
+                    if (availableDevices.Count > 0)
+                    {
+                        foreach (var device in availableDevices)
+                        {
+                            var pairButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
+                            {
+                                Content = Loc.Get("Pair"),
+                                Classes = { "Subtle" },
+                                Height = 32,
+                                Padding = new Thickness(14, 0),
+                                VerticalAlignment = VerticalAlignment.Center
+                            });
+                            var dev = device;
+                            pairButton.Click += async (_, _) =>
+                            {
+                                pairButton.IsEnabled = false;
+                                pairButton.Content = Loc.Get("Pairing…");
+                                var paired = await bluetoothService.PairDeviceAsync(dev.Address);
+                                if (paired)
+                                {
+                                    (Application.Current as App)?.Feedback.Show(Loc.Format("Connected to {0}.", dev.Name));
+                                }
+                                else
+                                {
+                                    (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t pair with {0}. Ensure it is in pairing mode and try again.", dev.Name));
+                                }
+                                RefreshBluetooth();
+                            };
+
+                            availableRows.Add(PreferenceRow(device.Name, Loc.Get("Ready to pair"), pairButton));
+                        }
+                    }
+                    else if (_isScanningBluetooth)
+                    {
+                        availableRows.Add(InfoRow(Loc.Get("Searching…"), Loc.Get("Looking for nearby Bluetooth devices in pairing mode…")));
+                    }
+
+                    AddSection(Loc.Get("AVAILABLE ACCESSORIES"), Loc.Get("Nearby devices ready to pair."), availableRows.ToArray());
+                }
             }
         }
 

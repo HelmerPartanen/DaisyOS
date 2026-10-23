@@ -74,15 +74,19 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
                 var lines = resultDevices.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
                 var seenAddresses = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                // Collect the unique (address, name) pairs first.
+                // Collect the unique (address, name) pairs first. BlueZ caches every
+                // advertisement it has seen; anonymous BLE beacons (including the
+                // rotating random addresses AirPods advertise from) carry no name and
+                // BlueZ falls back to the address ("52-48-…"). Those are never
+                // user-facing accessories, so drop them before querying details.
                 var deviceEntries = new List<(string Address, string Name)>();
                 foreach (var line in lines)
                 {
                     var match = DeviceLineRegex().Match(line);
-                    if (match.Success && seenAddresses.Add(match.Groups[1].Value))
-                    {
-                        deviceEntries.Add((match.Groups[1].Value, match.Groups[2].Value));
-                    }
+                    if (!match.Success || !seenAddresses.Add(match.Groups[1].Value)) continue;
+                    var entryName = match.Groups[2].Value.Trim();
+                    if (IsAnonymousName(entryName)) continue;
+                    deviceEntries.Add((match.Groups[1].Value, entryName));
                 }
 
                 // Fetch all device info concurrently instead of sequentially — avoids
@@ -99,17 +103,36 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
 
                     var isConnected = false;
                     var isPaired = false;
+                    var isNearby = false;
                     var type = "Unknown";
+                    var displayName = name;
 
                     if (resultInfo.Succeeded)
                     {
-                        isConnected = resultInfo.StandardOutput.Contains("Connected: yes", StringComparison.OrdinalIgnoreCase);
-                        isPaired = resultInfo.StandardOutput.Contains("Paired: yes", StringComparison.OrdinalIgnoreCase);
-                        type = ParseDeviceType(resultInfo.StandardOutput);
+                        var info = resultInfo.StandardOutput;
+                        isConnected = info.Contains("Connected: yes", StringComparison.OrdinalIgnoreCase);
+                        isPaired = info.Contains("Paired: yes", StringComparison.OrdinalIgnoreCase)
+                            || info.Contains("Bonded: yes", StringComparison.OrdinalIgnoreCase);
+                        isNearby = info.Contains("RSSI:", StringComparison.Ordinal);
+                        type = ParseDeviceType(info);
+                        displayName = ParseInfoAlias(info) ?? ParseInfoName(info) ?? name;
+
+                        // Unpaired devices are only offered while they are actually in range
+                        // and advertise a real name; stale cache entries are hidden.
+                        if (!isPaired && !isConnected && (!isNearby || IsAnonymousName(displayName))) continue;
+
+                        // Paired accessories must be trusted, otherwise BlueZ refuses the
+                        // device-initiated reconnect (opening the AirPods case, powering on
+                        // a keyboard) and the user has to reconnect manually every time.
+                        if (isPaired && info.Contains("Trusted: no", StringComparison.OrdinalIgnoreCase))
+                            _ = _commandRunner.RunAsync("bluetoothctl", ["--timeout", "3", "trust", address], TimeSpan.FromSeconds(4), CancellationToken.None);
+                    }
+                    else if (IsAnonymousName(displayName))
+                    {
+                        continue;
                     }
 
-                    devices.Add(new BluetoothDevice(address, name, isConnected, isPaired, type,
-                        resultInfo.Succeeded && resultInfo.StandardOutput.Contains("RSSI:", StringComparison.Ordinal)));
+                    devices.Add(new BluetoothDevice(address, displayName, isConnected, isPaired, type, isNearby));
                 }
             }
             else
@@ -248,6 +271,11 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
                 cancellationToken);
         }
 
+        if (result.Succeeded)
+        {
+            _ = Task.Run(() => RestorePairedDevicesAsync(CancellationToken.None));
+        }
+
         return result.Succeeded;
     }
 
@@ -255,6 +283,8 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
     {
         if (!DeviceAddressRegex().IsMatch(address)) return false;
         RememberConnectionChoice(address, connected);
+        if (connected)
+            await _commandRunner.RunAsync("bluetoothctl", ["--timeout", "3", "trust", address], TimeSpan.FromSeconds(4), cancellationToken);
         var result = await _commandRunner.RunAsync(
             "bluetoothctl",
             ["--timeout", "15", connected ? "connect" : "disconnect", address],
@@ -293,7 +323,8 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
             TimeSpan.FromSeconds(16),
             cancellationToken);
 
-        if (!pairResult.Succeeded)
+        if (!pairResult.Succeeded && !string.Concat(pairResult.StandardOutput, pairResult.StandardError)
+                .Contains("AlreadyExists", StringComparison.OrdinalIgnoreCase))
         {
             return false;
         }
@@ -328,6 +359,46 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
             TimeSpan.FromSeconds(6),
             cancellationToken);
         return result.Succeeded;
+    }
+
+    /// <summary>True for BlueZ's address-derived placeholder names such as "52-48-0A-11-9C-2F".</summary>
+    public static bool IsAnonymousName(string? name) =>
+        string.IsNullOrWhiteSpace(name) || AnonymousNameRegex().IsMatch(name.Trim());
+
+    private static string? ParseInfoName(string info) => ParseInfoField(info, "Name:");
+    private static string? ParseInfoAlias(string info) => ParseInfoField(info, "Alias:");
+
+    private static string? ParseInfoField(string info, string field)
+    {
+        var line = info.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault(l => l.StartsWith(field, StringComparison.Ordinal));
+        var value = line?[field.Length..].Trim();
+        return IsAnonymousName(value) ? null : value;
+    }
+
+    /// <summary>
+    /// Trusts every paired device and reconnects the ones the user did not
+    /// explicitly disconnect. Called once when the session starts so headphones,
+    /// keyboards and mice used before come back without visiting Settings.
+    /// </summary>
+    public async Task RestorePairedDevicesAsync(CancellationToken cancellationToken = default)
+    {
+        var paired = await _commandRunner.RunAsync("bluetoothctl", ["--timeout", "2", "devices", "Paired"], CommandTimeout, cancellationToken);
+        if (!paired.Succeeded) return;
+        foreach (var line in paired.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var match = DeviceLineRegex().Match(line);
+            if (!match.Success) continue;
+            var address = match.Groups[1].Value;
+            var info = await _commandRunner.RunAsync("bluetoothctl", ["--timeout", "2", "info", address], TimeSpan.FromSeconds(3), cancellationToken);
+            if (!info.Succeeded) continue;
+            if (info.StandardOutput.Contains("Trusted: no", StringComparison.OrdinalIgnoreCase))
+                await _commandRunner.RunAsync("bluetoothctl", ["--timeout", "3", "trust", address], TimeSpan.FromSeconds(4), cancellationToken);
+            if (info.StandardOutput.Contains("Connected: yes", StringComparison.OrdinalIgnoreCase) || !CanAutoConnect(address)) continue;
+            // Short timeout: an accessory that is switched off or out of range
+            // simply isn't connected; BlueZ will accept its own reconnect later.
+            await _commandRunner.RunAsync("bluetoothctl", ["--timeout", "6", "connect", address], TimeSpan.FromSeconds(7), cancellationToken);
+        }
     }
 
     private static bool ParseShowOutput(string output)
@@ -372,4 +443,7 @@ public sealed partial class LinuxBluetoothService : IBluetoothService
 
     [GeneratedRegex(@"^[0-9A-Fa-f]{2}(:[0-9A-Fa-f]{2}){5}$")]
     private static partial Regex DeviceAddressRegex();
+
+    [GeneratedRegex(@"^([0-9A-Fa-f]{2}([-:_][0-9A-Fa-f]{2}){5}|[0-9A-Fa-f]{12})$")]
+    private static partial Regex AnonymousNameRegex();
 }

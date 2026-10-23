@@ -146,6 +146,19 @@ if [[ "$prefix" == "/" ]]; then
     fi
   fi
 
+  # Ensure Bluetooth / AirPods companion runtime and services are installed
+  if command -v pacman >/dev/null 2>&1; then
+    for pkg in qt6-connectivity bluez bluez-utils wireplumber; do
+      if ! pacman -Q "$pkg" >/dev/null 2>&1; then
+        pacman -S --needed --noconfirm "$pkg" >/dev/null 2>&1 || true
+      fi
+    done
+  fi
+  "$repo_root/scripts/build-librepods.sh" >/dev/null 2>&1 || true
+  if [[ -x "$repo_root/artifacts/librepods/librepods" ]]; then
+    "$repo_root/scripts/stage-airpods.sh" --root "$prefix" >/dev/null 2>&1 || true
+  fi
+
   if systemctl list-unit-files systemd-oomd.service --no-legend >/dev/null 2>&1; then
     if ! systemctl enable --now systemd-oomd.service; then
       echo "Warning: systemd-oomd could not be enabled. DaisyOS will still throttle apps at its memory boundary, but early OOM recovery is unavailable." >&2
