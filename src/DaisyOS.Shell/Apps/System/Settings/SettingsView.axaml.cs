@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DaisyOS.Shell.Services.Idle;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
@@ -633,8 +634,61 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 }
             }
 
+            AddPowerAndSleepSections(batteryStatus.IsPresent);
+
             AddSection(Loc.Get("DESKTOP"), null,
                 Toggle("Show date in the system bar", "system.show-date", false, value => { if (Application.Current is App app) app.SessionState.ShowDateInSystemBar = value; }));
+        }
+
+        private void AddPowerAndSleepSections(bool hasBattery)
+        {
+            var app = Application.Current as App;
+            string Current(string key, string fallback) => app?.GetPreference(key, fallback) ?? fallback;
+            Action<string> Save(string key) => value => app?.SetPreference(key, value);
+            Action<bool> SaveBool(string key) => value => app?.SetPreference(key, value ? "true" : "false");
+
+            // Older builds stored the lock timeout under the legacy key.
+            var lockTimeout = Current(PowerPreferences.LockTimeoutKey,
+                Current(PowerPreferences.LegacyScreenTimeoutKey, PowerPreferences.DefaultLockTimeout));
+
+            var sleepRows = new List<Control>
+            {
+                Picker("Turn off the display after", PowerPreferences.ScreenOffTimeoutKey,
+                    Current(PowerPreferences.ScreenOffTimeoutKey, PowerPreferences.DefaultScreenOffTimeout),
+                    Save(PowerPreferences.ScreenOffTimeoutKey), PowerPreferences.ScreenOffTimeoutOptions),
+                Picker("Lock the screen after", PowerPreferences.LockTimeoutKey, lockTimeout,
+                    Save(PowerPreferences.LockTimeoutKey), PowerPreferences.LockTimeoutOptions),
+                Picker(hasBattery ? "Sleep when plugged in after" : "Sleep after", PowerPreferences.SuspendTimeoutKey,
+                    Current(PowerPreferences.SuspendTimeoutKey, PowerPreferences.DefaultSuspendTimeout),
+                    Save(PowerPreferences.SuspendTimeoutKey), PowerPreferences.SuspendTimeoutOptions),
+            };
+            if (hasBattery)
+            {
+                sleepRows.Add(Picker("Sleep on battery after", PowerPreferences.SuspendOnBatteryTimeoutKey,
+                    Current(PowerPreferences.SuspendOnBatteryTimeoutKey, PowerPreferences.DefaultSuspendOnBatteryTimeout),
+                    Save(PowerPreferences.SuspendOnBatteryTimeoutKey), PowerPreferences.SuspendTimeoutOptions));
+            }
+            sleepRows.Add(Toggle("Lock the screen when going to sleep", PowerPreferences.LockOnSuspendKey,
+                PowerPreferences.ParseBool(Current(PowerPreferences.LockOnSuspendKey, "true"), true),
+                SaveBool(PowerPreferences.LockOnSuspendKey)));
+
+            AddSection(Loc.Get("SCREEN AND SLEEP"),
+                Loc.Get("Choose what happens when you stop using the computer. The display stays on and the computer stays awake while Gaming Mode is on or an app such as a video player asks to keep it awake."),
+                sleepRows.ToArray());
+
+            var energyRows = new List<Control>();
+            if (hasBattery)
+            {
+                energyRows.Add(Toggle("Pause live wallpapers on battery", PowerPreferences.PauseLiveWallpaperOnBatteryKey,
+                    PowerPreferences.ParseBool(Current(PowerPreferences.PauseLiveWallpaperOnBatteryKey, "true"), true),
+                    SaveBool(PowerPreferences.PauseLiveWallpaperOnBatteryKey)));
+            }
+            energyRows.Add(Toggle("Free desktop memory while gaming or locked", PowerPreferences.ReleaseMemoryWhenGamingKey,
+                PowerPreferences.ParseBool(Current(PowerPreferences.ReleaseMemoryWhenGamingKey, "true"), true),
+                SaveBool(PowerPreferences.ReleaseMemoryWhenGamingKey)));
+            AddSection(Loc.Get("ENERGY AND MEMORY"),
+                Loc.Get("Reduce background work and return unused desktop memory to games and apps."),
+                energyRows.ToArray());
         }
 
         private void BuildDisplays(int buildVersion)
@@ -2730,7 +2784,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             picker.Classes.Add("ThemeModePicker");
             foreach (var option in options)
             {
-                var item = new ComboBoxItem { Content = key is "power.mode" or "input.pointer-speed" ? Loc.Get(option) : option, Tag = option };
+                var item = new ComboBoxItem { Content = key.StartsWith("power.", StringComparison.Ordinal) || key == "input.pointer-speed" ? Loc.Get(option) : option, Tag = option };
                 item.Classes.Add("ThemeModeOption");
                 picker.Items.Add(item);
             }

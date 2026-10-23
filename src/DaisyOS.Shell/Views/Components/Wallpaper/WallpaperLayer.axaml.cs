@@ -223,6 +223,7 @@ public partial class WallpaperLayer : UserControl
             _app.WallpaperChanged += OnWallpaperChanged;
             _app.WindowTracker.OcclusionStateChanged += OnOcclusionStateChanged;
             _app.DesktopOcclusionChanged += OnOcclusionStateChanged;
+            _app.PowerSourceChanged += OnOcclusionStateChanged;
             _gamingModeActive = _app.SessionState.GamingMode;
             _app.SessionState.Changed += OnGamingModeChanged;
         }
@@ -271,6 +272,7 @@ public partial class WallpaperLayer : UserControl
             _app.WallpaperChanged -= OnWallpaperChanged;
             _app.WindowTracker.OcclusionStateChanged -= OnOcclusionStateChanged;
             _app.DesktopOcclusionChanged -= OnOcclusionStateChanged;
+            _app.PowerSourceChanged -= OnOcclusionStateChanged;
             _app.SessionState.Changed -= OnGamingModeChanged;
         }
 
@@ -344,7 +346,9 @@ public partial class WallpaperLayer : UserControl
                                  && !isExternalAppOccludingDesktop
                                  && !isLockScreenOccludingDesktop
                                  && (IgnoreDesktopOcclusion || (!_isConsoleMode && !_isGameRunning))
-                                 && (IgnoreDesktopOcclusion || !_gamingModeActive)));
+                                 && (IgnoreDesktopOcclusion || !_gamingModeActive)
+                                 // Battery saver: keep the first frame as a still image.
+                                 && !(_app?.IsLiveWallpaperPausedForBattery ?? false)));
 
         if (_mpvSession is not null)
         {

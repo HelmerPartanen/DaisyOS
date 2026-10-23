@@ -553,7 +553,11 @@ run_shell_supervisor() {
     log_message "Starting native DaisyOS layer-shell process."
     write_runtime_value last-status "starting"
     started_at=$SECONDS
-    DAISYOS_SHELL_SESSION=1 DAISYOS_SESSION_SUPERVISOR_PID=$$ \
+    # MALLOC_ARENA_MAX caps glibc's per-thread arenas (default 8 x cores) for
+    # the shell only; on 12+ core machines the default leaves hundreds of MiB
+    # of fragmented native heap resident. Apps and games are launched through
+    # systemd with the user-manager environment and do not inherit it.
+    DAISYOS_SHELL_SESSION=1 DAISYOS_SESSION_SUPERVISOR_PID=$$ MALLOC_ARENA_MAX=2 \
       "$shell_binary" --real-services --shell-session >> "$session_log" 2>&1 &
     shell_pid=$!
     write_runtime_value shell.pid "$shell_pid"

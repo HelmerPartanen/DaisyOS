@@ -11,4 +11,17 @@
     <FileVersion>0.1.0.0</FileVersion>
     <InformationalVersion>$(DaisyOSVersionLabel)</InformationalVersion>
   </PropertyGroup>
+  <!--
+    Desktop processes favor a small resident footprint over peak allocation
+    throughput. Workstation GC with ConserveMemory compacts more readily
+    instead of growing the heap, and RetainVM=false returns freed segments to
+    the OS. Applies to every DaisyOS executable (shell, Files, Notes, ...).
+  -->
+  <PropertyGroup>
+    <ServerGarbageCollection>false</ServerGarbageCollection>
+    <RetainVMGarbageCollection>false</RetainVMGarbageCollection>
+  </PropertyGroup>
+  <ItemGroup>
+    <RuntimeHostConfigurationOption Include="System.GC.ConserveMemory" Value="5" />
+  </ItemGroup>
 </Project>

@@ -603,7 +603,8 @@ public partial class LauncherView : UserControl
     private async void OnSuspendClicked(object? sender, RoutedEventArgs e)
     {
         ClosePowerMenu();
-        await RunPowerActionAsync(service => service.SuspendAsync());
+        if (Application.Current is App app) await app.SuspendSessionAsync();
+        else await RunPowerActionAsync(service => service.SuspendAsync());
     }
 
     private async void OnLogOutClicked(object? sender, RoutedEventArgs e)

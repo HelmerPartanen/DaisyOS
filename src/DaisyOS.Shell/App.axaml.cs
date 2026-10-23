@@ -34,6 +34,7 @@ using DaisyOS.Shell.Services.Windows;
 using DaisyOS.Shell.Services.Notifications;
 using DaisyOS.Shell.Services.Compositor;
 using DaisyOS.Shell.Services.Diagnostics;
+using DaisyOS.System.Power;
 using DaisyOS.Shell.Services.Shell;
 using DaisyOS.System.Appearance;
 using DaisyOS.System.Processes;
@@ -297,15 +298,7 @@ public partial class App : Application
             StartApplicationSettingsService(traceLifetime.Token);
             _ = DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.RunAsync(traceLifetime.Token);
             _ = Task.Run(() => ShellResourceTrace.RunAsync(traceLifetime.Token));
-            _ = ShellMemoryPressureMonitor.RunAsync(traceLifetime.Token, () =>
-            {
-                _shellView?.Launcher.ReclaimHiddenIcons();
-                if (_appStoreWindow is null && _appStoreSession is { HasActiveOperations: false } store)
-                {
-                    _appStoreSession = null;
-                    store.Dispose();
-                }
-            });
+            _ = ShellMemoryPressureMonitor.RunAsync(traceLifetime.Token, ReclaimHiddenShellCaches);
             var gamingAutomation = new GamingModeAutomation(SessionState, () =>
                 SessionState.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false",
                 telemetryVisible: () => Volatile.Read(ref _gameTelemetryVisible) != 0,
@@ -321,6 +314,8 @@ public partial class App : Application
                 _ = AppTray.DisposeAsync();
                 SessionState.Changed -= OnGamingPrefetchPolicyChanged;
                 _recentPrefetch.Dispose();
+                _memoryTrimmer?.Dispose();
+                _powerIdleService?.Dispose();
                 _lightweightWindows.Dispose();
                 foreach (var blur in _blurEffects) blur.Dispose();
                 _blurEffects.Clear();
@@ -1662,15 +1657,58 @@ public partial class App : Application
         }
     }
 
-    private void OnGamingPrefetchPolicyChanged(object? sender, EventArgs e) =>
+    private void OnGamingPrefetchPolicyChanged(object? sender, EventArgs e)
+    {
         _recentPrefetch.SetSuspended(SessionState.GamingMode ||
             (_compositorWindows is KWinWindowBridge bridge && bridge.HasFullscreenWindow));
+        if (_lastGamingModeForTrim != SessionState.GamingMode)
+        {
+            _lastGamingModeForTrim = SessionState.GamingMode;
+            if (SessionState.GamingMode) RequestHiddenShellMemoryTrim();
+        }
+    }
 
     private void SetExternalDesktopOcclusion(bool isOccluded)
     {
         if (_externalDesktopOccluded == isOccluded) return;
         _externalDesktopOccluded = isOccluded;
         DesktopOcclusionChanged?.Invoke(this, EventArgs.Empty);
+        if (isOccluded) RequestHiddenShellMemoryTrim();
+    }
+
+    private bool _lastGamingModeForTrim;
+    private ShellMemoryTrimmer? _memoryTrimmer;
+
+    /// <summary>Releases decoded images held only by hidden shell views. UI thread only.</summary>
+    private void ReclaimHiddenShellCaches()
+    {
+        _shellView?.Launcher.ReclaimHiddenIcons();
+        if (_appStoreWindow is null && _appStoreSession is { HasActiveOperations: false } store)
+        {
+            _appStoreSession = null;
+            store.Dispose();
+        }
+    }
+
+    /// <summary>True while no part of the shell is visible: a game or fullscreen app covers it, it's locked, or the display is off.</summary>
+    private bool IsShellHiddenFromUser() =>
+        Volatile.Read(ref _displayIsOff) || SessionState.GamingMode || _externalDesktopOccluded || _lockScreenWindow is not null;
+
+    private void StartMemoryTrimmer()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        _memoryTrimmer = new ShellMemoryTrimmer(
+            // Read from a timer thread; these are simple flag reads.
+            () => IsShellHiddenFromUser() && ReleaseMemoryWhenHiddenEnabled(),
+            () => Dispatcher.UIThread.Invoke(ReclaimHiddenShellCaches));
+    }
+
+    private bool ReleaseMemoryWhenHiddenEnabled() => Volatile.Read(ref _releaseMemoryWhenHidden);
+    private bool _releaseMemoryWhenHidden = true;
+
+    private void RequestHiddenShellMemoryTrim()
+    {
+        if (ReleaseMemoryWhenHiddenEnabled()) _memoryTrimmer?.RequestTrim();
     }
 
     private void ToggleQuickSettings()
@@ -2495,30 +2533,88 @@ public partial class App : Application
 
     private LockScreenWindow? _lockScreenWindow;
     private readonly List<Window> _secondaryLockScreens = new();
-    private IdleLockService? _idleLockService;
+    private PowerIdleService? _powerIdleService;
+    private bool _displayIsOff;
+    private bool _onBatteryPower;
+    private Timer? _powerSourcePoll;
+
+    /// <summary>True when on battery and the user wants live wallpapers paused to save power.</summary>
+    public bool IsLiveWallpaperPausedForBattery =>
+        Volatile.Read(ref _onBatteryPower) &&
+        PowerPreferences.ParseBool(GetPreference(PowerPreferences.PauseLiveWallpaperOnBatteryKey, "true"), true);
+
+    /// <summary>Raised on the UI thread when the AC/battery state or a related power preference changes.</summary>
+    public event EventHandler? PowerSourceChanged;
 
     private void StartIdleLockService()
     {
+        _releaseMemoryWhenHidden = PowerPreferences.ParseBool(GetPreference(PowerPreferences.ReleaseMemoryWhenGamingKey, "true"), true);
+        StartMemoryTrimmer();
+        StartPowerSourceMonitor();
+
         try
         {
-            _idleLockService = new IdleLockService(() => Dispatcher.UIThread.Post(() => LockSession()));
-            var timeout = GetPreference("power.screen-timeout", "10 minutes");
-            var lockOnSleep = !bool.TryParse(GetPreference("power.lock-on-sleep", "true"), out var parsed) || parsed;
-            _idleLockService.UpdateConfiguration(timeout, lockOnSleep);
+            var runner = new SafeCommandRunner();
+            _powerIdleService = new PowerIdleService(
+                lockSession: () => Dispatcher.UIThread.Post(() => LockSession()),
+                screenOff: () =>
+                {
+                    Volatile.Write(ref _displayIsOff, true);
+                    _ = runner.RunAsync("kscreen-doctor", ["--dpms", "off"], TimeSpan.FromSeconds(3));
+                    RequestHiddenShellMemoryTrim();
+                },
+                screenOn: () =>
+                {
+                    Volatile.Write(ref _displayIsOff, false);
+                    // KWin wakes outputs on input by itself; this covers older builds.
+                    _ = runner.RunAsync("kscreen-doctor", ["--dpms", "on"], TimeSpan.FromSeconds(3));
+                },
+                suspend: () => Dispatcher.UIThread.Post(() => _ = SuspendSessionAsync()),
+                // Never blank the screen or sleep in the middle of a game.
+                suppressDisruptiveActions: () => SessionState.GamingMode);
+            _powerIdleService.UpdateConfiguration(PowerIdleConfiguration.FromPreferences(GetPreference));
             PreferenceChanged += (_, pref) =>
             {
-                if (pref.Key == "power.screen-timeout" || pref.Key == "power.lock-on-sleep")
-                {
-                    var t = GetPreference("power.screen-timeout", "10 minutes");
-                    var l = !bool.TryParse(GetPreference("power.lock-on-sleep", "true"), out var p) || p;
-                    _idleLockService.UpdateConfiguration(t, l);
-                }
+                if (!PowerPreferences.IsPowerKey(pref.Key)) return;
+                _powerIdleService.UpdateConfiguration(PowerIdleConfiguration.FromPreferences(GetPreference));
+                _releaseMemoryWhenHidden = PowerPreferences.ParseBool(GetPreference(PowerPreferences.ReleaseMemoryWhenGamingKey, "true"), true);
+                if (pref.Key == PowerPreferences.PauseLiveWallpaperOnBatteryKey)
+                    PowerSourceChanged?.Invoke(this, EventArgs.Empty);
             };
         }
         catch (Exception ex)
         {
-            Console.Error.WriteLine($"[daisy-idle] Could not start IdleLockService: {ex.Message}");
+            Console.Error.WriteLine($"[daisy-idle] Could not start PowerIdleService: {ex.Message}");
         }
+    }
+
+    private void StartPowerSourceMonitor()
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        _onBatteryPower = PowerSource.IsOnBattery();
+        _powerSourcePoll = new Timer(_ =>
+        {
+            var onBattery = PowerSource.IsOnBattery();
+            if (onBattery == Volatile.Read(ref _onBatteryPower)) return;
+            Volatile.Write(ref _onBatteryPower, onBattery);
+            Dispatcher.UIThread.Post(() => PowerSourceChanged?.Invoke(this, EventArgs.Empty));
+        }, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+    }
+
+    /// <summary>Suspends the computer, locking first when the user asked for it.</summary>
+    public async Task SuspendSessionAsync()
+    {
+        var lockFirst = _powerIdleService?.Configuration.LockOnSuspend
+            ?? PowerPreferences.ParseBool(GetPreference(PowerPreferences.LockOnSuspendKey, "true"), true);
+        if (lockFirst && _lockScreenWindow is null)
+        {
+            LockSession();
+            // Let the lock surface map before the system freezes, so the
+            // desktop never flashes on resume.
+            await Task.Delay(400);
+        }
+        var result = await new LinuxPowerService(new SafeCommandRunner()).SuspendAsync();
+        if (!result.Succeeded) Feedback.Show(Loc.Get("Couldn’t put the computer to sleep."));
     }
 
     public void DismissAllTransientShellSurfaces()
@@ -2607,8 +2703,10 @@ public partial class App : Application
                 try { win.Close(); } catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"Failed to close lock screen: {ex.Message}"); }
             }
             _secondaryLockScreens.Clear();
-            _idleLockService?.StartMonitoring();
+            _powerIdleService?.ResumeLockMonitoring();
         };
+        _powerIdleService?.PauseLockMonitoring();
+        RequestHiddenShellMemoryTrim();
         _shellView?.SetLockScreenActive(true);
         if (_shellView is not null) ApplyNativeBottomChromeState(_shellView);
         _lockScreenWindow.Show();
