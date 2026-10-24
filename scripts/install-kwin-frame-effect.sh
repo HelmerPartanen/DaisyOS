@@ -62,6 +62,8 @@ install -m 0644 "$build_dir/src/shaders/shapecorners.frag" "$shader_dir/"
 install -m 0644 "$build_dir/src/shaders/shapecorners_core.frag" "$shader_dir/"
 
 kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shapecornersEnabled true
+kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
+kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
 kwriteconfig6 --file kwinrc --group Round-Corners --key Size 16
 kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveCornerRadius 16
 kwriteconfig6 --file kwinrc --group Round-Corners --key AnimationDuration 180

@@ -94,6 +94,8 @@ install -m755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menu
 install -Dm755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menus-v4.so" "$output_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so"
 install -d "$output_dir/window-menus-root/etc/xdg"
 kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v4Enabled --type bool true
+kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Plugins --key blurEnabled --type bool true
+kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Effect-blur --key BlurStrength 4
 
 mkdir -p "$output_dir/cursor-themes"
 cp -a "$repo_root/artifacts/cursors/"DaisyOS-* "$output_dir/cursor-themes/"

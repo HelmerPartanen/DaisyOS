@@ -23,6 +23,11 @@ fi
 
 socket_name="daisyos-kwin-$$"
 
+if command -v kwriteconfig6 >/dev/null 2>&1; then
+  kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
+  kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
+fi
+
 echo "Starting a 1440x900 windowed KWin prototype. Closing DaisyOS will close only the nested session."
 exec kwin_wayland \
   "${parent_options[@]}" \

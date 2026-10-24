@@ -54,6 +54,8 @@ public sealed class WindowDecorationThemeService
                 ExportKWinConfig(overviewValues, "Effect-daisyos-task-overview-v15");
                 ExportKWinConfig(overviewValues.Where(pair => pair.Key == "ReduceMotion").ToArray(), "Effect-daisyos-window-motion");
                 ExportKWinConfig(frameValues, "Round-Corners");
+                ExportKWinConfig([new("BlurStrength", "4")], "Effect-blur");
+                ExportKWinConfig([new("blurEnabled", "true")], "Plugins");
                 RequestKWinReconfigure();
             }).ConfigureAwait(false);
         }
