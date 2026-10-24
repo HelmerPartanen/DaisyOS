@@ -42,6 +42,11 @@ public partial class QuickSettings : UserControl
     private Task? _statusRefreshTask;
     private bool _airPodsModePending;
     private bool _bluetoothDiscoveryPending;
+    private readonly DispatcherTimer _connectionListTimer = new() { Interval = TimeSpan.FromSeconds(8) };
+    private QuickSettingsPage _currentPage;
+    private CancellationTokenSource? _quickBluetoothDiscoveryLifetime;
+    private Task? _automaticWifiRefresh;
+    private Task? _automaticBluetoothRefresh;
     private bool _bluetoothAvailable = true;
     private string _defaultAudioName = "";
     private bool HasConnectedAirPods => (Application.Current as App)?.AirPods?.Status.IsConnected == true;
@@ -55,6 +60,7 @@ public partial class QuickSettings : UserControl
     public QuickSettings()
     {
         InitializeComponent();
+        _connectionListTimer.Tick += (_, _) => RefreshVisibleConnectionList();
         Loc.RefreshOnChange(this, () => { ApplyLocalSettings(); RefreshStatus(); });
         Loaded += (_, _) =>
         {
@@ -72,6 +78,8 @@ public partial class QuickSettings : UserControl
         };
         Unloaded += (_, _) =>
         {
+            _connectionListTimer.Stop();
+            StopQuickBluetoothDiscovery();
             _volumeUpdateCancellation?.Cancel();
             if (_audioChangeMonitor is { } audioChangeMonitor)
             {
@@ -458,7 +466,6 @@ public partial class QuickSettings : UserControl
     {
         SetQuickSettingsPage(QuickSettingsPage.BluetoothDevices);
         await LoadBluetoothDevicesAsync();
-        await DiscoverBluetoothDevicesAsync();
     }
 
     private void OnBluetoothDevicesBackClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
@@ -568,6 +575,13 @@ public partial class QuickSettings : UserControl
 
     private void SetQuickSettingsPage(QuickSettingsPage page)
     {
+        _currentPage = page;
+        if (page is QuickSettingsPage.WifiNetworks or QuickSettingsPage.BluetoothDevices)
+            _connectionListTimer.Start();
+        else
+            _connectionListTimer.Stop();
+        if (page == QuickSettingsPage.BluetoothDevices) EnsureQuickBluetoothDiscovery();
+        else StopQuickBluetoothDiscovery();
         var mainPage = this.FindControl<Control>("QuickSettingsMainPage");
         var outputPage = this.FindControl<StackPanel>("OutputDevicesPage");
         var wifiPage = this.FindControl<StackPanel>("WifiNetworksPage");
@@ -585,6 +599,20 @@ public partial class QuickSettings : UserControl
             _ => bluetoothPage
         };
         if (active is not null) _ = GuiMotion.RevealAsync(active, 4);
+    }
+
+    private void RefreshVisibleConnectionList()
+    {
+        if (_currentPage == QuickSettingsPage.WifiNetworks)
+        {
+            if (_automaticWifiRefresh is not { IsCompleted: false })
+                _automaticWifiRefresh = LoadWifiNetworksAsync();
+        }
+        else if (_currentPage == QuickSettingsPage.BluetoothDevices)
+        {
+            if (_automaticBluetoothRefresh is not { IsCompleted: false })
+                _automaticBluetoothRefresh = LoadBluetoothDevicesAsync();
+        }
     }
 
     private static string FormatOutputDeviceName(string name)
@@ -630,14 +658,26 @@ public partial class QuickSettings : UserControl
             return;
         }
 
-        foreach (var network in status.Networks)
+        var known = status.Networks.Where(network => network.IsKnown).ToArray();
+        var other = status.Networks.Where(network => !network.IsKnown && network.IsAvailable).ToArray();
+
+        host.Children.Add(CreateConnectionSectionHeader("Known networks", "Saved networks"));
+        if (known.Length == 0) host.Children.Add(CreateStatusText("No known networks yet."));
+        foreach (var network in known)
         {
             host.Children.Add(CreateWifiNetworkButton(network));
         }
+        host.Children.Add(CreateConnectionSectionHeader("Other networks", "Searching automatically"));
+        if (other.Length == 0) host.Children.Add(CreateStatusText("Searching for nearby networks…"));
+        foreach (var network in other) host.Children.Add(CreateWifiNetworkButton(network));
     }
 
     private Button CreateWifiNetworkButton(WirelessNetworkInfo network)
     {
+        var idleDetail = network.IsActive ? "Connected"
+            : !network.IsAvailable ? "Not in range"
+            : network.IsKnown ? $"Known network · {network.SignalPercent}%"
+            : $"{network.Security} · {network.SignalPercent}%";
         var content = new Grid { ColumnDefinitions = new ColumnDefinitions("20,*,20") };
         var signalIcon = new WifiSignalIcon
         {
@@ -670,17 +710,19 @@ public partial class QuickSettings : UserControl
         name.Bind(TextBlock.ForegroundProperty, this.GetResourceObservable("ContentPrimaryBrush"));
         textPanel.Children.Add(name);
 
+        var detail = DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
+        {
+            Text = idleDetail,
+            FontSize = 11,
+            Foreground = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.Gray,
+            TextTrimming = TextTrimming.CharacterEllipsis,
+            VerticalAlignment = VerticalAlignment.Center
+        }, "Caption");
+        textPanel.Children.Add(detail);
+
         if (network.IsActive)
         {
-            var detail = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
-            {
-                Text = "Connected",
-                FontSize = 11,
-                Foreground = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.Gray,
-                TextTrimming = TextTrimming.CharacterEllipsis,
-                VerticalAlignment = VerticalAlignment.Center
-            }, "Caption"), TextBlock.TextProperty, "Connected");
-            textPanel.Children.Add(detail);
+            Loc.Bind(detail, TextBlock.TextProperty, "Connected");
         }
 
         Grid.SetColumn(textPanel, 1);
@@ -694,6 +736,7 @@ public partial class QuickSettings : UserControl
         button.Classes.Add("AudioOutputItem");
         button.Classes.Add("OutputDeviceItem");
         ToolTip.SetTip(button, network.Ssid);
+        button.IsEnabled = network.IsAvailable || network.IsActive;
 
         if (network.IsActive)
         {
@@ -727,13 +770,23 @@ public partial class QuickSettings : UserControl
         {
             button.Click += async (_, _) =>
             {
+                button.IsEnabled = false;
+                button.Classes.Add("Loading");
+                detail.Text = Loc.Get("Disconnecting…");
                 if (IsDemoWifiEnabled())
                 {
                     _demoConnectedWifi = null;
                 }
                 else
                 {
-                    await _wirelessNetworkService.DisconnectFromNetworkAsync();
+                    if (!await _wirelessNetworkService.DisconnectFromNetworkAsync())
+                    {
+                        button.IsEnabled = true;
+                        button.Classes.Remove("Loading");
+                        detail.Text = idleDetail;
+                        ReportFailure("Couldn’t disconnect from that Wi-Fi network.");
+                        return;
+                    }
                 }
                 await LoadWifiNetworksAsync();
             };
@@ -742,13 +795,23 @@ public partial class QuickSettings : UserControl
         {
             button.Click += async (_, _) =>
             {
+                button.IsEnabled = false;
+                button.Classes.Add("Loading");
+                detail.Text = Loc.Get("Connecting…");
                 if (IsDemoWifiEnabled())
                 {
                     _demoConnectedWifi = network.Ssid;
                 }
                 else
                 {
-                    await _wirelessNetworkService.ConnectToNetworkAsync(network.Ssid);
+                    if (!await _wirelessNetworkService.ConnectToNetworkAsync(network.Ssid))
+                    {
+                        button.IsEnabled = true;
+                        button.Classes.Remove("Loading");
+                        detail.Text = idleDetail;
+                        ReportFailure("Couldn’t connect to that Wi-Fi network.");
+                        return;
+                    }
                 }
                 await LoadWifiNetworksAsync();
             };
@@ -759,6 +822,7 @@ public partial class QuickSettings : UserControl
             {
                 button.IsEnabled = false;
                 button.Classes.Add("Loading");
+                detail.Text = Loc.Get("Connecting…");
                 if (IsDemoWifiEnabled())
                 {
                     _demoConnectedWifi = network.Ssid;
@@ -796,6 +860,12 @@ public partial class QuickSettings : UserControl
                 {
                     await LoadWifiNetworksAsync();
                 }
+                else
+                {
+                    button.IsEnabled = true;
+                    button.Classes.Remove("Loading");
+                    detail.Text = idleDetail;
+                }
             };
         }
 
@@ -809,8 +879,8 @@ public partial class QuickSettings : UserControl
     {
         var networks = new[]
         {
-            new WirelessNetworkInfo("DaisyOS Guest", 92, "WPA2", _demoConnectedWifi == "DaisyOS Guest"),
-            new WirelessNetworkInfo("Hemppu 5G", 68, "WPA2", _demoConnectedWifi == "Hemppu 5G"),
+            new WirelessNetworkInfo("DaisyOS Guest", 92, "WPA2", _demoConnectedWifi == "DaisyOS Guest", IsKnown: true),
+            new WirelessNetworkInfo("Hemppu 5G", 68, "WPA2", _demoConnectedWifi == "Hemppu 5G", IsKnown: true),
             new WirelessNetworkInfo("Coffee Shop Wi-Fi", 43, "Open", _demoConnectedWifi == "Coffee Shop Wi-Fi"),
             new WirelessNetworkInfo("Neighbourhood Wi-Fi", 16, "WPA2", _demoConnectedWifi == "Neighbourhood Wi-Fi"),
         };
@@ -847,19 +917,22 @@ public partial class QuickSettings : UserControl
 
         if (!status.IsEnabled)
             host.Children.Add(CreateStatusText("Bluetooth is off. Paired devices are still available below."));
-        if (status.Devices.Count == 0)
-        {
-            if (status.IsEnabled) host.Children.Add(CreateStatusText(status.Detail));
-            return;
-        }
+        var devices = status.Devices.Where(d => !LinuxBluetoothService.IsAnonymousName(d.Name)).ToArray();
+        var mine = devices.Where(device => device.IsPaired)
+            .OrderByDescending(device => device.IsConnected)
+            .ThenBy(device => device.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+        var nearby = devices.Where(device => !device.IsPaired)
+            .OrderBy(device => device.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
 
-        foreach (var device in status.Devices
-                     .Where(d => !LinuxBluetoothService.IsAnonymousName(d.Name))
-                     .OrderByDescending(device => device.IsConnected)
-                     .ThenByDescending(device => device.IsPaired)
-                     .ThenBy(device => device.Name, StringComparer.CurrentCultureIgnoreCase))
+        host.Children.Add(CreateConnectionSectionHeader("My devices", "Paired devices"));
+        if (mine.Length == 0) host.Children.Add(CreateStatusText("No paired devices yet."));
+        foreach (var device in mine) host.Children.Add(CreateBluetoothDeviceButton(device));
+
+        if (status.IsEnabled)
         {
-            host.Children.Add(CreateBluetoothDeviceButton(device));
+            host.Children.Add(CreateConnectionSectionHeader("Nearby devices", "Searching automatically"));
+            if (nearby.Length == 0) host.Children.Add(CreateStatusText("Searching for nearby devices in pairing mode…"));
+            foreach (var device in nearby) host.Children.Add(CreateBluetoothDeviceButton(device));
         }
     }
 
@@ -868,7 +941,7 @@ public partial class QuickSettings : UserControl
         var content = new Grid
         {
             ColumnDefinitions = new ColumnDefinitions("18,10,*"),
-            RowDefinitions = new RowDefinitions(device.IsConnected ? "20,16" : "36"),
+            RowDefinitions = new RowDefinitions("20,16"),
             VerticalAlignment = VerticalAlignment.Center,
         };
         var icon = new DaisyIcon
@@ -878,7 +951,7 @@ public partial class QuickSettings : UserControl
             VerticalAlignment = VerticalAlignment.Center,
         };
         content.Children.Add(icon);
-        Grid.SetRowSpan(icon, device.IsConnected ? 2 : 1);
+        Grid.SetRowSpan(icon, 2);
 
         var name = DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
         {
@@ -890,25 +963,26 @@ public partial class QuickSettings : UserControl
         Grid.SetColumn(name, 2);
         content.Children.Add(name);
 
-        if (device.IsConnected)
+        var detail = DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
         {
-            var detail = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
-            {
-                Text = "Connected",
-                FontSize = 11,
-                Foreground = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.Gray,
-                VerticalAlignment = VerticalAlignment.Center,
-            }, "Caption"), TextBlock.TextProperty, "Connected");
-            Grid.SetRow(detail, 1);
-            Grid.SetColumn(detail, 2);
-            content.Children.Add(detail);
-        }
+            Text = device.IsConnected ? Loc.Get("Connected") : Loc.Get(device.IsPaired ? "Paired" : "Ready to pair"),
+            FontSize = 11,
+            Foreground = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.Gray,
+            VerticalAlignment = VerticalAlignment.Center,
+        }, "Caption");
+        Grid.SetRow(detail, 1);
+        Grid.SetColumn(detail, 2);
+        content.Children.Add(detail);
 
         var button = CreateQuickSettingsListButton(content, false);
         button.Classes.Set("ConnectedBluetoothDevice", device.IsConnected);
         button.Click += async (_, _) =>
         {
             button.IsEnabled = false;
+            button.Classes.Add("Loading");
+            var pendingText = Loc.Get(device.IsConnected ? "Disconnecting…" : device.IsPaired ? "Connecting…" : "Pairing…");
+            detail.Text = pendingText;
+            ToolTip.SetTip(button, pendingText);
             var status = await _bluetoothService.GetAdapterStatusAsync();
             var ready = status.IsEnabled || await _bluetoothService.SetEnabledAsync(true);
             if (!ready || !(device.IsPaired
@@ -923,30 +997,73 @@ public partial class QuickSettings : UserControl
         return button;
     }
 
-    private async Task DiscoverBluetoothDevicesAsync()
+    private Control CreateConnectionSectionHeader(string title, string detail)
     {
-        if (_bluetoothDiscoveryPending) return;
+        var panel = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            Margin = new Thickness(10, 10, 10, 2)
+        };
+        var heading = DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
+        {
+            Text = Loc.Get(title), FontWeight = FontWeight.SemiBold
+        }, "BodySmall");
+        heading.Bind(TextBlock.ForegroundProperty, this.GetResourceObservable("ContentPrimaryBrush"));
+        panel.Children.Add(heading);
+        var status = DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
+        {
+            Text = Loc.Get(detail), FontSize = 11
+        }, "Caption");
+        status.Bind(TextBlock.ForegroundProperty, this.GetResourceObservable("ContentTertiaryBrush"));
+        Grid.SetColumn(status, 1);
+        panel.Children.Add(status);
+        return panel;
+    }
+
+    private void EnsureQuickBluetoothDiscovery()
+    {
+        if (_quickBluetoothDiscoveryLifetime is not null || _bluetoothDiscoveryPending) return;
+        var lifetime = new CancellationTokenSource();
+        _quickBluetoothDiscoveryLifetime = lifetime;
+        _ = RunQuickBluetoothDiscoveryAsync(lifetime);
+    }
+
+    private async Task RunQuickBluetoothDiscoveryAsync(CancellationTokenSource lifetime)
+    {
+        var cancellationToken = lifetime.Token;
         _bluetoothDiscoveryPending = true;
         var started = false;
         try
         {
-            var adapter = await _bluetoothService.GetAdapterStatusAsync();
+            var adapter = await _bluetoothService.GetAdapterStatusAsync(cancellationToken);
             if (!adapter.IsEnabled) return;
             var host = this.FindControl<StackPanel>("BluetoothDevicesHost");
             host?.Children.Insert(0, CreateStatusText("Searching for nearby devices…"));
-            if (!(started = await _bluetoothService.StartDiscoveryAsync()))
+            if (!(started = await _bluetoothService.StartDiscoveryAsync(cancellationToken)))
             {
                 await LoadBluetoothDevicesAsync();
                 ReportFailure("Couldn’t search for nearby Bluetooth devices.");
                 return;
             }
             await LoadBluetoothDevicesAsync();
+            while (!cancellationToken.IsCancellationRequested && _currentPage == QuickSettingsPage.BluetoothDevices)
+                await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
         finally
         {
             if (started) await _bluetoothService.StopDiscoveryAsync();
             _bluetoothDiscoveryPending = false;
+            if (ReferenceEquals(_quickBluetoothDiscoveryLifetime, lifetime))
+                _quickBluetoothDiscoveryLifetime = null;
+            lifetime.Dispose();
         }
+    }
+
+    private void StopQuickBluetoothDiscovery()
+    {
+        _quickBluetoothDiscoveryLifetime?.Cancel();
+        _quickBluetoothDiscoveryLifetime = null;
     }
 
     private static bool IsDemoBluetoothEnabled() =>
@@ -963,6 +1080,7 @@ public partial class QuickSettings : UserControl
                 new BluetoothDevice("10:24:98:7A:3B:02", "MX Master 3S", false, true, "Mouse"),
                 new BluetoothDevice("10:24:98:7A:3B:03", "Keychron K3", false, true, "Keyboard"),
                 new BluetoothDevice("10:24:98:7A:3B:04", "DualSense Wireless Controller", false, true, "Controller"),
+                new BluetoothDevice("10:24:98:7A:3B:05", "Nearby headphones", false, false, "Audio", IsNearby: true),
             ],
             Detail: "Demo Bluetooth devices are enabled.");
 

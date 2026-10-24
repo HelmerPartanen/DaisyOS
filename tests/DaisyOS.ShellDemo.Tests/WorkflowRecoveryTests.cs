@@ -249,6 +249,7 @@ public sealed class WorkflowRecoveryTests
         public Task<WirelessNetworkStatus> GetNetworksAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<WirelessRadioStatus> GetRadioStatusAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> DisconnectFromNetworkAsync(CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<bool> ForgetNetworkAsync(string ssid, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<bool> SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default) => throw new NotSupportedException();
     }
 

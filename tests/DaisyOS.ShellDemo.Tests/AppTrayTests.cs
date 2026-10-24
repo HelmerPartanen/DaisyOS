@@ -13,7 +13,7 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class AppTrayTests
 {
     [AvaloniaFact]
-    public void SystemBarHugeIconsUseFilledAssets()
+    public void SystemBarHugeIconsUseRegularAssets()
     {
         var bar = new SystemBarView();
 
@@ -24,13 +24,13 @@ public sealed class AppTrayTests
                  })
         {
             var icon = bar.FindControl<DaisyIcon>(name)!;
-            Assert.Equal(DaisyIconWeight.Fill, icon.Weight);
-            Assert.EndsWith("-fill.svg", icon.Path, StringComparison.Ordinal);
+            Assert.Equal(DaisyIconWeight.Regular, icon.Weight);
+            Assert.DoesNotContain("-fill.svg", icon.Path, StringComparison.Ordinal);
         }
 
         var bluetooth = bar.FindControl<DaisyIcon>("SystemBarBluetoothIcon")!;
         bluetooth.Icon = "bluetooth-slash";
-        Assert.EndsWith("bluetooth-slash-fill.svg", bluetooth.Path, StringComparison.Ordinal);
+        Assert.EndsWith("bluetooth-slash.svg", bluetooth.Path, StringComparison.Ordinal);
     }
 
     [AvaloniaFact]

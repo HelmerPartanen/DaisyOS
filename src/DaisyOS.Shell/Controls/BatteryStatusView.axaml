@@ -15,7 +15,7 @@
       <Setter Property="FillBrush" Value="{DynamicResource StatusDangerBrush}" />
     </Style>
     <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Charging">
-      <Setter Property="FillBrush" Value="{DynamicResource StatusSuccessBrush}" />
+      <Setter Property="FillBrush" Value="{DynamicResource BatteryChargingBrush}" />
       <Setter Property="OutlineBrush" Value="Transparent" />
     </Style>
   </UserControl.Styles>

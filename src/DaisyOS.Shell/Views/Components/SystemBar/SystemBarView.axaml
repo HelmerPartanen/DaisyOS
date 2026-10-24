@@ -96,7 +96,6 @@
                 Padding="0" ToolTip.Tip="{DynamicResource Loc_D15070AD05F6}" AutomationProperties.Name="{DynamicResource Loc_D15070AD05F6}"
                 Click="OnAppTrayRequested">
           <controls:DaisyIcon x:Name="AppTrayChevron" Icon="caret-up"
-              Weight="Fill"
               Size="{DynamicResource ShellStatusIconSize}" RenderTransformOrigin="50%,50%"
               RenderTransform="rotate(0deg)">
             <controls:DaisyIcon.Transitions>
@@ -145,7 +144,6 @@
                 <controls:DaisyIcon
                     x:Name="SystemBarEthernetIcon"
                     Icon="Ethernet"
-                    Weight="Fill"
                     IsVisible="False"
                     Size="{DynamicResource ShellStatusIconSize}"
                     Foreground="{DynamicResource ContentSecondaryBrush}"
@@ -155,7 +153,6 @@
                 <controls:DaisyIcon
                     x:Name="SystemBarOfflineIcon"
                     Icon="globe"
-                    Weight="Fill"
                     Size="{DynamicResource ShellStatusIconSize}"
                     Foreground="{DynamicResource ContentSecondaryBrush}"
                     HorizontalAlignment="Center"
@@ -166,7 +163,6 @@
               <controls:DaisyIcon
                   x:Name="SystemBarBluetoothIcon"
                   Icon="bluetooth"
-                  Weight="Fill"
                   IsVisible="False"
                   Size="{DynamicResource ShellStatusIconSize}"
                   Foreground="{DynamicResource ContentSecondaryBrush}"
@@ -176,7 +172,6 @@
               <controls:DaisyIcon
                   x:Name="SystemBarVolumeIcon"
                   Icon="speaker-high"
-                  Weight="Fill"
                   Size="{DynamicResource ShellStatusIconSize}"
                   Foreground="{DynamicResource ContentSecondaryBrush}"
                   HorizontalAlignment="Center"
@@ -222,7 +217,6 @@
               <controls:DaisyIcon
                   x:Name="SystemBarNotificationIcon"
                   Icon="bell"
-                  Weight="Fill"
                   Size="{DynamicResource ShellStatusIconSize}"
                   Foreground="{DynamicResource ContentSecondaryBrush}"
                   HorizontalAlignment="Center"

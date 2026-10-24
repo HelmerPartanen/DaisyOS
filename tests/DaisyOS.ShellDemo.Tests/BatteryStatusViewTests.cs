@@ -43,7 +43,7 @@ public sealed class BatteryStatusViewTests
             Foreground = new SolidColorBrush(Color.Parse("#8899AA"))
         };
         var window = new Window { Content = view };
-        window.Resources["StatusSuccessBrush"] = new SolidColorBrush(Color.Parse("#34C759"));
+        window.Resources["BatteryChargingBrush"] = new SolidColorBrush(Color.Parse("#34C759"));
         window.Show();
         try
         {
@@ -60,6 +60,26 @@ public sealed class BatteryStatusViewTests
             Assert.Equal(BatteryLevelIcon.GetFillWidth(75),
                 levelIcon.FindControl<Border>("FillBar")!.Width,
                 precision: 3);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void DarkThemeChargingBatteryUsesConfiguredBrightGreenFill()
+    {
+        var view = new BatteryStatusView { ChargePercent = 60, IsCharging = true };
+        var window = new Window
+        {
+            Content = view,
+            RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark
+        };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            var icon = view.FindControl<BatteryLevelIcon>("LevelIcon")!;
+            Assert.Equal(Color.Parse("#00CA48"),
+                Assert.IsAssignableFrom<ISolidColorBrush>(icon.FillBrush).Color);
         }
         finally { window.Close(); }
     }

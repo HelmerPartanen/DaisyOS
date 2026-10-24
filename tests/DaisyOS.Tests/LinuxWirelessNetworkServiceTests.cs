@@ -17,13 +17,14 @@ public sealed class LinuxWirelessNetworkServiceTests
             ":Weak:WEP:-10");
         var runner = new ScriptedCommandRunner(
             Succeeded("wlan0:wifi\neth0:ethernet"),
+            Succeeded("Cafe\\:Guest:802-11-wireless\nOld network:802-11-wireless\nWired:802-3-ethernet"),
             Succeeded(output));
         var service = new LinuxWirelessNetworkService(runner);
 
         var status = await service.GetNetworksAsync();
 
         Assert.True(status.IsAvailable);
-        Assert.Equal("3 Wi-Fi networks found.", status.Detail);
+        Assert.Equal("4 Wi-Fi networks found.", status.Detail);
         Assert.Collection(
             status.Networks,
             network =>
@@ -32,6 +33,13 @@ public sealed class LinuxWirelessNetworkServiceTests
                 Assert.Equal(80, network.SignalPercent);
                 Assert.Equal("WPA2", network.Security);
                 Assert.True(network.IsActive);
+                Assert.True(network.IsKnown);
+            },
+            network =>
+            {
+                Assert.Equal("Old network", network.Ssid);
+                Assert.True(network.IsKnown);
+                Assert.False(network.IsAvailable);
             },
             network =>
             {
@@ -46,6 +54,10 @@ public sealed class LinuxWirelessNetworkServiceTests
                 Assert.Equal(0, network.SignalPercent);
             });
         Assert.Equal(["-t", "-f", "DEVICE,TYPE", "device", "status"], runner.Calls[0].Arguments);
+        Assert.Equal(["-t", "-f", "NAME,TYPE", "connection", "show"], runner.Calls[1].Arguments);
+        Assert.Equal(
+            ["-t", "-f", "IN-USE,SSID,SECURITY,SIGNAL", "device", "wifi", "list", "--rescan", "yes"],
+            runner.Calls[2].Arguments);
     }
 
     [Fact]
@@ -114,6 +126,17 @@ public sealed class LinuxWirelessNetworkServiceTests
         Assert.False(disconnected);
         Assert.Equal(2, runner.Calls.Count);
         Assert.Equal(["device", "disconnect", "wlxusb:0"], runner.Calls[1].Arguments);
+    }
+
+    [Fact]
+    public async Task ForgetNetworkAsyncDeletesTheSavedProfile()
+    {
+        var runner = new ScriptedCommandRunner(Succeeded());
+        var service = new LinuxWirelessNetworkService(runner);
+
+        Assert.True(await service.ForgetNetworkAsync("Home Wi-Fi"));
+
+        Assert.Equal(["connection", "delete", "id", "Home Wi-Fi"], Assert.Single(runner.Calls).Arguments);
     }
 
     private static CommandResult Succeeded(string output = "") => new(0, output, string.Empty, TimedOut: false);

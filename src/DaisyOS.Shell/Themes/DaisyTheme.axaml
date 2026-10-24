@@ -94,8 +94,9 @@
         <Color x:Key="SelectedBlue">#FF1598FF</Color>
 
     <!-- Status: Success -->
-    <Color x:Key="StatusSuccessColor">#FF0F6B38</Color>
+    <Color x:Key="StatusSuccessColor">#FF00CA48</Color>
     <Color x:Key="StatusSuccessContainerColor">#FFE4F6EA</Color>
+    <Color x:Key="BatteryChargingColor">#FF00CA48</Color>
 
     <!-- Status: Warning -->
     <Color x:Key="StatusWarningColor">#FF8A4B00</Color>
@@ -187,6 +188,7 @@
       <SolidColorBrush x:Key="FocusRingBrush" Color="{StaticResource FocusRingColor}" />
       <SolidColorBrush x:Key="StatusSuccessBrush" Color="{StaticResource StatusSuccessColor}" />
       <SolidColorBrush x:Key="StatusSuccessContainerBrush" Color="{StaticResource StatusSuccessContainerColor}" />
+      <SolidColorBrush x:Key="BatteryChargingBrush" Color="{StaticResource BatteryChargingColor}" />
       <SolidColorBrush x:Key="StatusWarningBrush" Color="{StaticResource StatusWarningColor}" />
       <SolidColorBrush x:Key="StatusWarningContainerBrush" Color="{StaticResource StatusWarningContainerColor}" />
       <SolidColorBrush x:Key="StatusDangerBrush" Color="{StaticResource StatusDangerColor}" />
@@ -292,8 +294,9 @@
       <Color x:Key="ActionSecondaryPressedColor">#33FFFFFF</Color>
       <Color x:Key="ContentOnSecondaryActionColor">#FFF5F5F7</Color>
       <Color x:Key="FocusRingColor">#FF148BE8</Color>
-      <Color x:Key="StatusSuccessColor">#FF58D68D</Color>
+      <Color x:Key="StatusSuccessColor">#FF00CA48</Color>
       <Color x:Key="StatusSuccessContainerColor">#FF163D28</Color>
+      <Color x:Key="BatteryChargingColor">#FF00CA48</Color>
       <Color x:Key="StatusWarningColor">#FFFFB95B</Color>
       <Color x:Key="StatusWarningContainerColor">#FF4A300D</Color>
       <Color x:Key="StatusDangerColor">#FFFF626C</Color>
@@ -369,6 +372,7 @@
       <SolidColorBrush x:Key="FocusRingBrush" Color="{StaticResource FocusRingColor}" />
       <SolidColorBrush x:Key="StatusSuccessBrush" Color="{StaticResource StatusSuccessColor}" />
       <SolidColorBrush x:Key="StatusSuccessContainerBrush" Color="{StaticResource StatusSuccessContainerColor}" />
+      <SolidColorBrush x:Key="BatteryChargingBrush" Color="{StaticResource BatteryChargingColor}" />
       <SolidColorBrush x:Key="StatusWarningBrush" Color="{StaticResource StatusWarningColor}" />
       <SolidColorBrush x:Key="StatusWarningContainerBrush" Color="{StaticResource StatusWarningContainerColor}" />
       <SolidColorBrush x:Key="StatusDangerBrush" Color="{StaticResource StatusDangerColor}" />

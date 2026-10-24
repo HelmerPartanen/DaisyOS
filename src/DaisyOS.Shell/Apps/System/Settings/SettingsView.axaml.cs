@@ -58,6 +58,11 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private bool _closingForDisplayRevert;
         private bool _allowDisplayOwnerClose;
         private bool _isScanningBluetooth = false;
+        private readonly LinuxWirelessNetworkService _settingsWirelessService = new(new SafeCommandRunner());
+        private readonly LinuxBluetoothService _settingsBluetoothService = new(new SafeCommandRunner());
+        private readonly DispatcherTimer _connectionsRefreshTimer = new() { Interval = TimeSpan.FromSeconds(8) };
+        private Task? _automaticNetworkRefresh;
+        private CancellationTokenSource? _bluetoothDiscoveryLifetime;
         private string? _previewWallpaperUri;
         private int _previewRequestVersion;
         private string? _pendingSection;
@@ -168,6 +173,15 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 if (_activeCategory == "Appearance" && _previewWallpaperUri is { } uri && WallpaperFileTypes.IsHeic(uri))
                     RefreshWallpaperPreview(uri);
             };
+            _connectionsRefreshTimer.Tick += (_, _) =>
+            {
+                if (string.Equals(_activeCategory, "Network", StringComparison.Ordinal) &&
+                    _automaticNetworkRefresh is not { IsCompleted: false })
+                {
+                    var buildVersion = ++_categoryBuildVersion;
+                    _automaticNetworkRefresh = BuildNetworkAvailabilityAsync(buildVersion, null);
+                }
+            };
             ActualThemeVariantChanged += (_, _) =>
             {
                 if (_previewWallpaperUri is { } uri && WallpaperFileTypes.IsHeic(uri)) RefreshWallpaperPreview(uri);
@@ -195,6 +209,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             DetachedFromVisualTree += (_, _) =>
             {
                 _heicPreviewTimer.Stop();
+                _connectionsRefreshTimer.Stop();
+                StopAutomaticBluetoothDiscovery();
                 _displayLifetime.Cancel();
                 _storageScan?.Cancel();
                 if (_displayOwner is not null) _displayOwner.Closing -= OnDisplayOwnerClosing;
@@ -442,6 +458,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private void ShowCategory(string category, string? section = null)
         {
+            if (!string.Equals(category, "Bluetooth", StringComparison.Ordinal)) StopAutomaticBluetoothDiscovery();
+            if (string.Equals(category, "Network", StringComparison.Ordinal)) _connectionsRefreshTimer.Start();
+            else _connectionsRefreshTimer.Stop();
             _storageScan?.Cancel();
             _storageDetail = null;
             var pageChanged = !string.Equals(_activeCategory, category, StringComparison.Ordinal);
@@ -1191,10 +1210,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
             _ = BuildNetworkAvailabilityAsync(buildVersion, checking);
         }
 
-        private async Task BuildNetworkAvailabilityAsync(int buildVersion, TextBlock checking)
+        private async Task BuildNetworkAvailabilityAsync(int buildVersion, TextBlock? checking)
         {
             var statusService = new LinuxNetworkStatusService(new SafeCommandRunner());
-            var wirelessService = new LinuxWirelessNetworkService(new SafeCommandRunner());
+            var wirelessService = _settingsWirelessService;
 
             NetworkStatus networkStatus;
             WirelessRadioStatus radio;
@@ -1220,7 +1239,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
             }
 
             if (buildVersion != _categoryBuildVersion) return;
-            CategoryContent.Children.Remove(checking);
+            if (checking is not null) CategoryContent.Children.Remove(checking);
+            while (CategoryContent.Children.Count > 1)
+                CategoryContent.Children.RemoveAt(CategoryContent.Children.Count - 1);
 
             var connected = networkStatus.IsConnected && networkStatus.ConnectionKind == NetworkConnectionKind.WiFi;
             if (radio.IsAvailable)
@@ -1231,20 +1252,22 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
                 if (radio.IsEnabled && wirelessNetworks is { IsAvailable: true })
                 {
-                    var networkRows = new List<Control>();
-                    foreach (var network in wirelessNetworks.Networks.Take(12))
+                    var knownRows = new List<Control>();
+                    foreach (var network in wirelessNetworks.Networks.Where(network => network.IsKnown).Take(12))
                     {
                         var action = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                         {
                             Content = Loc.Get(network.IsActive ? "Disconnect" : "Connect"),
                             Classes = { network.IsActive ? "Subtle" : "Ghost" },
                             MinWidth = 92,
-                            Height = 32
+                            Height = 32,
+                            IsEnabled = network.IsActive || network.IsAvailable
                         });
                         var selectedNetwork = network;
                         action.Click += async (_, _) =>
                         {
                             action.IsEnabled = false;
+                            action.Content = Loc.Get(selectedNetwork.IsActive ? "Disconnecting…" : "Connecting…");
                             var success = selectedNetwork.IsActive
                                 ? await wirelessService.DisconnectFromNetworkAsync()
                                 : await ConnectToWirelessNetworkAsync(wirelessService, selectedNetwork);
@@ -1254,14 +1277,54 @@ namespace DaisyOS.Shell.Apps.System.Settings
                                     : Loc.Format("Couldn’t connect to {0}. Check the password and signal, then try again.", selectedNetwork.Ssid));
                             ShowCategory("Network");
                         };
-                        var security = IsOpenWirelessNetwork(network.Security) ? "Open network" : network.Security;
-                        networkRows.Add(PreferenceRow(network.Ssid, Loc.Format("{0} · {1}% signal", security, network.SignalPercent), action));
+                        var forget = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
+                        {
+                            Content = "Forget", Classes = { "Ghost" }, Height = 32, Padding = new Thickness(10, 0)
+                        }), Button.ContentProperty, "Forget");
+                        forget.Click += async (_, _) =>
+                        {
+                            action.IsEnabled = forget.IsEnabled = false;
+                            forget.Content = Loc.Get("Forgetting…");
+                            if (!await wirelessService.ForgetNetworkAsync(selectedNetwork.Ssid))
+                                (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t forget {0}.", selectedNetwork.Ssid));
+                            ShowCategory("Network");
+                        };
+                        var detail = selectedNetwork.IsActive ? Loc.Get("Connected")
+                            : selectedNetwork.IsAvailable ? Loc.Format("Available · {0}% signal", selectedNetwork.SignalPercent)
+                            : Loc.Get("Not in range");
+                        knownRows.Add(PreferenceRow(network.Ssid, detail, new StackPanel
+                        {
+                            Orientation = Orientation.Horizontal, Spacing = 6,
+                            Children = { action, forget }
+                        }, "wifi-02"));
                     }
+                    if (knownRows.Count == 0)
+                        knownRows.Add(InfoRow(Loc.Get("Known networks"), Loc.Get("Networks you connect to will appear here.")));
+                    AddSection(Loc.Get("KNOWN NETWORKS"), Loc.Get("Saved networks connect without asking for a password again."), knownRows.ToArray());
 
-                    var refresh = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button { Content = "Refresh networks", Classes = { "Subtle" }, Height = 32 }), Button.ContentProperty, "Refresh networks");
-                    refresh.Click += (_, _) => ShowCategory("Network");
-                    networkRows.Add(PreferenceRow(Loc.Get("Network list"), wirelessNetworks.Detail, refresh));
-                    AddSection(Loc.Get("AVAILABLE NETWORKS"), Loc.Get("Choose a network to connect to."), networkRows.ToArray());
+                    var otherRows = new List<Control>();
+                    foreach (var network in wirelessNetworks.Networks.Where(network => !network.IsKnown && network.IsAvailable).Take(12))
+                    {
+                        var selectedNetwork = network;
+                        var action = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
+                        {
+                            Content = Loc.Get("Connect"), Classes = { "Subtle" }, Height = 32, MinWidth = 92
+                        });
+                        action.Click += async (_, _) =>
+                        {
+                            action.IsEnabled = false;
+                            action.Content = Loc.Get("Connecting…");
+                            if (!await ConnectToWirelessNetworkAsync(wirelessService, selectedNetwork))
+                                (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t connect to {0}. Check the password and signal, then try again.", selectedNetwork.Ssid));
+                            ShowCategory("Network");
+                        };
+                        var security = IsOpenWirelessNetwork(network.Security) ? Loc.Get("Open network") : network.Security;
+                        otherRows.Add(PreferenceRow(network.Ssid,
+                            Loc.Format("{0} · {1}% signal", security, network.SignalPercent), action, "wifi-02"));
+                    }
+                    if (otherRows.Count == 0)
+                        otherRows.Add(InfoRow(Loc.Get("Searching…"), Loc.Get("Looking for other Wi-Fi networks nearby.")));
+                    AddSection(Loc.Get("OTHER NETWORKS"), Loc.Get("Nearby networks refresh automatically."), otherRows.ToArray());
                 }
             }
             else
@@ -1368,7 +1431,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private async Task BuildBluetoothAvailabilityAsync(int buildVersion, TextBlock? checking)
         {
-            var bluetoothService = new LinuxBluetoothService(new SafeCommandRunner());
+            var bluetoothService = _settingsBluetoothService;
             BluetoothStatus adapter;
             try
             {
@@ -1396,6 +1459,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
             AddSection(Loc.Get("BLUETOOTH"), Loc.Get("Bluetooth changes are applied through the system adapter."),
                 Toggle("Bluetooth", "bluetooth.enabled", adapter.IsEnabled, value => { _ = SetBluetooth(value); }));
+            if (!adapter.IsEnabled) StopAutomaticBluetoothDiscovery();
 
             var pairedDevices = adapter.Devices.Where(d => d.IsPaired)
                 .OrderByDescending(d => d.IsConnected)
@@ -1440,6 +1504,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 forgetButton.Click += async (_, _) =>
                 {
                     forgetButton.IsEnabled = false;
+                    actionButton.IsEnabled = false;
+                    forgetButton.Content = Loc.Get("Forgetting…");
                     if (!await bluetoothService.ForgetDeviceAsync(dev.Address))
                         (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t forget {0}.", dev.Name));
                     RefreshBluetooth();
@@ -1456,92 +1522,98 @@ namespace DaisyOS.Shell.Apps.System.Settings
             if (pairedRows.Count == 0)
                 pairedRows.Add(InfoRow(Loc.Get("Paired accessories"), Loc.Get("No paired devices found.")));
 
-            AddSection(Loc.Get("PAIRED ACCESSORIES"), Loc.Get("Devices you have connected before appear here, even when Bluetooth is off."), pairedRows.ToArray());
+            AddSection(Loc.Get("MY DEVICES"), Loc.Get("Devices you have paired before remain here, even when Bluetooth is off."), pairedRows.ToArray());
 
             if (adapter.IsEnabled)
             {
-                var scanButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
-                {
-                    Content = _isScanningBluetooth ? Loc.Get("Scanning for accessories…") : Loc.Get("Scan for accessories"),
-                    Classes = { "Subtle" },
-                    IsEnabled = !_isScanningBluetooth,
-                    Height = 32,
-                    Padding = new Thickness(14, 0),
-                    VerticalAlignment = VerticalAlignment.Center
-                });
-                scanButton.Click += async (_, _) =>
-                {
-                    if (_isScanningBluetooth) return;
-                    _isScanningBluetooth = true;
-                    RefreshBluetooth();
-                    var started = await bluetoothService.StartDiscoveryAsync();
-                    if (started)
-                    {
-                        await Task.Delay(4000);
-                        await bluetoothService.StopDiscoveryAsync();
-                    }
-                    else
-                    {
-                        (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t start Bluetooth discovery. Check that the Bluetooth service is running."));
-                    }
-                    _isScanningBluetooth = false;
-                    if (string.Equals(_activeCategory, "Bluetooth", StringComparison.Ordinal))
-                    {
-                        RefreshBluetooth();
-                    }
-                };
-
-                AddSection(Loc.Get("PAIR NEW ACCESSORY"), Loc.Get("Find and pair nearby Bluetooth devices."),
-                    PreferenceRow(Loc.Get("Find nearby devices"), Loc.Get("Search for headphones, keyboards, and mice."), scanButton));
+                EnsureAutomaticBluetoothDiscovery();
 
                 var availableDevices = adapter.Devices
                     .Where(d => !d.IsPaired && !LinuxBluetoothService.IsAnonymousName(d.Name))
                     .OrderBy(d => d.Name, StringComparer.CurrentCultureIgnoreCase)
                     .ToList();
 
-                if (availableDevices.Count > 0 || _isScanningBluetooth)
+                var availableRows = new List<Control>();
+                if (availableDevices.Count > 0)
                 {
-                    var availableRows = new List<Control>();
-                    if (availableDevices.Count > 0)
+                    foreach (var device in availableDevices)
                     {
-                        foreach (var device in availableDevices)
+                        var pairButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                         {
-                            var pairButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
+                            Content = Loc.Get("Pair"),
+                            Classes = { "Subtle" },
+                            Height = 32,
+                            Padding = new Thickness(14, 0),
+                            VerticalAlignment = VerticalAlignment.Center
+                        });
+                        var dev = device;
+                        pairButton.Click += async (_, _) =>
+                        {
+                            pairButton.IsEnabled = false;
+                            pairButton.Content = Loc.Get("Pairing…");
+                            var paired = await bluetoothService.PairDeviceAsync(dev.Address);
+                            if (paired)
                             {
-                                Content = Loc.Get("Pair"),
-                                Classes = { "Subtle" },
-                                Height = 32,
-                                Padding = new Thickness(14, 0),
-                                VerticalAlignment = VerticalAlignment.Center
-                            });
-                            var dev = device;
-                            pairButton.Click += async (_, _) =>
+                                (Application.Current as App)?.Feedback.Show(Loc.Format("Connected to {0}.", dev.Name));
+                            }
+                            else
                             {
-                                pairButton.IsEnabled = false;
-                                pairButton.Content = Loc.Get("Pairing…");
-                                var paired = await bluetoothService.PairDeviceAsync(dev.Address);
-                                if (paired)
-                                {
-                                    (Application.Current as App)?.Feedback.Show(Loc.Format("Connected to {0}.", dev.Name));
-                                }
-                                else
-                                {
-                                    (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t pair with {0}. Ensure it is in pairing mode and try again.", dev.Name));
-                                }
-                                RefreshBluetooth();
-                            };
+                                (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t pair with {0}. Ensure it is in pairing mode and try again.", dev.Name));
+                            }
+                            RefreshBluetooth();
+                        };
 
-                            availableRows.Add(PreferenceRow(device.Name, Loc.Get("Ready to pair"), pairButton, BluetoothDevicePresentation.IconFor(device)));
-                        }
+                        availableRows.Add(PreferenceRow(device.Name, Loc.Get("Ready to pair"), pairButton, BluetoothDevicePresentation.IconFor(device)));
                     }
-                    else if (_isScanningBluetooth)
-                    {
-                        availableRows.Add(InfoRow(Loc.Get("Searching…"), Loc.Get("Looking for nearby Bluetooth devices in pairing mode…")));
-                    }
+                }
+                else availableRows.Add(InfoRow(Loc.Get("Searching…"), Loc.Get("Looking for nearby Bluetooth devices in pairing mode…")));
 
-                    AddSection(Loc.Get("AVAILABLE ACCESSORIES"), Loc.Get("Nearby devices ready to pair."), availableRows.ToArray());
+                AddSection(Loc.Get("NEARBY DEVICES"), Loc.Get("Nearby devices appear automatically while this page is open."), availableRows.ToArray());
+            }
+        }
+
+        private void EnsureAutomaticBluetoothDiscovery()
+        {
+            if (_bluetoothDiscoveryLifetime is not null || !string.Equals(_activeCategory, "Bluetooth", StringComparison.Ordinal)) return;
+            var lifetime = CancellationTokenSource.CreateLinkedTokenSource(_displayLifetime.Token);
+            _bluetoothDiscoveryLifetime = lifetime;
+            _ = RunAutomaticBluetoothDiscoveryAsync(lifetime);
+        }
+
+        private async Task RunAutomaticBluetoothDiscoveryAsync(CancellationTokenSource lifetime)
+        {
+            var cancellationToken = lifetime.Token;
+            _isScanningBluetooth = true;
+            try
+            {
+                if (!await _settingsBluetoothService.StartDiscoveryAsync(cancellationToken))
+                {
+                    (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t search for nearby Bluetooth devices."));
+                    return;
+                }
+                while (!cancellationToken.IsCancellationRequested
+                       && string.Equals(_activeCategory, "Bluetooth", StringComparison.Ordinal))
+                {
+                    await Task.Delay(TimeSpan.FromSeconds(3), cancellationToken);
+                    if (!cancellationToken.IsCancellationRequested) RefreshBluetooth();
                 }
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
+            finally
+            {
+                _isScanningBluetooth = false;
+                try { await _settingsBluetoothService.StopDiscoveryAsync(CancellationToken.None); } catch { }
+                if (ReferenceEquals(_bluetoothDiscoveryLifetime, lifetime))
+                    _bluetoothDiscoveryLifetime = null;
+                lifetime.Dispose();
+            }
+        }
+
+        private void StopAutomaticBluetoothDiscovery()
+        {
+            _bluetoothDiscoveryLifetime?.Cancel();
+            _bluetoothDiscoveryLifetime = null;
+            _isScanningBluetooth = false;
         }
 
         private void BuildNotifications()

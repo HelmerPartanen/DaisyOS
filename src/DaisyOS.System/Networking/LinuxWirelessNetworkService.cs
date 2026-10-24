@@ -54,9 +54,16 @@ public sealed class LinuxWirelessNetworkService : IWirelessNetworkService
                 "Wi-Fi isn’t available on this device.");
         }
 
+        var knownResult = await _commandRunner.RunAsync(
+            "nmcli",
+            ["-t", "-f", "NAME,TYPE", "connection", "show"],
+            CommandTimeout,
+            cancellationToken);
+        var knownNetworks = ParseKnownNetworks(knownResult);
+
         var result = await _commandRunner.RunAsync(
             "nmcli",
-            ["-t", "-f", "IN-USE,SSID,SECURITY,SIGNAL", "device", "wifi", "list", "--rescan", "no"],
+            ["-t", "-f", "IN-USE,SSID,SECURITY,SIGNAL", "device", "wifi", "list", "--rescan", "yes"],
             CommandTimeout,
             cancellationToken);
 
@@ -68,14 +75,22 @@ public sealed class LinuxWirelessNetworkService : IWirelessNetworkService
                 BuildFailureDetail(result, "Wi-Fi network scan"));
         }
 
-        var networks = result.StandardOutput
+        var visibleNetworks = result.StandardOutput
             .Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(ParseNetworkLine)
             .Where(network => network is not null)
             .Cast<WirelessNetworkInfo>()
             .GroupBy(network => string.IsNullOrWhiteSpace(network.Ssid) ? "<hidden>" : network.Ssid, StringComparer.Ordinal)
             .Select(group => group.OrderByDescending(network => network.IsActive).ThenByDescending(network => network.SignalPercent).First())
+            .Select(network => network with { IsKnown = knownNetworks.Contains(network.Ssid) })
+            .ToArray();
+        var visibleNames = visibleNetworks.Select(network => network.Ssid).ToHashSet(StringComparer.Ordinal);
+        var networks = visibleNetworks
+            .Concat(knownNetworks.Where(name => !visibleNames.Contains(name))
+                .Select(name => new WirelessNetworkInfo(name, 0, string.Empty, false, IsKnown: true, IsAvailable: false)))
             .OrderByDescending(network => network.IsActive)
+            .ThenByDescending(network => network.IsKnown)
+            .ThenByDescending(network => network.IsAvailable)
             .ThenByDescending(network => network.SignalPercent)
             .ThenBy(network => network.Ssid, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
@@ -84,6 +99,24 @@ public sealed class LinuxWirelessNetworkService : IWirelessNetworkService
             ? "No Wi-Fi networks found."
             : $"{networks.Length} Wi-Fi {(networks.Length == 1 ? "network" : "networks")} found.";
         return new WirelessNetworkStatus(true, networks, detailText);
+    }
+
+    private static HashSet<string> ParseKnownNetworks(CommandResult result)
+    {
+        var known = new HashSet<string>(StringComparer.Ordinal);
+        if (!result.Succeeded) return known;
+        foreach (var line in result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var fields = SplitEscapedFields(line);
+            if (fields.Count < 2 || fields[0].Length == 0) continue;
+            if (fields[1].Equals("802-11-wireless", StringComparison.OrdinalIgnoreCase) ||
+                fields[1].Equals("wifi", StringComparison.OrdinalIgnoreCase) ||
+                fields[1].Equals("wireless", StringComparison.OrdinalIgnoreCase))
+            {
+                known.Add(fields[0]);
+            }
+        }
+        return known;
     }
 
     public async Task<WirelessRadioStatus> GetRadioStatusAsync(CancellationToken cancellationToken = default)
@@ -290,6 +323,17 @@ public sealed class LinuxWirelessNetworkService : IWirelessNetworkService
         }
 
         return success;
+    }
+
+    public async Task<bool> ForgetNetworkAsync(string ssid, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(ssid)) return false;
+        var result = await _commandRunner.RunAsync(
+            "nmcli",
+            ["connection", "delete", "id", ssid],
+            CommandTimeout,
+            cancellationToken);
+        return result.Succeeded;
     }
 
     public async Task<bool> SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default)

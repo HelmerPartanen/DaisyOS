@@ -12,5 +12,7 @@ public interface IWirelessNetworkService
 
     Task<bool> DisconnectFromNetworkAsync(CancellationToken cancellationToken = default);
 
+    Task<bool> ForgetNetworkAsync(string ssid, CancellationToken cancellationToken = default);
+
     Task<bool> SetEnabledAsync(bool enabled, CancellationToken cancellationToken = default);
 }
