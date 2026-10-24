@@ -1306,7 +1306,8 @@ public partial class App : Application
         shell.Taskbar.ApplyOrder(SessionState.DockOrder);
         shell.Taskbar.OrderChanged += (_, order) => SessionState.SetDockOrder(order);
         shell.Taskbar.StartButtonClicked += (_, _) => ToggleLauncher();
-        shell.Taskbar.AppIconClicked += (_, appId) => LaunchTaskbarApp(appId);
+        shell.Taskbar.AppIconClicked += (_, appId) =>
+            LaunchTaskbarApp(appId, shell.Taskbar.TakeWasActiveAtActivation(appId));
         shell.Taskbar.ForceQuitRequested += (_, appId) => RequestForceQuit(appId);
         shell.Taskbar.AppInfoRequested += (_, appId) => ShowSettings("InstalledApps");
         shell.Taskbar.CloseAppRequested += (_, appId) => RequestClose(appId);
@@ -1821,7 +1822,7 @@ public partial class App : Application
         return true;
     }
 
-    private void LaunchTaskbarApp(string appId)
+    private void LaunchTaskbarApp(string appId, bool? wasActiveAtActivation = null)
     {
         // A physical double tap must still mean one taskbar activation. Without
         // this gate the second release can arrive before KWin publishes the
@@ -1852,7 +1853,7 @@ public partial class App : Application
         if (_shellView?.Taskbar.TryGetCompositorWindowId(appId, out var compositorWindowId) == true
             && _compositorWindows is not null)
         {
-            var wasActive = _compositorWindows.Windows
+            var wasActive = wasActiveAtActivation ?? _compositorWindows.Windows
                 .FirstOrDefault(w => string.Equals(w.Id, compositorWindowId, StringComparison.Ordinal))
                 ?.IsActive == true;
             _ = _compositorWindows.ActivateOrMinimizeAsync(compositorWindowId, wasActive);
@@ -1862,7 +1863,7 @@ public partial class App : Application
         if (appId.StartsWith("kwin:", StringComparison.Ordinal) && _compositorWindows is not null)
         {
             var rawId = appId[5..];
-            var wasActive = _compositorWindows.Windows
+            var wasActive = wasActiveAtActivation ?? _compositorWindows.Windows
                 .FirstOrDefault(w => string.Equals(w.Id, rawId, StringComparison.Ordinal))
                 ?.IsActive == true;
             _ = _compositorWindows.ActivateOrMinimizeAsync(rawId, wasActive);

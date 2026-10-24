@@ -78,6 +78,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         private bool _pointerDown;
         private bool _isDragging;
         private bool _suppressNextClick;
+        private string? _pendingActivationAppId;
+        private bool? _pendingActivationWasActive;
         private double _pointerStartX;
         private double _dragStartLeft;
         private List<string>? _orderAtDragStart;
@@ -94,6 +96,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                     var button = visual.GetSelfAndVisualAncestors().OfType<Button>().FirstOrDefault(b => b.Tag is string);
                     if (button?.Tag is string id)
                     {
+                        CaptureActivationState(id);
                         _launchActivationApp = id;
                         _launchActivationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, id);
                     }
@@ -345,6 +348,33 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         public bool TryGetCompositorWindowId(string appId, out string windowId) =>
             _compositorWindowIds.TryGetValue(NormalizeAppId(appId), out windowId!);
+
+        /// <summary>
+        /// Returns the compositor focus state captured before the taskbar layer
+        /// could take focus from the clicked application. The value is consumed
+        /// by the matching activation only.
+        /// </summary>
+        public bool? TakeWasActiveAtActivation(string appId)
+        {
+            var matches = string.Equals(
+                _pendingActivationAppId,
+                NormalizeAppId(appId),
+                StringComparison.Ordinal);
+            var result = matches ? _pendingActivationWasActive : null;
+            _pendingActivationAppId = null;
+            _pendingActivationWasActive = null;
+            return result;
+        }
+
+        private void CaptureActivationState(string appId)
+        {
+            var normalizedAppId = NormalizeAppId(appId);
+            _pendingActivationAppId = normalizedAppId;
+            _pendingActivationWasActive = TryGetCompositorWindowId(appId, out var windowId) &&
+                _compositorRecords.TryGetValue(windowId, out var record)
+                    ? record.IsActive
+                    : _windowStates.GetValueOrDefault(normalizedAppId) == NativeAppWindowState.Active;
+        }
 
         private bool _iconsInitialized;
 
@@ -917,6 +947,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
             if (e.GetCurrentPoint(icon).Properties.IsRightButtonPressed)
             {
+                _pendingActivationAppId = null;
+                _pendingActivationWasActive = null;
                 e.Handled = true;
                 ShowContextMenuFor(icon);
                 return;
@@ -927,6 +959,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             HideContextMenu();
             if (icon.Tag is string appId)
             {
+                CaptureActivationState(appId);
                 _launchActivationApp = appId;
                 _launchActivationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, appId);
             }
@@ -1041,6 +1074,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
             if (wasDragging)
             {
+                _pendingActivationAppId = null;
+                _pendingActivationWasActive = null;
                 e.Handled = true;
                 _suppressNextClick = true;
                 var newOrder = _order.Select(b => b.Tag as string ?? string.Empty).ToList();
@@ -1064,6 +1099,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             if (_suppressNextClick)
             {
                 _suppressNextClick = false;
+                _pendingActivationAppId = null;
+                _pendingActivationWasActive = null;
                 return;
             }
 
@@ -1162,6 +1199,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             openItem.Click += (_, _) =>
             {
                 HideContextMenu();
+                _pendingActivationAppId = null;
+                _pendingActivationWasActive = null;
                 AppIconClicked?.Invoke(this, rawAppId);
             };
             _contextMenuItems.Children.Add(openItem);

@@ -173,4 +173,30 @@ public class TaskbarPreviewTests
         }
         finally { window.Close(); }
     }
+
+    [AvaloniaFact]
+    public void PointerPressPreservesFocusedAppStateUntilTaskbarActivation()
+    {
+        var view = new TaskbarView();
+        var window = new Window { Content = view, Width = 800, Height = 300 };
+        bool? wasActive = null;
+        view.AppIconClicked += (_, appId) => wasActive = view.TakeWasActiveAtActivation(appId);
+        window.Show();
+        try
+        {
+            view.SetCompositorWindows([Note("focused") with { IsActive = true }]);
+            window.UpdateLayout();
+            var button = view.GetVisualDescendants().OfType<Button>().First(b => Equals(b.Tag, "notes"));
+            var point = button.TranslatePoint(new Point(20, 20), window)!.Value;
+
+            window.MouseDown(point, MouseButton.Left);
+            // Simulate the compositor publishing focus loss after the layer
+            // surface receives the press but before Avalonia raises Click.
+            view.SetCompositorWindows([Note("focused") with { IsActive = false }]);
+            window.MouseUp(point, MouseButton.Left);
+
+            Assert.True(wasActive);
+        }
+        finally { window.Close(); }
+    }
 }
