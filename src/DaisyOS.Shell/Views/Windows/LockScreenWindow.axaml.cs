@@ -625,7 +625,11 @@ public partial class LockScreenWindow : Window
     private void UpdateClock()
     {
         var now = DateTime.Now;
-        var time = now.ToString("H:mm", CultureInfo.InvariantCulture);
+        var useTwelveHour = string.Equals(
+            (Application.Current as App)?.GetPreference("time.clock-format", "24-hour"),
+            "12-hour",
+            StringComparison.OrdinalIgnoreCase);
+        var time = now.ToString(useTwelveHour ? "h:mm" : "H:mm", CultureInfo.InvariantCulture);
         if (ClockText.Text != time)
         {
             PreviousClockText.Text = ClockText.Text;

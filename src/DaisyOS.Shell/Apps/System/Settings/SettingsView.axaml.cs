@@ -119,6 +119,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Input", "MOUSE & TRACKPAD", "Mouse and trackpad", "Pointer speed, scroll speed, natural scrolling, tap to click", "mouse trackpad pointer scrolling scroll speed tap"),
             new("Input", "MOUSE & TRACKPAD", "Trackpad scroll speed", "Slowest", "trackpad touchpad scroll scrolling speed slider mouse"),
             new("DateTime", "TIME", "Automatic date and time", "System time, time zone, and clock format", "date time timezone time zone clock ntp automatic"),
+            new("DateTime", "TIME", "Time format", "Choose between 24-hour and 12-hour time", "time format clock 12h 24h 12-hour 24-hour am pm"),
             new("About", "DAISYOS", "About this system", "Version and desktop-session information", "version about diagnostics support")
         ];
 
@@ -2551,20 +2552,40 @@ namespace DaisyOS.Shell.Apps.System.Settings
             };
             zoneSelectionIsReady = true;
 
+            var isTwelveHourDefault = CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern.Contains('t') ||
+                                      CultureInfo.CurrentCulture.DateTimeFormat.ShortTimePattern.Contains('h');
+            var fallbackFormat = isTwelveHourDefault ? "12-hour" : "24-hour";
+            var currentClockFormat = (Application.Current as App)?.GetPreference("time.clock-format", fallbackFormat) ?? fallbackFormat;
+            if (currentClockFormat != "12-hour" && currentClockFormat != "24-hour")
+            {
+                currentClockFormat = fallbackFormat;
+            }
+
+            var timeFormatPicker = Picker("Time format", "time.clock-format", currentClockFormat, selected =>
+            {
+                var app = Application.Current as App;
+                app?.SetPreference("time.clock-format", selected);
+                ShowCategory("DateTime");
+            }, "24-hour", "12-hour");
+
+            var useTwelveHourTime = string.Equals(currentClockFormat, "12-hour", StringComparison.OrdinalIgnoreCase);
+            var currentTimePattern = useTwelveHourTime ? "dddd, d MMMM yyyy, h:mm tt" : "dddd, d MMMM yyyy, HH:mm";
+
             AddSection(Loc.Get("TIME"), Loc.Get("Choose how your computer sets the date and time."),
                 PreferenceRow(Loc.Get("Set time automatically"), Loc.Get("Use an internet time service when available."), automaticTime),
-                InfoRow(Loc.Get("Current time"), status.LocalTime.ToString("dddd, d MMMM yyyy, HH:mm", global::System.Globalization.CultureInfo.CurrentCulture)),
-                PreferenceRow(Loc.Get("Time zone"), Loc.Get("Choose where you are so time and daylight saving stay correct."), zonePicker));
+                InfoRow(Loc.Get("Current time"), status.LocalTime.ToString(currentTimePattern, global::System.Globalization.CultureInfo.CurrentCulture)),
+                PreferenceRow(Loc.Get("Time zone"), Loc.Get("Choose where you are so time and daylight saving stay correct."), zonePicker),
+                timeFormatPicker);
 
             if (!status.AutomaticTime)
             {
                 AddSection(Loc.Get("MANUAL TIME"), Loc.Get("Set the date and time only when automatic time is turned off."),
-                    ManualDateTimeRow(status.LocalTime, buildVersion));
+                    ManualDateTimeRow(status.LocalTime, buildVersion, useTwelveHourTime));
             }
 
         }
 
-        private Border ManualDateTimeRow(DateTimeOffset localTime, int buildVersion)
+        private Border ManualDateTimeRow(DateTimeOffset localTime, int buildVersion, bool useTwelveHour = false)
         {
             var datePicker = new DatePicker
             {
@@ -2574,6 +2595,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var timePicker = new TimePicker
             {
                 SelectedTime = localTime.TimeOfDay,
+                ClockIdentifier = useTwelveHour ? "12HourClock" : "24HourClock",
                 VerticalAlignment = VerticalAlignment.Center
             };
             var apply = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
@@ -2916,7 +2938,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             picker.Classes.Add("ThemeModePicker");
             foreach (var option in options)
             {
-                var item = new ComboBoxItem { Content = key.StartsWith("power.", StringComparison.Ordinal) || key == "input.pointer-speed" ? Loc.Get(option) : option, Tag = option };
+                var item = new ComboBoxItem { Content = key.StartsWith("power.", StringComparison.Ordinal) || key == "input.pointer-speed" || key == "time.clock-format" ? Loc.Get(option) : option, Tag = option };
                 item.Classes.Add("ThemeModeOption");
                 picker.Items.Add(item);
             }
@@ -3073,6 +3095,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             "Set time automatically" => new("clock"),
             "Current time" or "Date and time" => new("calendar"),
             "Time zone" => new("globe"),
+            "Time format" => new("clock"),
             "Desktop session" => new("desktop"),
             _ => null
         };
