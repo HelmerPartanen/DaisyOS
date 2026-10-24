@@ -354,6 +354,7 @@ public partial class WallpaperLayer : UserControl
         {
             _videoDemand?.SetVisible(shouldRender);
             _mpvSession.Pause(!shouldRender);
+            _mpvSession.SetFpsCap((_app?.IsOnBattery ?? false) ? 30 : 60);
             if (shouldRender && !_videoFrameTimer.IsEnabled) _videoFrameTimer.Start();
             else if (!shouldRender) _videoFrameTimer.Stop();
             if (!_isVideoPrerolling) PresentationState = shouldRender ? WallpaperPresentationState.Presented : WallpaperPresentationState.Paused;
@@ -482,6 +483,19 @@ public partial class WallpaperLayer : UserControl
                 {
                     var metadata = await VideoMetadata.ProbeAsync(resolvedPath);
                     if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
+
+                    var targetWidth = GetPresentationWidth();
+                    var targetHeight = GetPresentationHeight();
+                    var cached = await VideoWallpaperOptimization.TryGetCachedAsync(resolvedPath, metadata, targetWidth, targetHeight);
+                    if (cached != null && cached != resolvedPath && File.Exists(cached))
+                    {
+                        var cachedMetadata = await VideoMetadata.ProbeAsync(cached);
+                        if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
+                        await LoadNativeVideoAsync(cached, wallpaperUri, cachedMetadata, requestVersion, derivative: true,
+                            optimizedWidth: targetWidth, optimizedHeight: targetHeight);
+                        return;
+                    }
+
                     await LoadNativeVideoAsync(resolvedPath, wallpaperUri, metadata, requestVersion);
                     return;
                 }
@@ -609,6 +623,7 @@ public partial class WallpaperLayer : UserControl
             TopLevel.GetTopLevel(this)?.RenderScaling ?? 1, metadata, position); }
         catch { poster.Dispose(); throw; }
         if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) { candidate.Dispose(); poster.Dispose(); return; }
+        candidate.SetFpsCap((_app?.IsOnBattery ?? false) ? 30 : 60);
         var oldResources = TakeVisibleWallpaperResources();
         _mpvSession = candidate;
         _mpvPoster = poster;
@@ -696,13 +711,20 @@ public partial class WallpaperLayer : UserControl
             return;
         }
         _videoDemand?.SetVisible(true);
+        var targetW = GetPresentationWidth();
+        var targetH = GetPresentationHeight();
         var largerTarget = _usingOptimizedVideo &&
-            (GetPresentationWidth() > _optimizedWidth || GetPresentationHeight() > _optimizedHeight);
-        if ((!_optimizationStarted || largerTarget) && _videoMetadata is { } metadata)
+            (targetW > _optimizedWidth || targetH > _optimizedHeight);
+        var needsOptimization = !_usingOptimizedVideo && _videoMetadata is { } m &&
+            (m.Fps > 60.01 || (m.Width > targetW && m.Height > targetH));
+        if ((!_optimizationStarted && needsOptimization) || largerTarget)
         {
-            _optimizationStarted = true;
-            _usingOptimizedVideo = false;
-            _ = PrepareOptimizedVideoAsync(session, metadata, _videoWork!.Token);
+            if (_videoMetadata is { } metadata)
+            {
+                _optimizationStarted = true;
+                _usingOptimizedVideo = false;
+                _ = PrepareOptimizedVideoAsync(session, metadata, _videoWork!.Token);
+            }
         }
     }
 
@@ -727,6 +749,11 @@ public partial class WallpaperLayer : UserControl
         var source = _videoSourcePath;
         var uri = _presentedWallpaperUri;
         if (source is null || uri is null) return;
+        if (_app?.IsOnBattery ?? false)
+        {
+            _optimizationStarted = false;
+            return;
+        }
         try
         {
             // Always encode from the original. A previous derivative cannot supply

@@ -48,6 +48,10 @@ internal sealed class MpvWallpaperSession : IDisposable
     {
         lock (_sync) if (_handle != 0) Native.Resize(_handle, width, height, scale);
     }
+    public void SetFpsCap(int fps)
+    {
+        lock (_sync) if (_handle != 0) Native.SetFpsCap(_handle, fps);
+    }
     public NativeStats Stats
     {
         get
@@ -184,6 +188,8 @@ internal sealed class MpvWallpaperSession : IDisposable
         internal static extern void Resize(nint handle, int width, int height, double scale);
         [DllImport(Library, EntryPoint = "daisy_mpv_pause", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void Pause(nint handle, int paused);
+        [DllImport(Library, EntryPoint = "daisy_mpv_set_fps_cap", CallingConvention = CallingConvention.Cdecl)]
+        internal static extern void SetFpsCap(nint handle, int fps);
         [DllImport(Library, EntryPoint = "daisy_mpv_stats", CallingConvention = CallingConvention.Cdecl)]
         internal static extern void GetStats(nint handle, out NativeStats stats);
         [DllImport(Library, EntryPoint = "daisy_mpv_destroy", CallingConvention = CallingConvention.Cdecl)]

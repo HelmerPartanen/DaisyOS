@@ -2559,6 +2559,9 @@ public partial class App : Application
         Volatile.Read(ref _onBatteryPower) &&
         PowerPreferences.ParseBool(GetPreference(PowerPreferences.PauseLiveWallpaperOnBatteryKey, "true"), true);
 
+    /// <summary>True when the device is running on battery power.</summary>
+    public bool IsOnBattery => Volatile.Read(ref _onBatteryPower);
+
     /// <summary>Raised on the UI thread when the AC/battery state or a related power preference changes.</summary>
     public event EventHandler? PowerSourceChanged;
 

@@ -42,6 +42,7 @@ public:
     uint32_t sdr_primary=WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
     std::string sdr_target="bt.709";
     DaisyMpvColor color{};
+    std::atomic<int> fps_cap{60};
     std::atomic<int> width, height;
     std::atomic<double> scale;
     std::atomic<bool> stopping{false}, paused{false}, dirty{false}, throttled{false};
@@ -327,13 +328,18 @@ public:
             option("loop-file","inf"); option("keep-open","yes"); option("video-unscaled","no"); option("panscan","1");
             option("target-prim",hdr ? "bt.2020" : sdr_target.c_str());
             option("target-trc",hdr ? "pq" : managed ? "gamma2.2" : "srgb");
-            option("fbo-format","rgba16f");
-            option("hdr-compute-peak","no"); option("tone-mapping",hdr ? "clip" : "mobius");
-            if(hdr) option("target-peak","10000");
-            option("scale","spline36"); option("cscale","spline36"); option("dscale","mitchell");
-            option("interpolation","no"); option("deband","no"); option("temporal-dither","no");
-            option("dither-depth",depth==16 ? "16" : depth==10 ? "10" : "8"); option("demuxer-max-bytes","32MiB");
-            option("vd-lavc-threads","2"); option("framedrop","vo");
+            if(display) {
+                // High-efficiency wallpaper rendering for live playback
+                option("scale","bilinear"); option("cscale","bilinear"); option("dscale","bilinear");
+                option("correct-downscaling","no");
+                option("fbo-format",hdr ? "rgba16f" : (depth==10 ? "rgb10_a2" : "rgba8"));
+                option("framedrop","decoder");
+                option("display-fps-override",std::to_string(fps_cap.load()).c_str());
+            } else {
+                option("scale","spline36"); option("cscale","spline36"); option("dscale","mitchell");
+                option("fbo-format","rgba16f");
+                option("framedrop","vo");
+            }
             int ret=mpv_initialize(core); if(ret<0) throw std::runtime_error(mpv_error_string(ret));
             mpv_request_log_messages(core,"warn");
             { std::lock_guard<std::mutex> lock(mutex); core_ready=true; } cv.notify_all();
@@ -483,12 +489,16 @@ public:
                         ++submitted;
                         if(pending) state=paused ? 2 : 1;
                         cv.notify_all(); pending=false; old_w=w; old_h=h;
-                        next+=std::chrono::microseconds(16667);
-                        if(next<=now) next=now+std::chrono::microseconds(16667);
+                        const int cap=std::clamp(fps_cap.load(),10,60);
+                        const auto frame_interval=std::chrono::microseconds(1000000/cap);
+                        next+=frame_interval;
+                        if(next<=now) next=now+frame_interval;
                         if(!display && submitted>0) paused=true;
                     }
+                    auto sleep_dur=throttled ? std::chrono::milliseconds(50)
+                        : std::clamp(std::chrono::duration_cast<std::chrono::milliseconds>(next-now),std::chrono::milliseconds(1),std::chrono::milliseconds(16));
                     std::unique_lock<std::mutex> lock(mutex);
-                    cv.wait_for(lock,std::chrono::milliseconds(throttled ? 20 : 2),[this]{return stopping.load() || dirty.load();});
+                    cv.wait_for(lock,sleep_dur,[this]{return stopping.load() || dirty.load();});
                 }
             }
         } catch(const std::exception &e) { fail(e.what()); }
@@ -532,6 +542,18 @@ void daisy_mpv_resize(void *handle,int width,int height,double scale) {
     auto p=static_cast<Player*>(handle); p->width=width; p->height=height; p->scale=scale; p->cv.notify_all();
 }
 void daisy_mpv_pause(void *handle,int paused) { if(handle) { auto p=static_cast<Player*>(handle); p->paused=paused!=0; p->cv.notify_all(); } }
+void daisy_mpv_set_fps_cap(void *handle,int fps) {
+    if(handle) {
+        auto p=static_cast<Player*>(handle);
+        int cap=std::clamp(fps,10,60);
+        p->fps_cap=cap;
+        if(p->core) {
+            std::string s=std::to_string(cap);
+            mpv_set_property_string(p->core,"display-fps-override",s.c_str());
+        }
+        p->cv.notify_all();
+    }
+}
 void daisy_mpv_destroy(void *handle) { delete static_cast<Player*>(handle); }
 void daisy_mpv_stats(void *handle,DaisyMpvStats *out) {
     if(!handle || !out) return;

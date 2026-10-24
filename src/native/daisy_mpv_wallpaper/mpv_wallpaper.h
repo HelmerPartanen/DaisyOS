@@ -32,6 +32,7 @@ void *daisy_mpv_create(void *display, void *parent, const char *path,
                      int width, int height, double scale, const DaisyMpvColor *color);
 void daisy_mpv_resize(void *handle, int width, int height, double scale);
 void daisy_mpv_pause(void *handle, int paused);
+void daisy_mpv_set_fps_cap(void *handle, int fps);
 void daisy_mpv_stats(void *handle, DaisyMpvStats *out);
 void daisy_mpv_destroy(void *handle);
 // One GPU-rendered SDR snapshot; preview readback is never used for playback.

@@ -105,11 +105,36 @@ public static class VideoWallpaperOptimization
         }
     }
 
+    public static async Task<string?> TryGetCachedAsync(string source, VideoMetadata metadata, int width, int height,
+        CancellationToken token = default)
+    {
+        var size = CoverSize(metadata, width, height);
+        if (metadata.Fps <= 60.01 && size.Width >= metadata.Width && size.Height >= metadata.Height)
+            return source;
+        try
+        {
+            var digest = await Task.Run(async () =>
+            {
+                await using var input = File.OpenRead(source);
+                return Convert.ToHexString(await SHA256.HashDataAsync(input, token));
+            }, token);
+            var key = $"v3-{digest}-{size.Width}x{size.Height}-60-main10-crf16";
+            var target = Path.Combine(CacheDirectory, key + ".mp4");
+            if (File.Exists(target))
+            {
+                File.SetLastAccessTimeUtc(target, DateTime.UtcNow);
+                return target;
+            }
+        }
+        catch { }
+        return null;
+    }
+
     public static async Task<string> PrepareAsync(string source, VideoMetadata metadata, int width, int height,
         bool force, CancellationToken token)
     {
-        if (!force && metadata.Fps <= 60.01) return source;
         var size = CoverSize(metadata, width, height);
+        if (!force && metadata.Fps <= 60.01 && size.Width >= metadata.Width && size.Height >= metadata.Height) return source;
         // Sharing the task prevents desktop/lockscreen instances from racing
         // to generate the same derivative. Hashing is streamed off the UI thread.
         var digest = await Task.Run(async () =>
@@ -180,10 +205,11 @@ public static class VideoWallpaperOptimization
                 throw new IOException("Not enough free space for an optimized wallpaper.");
             Publish(source, "Preparing a high-quality wallpaper copy…", 0, true);
             var info = new ProcessStartInfo("setpriv") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
-            foreach (var arg in new[] { "--pdeathsig", "KILL", "nice", "-n", "10", "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+            foreach (var arg in new[] { "--pdeathsig", "KILL", "nice", "-n", "19", "ionice", "-c", "3", "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
+                "-hwaccel", "auto",
                 "-threads", "2", "-noautorotate", "-i", source, "-map", "0:v:0", "-an", "-sn", "-dn", "-filter_threads", "2",
-                "-vf", $"{ColorFilter(metadata)}fps=fps=60:round=near,scale={size.Width}:{size.Height}:flags=lanczos,format=yuv420p10le{ColorFilter(metadata, trailing: true)}",
-                "-c:v", "libx265", "-preset", "medium", "-crf", "16", "-x265-params", EncoderParameters(metadata),
+                "-vf", $"{ColorFilter(metadata)}fps=fps=60:round=near,scale={size.Width}:{size.Height}:flags=bicubic,format=yuv420p10le{ColorFilter(metadata, trailing: true)}",
+                "-c:v", "libx265", "-preset", "faster", "-crf", "16", "-x265-params", EncoderParameters(metadata),
                 "-tag:v", "hvc1", "-movflags", "+faststart", "-progress", "pipe:1", "-nostats" }) info.ArgumentList.Add(arg);
             foreach (var (name, value) in new[] { ("-color_primaries", metadata.Primaries), ("-color_trc", metadata.Transfer),
                 ("-colorspace", metadata.Matrix), ("-color_range", metadata.Range) })
