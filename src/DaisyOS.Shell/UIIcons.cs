@@ -11,7 +11,7 @@ public static class UIIcons
 {
     private const string FilledSuffix = "-fill";
 
-    /// <summary>Returns a legacy filled token; consumers normalize it to Stroke Rounded.</summary>
+    /// <summary>Returns the filled variant token for an icon.</summary>
     public static string Filled(string icon) => IsFilled(icon) ? icon : $"{icon}{FilledSuffix}";
 
     /// <summary>Returns the icon's semantic name.</summary>

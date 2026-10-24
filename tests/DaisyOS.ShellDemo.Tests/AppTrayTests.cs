@@ -13,6 +13,27 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class AppTrayTests
 {
     [AvaloniaFact]
+    public void SystemBarHugeIconsUseFilledAssets()
+    {
+        var bar = new SystemBarView();
+
+        foreach (var name in new[]
+                 {
+                     "AppTrayChevron", "SystemBarEthernetIcon", "SystemBarOfflineIcon",
+                     "SystemBarBluetoothIcon", "SystemBarVolumeIcon", "SystemBarNotificationIcon"
+                 })
+        {
+            var icon = bar.FindControl<DaisyIcon>(name)!;
+            Assert.Equal(DaisyIconWeight.Fill, icon.Weight);
+            Assert.EndsWith("-fill.svg", icon.Path, StringComparison.Ordinal);
+        }
+
+        var bluetooth = bar.FindControl<DaisyIcon>("SystemBarBluetoothIcon")!;
+        bluetooth.Icon = "bluetooth-slash";
+        Assert.EndsWith("bluetooth-slash-fill.svg", bluetooth.Path, StringComparison.Ordinal);
+    }
+
+    [AvaloniaFact]
     public void TraySurvivesNativeReparentingAndClosesWhenAnotherPanelOpens()
     {
         var bar = new SystemBarView();

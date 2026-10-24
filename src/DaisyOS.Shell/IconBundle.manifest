@@ -1,6 +1,7 @@
 # Runtime-selected icons and code-created controls that static XAML scanning
 # cannot discover. Format: regular/icon-name or fill/icon-name.
 fill/bell
+fill/bluetooth-slash
 fill/pause
 regular/airplane-tilt
 regular/app-window

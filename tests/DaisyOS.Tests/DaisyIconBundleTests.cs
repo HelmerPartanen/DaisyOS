@@ -23,7 +23,7 @@ public sealed class DaisyIconBundleTests
     }
 
     [Fact]
-    public void LegacyWeightsResolveToTheSameHugeIconsAsset()
+    public void FillWeightResolvesToTheGeneratedFillAsset()
     {
         using var scope = AvaloniaLocator.EnterScope();
         AvaloniaLocator.CurrentMutable.Bind<ICursorFactory>().ToConstant(new DummyCursorFactory());
@@ -31,10 +31,10 @@ public sealed class DaisyIconBundleTests
         var icon = new DaisyIcon { Icon = "play" };
         var regular = icon.Path;
         icon.Weight = DaisyIconWeight.Fill;
-        Assert.Equal(regular, icon.Path);
-        Assert.Equal("avares://DaisyOS.Shell/Assets/Icons/HugeIcons/play.svg", icon.Path);
+        Assert.NotEqual(regular, icon.Path);
+        Assert.Equal("avares://DaisyOS.Shell/Assets/Icons/HugeIcons/play-fill.svg", icon.Path);
         icon.Icon = UIIcons.Filled("play");
-        Assert.Equal(regular, icon.Path);
+        Assert.Equal("avares://DaisyOS.Shell/Assets/Icons/HugeIcons/play-fill.svg", icon.Path);
     }
 
     [Fact]

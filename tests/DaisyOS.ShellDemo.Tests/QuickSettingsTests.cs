@@ -134,7 +134,7 @@ public sealed class QuickSettingsTests
     }
 
     [AvaloniaFact]
-    public void SplitCornersMatchSingleButtonsAndDividersKeepThemeColor()
+    public async Task SplitCornersMatchSingleButtonsAndActiveDividerUsesLightSurfaceColor()
     {
         foreach (var theme in new[] { Avalonia.Styling.ThemeVariant.Light, Avalonia.Styling.ThemeVariant.Dark })
         {
@@ -150,14 +150,25 @@ public sealed class QuickSettingsTests
                 Assert.Equal(44, tile.FindControl<ToggleButton>("SplitToggle")!.Bounds.Height);
                 Assert.Equal(44, tile.FindControl<Button>("DetailsButton")!.Bounds.Height);
                 var divider = tile.FindControl<Border>("SplitDivider")!;
-                var expected = Avalonia.Media.Color.Parse(theme == Avalonia.Styling.ThemeVariant.Light ? "#26000000" : "#26ffffff");
-                foreach (var active in new[] { false, true })
-                {
-                    tile.IsChecked = active;
-                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-                    Assert.Equal(expected, Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(divider.Background).Color);
-                    Assert.Equal(1, divider.Opacity);
-                }
+                var defaultDivider = Avalonia.Media.Color.Parse(
+                    theme == Avalonia.Styling.ThemeVariant.Light ? "#26000000" : "#26ffffff");
+                Assert.Equal(defaultDivider,
+                    Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(divider.Background).Color);
+
+                tile.IsChecked = true;
+                await Task.Delay(250);
+                Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                Assert.Equal(Avalonia.Media.Color.Parse("#26000000"),
+                    Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(divider.Background).Color);
+
+                tile.IsChecked = false;
+                await Task.Delay(250);
+                Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                Assert.Equal(defaultDivider,
+                    Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(divider.Background).Color);
+                Assert.Equal(1, divider.Opacity);
             }
             finally { window.Close(); }
         }

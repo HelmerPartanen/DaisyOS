@@ -122,10 +122,12 @@ public sealed class DaisyIcon : Avalonia.Svg.Skia.Svg
 
     private void UpdateSource()
     {
-        var name = UIIcons.Parse(Icon?.Trim()).Glyph.ToLowerInvariant();
+        var parsed = UIIcons.Parse(Icon?.Trim());
+        var name = parsed.Glyph.ToLowerInvariant();
+        var suffix = Weight == DaisyIconWeight.Fill || parsed.IsFilled ? "-fill" : string.Empty;
         Path = string.IsNullOrWhiteSpace(name)
             ? null
-            : $"avares://DaisyOS.Shell/Assets/Icons/HugeIcons/{name}.svg";
+            : $"avares://DaisyOS.Shell/Assets/Icons/HugeIcons/{name}{suffix}.svg";
         UpdateColor();
     }
 
@@ -179,8 +181,8 @@ public sealed class DaisyIcon : Avalonia.Svg.Skia.Svg
 
 public enum DaisyIconWeight
 {
-    // HugeIcons Free is Stroke Rounded. Retain both values for compatibility
-    // while using one resource per logical name rather than duplicate assets.
+    // Fill falls back to the regular HugeIcons geometry in the generated
+    // bundle until a purpose-built <source-name>-fill.svg is provided.
     Regular,
     Fill
 }

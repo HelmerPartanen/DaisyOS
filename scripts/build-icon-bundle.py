@@ -94,39 +94,46 @@ def main() -> int:
             ". Set DaisyIconLibraryDirectory to its location.")
 
     aliases = json.loads(args.aliases.read_text(encoding="utf-8"))
-    icons = {name.lower() for _, name in static_icons(scan_root) | manifest_icons(manifest)}
+    icons = {(weight, name.lower()) for weight, name in static_icons(scan_root) | manifest_icons(manifest)}
     for name, source_name in aliases.items():
         if not re.fullmatch(r"[a-z0-9-_]+", name, re.IGNORECASE) or not re.fullmatch(r"[a-z0-9-_]+", source_name, re.IGNORECASE):
             raise ValueError(f"Invalid HugeIcons alias: {name} -> {source_name}")
 
-    def find_source(n: str) -> Path | None:
+    def find_source(n: str, weight: str = "regular") -> Path | None:
         target = aliases.get(n, n)
-        for cand in (f"{target}.svg", f"{target.lower()}.svg", f"{target.capitalize()}.svg"):
+        names = ([f"{target}-fill", f"{target.lower()}-fill", f"{target.capitalize()}-fill"]
+                 if weight == "fill" else [])
+        names += [target, target.lower(), target.capitalize()]
+        for name in names:
+            cand = f"{name}.svg"
             p = library / cand
             if p.is_file():
                 return p
         return None
 
     missing = sorted(
-        f"{name} -> {aliases.get(name, name)}.svg" for name in icons
-        if find_source(name) is None)
+        f"{weight}/{name} -> {aliases.get(name, name)}.svg" for weight, name in icons
+        if find_source(name, weight) is None)
     if missing:
         raise FileNotFoundError("Unknown DaisyOS HugeIcons icon(s):\n  " + "\n  ".join(missing))
 
     output.mkdir(parents=True, exist_ok=True)
-    expected = {output / f"{name}.svg" for name in icons}
+    expected = {
+        output / f"{name}{'-fill' if weight == 'fill' else ''}.svg"
+        for weight, name in icons
+    }
     for stale in output.rglob("*.svg"):
         if stale not in expected:
             stale.unlink()
-    for name in sorted(icons):
-        destination = output / f"{name}.svg"
+    for weight, name in sorted(icons):
+        destination = output / f"{name}{'-fill' if weight == 'fill' else ''}.svg"
         destination.parent.mkdir(parents=True, exist_ok=True)
-        src = find_source(name)
+        src = find_source(name, weight)
         if src is not None:
             write_themed_svg(src, destination)
 
     stamp = output / ".bundle-stamp"
-    stamp_contents = "\n".join(sorted(icons)) + "\n"
+    stamp_contents = "\n".join(f"{weight}/{name}" for weight, name in sorted(icons)) + "\n"
     stamp.write_text(stamp_contents, encoding="utf-8")
     print(f"[daisy-icons] bundled {len(icons)} HugeIcons SVGs into {output.name}")
     return 0

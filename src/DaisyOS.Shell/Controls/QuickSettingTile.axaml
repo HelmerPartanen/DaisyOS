@@ -79,6 +79,9 @@
     <Style Selector="Border.QuickSettingSplitDivider">
       <Setter Property="Background" Value="{DynamicResource StrokeDefaultBrush}"/>
     </Style>
+    <Style Selector="Border.QuickSettingSplitDivider.Active">
+      <Setter Property="Background" Value="{DynamicResource QuickSettingActiveDividerBrush}"/>
+    </Style>
 
     <Style Selector="TextBlock.QuickSettingLabel">
       <Setter Property="FontSize" Value="11.5"/>

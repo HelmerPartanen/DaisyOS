@@ -34,9 +34,15 @@ public partial class QuickSettingTile : UserControl
     public event EventHandler<RoutedEventArgs>? Toggled;
     public event EventHandler<RoutedEventArgs>? DetailsClicked;
 
+    static QuickSettingTile()
+    {
+        IsCheckedProperty.Changed.AddClassHandler<QuickSettingTile>((tile, _) => tile.UpdateDividerState());
+    }
+
     public QuickSettingTile()
     {
         InitializeComponent();
+        UpdateDividerState();
     }
 
     public string Icon
@@ -86,6 +92,8 @@ public partial class QuickSettingTile : UserControl
         get => GetValue(WifiSignalPercentProperty);
         set => SetValue(WifiSignalPercentProperty, Math.Clamp(value, 0, 100));
     }
+
+    private void UpdateDividerState() => SplitDivider.Classes.Set("Active", IsChecked);
 
     /// <summary>Moves controller/keyboard focus to the primary action.</summary>
     public void FocusPrimary()

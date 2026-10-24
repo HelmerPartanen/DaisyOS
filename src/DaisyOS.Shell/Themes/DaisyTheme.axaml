@@ -76,6 +76,9 @@
     <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
     <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
     <Color x:Key="QuickSettingActiveSurfacePressedColor">#FFECECEF</Color>
+    <!-- Active quick-setting pairs always sit on the light surface, including in dark mode. -->
+    <Color x:Key="QuickSettingActiveDividerColor">#26000000</Color>
+    <SolidColorBrush x:Key="QuickSettingActiveDividerBrush" Color="{StaticResource QuickSettingActiveDividerColor}" />
 
     <!--
         Keep inactive controls visually continuous with taskbar item
@@ -281,6 +284,9 @@
       <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
       <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
       <Color x:Key="QuickSettingActiveSurfacePressedColor">#FFECECEF</Color>
+      <!-- Active quick-setting pairs use the same light surface in both themes. -->
+      <Color x:Key="QuickSettingActiveDividerColor">#26000000</Color>
+      <SolidColorBrush x:Key="QuickSettingActiveDividerBrush" Color="{StaticResource QuickSettingActiveDividerColor}" />
       <!-- Keep inactive controls visually continuous with taskbar item interaction material. -->
       <Color x:Key="ActionSecondaryHoverColor">#24FFFFFF</Color>
       <Color x:Key="ActionSecondaryPressedColor">#33FFFFFF</Color>
