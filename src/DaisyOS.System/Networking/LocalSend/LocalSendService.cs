@@ -9,6 +9,7 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using Microsoft.AspNetCore.Server.Kestrel.Https;
 using Microsoft.Extensions.Hosting;
@@ -101,6 +102,10 @@ public sealed class LocalSendService : ILocalSendService
         });
         builder.WebHost.UseKestrel();
         builder.Services.AddRouting();
+        builder.Services.ConfigureHttpJsonOptions(options =>
+        {
+            options.SerializerOptions.TypeInfoResolverChain.Insert(0, DaisyOS.System.Serialization.DaisySystemJsonContext.Default);
+        });
         builder.Logging.AddSimpleConsole();
         return builder;
     }
@@ -118,6 +123,8 @@ public sealed class LocalSendService : ILocalSendService
         var builder = CreateHostBuilder();
         builder.WebHost.ConfigureKestrel(options =>
         {
+            options.Limits.MaxRequestBodySize = MaxSingleFileBytes;
+            options.Limits.MinRequestBodyDataRate = null;
             options.ListenAnyIP(DefaultPort, listen => listen.UseHttps(new HttpsConnectionAdapterOptions
             {
                 ServerCertificate = _certificate,
@@ -332,11 +339,18 @@ public sealed class LocalSendService : ILocalSendService
             return Results.StatusCode(StatusCodes.Status403Forbidden);
         if (!transfer.Files.TryGetValue(fileId, out var file)) return Results.BadRequest();
 
+        var maxRequestBodySizeFeature = context.Features.Get<IHttpMaxRequestBodySizeFeature>();
+        if (maxRequestBodySizeFeature is not null && !maxRequestBodySizeFeature.IsReadOnly)
+        {
+            maxRequestBodySizeFeature.MaxRequestBodySize = MaxSingleFileBytes;
+        }
+
         Directory.CreateDirectory(_stagingDirectory);
         Directory.CreateDirectory(_downloadsDirectory);
 
         var stagingDir = Path.GetFullPath(_stagingDirectory);
-        var temporary = Path.GetFullPath(Path.Combine(_stagingDirectory, $"{sessionId}-{fileId}.part"));
+        var safeFileId = Convert.ToHexString(SHA256.HashData(global::System.Text.Encoding.UTF8.GetBytes(fileId)));
+        var temporary = Path.GetFullPath(Path.Combine(stagingDir, $"{sessionId}-{safeFileId}.part"));
         if (!temporary.StartsWith(stagingDir + Path.DirectorySeparatorChar, StringComparison.Ordinal))
         {
             return Results.BadRequest();
@@ -788,22 +802,25 @@ public sealed class LocalSendService : ILocalSendService
     private RegisterInfo SelfInfo() => new(_alias, "2.2", "DaisyOS", "desktop", _fingerprint, DefaultPort, "https", false);
     private static string FormatHost(string host) => host.Contains(':') ? $"[{host}]" : host;
     private static string GetMimeType(string path) => Path.GetExtension(path).ToLowerInvariant() switch { ".jpg" or ".jpeg" => "image/jpeg", ".png" => "image/png", ".pdf" => "application/pdf", _ => "application/octet-stream" };
-    private static bool IsSafeFile(FileInfoDto file) =>
-        !string.IsNullOrWhiteSpace(file.Id)
-        && file.Id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')
-        && file.Size is >= 0 and <= MaxSingleFileBytes
-        && !string.IsNullOrWhiteSpace(file.FileName)
-        && !file.FileName.Contains('/')
-        && !file.FileName.Contains('\\')
-        && file.FileName is not "." and not ".."
-        && !file.FileName.StartsWith('.');
+    private static bool IsSafeFile(FileInfoDto file)
+    {
+        if (string.IsNullOrWhiteSpace(file.Id) || file.Id.Length > 512) return false;
+        if (file.Size is < 0 or > MaxSingleFileBytes) return false;
+        if (string.IsNullOrWhiteSpace(file.FileName)) return false;
+        var baseName = Path.GetFileName(file.FileName.Replace('\\', '/'));
+        return !string.IsNullOrWhiteSpace(baseName) && baseName is not "." and not "..";
+    }
 
     private string GetAvailableDestination(string name)
     {
         var sanitizedName = Path.GetFileName(name.Replace('\\', '/'));
-        if (string.IsNullOrWhiteSpace(sanitizedName) || sanitizedName is "." or ".." || sanitizedName.StartsWith('.'))
+        if (string.IsNullOrWhiteSpace(sanitizedName) || sanitizedName is "." or "..")
         {
             sanitizedName = $"localsend-{DateTime.Now:yyyyMMdd-HHmmss}";
+        }
+        else if (sanitizedName.StartsWith('.'))
+        {
+            sanitizedName = $"localsend-{sanitizedName}";
         }
 
         Directory.CreateDirectory(_downloadsDirectory);
@@ -859,9 +876,9 @@ public sealed class LocalSendService : ILocalSendService
     internal sealed record AcceptedTransfer(LocalSendIncomingTransfer Transfer, Dictionary<string, string> Tokens, Dictionary<string, FileInfoDto> Files);
     internal sealed record SendFile(string Id, string Path);
     internal sealed record DiscoverySocket(UdpClient Client, string InterfaceName, IPAddress Address);
-    internal sealed record RegisterInfo(string Alias, string Version, string? DeviceModel, string? DeviceType, string Fingerprint, int Port, string Protocol, bool Download);
+    internal sealed record RegisterInfo(string Alias, string Version, string? DeviceModel, string? DeviceType, string Fingerprint, int Port, string? Protocol = null, bool Download = false);
     internal sealed record RegisterResponse(string Alias, string Version, string? DeviceModel, string? DeviceType, string Fingerprint, bool Download);
-    internal sealed record FileInfoDto(string Id, string FileName, long Size, string FileType, string? Sha256, string? Preview = null);
+    internal sealed record FileInfoDto(string Id, string FileName, long Size, string? FileType = null, string? Sha256 = null, string? Preview = null);
     internal sealed record PrepareUploadRequest(RegisterInfo Info, Dictionary<string, FileInfoDto> Files);
     internal sealed record PrepareUploadResponse(string SessionId, Dictionary<string, string> Files);
     internal sealed record MulticastMessage(string Alias, string Version, string? DeviceModel, string? DeviceType, string Fingerprint, int Port, string Protocol, bool Download, bool Announce);
