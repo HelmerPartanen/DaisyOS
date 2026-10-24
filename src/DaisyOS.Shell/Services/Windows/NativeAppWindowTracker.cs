@@ -29,6 +29,10 @@ public sealed class NativeAppWindowTracker
         _windows.Values.Any(t => t.Window.IsVisible
             && t.Window.WindowState is WindowState.Maximized or WindowState.FullScreen);
 
+    public bool HasAnyOpenWindow =>
+        _windows.Values.Any(t => t.Window.IsVisible
+            && t.Window.WindowState != WindowState.Minimized);
+
     public void Register(string appId, Window window)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(appId);

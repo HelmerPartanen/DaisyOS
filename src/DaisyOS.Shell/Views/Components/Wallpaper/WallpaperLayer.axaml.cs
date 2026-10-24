@@ -336,8 +336,8 @@ public partial class WallpaperLayer : UserControl
 
         bool isVisible = IsEffectivelyVisible;
         bool isWindowMinimized = _attachedWindow?.WindowState == WindowState.Minimized;
-        bool isOwnedWindowOccludingDesktop = !IgnoreDesktopOcclusion && (_app?.WindowTracker.IsAnyWindowMaximizedOrFullScreen ?? false);
-        bool isExternalAppOccludingDesktop = !IgnoreDesktopOcclusion && (_app?.IsDesktopOccludedByExternalApp ?? false);
+        bool isOwnedWindowOccludingDesktop = !IgnoreDesktopOcclusion && (_app?.WindowTracker.HasAnyOpenWindow ?? false);
+        bool isExternalAppOccludingDesktop = !IgnoreDesktopOcclusion && ((_app?.HasAnyOpenExternalWindow ?? false) || (_app?.IsDesktopOccludedByExternalApp ?? false));
         bool isLockScreenOccludingDesktop = !IgnoreDesktopOcclusion && (_app?.IsLockScreenActive ?? false);
 
         bool shouldRender = isVisible
@@ -780,62 +780,6 @@ public partial class WallpaperLayer : UserControl
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is not (OutOfMemoryException or AccessViolationException))
         { global::System.Console.Error.WriteLine($"[wallpaper] Could not switch to optimized video: {ex.Message}"); }
-    }
-
-    private async Task PresentPosterWhilePreparingVideoAsync(string source, string uri, VideoMetadata metadata,
-        int requestVersion, int targetWidth, int targetHeight)
-    {
-        var poster = await MpvWallpaperSession.PreviewAsync(source, token: default);
-        if (poster is null) throw new IOException("The video could not produce a color-correct frame.");
-        if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion))
-        {
-            poster.Dispose();
-            return;
-        }
-
-        var previousResources = TakeVisibleWallpaperResources();
-        var work = new CancellationTokenSource();
-        _videoWork = work;
-        _mpvPoster = poster;
-        _videoSourcePath = source;
-        _videoMetadata = metadata;
-        _optimizationStarted = true;
-        _usingOptimizedVideo = false;
-        _videoDemand = new VideoWallpaperOptimization.PlaybackDemand(source);
-        _requestedWallpaperUri = uri;
-        PresentWallpaper(poster, previousResources);
-        var selectedInteractively = _presentationCompletion is not null;
-        CompletePresentation(uri, true);
-        if (selectedInteractively && !SuppressFailureFeedback)
-            _app?.Feedback.Show("Preparing this video for smooth, efficient playback. The still preview will animate when it’s ready.");
-        UpdateVisibilityAndPauseState();
-        _ = PreparePosterVideoAsync(source, uri, metadata, requestVersion, targetWidth, targetHeight, work);
-    }
-
-    private async Task PreparePosterVideoAsync(string source, string uri, VideoMetadata metadata, int requestVersion,
-        int targetWidth, int targetHeight, CancellationTokenSource work)
-    {
-        try
-        {
-            var path = await VideoWallpaperOptimization.PrepareAsync(source, metadata, targetWidth, targetHeight,
-                force: true, work.Token);
-            if (path == source || work.IsCancellationRequested) return;
-            var verified = await VideoMetadata.ProbeAsync(path, work.Token);
-            await _loadGate.WaitAsync(work.Token);
-            try
-            {
-                if (_isLoaded && requestVersion == Volatile.Read(ref _loadRequestVersion) &&
-                    ReferenceEquals(work, _videoWork) && string.Equals(uri, _presentedWallpaperUri, StringComparison.Ordinal))
-                    await LoadNativeVideoAsync(path, uri, verified, requestVersion, derivative: true,
-                        optimizedWidth: targetWidth, optimizedHeight: targetHeight);
-            }
-            finally { _loadGate.Release(); }
-        }
-        catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is not (OutOfMemoryException or AccessViolationException))
-        {
-            global::System.Console.Error.WriteLine($"[wallpaper] Efficient video preparation failed; keeping the still preview: {ex.Message}");
-        }
     }
 
     private static string ResolveWallpaperPath(string uri) =>

@@ -203,6 +203,11 @@ public partial class App : Application
     public ShellView? ShellView => _shellView;
     /// <summary>True when KWin reports that the active external app fully covers the desktop workspace.</summary>
     public bool IsDesktopOccludedByExternalApp => _externalDesktopOccluded;
+    private bool _hasAnyOpenExternalWindow;
+    /// <summary>True when any compositor-tracked external application window is open and not minimized on the current workspace.</summary>
+    public bool HasAnyOpenExternalWindow =>
+        _hasAnyOpenExternalWindow ||
+        (_compositorWindows?.Windows.Any(window => !window.IsMinimized && window.IsOnCurrentWorkspace) ?? false);
     /// <summary>True when the lock screen is active and occluding the desktop workspace.</summary>
     public bool IsLockScreenActive => _lockScreenWindow is not null;
     /// <summary>LocalSend only accepts inbound transfers while the user has explicitly enabled this temporary window.</summary>
@@ -1382,6 +1387,12 @@ public partial class App : Application
                 var isFullscreen = kwinBridge.HasFullscreenWindow;
                 var desktopOccluded = kwinBridge.IsDesktopOccluded;
                 SetExternalDesktopOcclusion(desktopOccluded);
+                var hasOpenExternal = kwinBridge.Windows.Any(window => !window.IsMinimized && window.IsOnCurrentWorkspace);
+                if (_hasAnyOpenExternalWindow != hasOpenExternal)
+                {
+                    _hasAnyOpenExternalWindow = hasOpenExternal;
+                    DesktopOcclusionChanged?.Invoke(this, EventArgs.Empty);
+                }
                 shell.SetExternalFullscreenActive(isFullscreen);
                 ApplyNativeBottomChromeState(shell);
             }
