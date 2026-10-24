@@ -335,7 +335,12 @@ public sealed class LocalSendService : ILocalSendService
         Directory.CreateDirectory(_stagingDirectory);
         Directory.CreateDirectory(_downloadsDirectory);
 
-        var temporary = Path.Combine(_stagingDirectory, $"{sessionId}-{fileId}.part");
+        var stagingDir = Path.GetFullPath(_stagingDirectory);
+        var temporary = Path.GetFullPath(Path.Combine(_stagingDirectory, $"{sessionId}-{fileId}.part"));
+        if (!temporary.StartsWith(stagingDir + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+        {
+            return Results.BadRequest();
+        }
         try
         {
             await using (var output = new FileStream(temporary, FileMode.Create, FileAccess.Write, FileShare.None, 1024 * 128, FileOptions.Asynchronous))
@@ -785,27 +790,41 @@ public sealed class LocalSendService : ILocalSendService
     private static string GetMimeType(string path) => Path.GetExtension(path).ToLowerInvariant() switch { ".jpg" or ".jpeg" => "image/jpeg", ".png" => "image/png", ".pdf" => "application/pdf", _ => "application/octet-stream" };
     private static bool IsSafeFile(FileInfoDto file) =>
         !string.IsNullOrWhiteSpace(file.Id)
+        && file.Id.All(c => char.IsAsciiLetterOrDigit(c) || c is '-' or '_')
         && file.Size is >= 0 and <= MaxSingleFileBytes
         && !string.IsNullOrWhiteSpace(file.FileName)
-        && file.FileName is not "." and not "..";
+        && !file.FileName.Contains('/')
+        && !file.FileName.Contains('\\')
+        && file.FileName is not "." and not ".."
+        && !file.FileName.StartsWith('.');
 
     private string GetAvailableDestination(string name)
     {
-        var sanitizedName = Path.GetFileName(name);
-        if (string.IsNullOrWhiteSpace(sanitizedName) || sanitizedName is "." or "..")
+        var sanitizedName = Path.GetFileName(name.Replace('\\', '/'));
+        if (string.IsNullOrWhiteSpace(sanitizedName) || sanitizedName is "." or ".." || sanitizedName.StartsWith('.'))
         {
             sanitizedName = $"localsend-{DateTime.Now:yyyyMMdd-HHmmss}";
         }
 
         Directory.CreateDirectory(_downloadsDirectory);
-        var basePath = Path.Combine(_downloadsDirectory, sanitizedName);
+        var downloadsDir = Path.GetFullPath(_downloadsDirectory);
+        var basePath = Path.GetFullPath(Path.Combine(downloadsDir, sanitizedName));
+        if (!basePath.StartsWith(downloadsDir + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+        {
+            basePath = Path.Combine(downloadsDir, $"localsend-{DateTime.Now:yyyyMMdd-HHmmss}");
+        }
+
         if (!File.Exists(basePath)) return basePath;
 
         var stem = Path.GetFileNameWithoutExtension(sanitizedName);
         var extension = Path.GetExtension(sanitizedName);
         for (var index = 2; ; index++)
         {
-            var candidate = Path.Combine(_downloadsDirectory, $"{stem} ({index}){extension}");
+            var candidate = Path.GetFullPath(Path.Combine(downloadsDir, $"{stem} ({index}){extension}"));
+            if (!candidate.StartsWith(downloadsDir + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            {
+                return Path.Combine(downloadsDir, $"localsend-{DateTime.Now:yyyyMMdd-HHmmss}-{index}");
+            }
             if (!File.Exists(candidate)) return candidate;
         }
     }
@@ -814,6 +833,7 @@ public sealed class LocalSendService : ILocalSendService
     {
         var identityDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "DaisyOS", "LocalSend");
         Directory.CreateDirectory(identityDirectory);
+        try { File.SetUnixFileMode(identityDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute); } catch (PlatformNotSupportedException) { }
         var pfx = Path.Combine(identityDirectory, "identity.pfx");
         const string password = "DaisyOS-LocalSend-v1";
         if (File.Exists(pfx)) return new X509Certificate2(pfx, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
@@ -823,8 +843,13 @@ public sealed class LocalSendService : ILocalSendService
         request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.DigitalSignature | X509KeyUsageFlags.KeyEncipherment, false));
         request.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(request.PublicKey, false));
         var certificate = request.CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(10));
-        File.WriteAllBytes(pfx, certificate.Export(X509ContentType.Pfx, password));
-        try { File.SetUnixFileMode(pfx, UnixFileMode.UserRead | UnixFileMode.UserWrite); } catch (PlatformNotSupportedException) { }
+        var pfxBytes = certificate.Export(X509ContentType.Pfx, password);
+        var fileOptions = new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write };
+        if (!OperatingSystem.IsWindows()) fileOptions.UnixCreateMode = UnixFileMode.UserRead | UnixFileMode.UserWrite;
+        using (var fs = new FileStream(pfx, fileOptions))
+        {
+            fs.Write(pfxBytes);
+        }
         return new X509Certificate2(pfx, password, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet);
     }
 

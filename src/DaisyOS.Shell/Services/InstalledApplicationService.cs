@@ -115,7 +115,7 @@ public sealed class InstalledApplicationService
         }
         var result = target.PackageKind == InstalledApplicationPackageKind.Flatpak
             ? await _runner.RunAsync("flatpak", ["install", ScopeArgument(target.InstallationScope), "--reinstall", "-y", "--noninteractive", "--", target.Origin, target.PackageId!], TimeSpan.FromMinutes(10), cancellationToken)
-            : await _runner.RunAsync("pkexec", ["pacman", "-S", "--noconfirm", target.PackageId!], TimeSpan.FromMinutes(5), cancellationToken);
+            : await _runner.RunAsync("pkexec", ["pacman", "-S", "--noconfirm", "--", target.PackageId!], TimeSpan.FromMinutes(5), cancellationToken);
         return result.Succeeded;
     }
 
@@ -130,7 +130,7 @@ public sealed class InstalledApplicationService
         else
         {
             var result = target.PackageKind == InstalledApplicationPackageKind.Flatpak
-                ? await _runner.RunAsync("flatpak", ["uninstall", ScopeArgument(target.InstallationScope), "-y", "--noninteractive", target.PackageId!], TimeSpan.FromMinutes(5), cancellationToken)
+                ? await _runner.RunAsync("flatpak", ["uninstall", ScopeArgument(target.InstallationScope), "-y", "--noninteractive", "--", target.PackageId!], TimeSpan.FromMinutes(5), cancellationToken)
                 : await NativeApplicationPackages.RemoveAsync(_runner, target.PackageId!, cancellationToken);
             succeeded = result.Succeeded;
             if (succeeded)

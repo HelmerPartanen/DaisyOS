@@ -33,6 +33,7 @@ public sealed class LinuxLockScreenService : ILockScreenService
 
     public async Task<bool> AuthenticateAsync(string password, CancellationToken cancellationToken = default)
     {
+#if DEBUG
         // Dev / mock bypass for testing
         if (string.Equals(Environment.GetEnvironmentVariable("DAISYOS_MOCK_AUTH"), "1", StringComparison.Ordinal) ||
             string.Equals(Environment.GetEnvironmentVariable("DAISYOS_DEV_MODE"), "1", StringComparison.Ordinal))
@@ -40,6 +41,7 @@ public sealed class LinuxLockScreenService : ILockScreenService
             await Task.Delay(300, cancellationToken);
             return true;
         }
+#endif
 
         if (string.IsNullOrEmpty(password))
         {
