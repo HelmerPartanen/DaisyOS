@@ -7,6 +7,29 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class InstalledApplicationManagementTests
 {
+    [Fact]
+    public void BuiltInLauncherItemCanBePinnedWithoutAnInstalledDesktopEntry()
+    {
+        var desktop = Path.Combine(Path.GetTempPath(), "daisy-desktop-pin-" + Guid.NewGuid());
+        try
+        {
+            var service = new InstalledApplicationService(new PackageRunner(string.Empty));
+            var app = new AppEntry("org.daisyos.taskmanager.desktop", "Task Manager", "Monitor tasks",
+                "org.daisyos.taskmanager", false, AppLaunchKind.Internal);
+
+            var shortcut = service.AddToDesktop(app, desktop);
+
+            Assert.Equal(Path.Combine(desktop, "org.daisyos.taskmanager.desktop"), shortcut);
+            var content = File.ReadAllText(shortcut!);
+            Assert.Contains("Exec=daisyos-shell --open-app=taskmanager", content);
+            Assert.Contains("Icon=org.daisyos.taskmanager", content);
+        }
+        finally
+        {
+            if (Directory.Exists(desktop)) Directory.Delete(desktop, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData("user", "--user")]
     [InlineData("system", "--system")]

@@ -148,12 +148,37 @@ public sealed class InstalledApplicationService
 
     public string? AddToDesktop(AppEntry app)
     {
+        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        if (string.IsNullOrWhiteSpace(desktop))
+        {
+            desktop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
+        }
+        return AddToDesktop(app, desktop);
+    }
+
+    internal string? AddToDesktop(AppEntry app, string desktop)
+    {
         var source = DesktopItemLoader.FindDesktopEntryFilePath([app.Id, app.Name, app.Icon]);
-        if (string.IsNullOrWhiteSpace(source) || !File.Exists(source)) return null;
-        var desktop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
+        var hasSource = !string.IsNullOrWhiteSpace(source) && File.Exists(source);
+        if (!hasSource && app.LaunchKind != AppLaunchKind.Internal) return null;
         Directory.CreateDirectory(desktop);
-        var destination = Path.Combine(desktop, Path.GetFileName(source));
-        File.Copy(source, destination, overwrite: true);
+        var desktopId = DesktopApplicationMaskStore.NormalizeDesktopId(app.Id);
+        var destination = Path.Combine(desktop, hasSource ? Path.GetFileName(source!) : desktopId);
+        if (hasSource)
+        {
+            File.Copy(source!, destination, overwrite: true);
+        }
+        else
+        {
+            // A few built-in apps are synthesized into the launcher and do not
+            // ship a standalone entry. They still need a launchable desktop pin.
+            var shortId = DesktopApplicationMaskStore.NormalizeShortId(app.Id);
+            var name = DesktopEntryValue(app.Name);
+            var comment = DesktopEntryValue(app.Description);
+            var icon = DesktopEntryValue(app.Icon);
+            File.WriteAllText(destination,
+                $"[Desktop Entry]\nType=Application\nName={name}\nComment={comment}\nExec=daisyos-shell --open-app={shortId}\nIcon={icon}\nTerminal=false\n");
+        }
         try
         {
             if (OperatingSystem.IsLinux())
@@ -164,6 +189,11 @@ public sealed class InstalledApplicationService
         catch (PlatformNotSupportedException) { }
         return destination;
     }
+
+    private static string DesktopEntryValue(string value) => value
+        .Replace("\\", "\\\\", StringComparison.Ordinal)
+        .Replace("\n", "\\n", StringComparison.Ordinal)
+        .Replace("\r", string.Empty, StringComparison.Ordinal);
 
     private static string ScopeArgument(string scope) => scope is "user" or "system" ? "--" + scope : "--installation=" + scope;
 

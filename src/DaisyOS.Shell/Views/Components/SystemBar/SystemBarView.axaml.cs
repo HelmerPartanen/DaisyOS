@@ -21,6 +21,8 @@ public partial class SystemBarView : UserControl
 {
     private readonly DispatcherTimer _clockTimer;
     private readonly DispatcherTimer _statusTimer;
+    private readonly DispatcherTimer _batteryTimer;
+    private Task? _batteryRefreshTask;
     private readonly ShellSessionState _sessionState = (Application.Current as App)?.SessionState ?? new ShellSessionState();
     private readonly IBatteryStatusService _batteryService = new LinuxBatteryStatusService();
     private static readonly IReadOnlyDictionary<string, string> PreferredCultureByCountry = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -73,6 +75,10 @@ public partial class SystemBarView : UserControl
         _clockTimer.Tick += (_, _) => UpdateClock();
         _statusTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(45) };
         _statusTimer.Tick += (_, _) => QueueStatusRefresh();
+        // sysfs reads are cheap, and a dedicated timer avoids waiting for the
+        // considerably heavier network/Bluetooth refresh after AC changes.
+        _batteryTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+        _batteryTimer.Tick += (_, _) => QueueBatteryRefresh();
         Loaded += OnLoaded;
         Unloaded += OnUnloaded;
     }
@@ -247,6 +253,7 @@ public partial class SystemBarView : UserControl
         if (Application.Current is App trayApp) _appTray.Connect(trayApp.AppTray);
         _clockTimer.Start();
         _statusTimer.Start();
+        _batteryTimer.Start();
         if (Application.Current is App app)
         {
             app.Notifications.UnreadCountChanged += OnUnreadNotificationsCountChanged;
@@ -263,6 +270,7 @@ public partial class SystemBarView : UserControl
         _appTray.Disconnect();
         _clockTimer.Stop();
         _statusTimer.Stop();
+        _batteryTimer.Stop();
         if (Application.Current is App app)
         {
             app.Notifications.UnreadCountChanged -= OnUnreadNotificationsCountChanged;
@@ -492,7 +500,13 @@ public partial class SystemBarView : UserControl
     private void QueueStatusRefresh()
     {
         _quickSettings.RefreshStatus();
-        _ = RefreshBatteryAsync();
+        QueueBatteryRefresh();
+    }
+
+    private void QueueBatteryRefresh()
+    {
+        if (_batteryRefreshTask is { IsCompleted: false }) return;
+        _batteryRefreshTask = RefreshBatteryAsync();
     }
 
     private async Task RefreshBatteryAsync()
@@ -503,6 +517,7 @@ public partial class SystemBarView : UserControl
 
     private void UpdateBatteryPresentation(BatteryStatus battery)
     {
+        _quickSettings.UpdateBatteryPresentation(battery);
         if (this.FindControl<BatteryStatusView>("SystemBarBattery") is not { } batteryView) return;
         batteryView.IsVisible = battery.IsPresent && battery.ChargePercent.HasValue;
         if (battery.ChargePercent is { } charge) batteryView.ChargePercent = charge;

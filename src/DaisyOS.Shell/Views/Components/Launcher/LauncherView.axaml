@@ -138,7 +138,9 @@
                 <ItemsControl Grid.Row="1" ItemsSource="{Binding MostUsedApps}" ItemTemplate="{StaticResource LauncherTileTemplate}">
                   <ItemsControl.ItemsPanel>
                     <ItemsPanelTemplate>
-                      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="4"/>
+                      <!-- Tile margins already produce the same 88px cell rhythm as
+                           VirtualizingLauncherGrid in the All section. -->
+                      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
                     </ItemsPanelTemplate>
                   </ItemsControl.ItemsPanel>
                 </ItemsControl>

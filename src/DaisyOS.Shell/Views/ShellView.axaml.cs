@@ -79,7 +79,10 @@ namespace DaisyOS.Shell.Views
             _controllerInputService = controllerInputService ?? throw new ArgumentNullException(nameof(controllerInputService));
             InitializeComponent();
             DesktopExperience.Children.Add(_bottomTooltips);
-            _bottomTooltips.Attach(TaskbarContent, TaskbarContent.HasHoverPreview);
+            // Taskbar labels use the same passive tooltip surface as the system bar.
+            // Window previews are separate, richer content and must not cause a taskbar
+            // item to silently lose its ordinary label.
+            _bottomTooltips.Attach(TaskbarContent);
             _bottomTooltips.Attach(SystemBarContent);
             _bottomTooltips.Attach(MediaWidgetContent);
             MediaWidgetContent.PointerEntered += (_, _) => _mediaAutoHideTimer.Stop();

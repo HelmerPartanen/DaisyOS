@@ -2024,7 +2024,14 @@ public partial class App : Application
             if (index.TryGetValue(appId, out var app)
                 || index.TryGetValue($"{appId}.desktop", out app))
             {
+                // The launch daemon normally owns this lease. Its fallback path
+                // must use the same native busy cursor as desktop activation too.
+                var localLaunchId = !DaisyLaunchClient.Enabled
+                    ? _launchFeedback?.BeginLocalLaunch(app.Id)
+                    : null;
                 var result = await launcherService.LaunchWithActivationAsync(app, activation is null ? "" : await activation);
+                if (!result.Succeeded && localLaunchId is not null)
+                    _launchFeedback?.LocalLaunchFailed(localLaunchId);
                 if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
                 return;
             }

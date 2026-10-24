@@ -31,9 +31,13 @@ public partial class QuickSettings : UserControl
     private readonly INetworkStatusService _networkStatusService = new LinuxNetworkStatusService(new SafeCommandRunner());
     private readonly IBluetoothService _bluetoothService = new LinuxBluetoothService(new SafeCommandRunner());
     private readonly IBatteryStatusService _batteryService = new LinuxBatteryStatusService();
+    private LinuxAudioChangeMonitor? _audioChangeMonitor;
     private readonly ShellSessionState _sessionState = (Application.Current as App)?.SessionState ?? new ShellSessionState();
     private CancellationTokenSource? _volumeUpdateCancellation;
     private bool _isUpdatingVolumeFromService;
+    private bool _hasLoadedVolume;
+    private Task? _volumeRefreshTask;
+    private bool _volumeRefreshPending;
     private string? _demoConnectedWifi = "DaisyOS Guest";
     private Task? _statusRefreshTask;
     private bool _airPodsModePending;
@@ -54,6 +58,9 @@ public partial class QuickSettings : UserControl
         Loc.RefreshOnChange(this, () => { ApplyLocalSettings(); RefreshStatus(); });
         Loaded += (_, _) =>
         {
+            _audioChangeMonitor ??= new LinuxAudioChangeMonitor();
+            _audioChangeMonitor.Changed -= OnAudioChanged;
+            _audioChangeMonitor.Changed += OnAudioChanged;
             if (Application.Current is App app)
             {
                 app.Notifications.DoNotDisturbChanged += OnDoNotDisturbChanged;
@@ -66,6 +73,12 @@ public partial class QuickSettings : UserControl
         Unloaded += (_, _) =>
         {
             _volumeUpdateCancellation?.Cancel();
+            if (_audioChangeMonitor is { } audioChangeMonitor)
+            {
+                audioChangeMonitor.Changed -= OnAudioChanged;
+                audioChangeMonitor.Dispose();
+                _audioChangeMonitor = null;
+            }
             if (Application.Current is App app)
             {
                 app.Notifications.DoNotDisturbChanged -= OnDoNotDisturbChanged;
@@ -112,15 +125,20 @@ public partial class QuickSettings : UserControl
         }
         if (this.FindControl<QuickSettingsSlider>("VolumeSlider") is { } volumeSlider)
         {
-            _isUpdatingVolumeFromService = true;
-            try
+            // Do not overwrite a live hardware value whenever local settings are
+            // reapplied (for example while opening the panel).
+            if (!_hasLoadedVolume)
             {
-                volumeSlider.IsEnabled = true;
-                volumeSlider.Value = _sessionState.LastKnownVolume ?? 50;
-            }
-            finally
-            {
-                _isUpdatingVolumeFromService = false;
+                _isUpdatingVolumeFromService = true;
+                try
+                {
+                    volumeSlider.IsEnabled = true;
+                    volumeSlider.Value = _sessionState.LastKnownVolume ?? 0;
+                }
+                finally
+                {
+                    _isUpdatingVolumeFromService = false;
+                }
             }
         }
         UpdateQuickSettingsTileLayout();
@@ -280,6 +298,55 @@ public partial class QuickSettings : UserControl
         _statusRefreshTask = RefreshStatusAsync();
     }
 
+    private void OnAudioChanged(object? sender, EventArgs e) =>
+        Dispatcher.UIThread.Post(QueueVolumeRefresh, DispatcherPriority.Input);
+
+    private void QueueVolumeRefresh()
+    {
+        if (_volumeRefreshTask is { IsCompleted: false })
+        {
+            _volumeRefreshPending = true;
+            return;
+        }
+        _volumeRefreshTask = RefreshVolumeAsync();
+    }
+
+    private async Task RefreshVolumeAsync()
+    {
+        do
+        {
+            _volumeRefreshPending = false;
+            try
+            {
+                ApplyVolume(await _audioService.GetVolumeAsync());
+            }
+            catch
+            {
+                // A transient audio-server restart should retain the last valid value.
+            }
+        } while (_volumeRefreshPending);
+    }
+
+    private void ApplyVolume(double? volume)
+    {
+        if (this.FindControl<QuickSettingsSlider>("VolumeSlider") is not { } volumeSlider) return;
+        _isUpdatingVolumeFromService = true;
+        try
+        {
+            volumeSlider.IsEnabled = volume is not null;
+            if (volume is { } current)
+            {
+                volumeSlider.Value = current;
+                _sessionState.LastKnownVolume = current;
+                _hasLoadedVolume = true;
+            }
+        }
+        finally
+        {
+            _isUpdatingVolumeFromService = false;
+        }
+    }
+
     private async Task RefreshStatusAsync()
     {
         try
@@ -320,35 +387,28 @@ public partial class QuickSettings : UserControl
                 themeTile.IsChecked = Application.Current?.ActualThemeVariant == ThemeVariant.Dark;
                 themeTile.ToolTipText = Loc.Get(themeTile.IsChecked ? "Use light theme" : "Use dark theme");
             }
-            if (this.FindControl<QuickSettingsSlider>("VolumeSlider") is { } volumeSlider)
-            {
-                _isUpdatingVolumeFromService = true;
-                try
-                {
-                    volumeSlider.IsEnabled = volume is not null;
-                    volumeSlider.Value = volume ?? _sessionState.LastKnownVolume ?? 50;
-                }
-                finally
-                {
-                    _isUpdatingVolumeFromService = false;
-                }
-            }
-            if (this.FindControl<TextBlock>("BatteryText") is { } batteryText)
-            {
-                batteryText.Text = battery.DisplayText;
-                ToolTip.SetTip(batteryText, battery.Detail);
-            }
-            if (this.FindControl<StackPanel>("BatteryStatusHost") is { } batteryStatusHost)
-            {
-                // A desktop on mains power has no battery status to communicate. Keeping the
-                // footer quiet is clearer than presenting an unavailable hardware warning.
-                batteryStatusHost.IsVisible = battery.IsPresent;
-            }
+            ApplyVolume(volume);
+            UpdateBatteryPresentation(battery);
         }
         catch
         {
             NetworkStatusUnavailable?.Invoke();
             if (this.FindControl<QuickSettingsSlider>("VolumeSlider") is { } volumeSlider) volumeSlider.IsEnabled = false;
+        }
+    }
+
+    internal void UpdateBatteryPresentation(BatteryStatus battery)
+    {
+        if (this.FindControl<TextBlock>("BatteryText") is { } batteryText)
+        {
+            batteryText.Text = battery.DisplayText;
+            ToolTip.SetTip(batteryText, battery.Detail);
+        }
+        if (this.FindControl<StackPanel>("BatteryStatusHost") is { } batteryStatusHost)
+        {
+            // A desktop on mains power has no battery status to communicate. Keeping the
+            // footer quiet is clearer than presenting an unavailable hardware warning.
+            batteryStatusHost.IsVisible = battery.IsPresent;
         }
     }
 
