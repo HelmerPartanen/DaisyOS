@@ -79,8 +79,7 @@
         CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
         ClipToBounds="True">
 
-      <Grid x:Name="MotionContent"
-            Height="{DynamicResource QuickSettingsPanelContentHeight}">
+      <Grid x:Name="MotionContent">
 
         <!-- ================================================= -->
         <!-- MAIN QUICK SETTINGS PAGE                         -->
@@ -277,17 +276,18 @@
         <!-- OUTPUT DEVICES PAGE                              -->
         <!-- ================================================= -->
 
-        <StackPanel
+        <Grid
             x:Name="OutputDevicesPage"
             IsVisible="False"
-            Spacing="12">
+            RowDefinitions="Auto,Auto,*"
+            RowSpacing="{DynamicResource Space3}">
 
           <controls:FlyoutPageHeader
               Title="{DynamicResource Loc_3D1E662940E7}"
               BackClicked="OnOutputDevicesBackClicked"/>
 
-          <Button Content="{DynamicResource Loc_62B2E1B18694}" Classes="ShellButton" Click="OnBluetoothDevicesButtonClicked" />
-          <ScrollViewer Height="216" VerticalScrollBarVisibility="Auto">
+          <Button Grid.Row="1" Content="{DynamicResource Loc_62B2E1B18694}" Classes="ShellButton" Click="OnBluetoothDevicesButtonClicked" />
+          <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="OutputDevicesHost"
                 Spacing="6">
@@ -300,23 +300,24 @@
             </StackPanel>
           </ScrollViewer>
 
-        </StackPanel>
+        </Grid>
 
 
         <!-- ================================================= -->
         <!-- WI-FI NETWORKS PAGE                              -->
         <!-- ================================================= -->
 
-        <StackPanel
+        <Grid
             x:Name="WifiNetworksPage"
             IsVisible="False"
-            Spacing="12">
+            RowDefinitions="Auto,*"
+            RowSpacing="{DynamicResource Space3}">
 
           <controls:FlyoutPageHeader
               Title="{DynamicResource Loc_CB4EC95A3F55}"
               BackClicked="OnWifiNetworksBackClicked"/>
 
-          <ScrollViewer Height="{DynamicResource QuickSettingsConnectionListHeight}" VerticalScrollBarVisibility="Auto">
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="WifiNetworksHost"
                 Spacing="6">
@@ -329,23 +330,24 @@
             </StackPanel>
           </ScrollViewer>
 
-        </StackPanel>
+        </Grid>
 
 
         <!-- ================================================= -->
         <!-- BLUETOOTH DEVICES PAGE                           -->
         <!-- ================================================= -->
 
-        <StackPanel
+        <Grid
             x:Name="BluetoothDevicesPage"
             IsVisible="False"
-            Spacing="12">
+            RowDefinitions="Auto,*"
+            RowSpacing="{DynamicResource Space3}">
 
           <controls:FlyoutPageHeader
               Title="{DynamicResource Loc_62B2E1B18694}"
               BackClicked="OnBluetoothDevicesBackClicked"/>
 
-          <ScrollViewer Height="{DynamicResource QuickSettingsConnectionListHeight}" VerticalScrollBarVisibility="Auto">
+          <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="BluetoothDevicesHost"
                 Spacing="6">
@@ -358,7 +360,7 @@
             </StackPanel>
           </ScrollViewer>
 
-        </StackPanel>
+        </Grid>
 
       </Grid>
     </Border>

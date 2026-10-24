@@ -77,6 +77,7 @@ public partial class WifiPasswordDialog : Window
 
         _isConnecting = true;
         var token = _lifetime.Token;
+        StatusMessageContainer.IsVisible = false;
         StatusMessageText.IsVisible = false;
         ConnectingProgress.IsVisible = true;
         ConnectButton.IsEnabled = false;
@@ -130,6 +131,7 @@ public partial class WifiPasswordDialog : Window
     {
         StatusMessageText.Text = message;
         StatusMessageText.IsVisible = true;
+        StatusMessageContainer.IsVisible = true;
         if (PasswordBox.IsEnabled) PasswordBox.Focus();
     }
 

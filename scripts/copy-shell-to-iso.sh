@@ -81,6 +81,12 @@ cp -a "$publish_dir/cursor-themes/"DaisyOS-* "$iso_root/usr/share/icons/"
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorTheme DaisyOS-Dark
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorSize 32
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Touchpad --key ScrollFactor 0.4
+# New accounts copy the skeleton before KDE's cascading defaults are read.
+# Keep its cursor id aligned with the generated Xcursor theme name so KWin can
+# load DaisyOS's animated progress/wait frames on the first session.
+install -d "$iso_root/etc/skel/.config"
+kwriteconfig6 --file "$iso_root/etc/skel/.config/kcminputrc" --group Mouse --key cursorTheme DaisyOS-Dark
+kwriteconfig6 --file "$iso_root/etc/skel/.config/kcminputrc" --group Mouse --key cursorSize 32
 kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key blurEnabled --type bool true
 kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Effect-blur --key BlurStrength 4
 
@@ -97,6 +103,13 @@ install -m755 "$publish_dir/daisyos-busy-cursor-v1.so" "$iso_root/usr/lib/qt6/pl
 kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key daisyos-busy-cursor-v1Enabled --type bool true
 kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key startupfeedbackEnabled --type bool true
 kwriteconfig6 --file "$iso_root/etc/xdg/klaunchrc" --group FeedbackStyle --key BusyCursor --type bool false
+kwriteconfig6 --file "$iso_root/etc/xdg/klaunchrc" --group FeedbackStyle --key Bouncing --type bool false
+kwriteconfig6 --file "$iso_root/etc/xdg/klaunchrc" --group FeedbackStyle --key Blinking --type bool false
+kwriteconfig6 --file "$iso_root/etc/xdg/klaunchrc" --group FeedbackStyle --key TaskbarButton --type bool false
+kwriteconfig6 --file "$iso_root/etc/skel/.config/klaunchrc" --group FeedbackStyle --key BusyCursor --type bool false
+kwriteconfig6 --file "$iso_root/etc/skel/.config/klaunchrc" --group FeedbackStyle --key Bouncing --type bool false
+kwriteconfig6 --file "$iso_root/etc/skel/.config/klaunchrc" --group FeedbackStyle --key Blinking --type bool false
+kwriteconfig6 --file "$iso_root/etc/skel/.config/klaunchrc" --group FeedbackStyle --key TaskbarButton --type bool false
 
 for runtime_executable in DaisyOS.Shell createdump; do
   if [[ -f "$iso_shell_dir/$runtime_executable" ]]; then

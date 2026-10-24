@@ -42,7 +42,7 @@ public:
     uint32_t sdr_primary=WP_COLOR_MANAGER_V1_PRIMARIES_SRGB;
     std::string sdr_target="bt.709";
     DaisyMpvColor color{};
-    std::atomic<int> fps_cap{60};
+    std::atomic<int> fps_cap{30};
     std::atomic<int> width, height;
     std::atomic<double> scale;
     std::atomic<bool> stopping{false}, paused{false}, dirty{false}, throttled{false};
@@ -324,7 +324,11 @@ public:
             mpv_set_option_string(core,"ytdl","no");
             option("audio","no"); option("sub","no"); mpv_set_option_string(core,"osc","no"); option("osd-level","0");
             option("input-default-bindings","no"); option("input-vo-keyboard","no");
-            option("vo","libmpv"); option("hwdec",display && hardware_suitable ? "auto" : "no"); option("hwdec-codecs","all");
+            option("vo","libmpv"); option("hwdec",display && hardware_suitable ? "auto-safe" : "no"); option("hwdec-codecs","all");
+            // Hardware decode remains the preferred path. If a driver cannot
+            // decode the source, keep software fallback from consuming every
+            // CPU core and starving the shell.
+            option("hwdec-threads","2"); option("vd-lavc-threads","2"); option("vd-lavc-fast","yes");
             option("loop-file","inf"); option("keep-open","yes"); option("video-unscaled","no"); option("panscan","1");
             option("target-prim",hdr ? "bt.2020" : sdr_target.c_str());
             option("target-trc",hdr ? "pq" : managed ? "gamma2.2" : "srgb");
@@ -440,9 +444,11 @@ public:
                         ? frame_info.target_time/1000 : frame_info.target_time;
                     const bool due = target_us <= clock_us;
                     if(!(frame_info.flags & MPV_RENDER_FRAME_INFO_PRESENT)) pending=false;
-                    if(due && pending && now+std::chrono::microseconds(8333) < next && !paused && submitted>0) {
+                    const int cap=std::clamp(fps_cap.load(),10,60);
+                    const auto frame_interval=std::chrono::microseconds(1000000/cap);
+                    if(due && pending && now+frame_interval/2 < next && !paused && submitted>0) {
                         // Consume a due source frame without GPU rendering when
-                        // it falls between our 60 Hz presentation slots.
+                        // it falls between our presentation slots.
                         int skip=1,block=0;
                         mpv_render_param skipped[]={{MPV_RENDER_PARAM_SKIP_RENDERING,&skip},
                             {MPV_RENDER_PARAM_BLOCK_FOR_TARGET_TIME,&block},{MPV_RENDER_PARAM_INVALID,nullptr}};
@@ -489,8 +495,6 @@ public:
                         ++submitted;
                         if(pending) state=paused ? 2 : 1;
                         cv.notify_all(); pending=false; old_w=w; old_h=h;
-                        const int cap=std::clamp(fps_cap.load(),10,60);
-                        const auto frame_interval=std::chrono::microseconds(1000000/cap);
                         next+=frame_interval;
                         if(next<=now) next=now+frame_interval;
                         if(!display && submitted>0) paused=true;

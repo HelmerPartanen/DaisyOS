@@ -12,5 +12,12 @@ cmake_generator=()
 if command -v ninja >/dev/null 2>&1; then
   cmake_generator=(-G Ninja)
 fi
-cmake -S "$repo_root/src/native/daisy_busy_cursor" -B "$build_dir" "${cmake_generator[@]}" "${cmake_args[@]}"
+cmake_fresh=()
+# A build tree may have been configured with Ninja on another image. CMake
+# otherwise keeps that unavailable generator forever and blocks cursor updates.
+if [[ -f "$build_dir/CMakeCache.txt" ]] &&
+   grep -Eq '^CMAKE_MAKE_PROGRAM:FILEPATH=.*-NOTFOUND$' "$build_dir/CMakeCache.txt"; then
+  cmake_fresh=(--fresh)
+fi
+cmake "${cmake_fresh[@]}" -S "$repo_root/src/native/daisy_busy_cursor" -B "$build_dir" "${cmake_generator[@]}" "${cmake_args[@]}"
 cmake --build "$build_dir"

@@ -26,7 +26,7 @@ public partial class WallpaperLayer : UserControl
     private const double WallpaperScale = 1.0;
     private const double EdgeSafetyInset = 0;
     private const int WallpaperFadeHalfDurationMilliseconds = 160;
-    private const int MaximumWallpaperPresentationPollRate = 60;
+    private const int MaximumWallpaperPresentationPollRate = VideoWallpaperOptimization.PlaybackFramesPerSecond;
     private const int MaximumPresentationWidth = 7680;
     private const int MaximumPresentationHeight = 4320;
     private const long MaximumPresentationBytes = (long)MaximumPresentationWidth * MaximumPresentationHeight * 4;
@@ -50,8 +50,6 @@ public partial class WallpaperLayer : UserControl
     private bool _usingOptimizedVideo;
     private int _optimizedWidth, _optimizedHeight;
     private bool _nativeRecoveryAttempted;
-    private DateTimeOffset _statisticsWindowStart;
-    private long _windowPresented, _windowDiscarded, _windowEngineDropped;
 
     private GpuVideoFrameImage? _gpuVideoImage;
     private WriteableBitmap? _videoBitmapA;
@@ -328,10 +326,13 @@ public partial class WallpaperLayer : UserControl
 
     private void UpdateVisibilityAndPauseState()
     {
-        if (!_isLoaded || (_mpvSession is null && (_videoWallpaperService is null || !_videoWallpaperService.IsLoaded)))
+        if (!_isLoaded)
         {
             return;
         }
+
+        var hasPlayer = _mpvSession is not null || (_videoWallpaperService?.IsLoaded ?? false);
+        if (!hasPlayer && _videoDemand is null) return;
 
         bool isVisible = IsEffectivelyVisible;
         bool isWindowMinimized = _attachedWindow?.WindowState == WindowState.Minimized;
@@ -350,11 +351,15 @@ public partial class WallpaperLayer : UserControl
                                  // Battery saver: keep the first frame as a still image.
                                  && !(_app?.IsLiveWallpaperPausedForBattery ?? false)));
 
+        _videoDemand?.SetVisible(shouldRender);
+        if (!hasPlayer) return;
+
         if (_mpvSession is not null)
         {
-            _videoDemand?.SetVisible(shouldRender);
             _mpvSession.Pause(!shouldRender);
-            _mpvSession.SetFpsCap((_app?.IsOnBattery ?? false) ? 30 : 60);
+            _mpvSession.SetFpsCap((_app?.IsOnBattery ?? false)
+                ? VideoWallpaperOptimization.BatteryPlaybackFramesPerSecond
+                : VideoWallpaperOptimization.PlaybackFramesPerSecond);
             if (shouldRender && !_videoFrameTimer.IsEnabled) _videoFrameTimer.Start();
             else if (!shouldRender) _videoFrameTimer.Stop();
             if (!_isVideoPrerolling) PresentationState = shouldRender ? WallpaperPresentationState.Presented : WallpaperPresentationState.Paused;
@@ -496,6 +501,13 @@ public partial class WallpaperLayer : UserControl
                         return;
                     }
 
+                    if (VideoWallpaperOptimization.RequiresOptimizedCopy(metadata, targetWidth, targetHeight))
+                    {
+                        await PresentPosterWhilePreparingVideoAsync(resolvedPath, wallpaperUri, metadata,
+                            requestVersion, targetWidth, targetHeight);
+                        return;
+                    }
+
                     await LoadNativeVideoAsync(resolvedPath, wallpaperUri, metadata, requestVersion);
                     return;
                 }
@@ -623,7 +635,9 @@ public partial class WallpaperLayer : UserControl
             TopLevel.GetTopLevel(this)?.RenderScaling ?? 1, metadata, position); }
         catch { poster.Dispose(); throw; }
         if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) { candidate.Dispose(); poster.Dispose(); return; }
-        candidate.SetFpsCap((_app?.IsOnBattery ?? false) ? 30 : 60);
+        candidate.SetFpsCap((_app?.IsOnBattery ?? false)
+            ? VideoWallpaperOptimization.BatteryPlaybackFramesPerSecond
+            : VideoWallpaperOptimization.PlaybackFramesPerSecond);
         var oldResources = TakeVisibleWallpaperResources();
         _mpvSession = candidate;
         _mpvPoster = poster;
@@ -641,8 +655,6 @@ public partial class WallpaperLayer : UserControl
         _optimizedHeight = optimizedHeight;
         _nativeRecoveryAttempted = recovery;
         _videoWork = new CancellationTokenSource();
-        _statisticsWindowStart = DateTimeOffset.UtcNow;
-        _windowPresented = _windowDiscarded = _windowEngineDropped = 0;
         _lastVideoFrameAt = DateTimeOffset.UtcNow;
         _reportedVideoFrameFailure = false;
         _videoFrameTimer.Interval = TimeSpan.FromMilliseconds(100);
@@ -706,8 +718,6 @@ public partial class WallpaperLayer : UserControl
         if (session.IsPaused || stats.State == 2)
         {
             _videoDemand?.SetVisible(false);
-            _statisticsWindowStart = DateTimeOffset.UtcNow;
-            _windowPresented = stats.Presented; _windowDiscarded = stats.Discarded; _windowEngineDropped = stats.EngineDropped;
             return;
         }
         _videoDemand?.SetVisible(true);
@@ -716,7 +726,7 @@ public partial class WallpaperLayer : UserControl
         var largerTarget = _usingOptimizedVideo &&
             (targetW > _optimizedWidth || targetH > _optimizedHeight);
         var needsOptimization = !_usingOptimizedVideo && _videoMetadata is { } m &&
-            (m.Fps > 60.01 || (m.Width > targetW && m.Height > targetH));
+            VideoWallpaperOptimization.RequiresOptimizedCopy(m, targetW, targetH);
         if ((!_optimizationStarted && needsOptimization) || largerTarget)
         {
             if (_videoMetadata is { } metadata)
@@ -777,6 +787,62 @@ public partial class WallpaperLayer : UserControl
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is not (OutOfMemoryException or AccessViolationException))
         { global::System.Console.Error.WriteLine($"[wallpaper] Could not switch to optimized video: {ex.Message}"); }
+    }
+
+    private async Task PresentPosterWhilePreparingVideoAsync(string source, string uri, VideoMetadata metadata,
+        int requestVersion, int targetWidth, int targetHeight)
+    {
+        var poster = await MpvWallpaperSession.PreviewAsync(source, token: default);
+        if (poster is null) throw new IOException("The video could not produce a color-correct frame.");
+        if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion))
+        {
+            poster.Dispose();
+            return;
+        }
+
+        var previousResources = TakeVisibleWallpaperResources();
+        var work = new CancellationTokenSource();
+        _videoWork = work;
+        _mpvPoster = poster;
+        _videoSourcePath = source;
+        _videoMetadata = metadata;
+        _optimizationStarted = true;
+        _usingOptimizedVideo = false;
+        _videoDemand = new VideoWallpaperOptimization.PlaybackDemand(source);
+        _requestedWallpaperUri = uri;
+        PresentWallpaper(poster, previousResources);
+        var selectedInteractively = _presentationCompletion is not null;
+        CompletePresentation(uri, true);
+        if (selectedInteractively && !SuppressFailureFeedback)
+            _app?.Feedback.Show("Preparing this video for smooth, efficient playback. The still preview will animate when it’s ready.");
+        UpdateVisibilityAndPauseState();
+        _ = PreparePosterVideoAsync(source, uri, metadata, requestVersion, targetWidth, targetHeight, work);
+    }
+
+    private async Task PreparePosterVideoAsync(string source, string uri, VideoMetadata metadata, int requestVersion,
+        int targetWidth, int targetHeight, CancellationTokenSource work)
+    {
+        try
+        {
+            var path = await VideoWallpaperOptimization.PrepareAsync(source, metadata, targetWidth, targetHeight,
+                force: true, work.Token);
+            if (path == source || work.IsCancellationRequested) return;
+            var verified = await VideoMetadata.ProbeAsync(path, work.Token);
+            await _loadGate.WaitAsync(work.Token);
+            try
+            {
+                if (_isLoaded && requestVersion == Volatile.Read(ref _loadRequestVersion) &&
+                    ReferenceEquals(work, _videoWork) && string.Equals(uri, _presentedWallpaperUri, StringComparison.Ordinal))
+                    await LoadNativeVideoAsync(path, uri, verified, requestVersion, derivative: true,
+                        optimizedWidth: targetWidth, optimizedHeight: targetHeight);
+            }
+            finally { _loadGate.Release(); }
+        }
+        catch (OperationCanceledException) { }
+        catch (Exception ex) when (ex is not (OutOfMemoryException or AccessViolationException))
+        {
+            global::System.Console.Error.WriteLine($"[wallpaper] Efficient video preparation failed; keeping the still preview: {ex.Message}");
+        }
     }
 
     private static string ResolveWallpaperPath(string uri) =>
@@ -1268,7 +1334,7 @@ public partial class WallpaperLayer : UserControl
         bool usingOptimizedVideo = false, int optimizedWidth = 0, int optimizedHeight = 0,
         WallpaperSourceCache.Lease? initialWallpaperLease = null) : IDisposable
     {
-        public bool HasResources => initialWallpaperLease is not null || mpvSession is not null || gpuImage is not null || imageService is not null || videoService is not null || bitmapA is not null || bitmapB is not null;
+        public bool HasResources => initialWallpaperLease is not null || mpvSession is not null || mpvPoster is not null || gpuImage is not null || imageService is not null || videoService is not null || bitmapA is not null || bitmapB is not null;
 
         public void RestoreTo(WallpaperLayer owner)
         {

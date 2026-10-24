@@ -13,6 +13,12 @@ public sealed record VideoOptimizationStatus(string Source, string Message, doub
 /// <summary>One low-priority conversion at a time; sources are never rewritten.</summary>
 public static class VideoWallpaperOptimization
 {
+    // A wallpaper is permanently visible but is not foreground video. 1080p30
+    // keeps motion convincing while leaving the decoder, compositor and GPU
+    // available to applications on integrated graphics.
+    internal const int PlaybackFramesPerSecond = 30;
+    internal const int BatteryPlaybackFramesPerSecond = 24;
+    internal const long MaximumPlaybackPixels = 1920L * 1080;
     private const long MaximumCacheBytes = 5L * 1024 * 1024 * 1024;
     private const long FreeSpaceReserve = 2L * 1024 * 1024 * 1024;
     private static readonly SemaphoreSlim ConversionGate = new(1, 1);
@@ -84,9 +90,26 @@ public static class VideoWallpaperOptimization
         var sw = rotated ? source.Height : source.Width;
         var sh = rotated ? source.Width : source.Height;
         var scale = Math.Min(1.0, Math.Max((double)width / sw, (double)height / sh));
-        // Encode in the original orientation, preserving the rotation metadata.
-        return (Math.Max(2, Math.Min(source.Width & ~1, (int)Math.Ceiling(source.Width * scale / 2) * 2)),
-            Math.Max(2, Math.Min(source.Height & ~1, (int)Math.Ceiling(source.Height * scale / 2) * 2)));
+        var encodedWidth = Math.Max(2, Math.Min(source.Width & ~1, (int)Math.Ceiling(source.Width * scale / 2) * 2));
+        var encodedHeight = Math.Max(2, Math.Min(source.Height & ~1, (int)Math.Ceiling(source.Height * scale / 2) * 2));
+        var pixels = (long)encodedWidth * encodedHeight;
+        if (pixels > MaximumPlaybackPixels)
+        {
+            var budgetScale = Math.Sqrt((double)MaximumPlaybackPixels / pixels);
+            encodedWidth = Math.Max(2, (int)Math.Floor(encodedWidth * budgetScale / 2) * 2);
+            encodedHeight = Math.Max(2, (int)Math.Floor(encodedHeight * budgetScale / 2) * 2);
+        }
+        // Encode in the original orientation, preserving rotation metadata.
+        // The compositor can upscale on very dense displays much more cheaply
+        // than decoding and shading a 4K/5K wallpaper continuously.
+        return (encodedWidth, encodedHeight);
+    }
+
+    internal static bool RequiresOptimizedCopy(VideoMetadata metadata, int width, int height)
+    {
+        var size = CoverSize(metadata, width, height);
+        return metadata.Fps > PlaybackFramesPerSecond + .01 ||
+               metadata.Width > size.Width || metadata.Height > size.Height;
     }
     private static string CacheDirectory => Path.Combine(Environment.GetEnvironmentVariable("XDG_CACHE_HOME")
         ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache"), "DaisyOS", "video-wallpapers");
@@ -109,7 +132,7 @@ public static class VideoWallpaperOptimization
         CancellationToken token = default)
     {
         var size = CoverSize(metadata, width, height);
-        if (metadata.Fps <= 60.01 && size.Width >= metadata.Width && size.Height >= metadata.Height)
+        if (!RequiresOptimizedCopy(metadata, width, height))
             return source;
         try
         {
@@ -118,7 +141,7 @@ public static class VideoWallpaperOptimization
                 await using var input = File.OpenRead(source);
                 return Convert.ToHexString(await SHA256.HashDataAsync(input, token));
             }, token);
-            var key = $"v3-{digest}-{size.Width}x{size.Height}-60-main10-crf16";
+            var key = $"v4-{digest}-{size.Width}x{size.Height}-{PlaybackFramesPerSecond}-main10-crf18";
             var target = Path.Combine(CacheDirectory, key + ".mp4");
             if (File.Exists(target))
             {
@@ -134,7 +157,7 @@ public static class VideoWallpaperOptimization
         bool force, CancellationToken token)
     {
         var size = CoverSize(metadata, width, height);
-        if (!force && metadata.Fps <= 60.01 && size.Width >= metadata.Width && size.Height >= metadata.Height) return source;
+        if (!force && !RequiresOptimizedCopy(metadata, width, height)) return source;
         // Sharing the task prevents desktop/lockscreen instances from racing
         // to generate the same derivative. Hashing is streamed off the UI thread.
         var digest = await Task.Run(async () =>
@@ -142,7 +165,7 @@ public static class VideoWallpaperOptimization
             await using var input = File.OpenRead(source);
             return Convert.ToHexString(await SHA256.HashDataAsync(input, token));
         }, token);
-        var key = $"v3-{digest}-{size.Width}x{size.Height}-60-main10-crf16";
+        var key = $"v4-{digest}-{size.Width}x{size.Height}-{PlaybackFramesPerSecond}-main10-crf18";
         var target = Path.Combine(CacheDirectory, key + ".mp4");
         if (File.Exists(target))
         {
@@ -206,10 +229,10 @@ public static class VideoWallpaperOptimization
             Publish(source, "Preparing a high-quality wallpaper copy…", 0, true);
             var info = new ProcessStartInfo("setpriv") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
             foreach (var arg in new[] { "--pdeathsig", "KILL", "nice", "-n", "19", "ionice", "-c", "3", "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
-                "-hwaccel", "auto",
+                "-readrate", "0.25", "-hwaccel", "auto",
                 "-threads", "2", "-noautorotate", "-i", source, "-map", "0:v:0", "-an", "-sn", "-dn", "-filter_threads", "2",
-                "-vf", $"{ColorFilter(metadata)}fps=fps=60:round=near,scale={size.Width}:{size.Height}:flags=bicubic,format=yuv420p10le{ColorFilter(metadata, trailing: true)}",
-                "-c:v", "libx265", "-preset", "faster", "-crf", "16", "-x265-params", EncoderParameters(metadata),
+                "-vf", $"{ColorFilter(metadata)}fps=fps={PlaybackFramesPerSecond}:round=near,scale={size.Width}:{size.Height}:flags=bicubic,format=yuv420p10le{ColorFilter(metadata, trailing: true)}",
+                "-c:v", "libx265", "-preset", "faster", "-crf", "18", "-x265-params", EncoderParameters(metadata),
                 "-tag:v", "hvc1", "-movflags", "+faststart", "-progress", "pipe:1", "-nostats" }) info.ArgumentList.Add(arg);
             foreach (var (name, value) in new[] { ("-color_primaries", metadata.Primaries), ("-color_trc", metadata.Transfer),
                 ("-colorspace", metadata.Matrix), ("-color_range", metadata.Range) })
@@ -247,7 +270,7 @@ public static class VideoWallpaperOptimization
             var error = await stderr;
             if (process.ExitCode != 0) throw new IOException(error[..Math.Min(error.Length, 1000)]);
             var verified = await VideoMetadata.ProbeAsync(temporary, token);
-            if (verified.Width != size.Width || verified.Height != size.Height || Math.Abs(verified.Fps - 60) > .1 ||
+            if (verified.Width != size.Width || verified.Height != size.Height || Math.Abs(verified.Fps - PlaybackFramesPerSecond) > .1 ||
                 verified.IsHdr != metadata.IsHdr || (metadata.Transfer != "" && verified.Transfer != metadata.Transfer) ||
                 (metadata.Primaries != "" && verified.Primaries != metadata.Primaries) ||
                 (metadata.Matrix != "" && verified.Matrix != metadata.Matrix) ||

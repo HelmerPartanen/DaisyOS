@@ -521,6 +521,14 @@
   <Thickness x:Key="CardPadding">20</Thickness>
   <Thickness x:Key="PanelPadding">20</Thickness>
   <Thickness x:Key="PanelPaddingCompact">16</Thickness>
+  <!-- Shared geometry for compact application dialogs. Dialog content should
+       consume these roles instead of recreating padding and action metrics. -->
+  <Thickness x:Key="DialogContentPadding">24</Thickness>
+  <x:Double x:Key="DialogWidthStandard">420</x:Double>
+  <x:Double x:Key="DialogSectionSpacing">20</x:Double>
+  <x:Double x:Key="DialogActionSpacing">8</x:Double>
+  <x:Double x:Key="DialogHeaderIconSize">48</x:Double>
+  <x:Double x:Key="DialogButtonMinWidth">96</x:Double>
 
   <x:Double x:Key="TypeSizeCaption">12</x:Double>
   <x:Double x:Key="TypeSizeBodySmall">13</x:Double>
@@ -574,7 +582,6 @@
   <x:Double x:Key="ButtonHeightLarge">42</x:Double>
   <x:Double x:Key="QuickSettingsControlHeight">44</x:Double>
   <x:Double x:Key="QuickSettingsPanelContentHeight">304</x:Double>
-  <x:Double x:Key="QuickSettingsConnectionListHeight">260</x:Double>
   <x:Double x:Key="ControlHeightComfortable">32</x:Double>
   <x:Double x:Key="InputHeightStandard">40</x:Double>
   <x:Double x:Key="SearchHeightStandard">40</x:Double>

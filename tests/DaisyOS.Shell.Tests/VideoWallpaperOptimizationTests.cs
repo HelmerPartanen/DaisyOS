@@ -32,7 +32,7 @@ public class VideoWallpaperOptimizationTests
             var cached = await VideoWallpaperOptimization.PrepareAsync(source, metadata, 128, 72, false, CancellationToken.None);
             Assert.NotEqual(source, cached);
             var optimized = await VideoMetadata.ProbeAsync(cached);
-            Assert.Equal(60, optimized.Fps);
+            Assert.Equal(VideoWallpaperOptimization.PlaybackFramesPerSecond, optimized.Fps);
             Assert.Equal(metadata.Transfer, optimized.Transfer);
             Assert.Equal(metadata.Primaries, optimized.Primaries);
             Assert.Equal(metadata.Matrix, optimized.Matrix);

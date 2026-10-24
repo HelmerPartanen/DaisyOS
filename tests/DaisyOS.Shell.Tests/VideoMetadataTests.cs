@@ -16,7 +16,8 @@ public class VideoMetadataTests
         Assert.False(metadata.IsHdr);
         Assert.Equal(240, metadata.Fps);
         Assert.Equal("smpte432", metadata.Primaries);
-        Assert.Equal((2560, 1440), VideoWallpaperOptimization.CoverSize(metadata, 2560, 1440));
+        Assert.Equal((1920, 1080), VideoWallpaperOptimization.CoverSize(metadata, 2560, 1440));
+        Assert.True(VideoWallpaperOptimization.RequiresOptimizedCopy(metadata, 1920, 1080));
     }
 
     [Theory]
@@ -49,5 +50,6 @@ public class VideoMetadataTests
         Assert.Equal((1920,1080), VideoWallpaperOptimization.CoverSize(source,3840,2160));
         Assert.Equal((178,100), VideoWallpaperOptimization.CoverSize(source,100,100));
         Assert.Equal((1920,1080), VideoWallpaperOptimization.CoverSize(source with { Rotation=90 },1920,1080));
+        Assert.False(VideoWallpaperOptimization.RequiresOptimizedCopy(source, 1920, 1080));
     }
 }

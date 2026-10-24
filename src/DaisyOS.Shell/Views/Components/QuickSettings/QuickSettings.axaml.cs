@@ -599,9 +599,15 @@ public partial class QuickSettings : UserControl
         if (page == QuickSettingsPage.BluetoothDevices) EnsureQuickBluetoothDiscovery();
         else StopQuickBluetoothDiscovery();
         var mainPage = this.FindControl<Control>("QuickSettingsMainPage");
-        var outputPage = this.FindControl<StackPanel>("OutputDevicesPage");
-        var wifiPage = this.FindControl<StackPanel>("WifiNetworksPage");
-        var bluetoothPage = this.FindControl<StackPanel>("BluetoothDevicesPage");
+        var outputPage = this.FindControl<Grid>("OutputDevicesPage");
+        var wifiPage = this.FindControl<Grid>("WifiNetworksPage");
+        var bluetoothPage = this.FindControl<Grid>("BluetoothDevicesPage");
+        if (this.FindControl<Grid>("MotionContent") is { } motionContent)
+        {
+            motionContent.Height = page == QuickSettingsPage.Main
+                ? double.NaN
+                : (double)this.FindResource("QuickSettingsPanelContentHeight")!;
+        }
 
         if (mainPage is not null) mainPage.IsVisible = page == QuickSettingsPage.Main;
         if (outputPage is not null) outputPage.IsVisible = page == QuickSettingsPage.OutputDevices;

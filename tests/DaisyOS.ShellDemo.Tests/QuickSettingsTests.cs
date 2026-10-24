@@ -69,6 +69,32 @@ public sealed class QuickSettingsTests
         Assert.True(tile.UseWifiSignalIcon);
     }
 
+    [AvaloniaFact]
+    public void MainPageSizesToItsControlsAndConnectionPagesKeepAStableViewport()
+    {
+        var panel = new DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings();
+        var window = new Window { Width = 340, SizeToContent = SizeToContent.Height, Content = panel };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            var motion = panel.FindControl<Grid>("MotionContent")!;
+            var mainHeight = motion.Bounds.Height;
+            Assert.InRange(mainHeight, 150, 240);
+
+            var setPage = panel.GetType().GetMethod("SetQuickSettingsPage", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var pageType = setPage.GetParameters()[0].ParameterType;
+            setPage.Invoke(panel, [Enum.Parse(pageType, "WifiNetworks")]);
+            window.UpdateLayout();
+            Assert.Equal(304, motion.Bounds.Height);
+
+            setPage.Invoke(panel, [Enum.Parse(pageType, "BluetoothDevices")]);
+            window.UpdateLayout();
+            Assert.Equal(304, motion.Bounds.Height);
+        }
+        finally { window.Close(); }
+    }
+
     [AvaloniaTheory]
     [InlineData(20, 0.3, 0.3, 1.0)]
     [InlineData(50, 0.3, 1.0, 1.0)]
@@ -105,7 +131,7 @@ public sealed class QuickSettingsTests
         var panel = new DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings();
         var main = panel.FindControl<StackPanel>("QuickSettingsMainPage")!;
         main.IsVisible = false;
-        panel.FindControl<StackPanel>("OutputDevicesPage")!.IsVisible = true;
+        panel.FindControl<Grid>("OutputDevicesPage")!.IsVisible = true;
         var host = panel.FindControl<StackPanel>("OutputDevicesHost")!;
         host.Children.Clear();
         var create = panel.GetType().GetMethod("CreateOutputDeviceButton", BindingFlags.NonPublic | BindingFlags.Instance)!;
