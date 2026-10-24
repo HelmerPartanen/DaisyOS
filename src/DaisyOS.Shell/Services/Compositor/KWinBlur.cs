@@ -302,16 +302,6 @@ internal sealed class KWinBlur : IDisposable
             return;
         }
 
-        // KWin blur regions are integer scanlines and cannot represent the
-        // antialias coverage of Avalonia's rounded edge. Keep the binary mask
-        // one logical pixel beneath the painted frame so its staircase is
-        // covered by the smooth translucent border instead of leaking outside.
-        const double edgeInset = 1;
-        origin = new Point(origin.X + edgeInset, origin.Y + edgeInset);
-        size = new Size(size.Width - edgeInset * 2, size.Height - edgeInset * 2);
-        if (size.Width <= 0 || size.Height <= 0) return;
-        radius = Math.Max(0, radius - (int)edgeInset);
-
         var left = (int)Math.Floor(origin.X);
         var top = (int)Math.Floor(origin.Y);
         var width = (int)Math.Ceiling(origin.X + size.Width) - left;
@@ -325,9 +315,9 @@ internal sealed class KWinBlur : IDisposable
         for (var row = 0; row < radius; row++)
         {
             var vertical = radius - row - 0.5;
-            // Include partially covered edge pixels. Rounding inward exposes
-            // KWin's integer scanlines through Avalonia's antialiased glass edge.
-            var inset = (int)Math.Floor(radius - Math.Sqrt(radius * radius - vertical * vertical));
+            // Round inward to corner arc so KWin scanlines strictly stay inside
+            // the antialiased arc without leaking outside.
+            var inset = (int)Math.Ceiling(radius - Math.Sqrt(radius * radius - vertical * vertical));
             target.Add(new(left + inset, top + row, width - inset * 2, 1));
             target.Add(new(left + inset, top + height - row - 1, width - inset * 2, 1));
         }
