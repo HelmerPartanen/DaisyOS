@@ -29,7 +29,6 @@ public static class VideoWallpaperOptimization
     private static long _nextDemand;
     private static Process? _converter;
     private static string? _converterSource;
-    private static volatile bool _converterPaused;
 
     internal sealed class PlaybackDemand(string source) : IDisposable
     {
@@ -50,18 +49,10 @@ public static class VideoWallpaperOptimization
     }
     private static void ApplyConversionVisibility()
     {
-        if (!OperatingSystem.IsLinux()) return;
-        lock (ConverterSync)
-        {
-            if (_converter is null || _converterSource is null) return;
-            var hidden = Demands.TryGetValue(_converterSource, out var demands) && !demands.Values.Any(visible => visible);
-            if (hidden == _converterPaused) return;
-            try
-            {
-                if (!_converter.HasExited && Signal(_converter.Id, hidden ? 19 : 18) == 0) _converterPaused = hidden;
-            }
-            catch (InvalidOperationException) { }
-        }
+        // One-time video wallpaper preparation runs in the background at nice -n 19 and ionice -c 3
+        // (idle priority) so it automatically yields to foreground tasks. We do not pause it with SIGSTOP
+        // when windows cover the desktop, so that preparation finishes promptly even if Settings or other
+        // windows are open.
     }
     [DllImport("libc", EntryPoint = "kill", SetLastError = true)]
     private static extern int Signal(int pid, int signal);
@@ -227,10 +218,11 @@ public static class VideoWallpaperOptimization
             if (new DriveInfo(Path.GetPathRoot(CacheDirectory)!).AvailableFreeSpace < FreeSpaceReserve)
                 throw new IOException("Not enough free space for an optimized wallpaper.");
             Publish(source, "Preparing a high-quality wallpaper copy…", 0, true);
+            var workerThreads = Math.Clamp(Environment.ProcessorCount / 2, 2, 4);
             var info = new ProcessStartInfo("setpriv") { UseShellExecute = false, RedirectStandardOutput = true, RedirectStandardError = true };
             foreach (var arg in new[] { "--pdeathsig", "KILL", "nice", "-n", "19", "ionice", "-c", "3", "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
-                "-readrate", "0.25", "-hwaccel", "auto",
-                "-threads", "2", "-noautorotate", "-i", source, "-map", "0:v:0", "-an", "-sn", "-dn", "-filter_threads", "2",
+                "-hwaccel", "auto",
+                "-threads", workerThreads.ToString(), "-noautorotate", "-i", source, "-map", "0:v:0", "-an", "-sn", "-dn", "-filter_threads", "2",
                 "-vf", $"{ColorFilter(metadata)}fps=fps={PlaybackFramesPerSecond}:round=near,scale={size.Width}:{size.Height}:flags=bicubic,format=yuv420p10le{ColorFilter(metadata, trailing: true)}",
                 "-c:v", "libx265", "-preset", "faster", "-crf", "18", "-x265-params", EncoderParameters(metadata),
                 "-tag:v", "hvc1", "-movflags", "+faststart", "-progress", "pipe:1", "-nostats" }) info.ArgumentList.Add(arg);
@@ -239,10 +231,8 @@ public static class VideoWallpaperOptimization
                 if (value is not ("" or "unknown" or "unspecified")) { info.ArgumentList.Add(name); info.ArgumentList.Add(value); }
             info.ArgumentList.Add(temporary);
             using var process = Process.Start(info) ?? throw new IOException("Cannot prepare wallpaper.");
-            lock (ConverterSync) { _converter = process; _converterSource = source; _converterPaused = false; }
+            lock (ConverterSync) { _converter = process; _converterSource = source; }
             ApplyConversionVisibility();
-            // Decoder, filters and encoder share two CPUs, rather than each
-            // independently creating two busy workers.
             if (OperatingSystem.IsLinux())
             {
                 try
@@ -250,7 +240,7 @@ public static class VideoWallpaperOptimization
                     using var current = Process.GetCurrentProcess();
                     var allowed = (ulong)current.ProcessorAffinity.ToInt64();
                     ulong selected = 0;
-                    for (var bit = 0; bit < 64 && global::System.Numerics.BitOperations.PopCount(selected) < 2; bit++)
+                    for (var bit = 0; bit < 64 && global::System.Numerics.BitOperations.PopCount(selected) < workerThreads; bit++)
                         if ((allowed & (1UL << bit)) != 0) selected |= 1UL << bit;
                     if (selected != 0) process.ProcessorAffinity = (nint)selected;
                 }
@@ -261,7 +251,7 @@ public static class VideoWallpaperOptimization
             while (await process.StandardOutput.ReadLineAsync(token) is { } line)
             {
                 if (line.StartsWith("out_time_us=", StringComparison.Ordinal) && long.TryParse(line.AsSpan(12), out var us))
-                    Publish(source, _converterPaused ? "Preparation paused while wallpaper is hidden" : "Preparing a high-quality wallpaper copy…", metadata.Duration > 0 ? us / (metadata.Duration * 1_000_000) : 0, true);
+                    Publish(source, "Preparing a high-quality wallpaper copy…", metadata.Duration > 0 ? us / (metadata.Duration * 1_000_000) : 0, true);
                 if (File.Exists(temporary) && (new FileInfo(temporary).Length > MaximumCacheBytes ||
                     new DriveInfo(Path.GetPathRoot(CacheDirectory)!).AvailableFreeSpace < FreeSpaceReserve))
                 { process.Kill(true); throw new IOException("Wallpaper cache storage limit reached."); }
@@ -295,7 +285,7 @@ public static class VideoWallpaperOptimization
         }
         finally
         {
-            lock (ConverterSync) { _converter = null; _converterSource = null; _converterPaused = false; }
+            lock (ConverterSync) { _converter = null; _converterSource = null; }
             if (Demands.TryGetValue(source, out var demands) && demands.IsEmpty) Demands.TryRemove(source, out _);
             try { if (File.Exists(temporary)) File.Delete(temporary); }
             finally { ConversionGate.Release(); }
@@ -315,7 +305,7 @@ public static class VideoWallpaperOptimization
 
     private static string EncoderParameters(VideoMetadata metadata)
     {
-        var options = "pools=2:frame-threads=1:log-level=error";
+        var options = "log-level=error";
         if (metadata.Transfer == "smpte2084") options += ":hdr10=1:repeat-headers=1";
         if (metadata.MasteringPrimaries[0] > 0)
         {

@@ -501,13 +501,6 @@ public partial class WallpaperLayer : UserControl
                         return;
                     }
 
-                    if (VideoWallpaperOptimization.RequiresOptimizedCopy(metadata, targetWidth, targetHeight))
-                    {
-                        await PresentPosterWhilePreparingVideoAsync(resolvedPath, wallpaperUri, metadata,
-                            requestVersion, targetWidth, targetHeight);
-                        return;
-                    }
-
                     await LoadNativeVideoAsync(resolvedPath, wallpaperUri, metadata, requestVersion);
                     return;
                 }
