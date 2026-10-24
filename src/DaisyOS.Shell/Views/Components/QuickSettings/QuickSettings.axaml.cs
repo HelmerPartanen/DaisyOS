@@ -47,6 +47,11 @@ public partial class QuickSettings : UserControl
     private CancellationTokenSource? _quickBluetoothDiscoveryLifetime;
     private Task? _automaticWifiRefresh;
     private Task? _automaticBluetoothRefresh;
+    private readonly Dictionary<string, WirelessNetworkInfo> _wifiNetworkCache = new(StringComparer.Ordinal);
+    private readonly Dictionary<string, BluetoothDevice> _bluetoothDeviceCache = new(StringComparer.OrdinalIgnoreCase);
+    private WirelessNetworkStatus? _lastWifiStatus;
+    private BluetoothStatus? _lastBluetoothStatus;
+    private Task? _wifiScanRefresh;
     private bool _bluetoothAvailable = true;
     private string _defaultAudioName = "";
     private bool HasConnectedAirPods => (Application.Current as App)?.AirPods?.Status.IsConnected == true;
@@ -102,6 +107,15 @@ public partial class QuickSettings : UserControl
         ApplyLocalSettings();
         SetQuickSettingsPage(QuickSettingsPage.Main);
         RefreshStatus();
+        WarmConnectionLists();
+    }
+
+    private void WarmConnectionLists()
+    {
+        if (_automaticWifiRefresh is not { IsCompleted: false })
+            _automaticWifiRefresh = LoadWifiNetworksAsync();
+        if (_automaticBluetoothRefresh is not { IsCompleted: false })
+            _automaticBluetoothRefresh = LoadBluetoothDevicesAsync();
     }
 
     private void ApplyLocalSettings()
@@ -457,6 +471,8 @@ public partial class QuickSettings : UserControl
     {
         SetQuickSettingsPage(QuickSettingsPage.WifiNetworks);
         await LoadWifiNetworksAsync();
+        if (_wifiScanRefresh is not { IsCompleted: false })
+            _wifiScanRefresh = ScanAndRefreshWifiAsync();
     }
 
     private void OnWifiNetworksBackClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
@@ -591,6 +607,12 @@ public partial class QuickSettings : UserControl
         if (outputPage is not null) outputPage.IsVisible = page == QuickSettingsPage.OutputDevices;
         if (wifiPage is not null) wifiPage.IsVisible = page == QuickSettingsPage.WifiNetworks;
         if (bluetoothPage is not null) bluetoothPage.IsVisible = page == QuickSettingsPage.BluetoothDevices;
+        if (page == QuickSettingsPage.WifiNetworks && wifiPage is not null && _lastWifiStatus is not null &&
+            this.FindControl<StackPanel>("WifiNetworksHost") is { } wifiHost)
+            RenderWifiNetworks(wifiHost, _lastWifiStatus);
+        if (page == QuickSettingsPage.BluetoothDevices && bluetoothPage is not null && _lastBluetoothStatus is not null &&
+            this.FindControl<StackPanel>("BluetoothDevicesHost") is { } bluetoothHost)
+            RenderBluetoothDevices(bluetoothHost, _lastBluetoothStatus);
         var active = page switch
         {
             QuickSettingsPage.Main => mainPage,
@@ -636,8 +658,8 @@ public partial class QuickSettings : UserControl
         var host = this.FindControl<StackPanel>("WifiNetworksHost");
         if (host is null) return;
 
-        host.Children.Clear();
-        host.Children.Add(CreateStatusText("Loading networks…"));
+        if (_lastWifiStatus is null && host.Children.Count == 0)
+            host.Children.Add(CreateStatusText("Loading networks…"));
 
         WirelessNetworkStatus status;
         try
@@ -651,6 +673,37 @@ public partial class QuickSettings : UserControl
             status = new WirelessNetworkStatus(false, Array.Empty<WirelessNetworkInfo>(), "Wi-Fi networks could not be loaded.");
         }
 
+        status = StabilizeWifiStatus(status);
+        var changed = !HasSameWifiRows(_lastWifiStatus, status);
+        _lastWifiStatus = status;
+        if (changed && _currentPage == QuickSettingsPage.WifiNetworks)
+            RenderWifiNetworks(host, status);
+    }
+
+    private WirelessNetworkStatus StabilizeWifiStatus(WirelessNetworkStatus status)
+    {
+        if (status.IsAvailable)
+        {
+            foreach (var network in status.Networks)
+                _wifiNetworkCache[network.Ssid] = network;
+        }
+
+        if (_wifiNetworkCache.Count == 0) return status;
+        return status with
+        {
+            IsAvailable = true,
+            Networks = _wifiNetworkCache.Values
+                .OrderByDescending(network => network.IsActive)
+                .ThenByDescending(network => network.IsKnown)
+                .ThenByDescending(network => network.IsAvailable)
+                .ThenByDescending(network => network.SignalPercent)
+                .ThenBy(network => network.Ssid, StringComparer.CurrentCultureIgnoreCase)
+                .ToArray()
+        };
+    }
+
+    private void RenderWifiNetworks(StackPanel host, WirelessNetworkStatus status)
+    {
         host.Children.Clear();
         if (!status.IsAvailable || status.Networks.Count == 0)
         {
@@ -670,6 +723,32 @@ public partial class QuickSettings : UserControl
         host.Children.Add(CreateConnectionSectionHeader("Other networks", "Searching automatically"));
         if (other.Length == 0) host.Children.Add(CreateStatusText("Searching for nearby networks…"));
         foreach (var network in other) host.Children.Add(CreateWifiNetworkButton(network));
+    }
+
+    private static bool HasSameWifiRows(WirelessNetworkStatus? previous, WirelessNetworkStatus current)
+    {
+        if (previous is null || previous.IsAvailable != current.IsAvailable || previous.Networks.Count != current.Networks.Count)
+            return false;
+        return previous.Networks.Zip(current.Networks).All(pair =>
+            pair.First.Ssid == pair.Second.Ssid &&
+            pair.First.Security == pair.Second.Security &&
+            pair.First.IsActive == pair.Second.IsActive &&
+            pair.First.IsKnown == pair.Second.IsKnown &&
+            pair.First.IsAvailable == pair.Second.IsAvailable);
+    }
+
+    private async Task ScanAndRefreshWifiAsync()
+    {
+        try
+        {
+            await _wirelessNetworkService.RequestScanAsync();
+            await LoadWifiNetworksAsync();
+        }
+        catch
+        {
+            // The current cached list remains useful if an active scan is not
+            // supported or NetworkManager is temporarily busy.
+        }
     }
 
     private Button CreateWifiNetworkButton(WirelessNetworkInfo network)
@@ -844,7 +923,7 @@ public partial class QuickSettings : UserControl
                     _wirelessNetworkService,
                     network.Ssid,
                     network.Security,
-                    null);
+                    signalPercent: network.SignalPercent);
 
                 var parentWindow = VisualRoot as Window ?? TopLevel.GetTopLevel(this) as Window;
                 if (parentWindow is not null)
@@ -893,8 +972,8 @@ public partial class QuickSettings : UserControl
         var host = this.FindControl<StackPanel>("BluetoothDevicesHost");
         if (host is null) return;
 
-        host.Children.Clear();
-        host.Children.Add(CreateStatusText("Loading devices…"));
+        if (_lastBluetoothStatus is null && host.Children.Count == 0)
+            host.Children.Add(CreateStatusText("Loading devices…"));
 
         BluetoothStatus status;
         try
@@ -908,6 +987,31 @@ public partial class QuickSettings : UserControl
             status = new BluetoothStatus(false, false, false, Array.Empty<BluetoothDevice>(), "Bluetooth devices could not be loaded.");
         }
 
+        status = StabilizeBluetoothStatus(status);
+        var changed = !HasSameBluetoothRows(_lastBluetoothStatus, status);
+        _lastBluetoothStatus = status;
+        if (changed && _currentPage == QuickSettingsPage.BluetoothDevices)
+            RenderBluetoothDevices(host, status);
+    }
+
+    private BluetoothStatus StabilizeBluetoothStatus(BluetoothStatus status)
+    {
+        if (status.IsAvailable)
+        {
+            foreach (var device in status.Devices.Where(device => !LinuxBluetoothService.IsAnonymousName(device.Name)))
+                _bluetoothDeviceCache[device.Address] = device;
+        }
+
+        if (_bluetoothDeviceCache.Count == 0) return status;
+        return status with
+        {
+            IsAvailable = true,
+            Devices = _bluetoothDeviceCache.Values.ToArray()
+        };
+    }
+
+    private void RenderBluetoothDevices(StackPanel host, BluetoothStatus status)
+    {
         host.Children.Clear();
         if (!status.IsAvailable)
         {
@@ -934,6 +1038,14 @@ public partial class QuickSettings : UserControl
             if (nearby.Length == 0) host.Children.Add(CreateStatusText("Searching for nearby devices in pairing mode…"));
             foreach (var device in nearby) host.Children.Add(CreateBluetoothDeviceButton(device));
         }
+    }
+
+    private static bool HasSameBluetoothRows(BluetoothStatus? previous, BluetoothStatus current)
+    {
+        if (previous is null || previous.IsAvailable != current.IsAvailable || previous.IsEnabled != current.IsEnabled ||
+            previous.Devices.Count != current.Devices.Count)
+            return false;
+        return previous.Devices.Zip(current.Devices).All(pair => pair.First == pair.Second);
     }
 
     private Button CreateBluetoothDeviceButton(BluetoothDevice device)

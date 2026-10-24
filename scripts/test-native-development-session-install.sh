@@ -56,6 +56,10 @@ grep -Fq -- '--add-port=53317/udp' "$installer"
 grep -Fq 'prepare-screen-sharing.sh' "$session_launcher"
 grep -Fxq 'org.freedesktop.impl.portal.FileChooser=daisyos' \
   "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+grep -Fxq 'Enabled=false' "$stage_root/etc/xdg/kwalletrc"
+grep -Fxq 'apiEnabled=false' "$stage_root/etc/xdg/kwalletrc"
+! grep -Fq 'org.freedesktop.impl.portal.Secret=' \
+  "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
 
 if command -v desktop-file-validate >/dev/null 2>&1; then
   desktop-file-validate "$installed_entry"

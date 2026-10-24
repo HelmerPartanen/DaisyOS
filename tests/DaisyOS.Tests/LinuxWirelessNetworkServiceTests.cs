@@ -56,7 +56,7 @@ public sealed class LinuxWirelessNetworkServiceTests
         Assert.Equal(["-t", "-f", "DEVICE,TYPE", "device", "status"], runner.Calls[0].Arguments);
         Assert.Equal(["-t", "-f", "NAME,TYPE", "connection", "show"], runner.Calls[1].Arguments);
         Assert.Equal(
-            ["-t", "-f", "IN-USE,SSID,SECURITY,SIGNAL", "device", "wifi", "list", "--rescan", "yes"],
+            ["-t", "-f", "IN-USE,SSID,SECURITY,SIGNAL", "device", "wifi", "list", "--rescan", "no"],
             runner.Calls[2].Arguments);
     }
 
@@ -85,6 +85,17 @@ public sealed class LinuxWirelessNetworkServiceTests
         Assert.Empty(status.Networks);
         Assert.Equal("Wi-Fi isn’t available on this device.", status.Detail);
         Assert.Single(runner.Calls);
+    }
+
+    [Fact]
+    public async Task RequestScanAsyncRefreshesNetworkManagerWithoutBlockingCachedReads()
+    {
+        var runner = new ScriptedCommandRunner(Succeeded());
+        var service = new LinuxWirelessNetworkService(runner);
+
+        await service.RequestScanAsync();
+
+        Assert.Equal(["device", "wifi", "rescan"], Assert.Single(runner.Calls).Arguments);
     }
 
     [Fact]

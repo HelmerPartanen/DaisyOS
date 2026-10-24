@@ -79,7 +79,8 @@
         CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
         ClipToBounds="True">
 
-      <Grid x:Name="MotionContent">
+      <Grid x:Name="MotionContent"
+            Height="{DynamicResource QuickSettingsPanelContentHeight}">
 
         <!-- ================================================= -->
         <!-- MAIN QUICK SETTINGS PAGE                         -->
@@ -286,7 +287,7 @@
               BackClicked="OnOutputDevicesBackClicked"/>
 
           <Button Content="{DynamicResource Loc_62B2E1B18694}" Classes="ShellButton" Click="OnBluetoothDevicesButtonClicked" />
-          <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+          <ScrollViewer Height="216" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="OutputDevicesHost"
                 Spacing="6">
@@ -315,7 +316,7 @@
               Title="{DynamicResource Loc_CB4EC95A3F55}"
               BackClicked="OnWifiNetworksBackClicked"/>
 
-          <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+          <ScrollViewer Height="{DynamicResource QuickSettingsConnectionListHeight}" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="WifiNetworksHost"
                 Spacing="6">
@@ -344,7 +345,7 @@
               Title="{DynamicResource Loc_62B2E1B18694}"
               BackClicked="OnBluetoothDevicesBackClicked"/>
 
-          <ScrollViewer MaxHeight="280" VerticalScrollBarVisibility="Auto">
+          <ScrollViewer Height="{DynamicResource QuickSettingsConnectionListHeight}" VerticalScrollBarVisibility="Auto">
             <StackPanel
                 x:Name="BluetoothDevicesHost"
                 Spacing="6">

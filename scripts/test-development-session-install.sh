@@ -52,6 +52,8 @@ PATH="$temp_dir/bin:$PATH" \
 
 [[ -e "$temp_dir/capture-prepared" ]]
 grep -Fxq 'org.freedesktop.impl.portal.FileChooser=daisyos' "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+grep -Fxq 'Enabled=false' "$stage_root/etc/xdg/kwalletrc"
+! grep -Fq 'org.freedesktop.impl.portal.Secret=' "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
 grep -Fq "run --project $fake_checkout/src/DaisyOS.Shell -- --real-services --windowed-prototype" "$temp_dir/dotnet-arguments"
 
 echo "Development-session installer tests passed."

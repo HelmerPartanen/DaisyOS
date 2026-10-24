@@ -110,7 +110,7 @@ install_file_atomically() {
   mv -f -- "$staged" "$target"
 }
 
-install -d -m 0755 "$bin_dir" "$session_dir" "$config_dir"
+install -d -m 0755 "$bin_dir" "$session_dir" "$config_dir" "$prefix/etc/xdg"
 "$repo_root/scripts/stage-gaming-integration.sh" --root "$prefix"
 install_file_atomically 0755 "$repo_root/scripts/daisyos-native-development-session" "$session_target"
 install_file_atomically 0755 "$repo_root/scripts/daisyos-native-development" "$control_target"
@@ -118,6 +118,7 @@ install_file_atomically 0644 "$repo_root/packaging/wayland-sessions/daisyos-nati
 install -d -m 0755 "$prefix/usr/share/xdg-desktop-portal"
 install_file_atomically 0644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
   "$prefix/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+install_file_atomically 0644 "$repo_root/packaging/kde/kwalletrc" "$prefix/etc/xdg/kwalletrc"
 "$repo_root/scripts/stage-desktop-services.sh" --root "$prefix" \
   --capture-helper "$source_root/src/DaisyOS.Shell/bin/${DAISYOS_SHELL_CONFIGURATION:-Release}/net10.0/daisyos-portal-capture"
 

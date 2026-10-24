@@ -1,0 +1,11 @@
+[Wallet]
+Enabled=false
+First Use=false
+Launch Manager=false
+Prompt on Open=false
+
+[KSecretD]
+Enabled=false
+
+[org.freedesktop.secrets]
+apiEnabled=false

@@ -573,6 +573,8 @@
   <x:Double x:Key="ButtonHeightMedium">36</x:Double>
   <x:Double x:Key="ButtonHeightLarge">42</x:Double>
   <x:Double x:Key="QuickSettingsControlHeight">44</x:Double>
+  <x:Double x:Key="QuickSettingsPanelContentHeight">304</x:Double>
+  <x:Double x:Key="QuickSettingsConnectionListHeight">260</x:Double>
   <x:Double x:Key="ControlHeightComfortable">32</x:Double>
   <x:Double x:Key="InputHeightStandard">40</x:Double>
   <x:Double x:Key="SearchHeightStandard">40</x:Double>

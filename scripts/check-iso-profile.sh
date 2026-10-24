@@ -178,6 +178,12 @@ if ! grep -Fq 'exec /usr/local/bin/daisyos-start-session' \
   exit 1
 fi
 
+if [[ ! -f "$profile/airootfs/etc/skel/.config/kwalletrc" ]] ||
+   ! grep -Fxq 'Enabled=false' "$profile/airootfs/etc/skel/.config/kwalletrc"; then
+  echo "New live users must inherit a disabled KWallet configuration."
+  exit 1
+fi
+
 if ! grep -Fq 'exec /usr/local/bin/daisyos-xorg-session' \
     "$profile/airootfs/etc/skel/.xinitrc"; then
   echo "The live X session must retain the compositor-managed compatibility path."

@@ -420,7 +420,10 @@ namespace DaisyOS.Shell.Views
             // The launcher is an application-like centered card. Its full-output
             // host keeps that center independent of the bottom panel geometry.
             var overlay = new Grid();
-            LauncherContent.Margin = default;
+            // The native launcher surface stops above the taskbar so pointer
+            // input can reach it. Offset the centered card by half that reserved
+            // strip to preserve its full-output visual position.
+            LauncherContent.Margin = new Thickness(0, ShellSurfacePlan.PrimaryPanelExclusiveZone, 0, 0);
             LauncherContent.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
             LauncherContent.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
             overlay.Children.Add(LauncherContent);

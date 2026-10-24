@@ -63,6 +63,7 @@ install -m 0644 "$repo_root/packaging/wayland-sessions/daisyos-development.deskt
 install -d -m 0755 "$prefix/usr/share/xdg-desktop-portal"
 install -m 0644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
   "$prefix/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+install -D -m 0644 "$repo_root/packaging/kde/kwalletrc" "$prefix/etc/xdg/kwalletrc"
 "$repo_root/scripts/stage-desktop-services.sh" --root "$prefix" \
   --capture-helper "$source_root/src/DaisyOS.Shell/bin/Debug/net10.0/daisyos-portal-capture"
 

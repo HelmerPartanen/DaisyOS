@@ -230,6 +230,19 @@ start_user_services() {
   fi
 }
 
+disable_kde_wallet() {
+  # DaisyOS does not use KDE's credential UI. Disable both the legacy KWallet
+  # API and its Secret Service compatibility daemon before anything in the
+  # session can activate them over D-Bus.
+  if command -v kwriteconfig6 >/dev/null 2>&1; then
+    kwriteconfig6 --file kwalletrc --group Wallet --key Enabled false
+    kwriteconfig6 --file kwalletrc --group Wallet --key 'First Use' false
+    kwriteconfig6 --file kwalletrc --group KSecretD --key Enabled false
+    kwriteconfig6 --file kwalletrc --group org.freedesktop.secrets --key apiEnabled false
+  fi
+  systemctl --user --no-block stop kwalletd6.service ksecretd.service plasma-kwallet-pam.service >/dev/null 2>&1 || true
+}
+
 configure_kwin_for_daisyos() {
   if ! command -v kwriteconfig6 > /dev/null 2>&1; then
     log_message "kwriteconfig6 is unavailable; KWin's built-in overview shortcuts could not be disabled."
@@ -666,6 +679,7 @@ start_compositor_and_shell() {
   if ! "$source_root/scripts/install-window-menus.sh" >> "$session_log" 2>&1; then
     log_message "DaisyOS native window-menu installation failed."
   fi
+  disable_kde_wallet
   configure_kwin_for_daisyos
   refresh_desktop_service_cache
   log_message "Starting KWin Wayland for DaisyOS Native Development on socket $socket_name."

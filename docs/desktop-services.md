@@ -56,9 +56,10 @@ before consent, and cancels dialogs without granting permissions. It does not
 enter an account password, print a physical page, open a USB device, or enable
 input capture. Those successful operations need interactive acceptance too.
 
-The existing Secret backend remains `kwallet` to preserve application encryption
-keys; this change does not migrate existing wallets or replace wallet-unlock UI.
-Do not claim the entire OS is free of all KDE UI on this basis alone.
+The Secret portal is deliberately unavailable until DaisyOS has a native
+credential provider. The native session disables KWallet and KSecretD so
+applications cannot surface KDE wallet creation or unlock UI. Existing wallet
+data is left on disk but is not opened, migrated, or exposed by DaisyOS.
 
 Known protocol limits: remote control currently supports EIS clients, not legacy
 NotifyPointer/NotifyKeyboard injection; Clipboard and Email backend interfaces
@@ -70,8 +71,8 @@ requests cannot independently change only the lock screen. Input-capture logical
 geometry on fractional-scale outputs needs physical-display verification.
 
 These are explicit remaining compatibility work, not reasons to route an
-unsupported interaction to a KDE dialog. Supported desktop portal interfaces route explicitly to DaisyOS and implicit
-fallback is disabled; only existing application secret storage has another provider.
+unsupported interaction to a KDE dialog. Supported desktop portal interfaces
+route explicitly to DaisyOS and implicit fallback is disabled.
 
 ## Current validation (2026-10-16)
 

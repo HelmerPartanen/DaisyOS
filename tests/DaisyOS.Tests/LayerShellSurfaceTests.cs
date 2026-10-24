@@ -81,7 +81,7 @@ public sealed class LayerShellSurfaceTests
         var launcher = Assert.Single(plan, surface => surface.Namespace == "daisyos.overlay.launcher");
         var system = Assert.Single(plan, surface => surface.Namespace == "daisyos.overlay.system");
         Assert.Equal(LayerShellSurfaceRole.Overlay, launcher.Role);
-        Assert.Equal(LayerShellSurfaceOptions.IgnoreOtherExclusiveZones, launcher.ExclusiveZone);
+        Assert.Equal(0, launcher.ExclusiveZone);
         Assert.Equal(LayerShellSurfaceRole.Overlay, system.Role);
     }
 

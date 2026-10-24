@@ -16,9 +16,12 @@ install -Dm755 "$repo_root/scripts/daisyos-desktop-services" "$HOME/.local/bin/d
 install -Dm644 "$staging/usr/share/xdg-desktop-portal/portals/daisyos.portal" "$data_dir/xdg-desktop-portal/portals/daisyos.portal"
 install -Dm644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" "$config_dir/xdg-desktop-portal/daisyos-portals.conf"
 install -Dm644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" "$data_dir/xdg-desktop-portal/portals/daisyos-portals.conf"
-# Retain installed non-UI providers (notably existing application secrets).
+install -Dm644 "$repo_root/packaging/kde/kwalletrc" "$config_dir/kwalletrc"
+# Retain installed non-UI providers, except Secret providers: DaisyOS does not
+# expose a credential service until it has a native implementation.
 for portal in /usr/share/xdg-desktop-portal/portals/*.portal; do
   [[ "$(basename "$portal")" == daisyos.portal ]] && continue
+  grep -Fq 'org.freedesktop.impl.portal.Secret' "$portal" && continue
   ln -sfn "$portal" "$data_dir/xdg-desktop-portal/portals/$(basename "$portal")"
 done
 for name in org.daisyos.PortalCapture org.daisyos.screenshot-helper; do

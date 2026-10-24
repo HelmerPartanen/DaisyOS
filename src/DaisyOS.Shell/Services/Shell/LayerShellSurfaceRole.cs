@@ -104,10 +104,12 @@ public sealed record LayerShellSurfaceOptions(
         LayerShellKeyboardInteractivity.OnDemand,
         outputName);
 
-    // The launcher host already reserves the bottom chrome plus its 3px gap.
-    // Use full-output geometry so KWin does not apply the panel zone a second time.
+    // Keep the launcher inside the work area reserved above the bottom panel.
+    // Besides preventing visual overlap, this leaves the panel's Wayland input
+    // region exposed so taskbar hover, previews, and buttons remain interactive
+    // while the launcher is open.
     public static LayerShellSurfaceOptions LauncherOverlay(string? outputName = null) =>
-        Overlay("daisyos.overlay.launcher", outputName) with { ExclusiveZone = IgnoreOtherExclusiveZones };
+        Overlay("daisyos.overlay.launcher", outputName);
 
     public static LayerShellSurfaceOptions Overlay(string surfaceNamespace, string? outputName = null) => new(
         LayerShellSurfaceRole.Overlay,

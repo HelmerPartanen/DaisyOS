@@ -27,7 +27,8 @@ public partial class WifiPasswordDialog : Window
         IWirelessNetworkService wirelessService,
         string ssid,
         string securityType,
-        Action<string>? onDemoConnect = null)
+        Action<string>? onDemoConnect = null,
+        int signalPercent = 100)
     {
         InitializeComponent();
         _wirelessService = wirelessService;
@@ -36,6 +37,7 @@ public partial class WifiPasswordDialog : Window
 
         SsidText.Text = ssid;
         SecurityText.Text = string.IsNullOrWhiteSpace(securityType) ? Loc.Get("Secured Network") : securityType;
+        WifiIcon.SignalPercent = Math.Clamp(signalPercent, 0, 100);
 
         ShowPasswordCheckBox.IsCheckedChanged += (_, _) =>
         {
@@ -43,6 +45,14 @@ public partial class WifiPasswordDialog : Window
         };
 
         Opened += (_, _) => PasswordBox.Focus();
+        Deactivated += (_, _) =>
+        {
+            if (!_closed)
+            {
+                WasConnected = false;
+                Close(false);
+            }
+        };
     }
 
     private void OnCancelClicked(object? sender, RoutedEventArgs e)

@@ -6,6 +6,8 @@ public interface IWirelessNetworkService
 {
     Task<WirelessNetworkStatus> GetNetworksAsync(CancellationToken cancellationToken = default);
 
+    Task RequestScanAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;
+
     Task<WirelessRadioStatus> GetRadioStatusAsync(CancellationToken cancellationToken = default);
 
     Task<bool> ConnectToNetworkAsync(string ssid, string? password = null, CancellationToken cancellationToken = default);

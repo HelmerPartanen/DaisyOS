@@ -58,6 +58,8 @@ install -m755 "$repo_root/scripts/prepare-screen-sharing.sh" "$iso_root/usr/loca
 install -d "$iso_root/usr/share/xdg-desktop-portal"
 install -m644 "$repo_root/packaging/xdg-desktop-portal/daisyos-portals.conf" \
   "$iso_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"
+install -Dm644 "$repo_root/packaging/kde/kwalletrc" "$iso_root/etc/xdg/kwalletrc"
+install -Dm644 "$repo_root/packaging/kde/kwalletrc" "$iso_root/etc/skel/.config/kwalletrc"
 "$repo_root/scripts/stage-desktop-services.sh" --root "$iso_root"
 [[ -x "$publish_dir/airpods-root/usr/lib/daisyos/librepods" ]] || { echo "Missing AirPods release payload. Publish again." >&2; exit 1; }
 cp -a "$publish_dir/airpods-root/." "$iso_root/"

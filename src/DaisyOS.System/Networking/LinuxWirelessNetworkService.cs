@@ -54,18 +54,19 @@ public sealed class LinuxWirelessNetworkService : IWirelessNetworkService
                 "Wi-Fi isn’t available on this device.");
         }
 
-        var knownResult = await _commandRunner.RunAsync(
+        var knownTask = _commandRunner.RunAsync(
             "nmcli",
             ["-t", "-f", "NAME,TYPE", "connection", "show"],
             CommandTimeout,
             cancellationToken);
-        var knownNetworks = ParseKnownNetworks(knownResult);
-
-        var result = await _commandRunner.RunAsync(
+        var networksTask = _commandRunner.RunAsync(
             "nmcli",
-            ["-t", "-f", "IN-USE,SSID,SECURITY,SIGNAL", "device", "wifi", "list", "--rescan", "yes"],
+            ["-t", "-f", "IN-USE,SSID,SECURITY,SIGNAL", "device", "wifi", "list", "--rescan", "no"],
             CommandTimeout,
             cancellationToken);
+        await Task.WhenAll(knownTask, networksTask);
+        var knownNetworks = ParseKnownNetworks(await knownTask);
+        var result = await networksTask;
 
         if (!result.Succeeded)
         {
@@ -99,6 +100,18 @@ public sealed class LinuxWirelessNetworkService : IWirelessNetworkService
             ? "No Wi-Fi networks found."
             : $"{networks.Length} Wi-Fi {(networks.Length == 1 ? "network" : "networks")} found.";
         return new WirelessNetworkStatus(true, networks, detailText);
+    }
+
+    public async Task RequestScanAsync(CancellationToken cancellationToken = default)
+    {
+        // Keep discovery separate from reading NetworkManager's cached access
+        // points. Callers can render immediately, then request fresh results
+        // without blocking or blanking their current list.
+        await _commandRunner.RunAsync(
+            "nmcli",
+            ["device", "wifi", "rescan"],
+            CommandTimeout,
+            cancellationToken);
     }
 
     private static HashSet<string> ParseKnownNetworks(CommandResult result)
