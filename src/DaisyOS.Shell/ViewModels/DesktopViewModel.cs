@@ -589,6 +589,8 @@ public class DesktopViewModel : INotifyPropertyChanged
 
     public void UpdateTheme(bool isLight)
     {
+        DesktopItemLoader.InvalidateIconCaches();
+
         var trashItem = Items.FirstOrDefault(i => i.IsTrash);
         if (trashItem != null)
         {
@@ -597,8 +599,22 @@ public class DesktopViewModel : INotifyPropertyChanged
 
         foreach (var item in Items.Where(i => !i.IsTrash && !i.IsWidgetCard && !i.IsImage))
         {
-            if (!item.IsDesktopEntry)
-                item.IconPath = DesktopItemLoader.ResolveFileIconPath(item.State.Id);
+            if (item.IsDesktopEntry)
+            {
+                var parsed = DesktopItemLoader.ParseDesktopFile(item.State.Id, isLight);
+                var newIcon = !string.IsNullOrWhiteSpace(parsed.iconPath)
+                    ? parsed.iconPath
+                    : DesktopItemLoader.GetAppIconPath(Path.GetFileNameWithoutExtension(item.State.Id), isLight);
+
+                if (!string.IsNullOrWhiteSpace(newIcon))
+                {
+                    item.IconPath = newIcon;
+                }
+            }
+            else
+            {
+                item.IconPath = DesktopItemLoader.ResolveFileIconPath(item.State.Id, isLight);
+            }
         }
     }
 
@@ -611,14 +627,18 @@ public class DesktopViewModel : INotifyPropertyChanged
             return;
         }
 
+        var isLight = DesktopItemLoader.IsCurrentThemeLight();
         var isDesktopEntry = path.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase);
         var label = Path.GetFileName(path);
-        var iconPath = DesktopItemLoader.ResolveFileIconPath(path);
+        var iconPath = DesktopItemLoader.ResolveFileIconPath(path, isLight);
         if (isDesktopEntry)
         {
-            var parsed = DesktopItemLoader.ParseDesktopFile(path);
+            var parsed = DesktopItemLoader.ParseDesktopFile(path, isLight);
             label = parsed.name;
-            iconPath = string.IsNullOrWhiteSpace(parsed.iconPath) ? iconPath : parsed.iconPath;
+            var resolvedIcon = !string.IsNullOrWhiteSpace(parsed.iconPath)
+                ? parsed.iconPath
+                : DesktopItemLoader.GetAppIconPath(Path.GetFileNameWithoutExtension(path), isLight);
+            iconPath = string.IsNullOrWhiteSpace(resolvedIcon) ? iconPath : resolvedIcon;
         }
         else if (IsPreviewableImage(path))
         {

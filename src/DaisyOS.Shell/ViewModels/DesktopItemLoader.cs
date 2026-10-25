@@ -58,14 +58,14 @@ public static class DesktopItemLoader
         {
             "calculator" or "calculatoricon" or "calculator_dark" or "calculator_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Calculator_{suffix}.png",
             "calendar" or "calendaricon" or "calendar_dark" or "calendar_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Calendar_{suffix}.png",
-            "files" or "filesicon" or "files_dark" or "files_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Files_{suffix}.png",
+            "files" or "filesicon" or "files_dark" or "files_light" or "filemanager" or "file-manager" or "file_manager" => $"avares://DaisyOS.Shell/Assets/AppIcons/Files_{suffix}.png",
             "launcher" or "launchericon" or "launcher_dark" or "launcher_light" or "start" => $"avares://DaisyOS.Shell/Assets/AppIcons/Launcher_{suffix}.png",
             "notes" or "notesicon" or "notes_dark" or "notes_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Notes_{suffix}.png",
             "settings" or "settingsicon" or "settings_dark" or "settings_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Settings_{suffix}.png",
             "uikit" or "ui-kit" or "uikit_dark" or "uikit_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/UiKit_{suffix}.png",
-            "diskmanager" or "disk manager" or "disk_manager" or "disk_manager_dark" or "disk_manager_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_{suffix}.png",
+            "diskmanager" or "disk manager" or "disk_manager" or "disk-manager" or "disk_manager_dark" or "disk_manager_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_{suffix}.png",
             "taskmanager" or "task manager" or "systemmonitor" or "system-monitor" or "system monitor" or "system_monitor" or "system_monitor_dark" or "system_monitor_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/System_Monitor_{suffix}.png",
-            "appstore" or "store" or "store_dark" or "store_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Store_{suffix}.png",
+            "appstore" or "app-store" or "app_store" or "store" or "store_dark" or "store_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Store_{suffix}.png",
             "trash" or "trash_dark" or "trash_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Trash_{suffix}.png",
             "trash_item" or "trashitem" or "trash_item_dark" or "trash_item_light" or "desktop.trash" => $"avares://DaisyOS.Shell/Assets/AppIcons/Trash_Item_{suffix}.png",
             _ => string.Empty
@@ -81,20 +81,22 @@ public static class DesktopItemLoader
     /// <summary>Forces eager construction of the icon theme index on the current thread.</summary>
     public static void WarmUp() => _ = _iconIndex.Value;
 
-    internal static string ResolveFileIconPath(string path)
+    internal static string ResolveFileIconPath(string path) => ResolveFileIconPath(path, IsCurrentThemeLight());
+
+    internal static string ResolveFileIconPath(string path, bool isLight)
     {
         var directory = Directory.Exists(path);
         var extension = Path.GetExtension(path).ToLowerInvariant();
         var mimeIcon = directory ? "folder" :
             DaisyOS.Shell.Apps.Files.Services.FileVisualResolver.GetMimeIconName(extension);
-        var resolved = ResolveIconPath(mimeIcon);
+        var resolved = ResolveIconPath(mimeIcon, isLight);
         if (!string.IsNullOrWhiteSpace(resolved)) return resolved;
         var genericIcon = directory ? "inode-directory" :
             mimeIcon.StartsWith("text-", StringComparison.Ordinal) ? "text-x-generic" :
             mimeIcon.StartsWith("image-", StringComparison.Ordinal) ? "image-x-generic" :
             mimeIcon.StartsWith("audio-", StringComparison.Ordinal) ? "audio-x-generic" :
             mimeIcon.StartsWith("video-", StringComparison.Ordinal) ? "video-x-generic" : "application-x-generic";
-        resolved = ResolveIconPath(genericIcon);
+        resolved = ResolveIconPath(genericIcon, isLight);
         return !string.IsNullOrWhiteSpace(resolved) ? resolved :
             $"avares://DaisyOS.Shell/Assets/FileIcons/{(directory ? "Folder" : "Document")}.svg";
     }
@@ -578,7 +580,10 @@ public static class DesktopItemLoader
         return new Bitmap(encoded);
     }
 
-    public static (string name, string iconPath) ParseDesktopFile(string filePath)
+    public static (string name, string iconPath) ParseDesktopFile(string filePath) =>
+        ParseDesktopFile(filePath, IsCurrentThemeLight());
+
+    public static (string name, string iconPath) ParseDesktopFile(string filePath, bool isLight)
     {
         string name = Path.GetFileNameWithoutExtension(filePath);
         string iconPath = string.Empty;
@@ -586,32 +591,36 @@ public static class DesktopItemLoader
 
         try
         {
-            bool inDesktopEntry = false;
-            foreach (var line in File.ReadLines(filePath))
+            var resolvedFile = File.Exists(filePath) ? filePath : FindDesktopEntryFilePath([Path.GetFileNameWithoutExtension(filePath), filePath]);
+            if (!string.IsNullOrWhiteSpace(resolvedFile) && File.Exists(resolvedFile))
             {
-                var trimmed = line.Trim();
-                if (trimmed == "[Desktop Entry]")
+                bool inDesktopEntry = false;
+                foreach (var line in File.ReadLines(resolvedFile))
                 {
-                    inDesktopEntry = true;
-                    continue;
-                }
-                else if (trimmed.StartsWith("["))
-                {
-                    inDesktopEntry = false;
-                }
-
-                if (inDesktopEntry)
-                {
-                    var separator = trimmed.IndexOf('=');
-                    if (separator > 0) entry[trimmed[..separator]] = trimmed[(separator + 1)..].Trim();
-                    if (trimmed.StartsWith("Name=", StringComparison.OrdinalIgnoreCase))
+                    var trimmed = line.Trim();
+                    if (trimmed == "[Desktop Entry]")
                     {
-                        name = trimmed.Substring(5).Trim();
+                        inDesktopEntry = true;
+                        continue;
                     }
-                    else if (trimmed.StartsWith("Icon=", StringComparison.OrdinalIgnoreCase))
+                    else if (trimmed.StartsWith("["))
                     {
-                        var iconValue = trimmed.Substring(5).Trim();
-                        iconPath = ResolveIconPath(iconValue);
+                        inDesktopEntry = false;
+                    }
+
+                    if (inDesktopEntry)
+                    {
+                        var separator = trimmed.IndexOf('=');
+                        if (separator > 0) entry[trimmed[..separator]] = trimmed[(separator + 1)..].Trim();
+                        if (trimmed.StartsWith("Name=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            name = trimmed.Substring(5).Trim();
+                        }
+                        else if (trimmed.StartsWith("Icon=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            var iconValue = trimmed.Substring(5).Trim();
+                            iconPath = ResolveIconPath(iconValue, isLight);
+                        }
                     }
                 }
             }
@@ -621,6 +630,11 @@ public static class DesktopItemLoader
         name = DaisyOS.Core.Models.DesktopEntryLocalization.GetValue(entry, "Name") ?? name;
         if (entry.TryGetValue("Icon", out var icon) && icon.StartsWith("org.daisyos.", StringComparison.OrdinalIgnoreCase))
             name = Loc.Get(name);
+        if (string.IsNullOrWhiteSpace(iconPath))
+        {
+            var fallback = GetAppIconPath(Path.GetFileNameWithoutExtension(filePath), isLight);
+            if (!string.IsNullOrWhiteSpace(fallback)) iconPath = fallback;
+        }
         return (name, iconPath);
     }
 }

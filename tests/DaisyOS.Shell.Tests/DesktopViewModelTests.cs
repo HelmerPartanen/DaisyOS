@@ -560,6 +560,88 @@ public class DesktopViewModelTests
             File.Delete(tempFile);
         }
     }
+
+    [Fact]
+    public void NativeAppsPinnedToDesktop_UpdateAppIconOnThemeChange()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"daisy-desktop-theme-test-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        try
+        {
+            var apps = new (string fileName, string iconName)[]
+            {
+                ("org.daisyos.files.desktop", "org.daisyos.files"),
+                ("org.daisyos.notes.desktop", "org.daisyos.notes"),
+                ("org.daisyos.settings.desktop", "org.daisyos.settings"),
+                ("org.daisyos.diskmanager.desktop", "org.daisyos.diskmanager"),
+                ("org.daisyos.taskmanager.desktop", "org.daisyos.taskmanager"),
+                ("org.daisyos.calculator.desktop", "org.daisyos.calculator"),
+            };
+
+            var desktopFiles = new List<string>();
+            foreach (var (fileName, iconName) in apps)
+            {
+                var filePath = Path.Combine(tempDir, fileName);
+                File.WriteAllText(filePath, $"""
+                    [Desktop Entry]
+                    Type=Application
+                    Name={Path.GetFileNameWithoutExtension(fileName)}
+                    Icon={iconName}
+                    Exec=/usr/bin/dummy
+                    """);
+                desktopFiles.Add(filePath);
+            }
+
+            var vm = CreateTestViewModel();
+            vm.ClearItems();
+
+            foreach (var filePath in desktopFiles)
+            {
+                vm.AddDesktopPath(filePath);
+            }
+
+            // Initially switch to dark theme
+            vm.UpdateTheme(isLight: false);
+
+            var filesItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.files.desktop"));
+            var notesItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.notes.desktop"));
+            var settingsItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.settings.desktop"));
+            var diskItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.diskmanager.desktop"));
+            var taskItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.taskmanager.desktop"));
+            var calcItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.calculator.desktop"));
+
+            Assert.EndsWith("Files_Dark.png", filesItem.IconPath);
+            Assert.EndsWith("Notes_Dark.png", notesItem.IconPath);
+            Assert.EndsWith("Settings_Dark.png", settingsItem.IconPath);
+            Assert.EndsWith("Disk_Manager_Dark.png", diskItem.IconPath);
+            Assert.EndsWith("System_Monitor_Dark.png", taskItem.IconPath);
+            Assert.EndsWith("Calculator_Dark.png", calcItem.IconPath);
+
+            // Switch to light theme
+            vm.UpdateTheme(isLight: true);
+
+            Assert.EndsWith("Files_Light.png", filesItem.IconPath);
+            Assert.EndsWith("Notes_Light.png", notesItem.IconPath);
+            Assert.EndsWith("Settings_Light.png", settingsItem.IconPath);
+            Assert.EndsWith("Disk_Manager_Light.png", diskItem.IconPath);
+            Assert.EndsWith("System_Monitor_Light.png", taskItem.IconPath);
+            Assert.EndsWith("Calculator_Light.png", calcItem.IconPath);
+
+            // Switch back to dark theme
+            vm.UpdateTheme(isLight: false);
+
+            Assert.EndsWith("Files_Dark.png", filesItem.IconPath);
+            Assert.EndsWith("Notes_Dark.png", notesItem.IconPath);
+            Assert.EndsWith("Settings_Dark.png", settingsItem.IconPath);
+            Assert.EndsWith("Disk_Manager_Dark.png", diskItem.IconPath);
+            Assert.EndsWith("System_Monitor_Dark.png", taskItem.IconPath);
+            Assert.EndsWith("Calculator_Dark.png", calcItem.IconPath);
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
 }
 
 
