@@ -28,6 +28,8 @@ public static class DesktopApplicationMaskStore
         ["appstore"] = "org.daisyos.appstore.desktop",
         ["diskmanager"] = "org.daisyos.diskmanager.desktop",
         ["taskmanager"] = "org.daisyos.taskmanager.desktop",
+        ["systemmonitor"] = "org.daisyos.taskmanager.desktop",
+        ["system-monitor"] = "org.daisyos.taskmanager.desktop",
         ["diagnostics"] = "org.daisyos.taskmanager.desktop",
         ["uikit"] = "org.daisyos.uikit.desktop",
         ["ui-kit"] = "org.daisyos.uikit.desktop",
@@ -363,4 +365,3 @@ public static class DesktopApplicationMaskStore
         }
     }
 }
-

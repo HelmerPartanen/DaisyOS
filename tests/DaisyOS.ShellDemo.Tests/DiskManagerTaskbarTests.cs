@@ -70,4 +70,20 @@ public class DiskManagerTaskbarTests
         }
         finally { host.Close(); }
     }
+
+    [AvaloniaFact]
+    public void OwnedSystemMonitorAppearsFromNativeWindowStateWithoutBeingPinned()
+    {
+        var view = new TaskbarView(); view.ApplyOrder(["files"]);
+        var host = new Window { Content = view, Width = 800, Height = 250 }; host.Show();
+        try
+        {
+            view.SetAppWindowState("taskmanager", DaisyOS.Shell.Services.Windows.NativeAppWindowState.Active);
+            Assert.Single(view.GetVisualDescendants().OfType<Button>(), x => Equals(x.Tag, "taskmanager"));
+
+            view.SetAppWindowState("taskmanager", DaisyOS.Shell.Services.Windows.NativeAppWindowState.NotRunning);
+            Assert.DoesNotContain(view.GetVisualDescendants().OfType<Button>(), x => Equals(x.Tag, "taskmanager"));
+        }
+        finally { host.Close(); }
+    }
 }

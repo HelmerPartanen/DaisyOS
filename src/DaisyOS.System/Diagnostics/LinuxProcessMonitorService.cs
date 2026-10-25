@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -13,8 +14,11 @@ namespace DaisyOS.System.Diagnostics;
 
 public sealed class LinuxProcessMonitorService
 {
+    [DllImport("libc", EntryPoint = "sysconf")]
+    private static extern long Sysconf(int name);
+    private static readonly long ClockTicks = OperatingSystem.IsLinux() ? Math.Max(1, Sysconf(2)) : 100;
     private static readonly long PageSize = Environment.SystemPageSize;
-    private readonly Dictionary<int, (long Ticks, DateTime Time)> _previousProcessTicks = new();
+    private readonly Dictionary<int, (long Ticks, long Start, long Time)> _previousProcessTicks = new();
     private readonly ICommandRunner _commandRunner;
 
     public LinuxProcessMonitorService(ICommandRunner? commandRunner = null)
@@ -28,7 +32,7 @@ public sealed class LinuxProcessMonitorService
         {
             var results = new List<ProcessItemInfo>();
             var procDirs = Directory.GetDirectories("/proc");
-            var now = DateTime.UtcNow;
+            var now = Stopwatch.GetTimestamp();
 
             foreach (var dir in procDirs)
             {
@@ -56,42 +60,33 @@ public sealed class LinuxProcessMonitorService
                     long.TryParse(rest[12], NumberStyles.Integer, CultureInfo.InvariantCulture, out var stime);
                     long.TryParse(rest[21], NumberStyles.Integer, CultureInfo.InvariantCulture, out var rssPages);
 
+                    long.TryParse(rest[19], out var start);
                     var totalTicks = utime + stime;
                     var memBytes = rssPages * PageSize;
 
                     double cpuPercent = 0;
-                    if (_previousProcessTicks.TryGetValue(pid, out var prev))
+                    if (_previousProcessTicks.TryGetValue(pid, out var prev) && prev.Start == start)
                     {
-                        var timeDiffSec = (now - prev.Time).TotalSeconds;
+                        var timeDiffSec = (now - prev.Time) / (double)Stopwatch.Frequency;
                         if (timeDiffSec > 0)
                         {
                             var tickDiff = totalTicks - prev.Ticks;
-                            cpuPercent = Math.Max((tickDiff / 100.0) / timeDiffSec * 100.0, 0);
+                            cpuPercent = Math.Max((tickDiff / (double)ClockTicks) / timeDiffSec * 100.0 / LinuxSystemMetricsService.LogicalProcessorCount, 0);
                         }
                     }
-                    _previousProcessTicks[pid] = (totalTicks, now);
+                    _previousProcessTicks[pid] = (totalTicks, start, now);
 
-                    if (memBytes <= 0 && pid > 2) continue;
 
-                    var cmdlinePath = Path.Combine(dir, "cmdline");
+
                     string exePath = comm;
-                    if (File.Exists(cmdlinePath))
+                    try { exePath = File.ResolveLinkTarget(Path.Combine(dir, "exe"), true)?.FullName ?? comm; } catch { }
+                    var user = "Unknown";
+                    try
                     {
-                        try
-                        {
-                            var cmd = File.ReadAllText(cmdlinePath).Replace('\0', ' ').Trim();
-                            if (!string.IsNullOrWhiteSpace(cmd))
-                            {
-                                var firstWord = cmd.Split(' ')[0];
-                                var binName = Path.GetFileName(firstWord);
-                                if (!string.IsNullOrWhiteSpace(binName))
-                                {
-                                    exePath = binName;
-                                }
-                            }
-                        }
-                        catch { }
+                        var uid = File.ReadLines(Path.Combine(dir, "status")).FirstOrDefault(l => l.StartsWith("Uid:"));
+                        if (uid is not null) user = uid.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries)[1];
                     }
+                    catch { }
 
                     results.Add(new ProcessItemInfo(
                         pid,
@@ -99,7 +94,7 @@ public sealed class LinuxProcessMonitorService
                         exePath,
                         Math.Round(cpuPercent, 1),
                         memBytes,
-                        "User"));
+                        user) { StartTimeTicks = start, State = rest[0] switch { "R" => "Running", "S" => "Sleeping", "D" => "Disk wait", "T" or "t" => "Stopped", "Z" => "Zombie", "I" => "Idle", _ => rest[0] } });
                 }
                 catch
                 {
@@ -120,16 +115,26 @@ public sealed class LinuxProcessMonitorService
         }, cancellationToken);
     }
 
+    public async Task<bool> EndInstanceAsync(int pid, long startTimeTicks, bool force = false, CancellationToken cancellationToken = default)
+    {
+        if (pid <= 1 || pid == Environment.ProcessId || startTimeTicks <= 0) return false;
+        try
+        {
+            var stat = await File.ReadAllTextAsync($"/proc/{pid}/stat", cancellationToken);
+            var fields = stat[(stat.LastIndexOf(')') + 2)..].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            if (fields.Length < 20 || !long.TryParse(fields[19], out var start) || start != startTimeTicks) return false;
+            return await KillProcessAsync(pid, force, cancellationToken);
+        }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
+    }
+
     public async Task<bool> KillProcessAsync(int pid, bool force = false, CancellationToken cancellationToken = default)
     {
         if (pid <= 1 || pid == Environment.ProcessId) return false;
 
         var signal = force ? "-9" : "-15";
         var result = await _commandRunner.RunAsync("kill", [signal, pid.ToString()], TimeSpan.FromSeconds(2), cancellationToken);
-        if (!result.Succeeded && !force)
-        {
-            result = await _commandRunner.RunAsync("kill", ["-9", pid.ToString()], TimeSpan.FromSeconds(2), cancellationToken);
-        }
         return result.Succeeded;
     }
 }

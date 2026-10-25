@@ -73,7 +73,6 @@ public sealed class WorkflowPolishContractTests
     [InlineData("Apps/Calendar/CalendarWindow.axaml")]
     [InlineData("Apps/Calculator/CalculatorWindow.axaml")]
     [InlineData("Apps/AppStore/AppStoreWindow.axaml")]
-    [InlineData("Apps/System/Diagnostics/TaskManagerWindow.axaml")]
     [InlineData("Apps/UIKit/UIKitWindow.axaml")]
     [InlineData("Apps/Files/Picker/DaisyFilePickerWindow.axaml")]
     public void StandardAppsUseKWinWindowDecorations(string relativePath)
@@ -97,6 +96,7 @@ public sealed class WorkflowPolishContractTests
     [InlineData("Apps/Files/FilesWindow.axaml")]
     [InlineData("Apps/Notes/NotesWindow.axaml")]
     [InlineData("Apps/System/Settings/SettingsWindow.axaml")]
+    [InlineData("Apps/System/Diagnostics/TaskManagerWindow.axaml")]
     public void ClientTitlebarAppsLeaveTheFrameToKWin(string relativePath)
     {
         var source = File.ReadAllText(Path.Combine(RepoRoot(), "src/DaisyOS.Shell", relativePath));

@@ -1944,6 +1944,8 @@ public partial class App : Application
                 ShowDiskManager();
                 return true;
             case "taskmanager":
+            case "systemmonitor":
+            case "system-monitor":
             case "diagnostics":
                 ShowTaskManager();
                 return true;
@@ -2418,7 +2420,7 @@ public partial class App : Application
         if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }
 
-    /// <summary>Opens one instance of the native DaisyOS Task Manager.</summary>
+    /// <summary>Opens one instance of the native DaisyOS System Monitor.</summary>
     public void ShowTaskManager()
     {
         HideLauncher();
@@ -2435,15 +2437,26 @@ public partial class App : Application
             return;
         }
 
-        _taskManagerWindow = new DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerWindow();
-        var taskManagerModel = _taskManagerWindow.DataContext as DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerViewModel;
-        _lightweightWindows.Track(_taskManagerWindow, () => taskManagerModel?.SetActive(false),
-            () => taskManagerModel?.SetActive(true), () => _nativeWindowTracker.Unregister("taskmanager"));
-        SetNativeApplicationId(_taskManagerWindow, "taskmanager");
-        _nativeWindowTracker.Register("taskmanager", _taskManagerWindow);
-        _taskManagerWindow.Closed += (_, _) => _taskManagerWindow = null;
+        try
+        {
+            _taskManagerWindow = new DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerWindow(_compositorWindows);
+            var taskManagerModel = _taskManagerWindow.DataContext as DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerViewModel;
+            _lightweightWindows.Track(_taskManagerWindow, () => taskManagerModel?.SetActive(false),
+                () => taskManagerModel?.SetActive(true), () => _nativeWindowTracker.Unregister("taskmanager"));
+            SetNativeApplicationId(_taskManagerWindow, "taskmanager");
+            _taskManagerWindow.Closed += (_, _) => _taskManagerWindow = null;
 
-        ShowNormalApplicationWindow(_taskManagerWindow);
+            ShowNormalApplicationWindow(_taskManagerWindow);
+            _nativeWindowTracker.Register("taskmanager", _taskManagerWindow);
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[system-monitor] Window creation failed: {ex}");
+            _nativeWindowTracker.Unregister("taskmanager");
+            _taskManagerWindow?.Close();
+            _taskManagerWindow = null;
+            Feedback.Show(Loc.Get("System Monitor could not be opened."));
+        }
     }
 
     /// <summary>Opens the live catalog of reusable DaisyOS interface components.</summary>

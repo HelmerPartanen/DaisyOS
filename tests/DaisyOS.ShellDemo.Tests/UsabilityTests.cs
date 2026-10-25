@@ -90,6 +90,22 @@ public sealed class UsabilityTests
     }
 
     [AvaloniaFact]
+    public void SystemMonitorIsSearchableByCurrentAndFormerNames()
+    {
+        using var fixture = new TemporaryFolder();
+        var app = new DaisyOS.System.Processes.LinuxAppLauncherService().GetAvailableApps()
+            .Single(candidate => candidate.Id == "org.daisyos.taskmanager.desktop");
+        var launcher = new LauncherViewModel(
+            new ShellSessionState(Path.Combine(fixture.Path, "state.json")), [app]);
+
+        foreach (var query in new[] { "System Monitor", "Task Manager", "performance", "processes" })
+        {
+            launcher.SearchText = query;
+            Assert.Equal(app.Id, launcher.ResolveSearchResult()?.App.Id);
+        }
+    }
+
+    [AvaloniaFact]
     public void ClosingBackgroundTabPreservesActiveTabAndClosingActiveTabSelectsItsNeighbor()
     {
         using var fixture = new TemporaryFolder();

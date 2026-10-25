@@ -106,11 +106,11 @@ kwriteconfig6 --file kwinrc --group Round-Corners --key IncludeDialogs true
 kwriteconfig6 --file kwinrc --group Round-Corners --key Exclusions \
   'DaisyOS Lock Screen,DaisyOS Lock Wallpaper'
 kwriteconfig6 --file kwinrc --group Round-Corners --key DisableRoundTile true
-kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineTile true
+kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineTile false
 kwriteconfig6 --file kwinrc --group Round-Corners --key DisableRoundMaximize true
-kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineMaximize true
+kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineMaximize false
 kwriteconfig6 --file kwinrc --group Round-Corners --key DisableRoundFullScreen true
-kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineFullScreen true
+kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineFullScreen false
 
 if command -v qdbus6 >/dev/null 2>&1; then
   timeout 3 qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true

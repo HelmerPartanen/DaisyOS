@@ -9,6 +9,13 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public class LauncherIconLoaderTests
 {
+    [Fact]
+    public void SystemMonitorUsesNativeThemeIcons()
+    {
+        Assert.EndsWith("System_Monitor_Light.png", DesktopItemLoader.GetAppIconPath("org.daisyos.taskmanager", isLight: true));
+        Assert.EndsWith("System_Monitor_Dark.png", DesktopItemLoader.GetAppIconPath("taskmanager", isLight: false));
+    }
+
     [AvaloniaFact]
     public async Task HiddenLauncherCanReleaseIconsAndReloadThemOnNextOpen()
     {

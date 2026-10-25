@@ -118,14 +118,16 @@ Audio
     }
 
     [Fact]
-    public void AppLauncher_IncludesTaskManager()
+    public void AppLauncher_IncludesSystemMonitor()
     {
         var launcher = new LinuxAppLauncherService();
         var apps = launcher.GetAvailableApps();
-        var taskManager = apps.FirstOrDefault(a => a.Name == "Task Manager");
+        var matchingApps = apps.Where(a => a.Name == "System Monitor").ToArray();
+        var taskManager = Assert.Single(matchingApps);
 
-        Assert.NotNull(taskManager);
         Assert.Equal("org.daisyos.taskmanager.desktop", taskManager.Id);
+        Assert.Equal(AppLaunchKind.Internal, taskManager.LaunchKind);
+        Assert.Contains("Task Manager", taskManager.SearchTerms!);
     }
 
     [Fact]

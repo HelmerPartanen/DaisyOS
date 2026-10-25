@@ -6,6 +6,21 @@ namespace DaisyOS.System.Diagnostics;
 
 public sealed class LinuxSystemMetricsService : ISystemMetricsService
 {
+    // Environment.ProcessorCount reflects process quotas; the monitor describes
+    // the whole machine, matching the aggregate CPU counters in /proc/stat.
+    public static int LogicalProcessorCount { get; } = ReadLogicalProcessorCount();
+
+    private static int ReadLogicalProcessorCount()
+    {
+        try
+        {
+            return Math.Max(1, File.ReadLines("/proc/stat").Count(line =>
+                line.Length > 3 && line.StartsWith("cpu", StringComparison.Ordinal) && char.IsDigit(line[3])));
+        }
+        catch (IOException) { return Math.Max(1, Environment.ProcessorCount); }
+        catch (UnauthorizedAccessException) { return Math.Max(1, Environment.ProcessorCount); }
+    }
+
     private readonly object _syncRoot = new();
     private CpuSample? _previousCpuSample;
 
@@ -52,7 +67,8 @@ public sealed class LinuxSystemMetricsService : ISystemMetricsService
         }
 
         var idle = values[3] + (values.Length > 4 ? values[4] : 0);
-        var total = values.Sum();
+        // Guest time is already included in user/nice counters.
+        var total = values.Take(8).Sum();
         return new CpuSample(idle, total);
     }
 

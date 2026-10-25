@@ -265,10 +265,27 @@ configure_kwin_for_daisyos() {
   # compositor starts or every Daisy glass surface becomes a flat tint after
   # a fresh login/reboot.
   kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
+  kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shapecornersEnabled true
   kwriteconfig6 --file kwinrc --group Plugins --key forceblurEnabled false
   # Keep compositor blur deliberately restrained. KWin uses an integer scale;
   # four is DaisyOS's visual default for every native glass region.
   kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
+  # The compositor effect owns the same two one-pixel frame strokes used by
+  # shell surfaces. Keep outlines on for every application state; only corner
+  # clipping is suppressed where a window touches screen edges.
+  kwriteconfig6 --file kwinrc --group Round-Corners --key Size 16
+  kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveCornerRadius 16
+  kwriteconfig6 --file kwinrc --group Round-Corners --key OutlineThickness 1
+  kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveOutlineThickness 1
+  kwriteconfig6 --file kwinrc --group Round-Corners --key SecondOutlineThickness 1
+  kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveSecondOutlineThickness 1
+  kwriteconfig6 --file kwinrc --group Round-Corners --key OuterOutlineThickness 0
+  kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveOuterOutlineThickness 0
+  kwriteconfig6 --file kwinrc --group Round-Corners --key IncludeNormalWindows true
+  kwriteconfig6 --file kwinrc --group Round-Corners --key IncludeDialogs true
+  kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineTile false
+  kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineMaximize false
+  kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineFullScreen false
   kwriteconfig6 --file kwinrc --group Plugins --key shakecursorEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key shakeCursorEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shakecursorEnabled false
@@ -672,6 +689,15 @@ start_compositor_and_shell() {
   if [[ ! -s "$HOME/.local/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so" ]]; then
     "$source_root/scripts/install-kwin-window-decoration.sh" --user >> "$session_log" 2>&1 \
       || log_message "DaisyOS KWin window decoration could not be installed for this user."
+  fi
+  # KWin scans native effects only while starting. Provision the pinned frame
+  # effect before launching it so every account receives window framing on its
+  # first DaisyOS session without a manual post-install command.
+  if [[ ! -s "$HOME/.local/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so" \
+     || ! -s "$HOME/.local/share/kwin/shaders/shapecorners.frag" \
+     || ! -s "$HOME/.local/share/kwin/shaders/shapecorners_core.frag" ]]; then
+    "$source_root/scripts/install-kwin-frame-effect.sh" >> "$session_log" 2>&1 \
+      || log_message "DaisyOS KWin frame effect could not be installed for this user."
   fi
   if ! "$source_root/scripts/install-busy-cursor.sh" >> "$session_log" 2>&1; then
     log_message "Native busy cursor installation failed; retaining the existing launch feedback configuration."

@@ -55,7 +55,7 @@ public sealed class WindowDecorationThemeService
                 ExportKWinConfig(overviewValues.Where(pair => pair.Key == "ReduceMotion").ToArray(), "Effect-daisyos-window-motion");
                 ExportKWinConfig(frameValues, "Round-Corners");
                 ExportKWinConfig([new("BlurStrength", "4")], "Effect-blur");
-                ExportKWinConfig([new("blurEnabled", "true")], "Plugins");
+                ExportKWinConfig([new("blurEnabled", "true"), new("kwin4_effect_shapecornersEnabled", "true")], "Plugins");
                 RequestKWinReconfigure();
             }).ConfigureAwait(false);
         }
@@ -168,6 +168,10 @@ public sealed class WindowDecorationThemeService
         static string Rgb(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
         return
         [
+            new("Size", "16"),
+            new("InactiveCornerRadius", "16"),
+            new("OutlineThickness", "1"),
+            new("InactiveOutlineThickness", "1"),
             new("OutlineColor", Rgb(outer)),
             new("InactiveOutlineColor", Rgb(outer)),
             new("ActiveOutlineAlpha", outer.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
@@ -175,7 +179,16 @@ public sealed class WindowDecorationThemeService
             new("SecondOutlineColor", Rgb(inner)),
             new("InactiveSecondOutlineColor", Rgb(inner)),
             new("ActiveSecondOutlineAlpha", inner.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
-            new("InactiveSecondOutlineAlpha", inner.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture))
+            new("InactiveSecondOutlineAlpha", inner.A.ToString(global::System.Globalization.CultureInfo.InvariantCulture)),
+            new("SecondOutlineThickness", "1"),
+            new("InactiveSecondOutlineThickness", "1"),
+            new("OuterOutlineThickness", "0"),
+            new("InactiveOuterOutlineThickness", "0"),
+            new("IncludeNormalWindows", "true"),
+            new("IncludeDialogs", "true"),
+            new("DisableOutlineTile", "false"),
+            new("DisableOutlineMaximize", "false"),
+            new("DisableOutlineFullScreen", "false")
         ];
     }
 
@@ -267,6 +280,13 @@ public sealed class WindowDecorationThemeService
             {
                 FileName = "qdbus6",
                 ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-window-motion" },
+                CreateNoWindow = true,
+                UseShellExecute = false
+            });
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "qdbus6",
+                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.loadEffect", "kwin4_effect_shapecorners" },
                 CreateNoWindow = true,
                 UseShellExecute = false
             });

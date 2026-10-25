@@ -22,6 +22,13 @@ public sealed class FrameEffectThemeTests
             app.RequestedThemeVariant = theme;
             var method = typeof(WindowDecorationThemeService).GetMethod("BuildFrameEffectConfig", global::System.Reflection.BindingFlags.Static | global::System.Reflection.BindingFlags.NonPublic)!;
             var values = ((IReadOnlyList<KeyValuePair<string, string>>)method.Invoke(null, [app])!).ToDictionary(pair => pair.Key, pair => pair.Value);
+            Assert.Equal("1", values["OutlineThickness"]);
+            Assert.Equal("1", values["SecondOutlineThickness"]);
+            Assert.Equal("true", values["IncludeNormalWindows"]);
+            Assert.Equal("true", values["IncludeDialogs"]);
+            Assert.Equal("false", values["DisableOutlineTile"]);
+            Assert.Equal("false", values["DisableOutlineMaximize"]);
+            Assert.Equal("false", values["DisableOutlineFullScreen"]);
             foreach (var (token, rgbKey, activeAlpha, inactiveRgb, inactiveAlpha) in new[]
             {
                 ("ShellFrameOuterEdgeColor", "OutlineColor", "ActiveOutlineAlpha", "InactiveOutlineColor", "InactiveOutlineAlpha"),

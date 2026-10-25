@@ -3692,8 +3692,8 @@ Used by: src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml</
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
   <data name="Loc_58D65C201FC0" xml:space="preserve">
-    <value>Tehtävienhallinta</value>
-    <comment>Source: Task Manager
+    <value>Järjestelmän valvonta</value>
+    <comment>Source: System Monitor
 Used by: src/DaisyOS.Shell/Apps/System/Diagnostics/TaskManagerWindow.axaml</comment>
   </data>
   <data name="Loc_71988C4D8E08" xml:space="preserve">

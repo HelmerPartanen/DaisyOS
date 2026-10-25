@@ -170,5 +170,5 @@ if [[ "$prefix" == "/" ]]; then
 fi
 
 echo "Installed DaisyOS (Native Development). Install the native KWin titlebar with: sudo $source_root/scripts/install-kwin-window-decoration.sh"
-echo "For rounded third-party client-side windows, run as the desktop user: $source_root/scripts/install-kwin-frame-effect.sh"
+echo "The per-user KWin frame effect will be installed automatically on first login."
 echo "Sign out, select it from the display-manager session menu, then use daisyos-native-development restart after code changes."

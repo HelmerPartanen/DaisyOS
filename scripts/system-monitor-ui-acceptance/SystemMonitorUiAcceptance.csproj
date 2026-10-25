@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <ShellOutput Condition="'$(ShellOutput)' == ''">$(MSBuildThisFileDirectory)../../src/DaisyOS.Shell/bin/Debug/net10.0</ShellOutput>
+    <AvaloniaOutput>$(MSBuildThisFileDirectory)../../external/Avalonia/src</AvaloniaOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(ShellOutput)/*.dll" Exclude="$(ShellOutput)/DaisyOS.Core.dll;$(ShellOutput)/DaisyOS.System.dll" />
+    <Reference Include="../../src/DaisyOS.Core/bin/Debug/net10.0/DaisyOS.Core.dll" />
+    <Reference Include="../../src/DaisyOS.System/bin/Debug/net10.0/DaisyOS.System.dll" />
+    <Reference Include="$(AvaloniaOutput)/Headless/Avalonia.Headless/bin/Debug/net10.0/Avalonia.Headless.dll" />
+    <Reference Include="$(AvaloniaOutput)/Avalonia.Fonts.Inter/bin/Debug/net10.0/Avalonia.Fonts.Inter.dll" />
+    <None Include="$(ShellOutput)/runtimes/linux-x64/native/*" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+  <!-- Compile the actual changed monitor sources against existing shell assets so
+       validation does not rebuild the desktop or embed its full resource bundle. -->
+  <ItemGroup>
+    <Compile Include="../../src/DaisyOS.Shell/Apps/System/Diagnostics/*.cs" Link="Monitor/%(Filename)%(Extension)" />
+    <Compile Include="../../src/DaisyOS.Shell/Apps/SystemAppWindowChrome.cs" Link="Monitor/SystemAppWindowChrome.cs" />
+    <Compile Include="../../src/DaisyOS.Shell/Views/Components/Taskbar/TaskbarAppLabel.cs" Link="Monitor/TaskbarAppLabel.cs" />
+    <AvaloniaResource Include="../../src/DaisyOS.Shell/Apps/System/Diagnostics/*.axaml" Link="Monitor/%(Filename)%(Extension)" />
+    <Compile Include="../../src/DaisyOS.Shell/Views/Dialogs/ConfirmationDialog.cs" Link="Monitor/ConfirmationDialog.cs" />
+  </ItemGroup>
+  <Import Project="../../external/Avalonia/src/tools/Avalonia.Generators/Avalonia.Generators.props" />
+  <Import Project="../../external/Avalonia/build/BuildTargets.targets" />
+  <PropertyGroup><AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault><NoWarn>$(NoWarn);CS0436</NoWarn></PropertyGroup>
+</Project>

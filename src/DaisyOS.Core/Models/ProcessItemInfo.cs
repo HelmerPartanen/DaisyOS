@@ -6,4 +6,8 @@ public sealed record ProcessItemInfo(
     string ExecutablePath,
     double CpuPercent,
     long MemoryBytes,
-    string User);
+    string User)
+{
+    public long StartTimeTicks { get; init; }
+    public string State { get; init; } = "Unknown";
+}

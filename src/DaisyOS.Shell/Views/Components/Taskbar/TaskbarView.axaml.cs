@@ -127,7 +127,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             _startButton?.Classes.Set("LauncherActive", isOpen);
         }
 
-        /// <summary>Applies native owned-window state without changing taskbar geometry.</summary>
+        /// <summary>Applies native owned-window state and keeps unpinned running apps visible.</summary>
         public void SetAppWindowState(string appId, NativeAppWindowState state)
         {
             appId = NormalizeAppId(appId);
@@ -140,10 +140,20 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             else
             {
                 _closedOwnedApps.Remove(appId);
+                if (!_order.Any(button => string.Equals(button.Tag as string, appId, StringComparison.OrdinalIgnoreCase)))
+                {
+                    AddPinnedAppButton(appId);
+                }
             }
             if (_order.FirstOrDefault(button => string.Equals(button.Tag as string, appId, StringComparison.Ordinal)) is { } button)
             {
                 ApplyWindowState(button, appId, state);
+                if (state == NativeAppWindowState.NotRunning
+                    && !_pinnedAppIds.Contains(appId)
+                    && !_compositorWindowIds.ContainsKey(appId))
+                {
+                    RemoveSpecificApp(button);
+                }
             }
         }
 
@@ -274,7 +284,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                     var tag = (string)pinnedButton.Tag!;
                     _compositorWindowIds[tag] = window.Id;
                     SetAppWindowState(tag, ToTaskbarState(window));
-                    var label = string.IsNullOrWhiteSpace(window.Title) ? window.AppId : window.Title;
+                    var label = TaskbarAppLabel.Format(tag, string.IsNullOrWhiteSpace(window.Title) ? window.AppId : window.Title);
                     _appNames[tag] = label;
                     pinnedButton.SetValue(ToolTip.TipProperty, label);
                     pinnedButton.SetValue(AutomationProperties.NameProperty, label);
@@ -391,7 +401,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 if (child.Tag is string appId)
                 {
                     _pinnedAppIds.Add(appId);
-                    _appNames[appId] = child.GetValue(ToolTip.TipProperty) as string ?? appId;
+                    _appNames[appId] = TaskbarAppLabel.Format(appId, child.GetValue(ToolTip.TipProperty) as string ?? appId);
                     ApplyWindowState(child, appId, _windowStates.GetValueOrDefault(appId, NativeAppWindowState.NotRunning));
                 }
             }
@@ -585,7 +595,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 indicator.Classes.Set("WindowMinimized", presentation.IsMinimized);
             }
 
-            var appName = _appNames.GetValueOrDefault(appId, button.GetValue(ToolTip.TipProperty) as string ?? appId);
+            var appName = TaskbarAppLabel.Format(appId, _appNames.GetValueOrDefault(appId, button.GetValue(ToolTip.TipProperty) as string ?? appId));
             var accessibleName = presentation.StateLabel is null ? appName : $"{appName} — {presentation.StateLabel}";
             button.SetValue(ToolTip.TipProperty, accessibleName);
             button.SetValue(AutomationProperties.NameProperty, accessibleName);
@@ -1414,6 +1424,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 "appstore" => "AppIconStore",
                 "uikit" => "AppIconUiKit",
                 "diskmanager" => "AppIconDiskManager",
+                "taskmanager" => "AppIconSystemMonitor",
                 "launcher" or "start" => "AppIconLauncher",
                 _ => null
             };
@@ -1495,7 +1506,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         private Button CreateAppIconButton(string appId)
         {
-            var displayName = _appNames.GetValueOrDefault(appId, appId);
+            var displayName = TaskbarAppLabel.Format(appId, _appNames.GetValueOrDefault(appId, appId));
             if (string.Equals(appId, "calendar", StringComparison.OrdinalIgnoreCase)) displayName = "Calendar";
             else if (string.Equals(appId, "diskmanager", StringComparison.OrdinalIgnoreCase)) displayName = "Disk Manager";
             else if (string.Equals(appId, "notes", StringComparison.OrdinalIgnoreCase)) displayName = "Notes";

@@ -170,12 +170,13 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             Categories: ["System", "Utility"]),
         new(
             "org.daisyos.taskmanager.desktop",
-            "Task Manager",
+            "System Monitor",
             "Monitor system performance and manage running processes",
             "org.daisyos.taskmanager",
             IsPinned: false,
             AppLaunchKind.Internal,
-            Categories: ["System", "Monitor", "Utility"]),
+            Categories: ["System", "Monitor", "Utility"],
+            SearchTerms: ["Task Manager", "Diagnostics", "Performance", "Processes", "CPU", "Memory"]),
         new(
             "org.daisyos.uikit.desktop",
             "UI Kit",
@@ -251,19 +252,44 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
                 continue;
             }
 
-            var alreadyPresent = seenIds.Contains(builtIn.Id)
-                || seenIds.Contains(normalizedId)
-                || apps.Any(a => string.Equals(a.Name, builtIn.Name, StringComparison.OrdinalIgnoreCase));
+            // The daemon and installed desktop files can carry metadata from an
+            // older shell release. Built-ins are the source of truth for native
+            // app names, search aliases, icons, and internal launch routing.
+            // Replace every matching catalog entry so System Monitor cannot
+            // remain hidden behind the former Task Manager desktop entry.
+            var matchingIndexes = apps
+                .Select((app, index) => (app, index))
+                .Where(item => NativeIdsMatch(item.app.Id, builtIn.Id)
+                    || string.Equals(item.app.Name, builtIn.Name, StringComparison.OrdinalIgnoreCase))
+                .Select(item => item.index)
+                .ToArray();
 
-            if (!alreadyPresent && seenIds.Add(builtIn.Id))
+            if (matchingIndexes.Length > 0)
+            {
+                apps[matchingIndexes[0]] = builtIn;
+                for (var i = matchingIndexes.Length - 1; i > 0; i--)
+                    apps.RemoveAt(matchingIndexes[i]);
+            }
+            else
             {
                 apps.Add(builtIn);
             }
+
+            seenIds.Add(builtIn.Id);
+            seenIds.Add(normalizedId);
         }
 
         return apps
             .OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
+    }
+
+    private static bool NativeIdsMatch(string left, string right)
+    {
+        static string Normalize(string id) => id.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)
+            ? id[..^8]
+            : id;
+        return string.Equals(Normalize(left), Normalize(right), StringComparison.OrdinalIgnoreCase);
     }
 
     private AppEntry? TryReadDesktopEntry(string file)
