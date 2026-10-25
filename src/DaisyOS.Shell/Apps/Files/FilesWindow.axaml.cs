@@ -1467,7 +1467,7 @@ public partial class FilesWindow : Window
 
     private async void OnEjectVolumeClicked(object? sender, RoutedEventArgs e)
     {
-        if (sender is Button { DataContext: VolumeInfo volume })
+        if (sender is Control { DataContext: VolumeInfo volume })
         {
             var path = volume.Path;
             var result = await new DaisyOS.System.Processes.SafeCommandRunner().RunAsync("udisksctl", ["unmount", "--block-device", volume.DevicePath], TimeSpan.FromSeconds(5));

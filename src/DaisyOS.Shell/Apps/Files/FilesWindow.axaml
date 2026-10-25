@@ -77,9 +77,7 @@
     <Style Selector="Button.SettingsNavItem.DragOver /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
     </Style>
-    <!-- A pinned location is one visual control group. Navigation occupies
-         the row while the trailing unpin action receives its own hover layer
-         without looking like a detached sibling button. -->
+    <!-- Pinned rows keep destructive management actions in their context menu. -->
     <Style Selector="Border.PinnedLocationRow">
       <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
@@ -102,7 +100,7 @@
     </Style>
     <Style Selector="Button.PinnedLocationBody">
       <Setter Property="Height" Value="{DynamicResource InputHeightStandard}" />
-      <Setter Property="Padding" Value="10,0,46,0" />
+      <Setter Property="Padding" Value="10,0" />
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
       <Setter Property="Background" Value="Transparent" />
     </Style>
@@ -113,24 +111,6 @@
       <Setter Property="Background" Value="Transparent" />
     </Style>
     <Style Selector="Button.PinnedLocationBody:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
-    </Style>
-    <Style Selector="Button.PinnedUnpin">
-      <Setter Property="Width" Value="32" />
-      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="Margin" Value="0,0,5,0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-    </Style>
-    <Style Selector="Button.PinnedUnpin /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="Button.PinnedUnpin:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
-    </Style>
-    <Style Selector="Button.PinnedUnpin:pressed /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
     </Style>
     <Style Selector="Border.FileDropTarget.DragOver">
@@ -284,9 +264,15 @@
                           <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="files:SidebarLocation">
                               <Border Classes="PinnedLocationRow">
-                              <Grid>
                                 <Button Classes="Large SettingsNavItem PinnedLocationBody" Tag="{Binding Path}" Click="OnSidebarLocationClicked"
                                         DragDrop.AllowDrop="True" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
+                                  <Button.ContextMenu>
+                                    <ContextMenu>
+                                      <MenuItem Header="{DynamicResource Loc_E462F73BB646}" Tag="{Binding Path}" Click="OnUnpinLocationClicked">
+                                        <MenuItem.Icon><controls:DaisyIcon Icon="pin-02" Classes="MenuIcon"/></MenuItem.Icon>
+                                      </MenuItem>
+                                    </ContextMenu>
+                                  </Button.ContextMenu>
                                   <Grid ColumnDefinitions="24,*">
                                     <controls:DaisyIcon Icon="{Binding Icon}" Size="{DynamicResource IconSizeMedium}" Width="24" HorizontalAlignment="Left"
                                                         theming:ThemeResourceBrush.ForegroundKey="{Binding ColorResourceKey}"/>
@@ -294,12 +280,6 @@
                                                VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
                                   </Grid>
                                 </Button>
-                                <Button Classes="PinnedUnpin"
-                                        HorizontalAlignment="Right" VerticalAlignment="Center"
-                                        Tag="{Binding Path}" Click="OnUnpinLocationClicked" ToolTip.Tip="{DynamicResource Loc_E462F73BB646}">
-                                  <controls:DaisyIcon Icon="pin-02" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource OrangeSwatchBrush}"/>
-                                </Button>
-                              </Grid>
                               </Border>
                             </DataTemplate>
                           </ItemsControl.ItemTemplate>
@@ -331,17 +311,19 @@
                           <ItemsControl.ItemsPanel><ItemsPanelTemplate><StackPanel Spacing="{DynamicResource SidebarItemGap}" /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
                           <ItemsControl.ItemTemplate>
                             <DataTemplate x:DataType="services:VolumeInfo">
-                              <Grid ColumnDefinitions="*,Auto">
-                                <Button Grid.Column="0" Classes="Large SettingsNavItem" Tag="{Binding Path}" Click="OnVolumeClicked" DragDrop.AllowDrop="{Binding IsMounted}" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
+                              <Button Classes="Large SettingsNavItem" Tag="{Binding Path}" Click="OnVolumeClicked" DragDrop.AllowDrop="{Binding IsMounted}" DragDrop.DragOver="OnSidebarLocationDragOver" DragDrop.DragLeave="OnSidebarLocationDragLeave" DragDrop.Drop="OnSidebarLocationDrop">
+                                  <Button.ContextMenu>
+                                    <ContextMenu>
+                                      <MenuItem Header="{DynamicResource Loc_F1995545C646}" IsEnabled="{Binding CanEject}" Click="OnEjectVolumeClicked">
+                                        <MenuItem.Icon><controls:DaisyIcon Icon="eject" Classes="MenuIcon"/></MenuItem.Icon>
+                                      </MenuItem>
+                                    </ContextMenu>
+                                  </Button.ContextMenu>
                                   <StackPanel Orientation="Horizontal">
                                     <controls:DaisyIcon Icon="hard-drives" Size="{DynamicResource IconSizeStandard}" Width="24" Foreground="{DynamicResource StatusSuccessBrush}"/>
                                     <TextBlock Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" Margin="12,0,0,0" TextTrimming="CharacterEllipsis"/>
                                   </StackPanel>
-                                </Button>
-                                <Button Grid.Column="1" Classes="SubtleIcon" Tag="{Binding Path}" IsVisible="{Binding CanEject}" Click="OnEjectVolumeClicked" ToolTip.Tip="{DynamicResource Loc_F1995545C646}" Width="28" Height="28" Margin="0,0,4,0">
-                                  <controls:DaisyIcon Icon="eject" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
-                                </Button>
-                              </Grid>
+                              </Button>
                             </DataTemplate>
                           </ItemsControl.ItemTemplate>
                         </ItemsControl>
