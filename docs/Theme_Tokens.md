@@ -46,6 +46,7 @@ Semantic inset tokens cover controls, cards, normal panels, and compact panels. 
 | `RadiusSurface` / `RadiusDialog` | 18 | Cards, flyouts, dialogs, and glass panels. |
 | `RadiusSurfaceLeft` / `RadiusSurfaceRight` | 18 / 0 | Split surface controls: 18px outer corners and square shared edges. |
 | `RadiusSurfaceInner` | 16 | Nested surface following an 18px parent. |
+| `RadiusButtonSmall` | 16 | Fully rounded small button radius (half of ButtonHeightSmall). |
 | `RadiusPill` / `RadiusCircle` | 999 | Geometry-independent pills and circular targets. |
 | `BorderThicknessDefault` | 1 | Ordinary separation. |
 | `BorderThicknessFocus` | 2 | Visible keyboard focus and validation error. |
@@ -135,7 +136,7 @@ Quick Settings tile controls and the volume container use `QuickSettingsControlH
 
 Input sizing follow-up: `InputHeightStandard`, `SearchHeightStandard` and `SearchHeightProminent` are 40px at normal typography, growing with the standard measured control height plus 8px. Single-line text fields and dropdowns use the input token, including dynamically generated Settings pickers. Search keeps its centered inner content and gains space in its outer hit surface.
 
-System button variants use `Small`, `Medium`, and `Large` classes, with `ButtonHeightSmall` (32px), `ButtonHeightMedium` (36px), and `ButtonHeightLarge` (42px). Large follows the existing Files sidebar reference exactly; Small follows widget library Done. TypographyPolicy grows all three with measured font height. Settings, Notes and Files sidebar rows share Large; pinned Files containers follow the same height. Use the size class alongside the action/material class, for example `Classes="Primary Medium"`.
+System button variants use `Small`, `Medium`, and `Large` classes, with `ButtonHeightSmall` (32px), `ButtonHeightMedium` (36px), and `ButtonHeightLarge` (42px). Large follows the existing Files sidebar reference exactly; Small follows widget library Done and is fully rounded via `RadiusButtonSmall` (half of `ButtonHeightSmall`). TypographyPolicy grows all three with measured font height and keeps `RadiusButtonSmall` synchronized. Settings, Notes and Files sidebar rows share Large; pinned Files containers follow the same height. Use the size class alongside the action/material class, for example `Classes="Primary Medium"`.
 Filled destructive actions use `ActionDangerBrush`, `ActionDangerHoverBrush`,
 and `ActionDangerPressedBrush`, with `ContentOnActionBrush` for white content.
 Keep `StatusDangerBrush` for error text and destructive menu labels. Native close

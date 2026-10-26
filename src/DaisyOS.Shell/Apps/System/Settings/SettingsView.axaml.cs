@@ -773,8 +773,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     var makePrimaryBtn = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                     {
                         Content = "Make this my main display",
-                        Classes = { "Subtle" },
-                        Height = 32,
+                        Classes = { "Subtle", "Small" },
                         Padding = new Thickness(14, 0),
                         VerticalAlignment = VerticalAlignment.Center
                     }), Button.ContentProperty, "Make this my main display");
@@ -1135,8 +1134,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var testSoundButton = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                 {
                     Content = "Play test sound",
-                    Classes = { "Subtle" },
-                    Height = 32,
+                    Classes = { "Subtle", "Small" },
                     Padding = new Thickness(14, 0),
                     VerticalAlignment = VerticalAlignment.Center
                 }), Button.ContentProperty, "Play test sound");
@@ -1260,9 +1258,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         var action = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                         {
                             Content = Loc.Get(network.IsActive ? "Disconnect" : "Connect"),
-                            Classes = { network.IsActive ? "Subtle" : "Ghost" },
+                            Classes = { network.IsActive ? "Subtle" : "Ghost", "Small" },
                             MinWidth = 92,
-                            Height = 32,
                             IsEnabled = network.IsActive || network.IsAvailable
                         });
                         var selectedNetwork = network;
@@ -1281,7 +1278,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         };
                         var forget = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                         {
-                            Content = "Forget", Classes = { "Ghost" }, Height = 32, Padding = new Thickness(10, 0)
+                            Content = "Forget", Classes = { "Ghost", "Small" }, Padding = new Thickness(10, 0)
                         }), Button.ContentProperty, "Forget");
                         forget.Click += async (_, _) =>
                         {
@@ -1310,7 +1307,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         var selectedNetwork = network;
                         var action = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                         {
-                            Content = Loc.Get("Connect"), Classes = { "Subtle" }, Height = 32, MinWidth = 92
+                            Content = Loc.Get("Connect"), Classes = { "Subtle", "Small" }, MinWidth = 92
                         });
                         action.Click += async (_, _) =>
                         {
@@ -1474,8 +1471,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var actionButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                 {
                     Content = Loc.Get(device.IsConnected ? "Disconnect" : "Connect"),
-                    Classes = { "Subtle" },
-                    Height = 32,
+                    Classes = { "Subtle", "Small" },
                     Padding = new Thickness(12, 0),
                     VerticalAlignment = VerticalAlignment.Center,
                     IsEnabled = adapter.IsEnabled
@@ -1498,8 +1494,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var forgetButton = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                 {
                     Content = "Forget",
-                    Classes = { "Ghost" },
-                    Height = 32,
+                    Classes = { "Ghost", "Small" },
                     Padding = new Thickness(10, 0),
                     VerticalAlignment = VerticalAlignment.Center
                 }), Button.ContentProperty, "Forget");
@@ -1543,8 +1538,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         var pairButton = DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                         {
                             Content = Loc.Get("Pair"),
-                            Classes = { "Subtle" },
-                            Height = 32,
+                            Classes = { "Subtle", "Small" },
                             Padding = new Thickness(14, 0),
                             VerticalAlignment = VerticalAlignment.Center
                         });
@@ -2219,12 +2213,12 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var apply = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
             {
                 Content = "Apply",
-                Height = 32,
                 Padding = new Thickness(12, 0),
                 VerticalAlignment = VerticalAlignment.Center,
                 IsEnabled = false
             }), Button.ContentProperty, "Apply");
             apply.Classes.Add("Active");
+            apply.Classes.Add("Small");
 
             void UpdateApplyAvailability()
             {
@@ -2602,11 +2596,11 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var apply = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
             {
                 Content = "Set time",
-                Height = 32,
                 Padding = new Thickness(12, 0),
                 VerticalAlignment = VerticalAlignment.Center
             }), Button.ContentProperty, "Set time");
             apply.Classes.Add("Active");
+            apply.Classes.Add("Small");
             apply.Click += async (_, _) =>
             {
                 if (datePicker.SelectedDate is not { } date || timePicker.SelectedTime is not { } time)
@@ -2682,9 +2676,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var refresh = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
             {
                 Content = "Check again",
-                Classes = { "Subtle" },
-                MinWidth = 96,
-                Height = 32
+                Classes = { "Subtle", "Small" },
+                MinWidth = 96
             }), Button.ContentProperty, "Check again");
             refresh.Click += (_, _) => ShowCategory("About");
 

@@ -564,10 +564,12 @@
   <CornerRadius x:Key="RadiusSurfaceRight">0,18,18,0</CornerRadius>
   <CornerRadius x:Key="RadiusSurfaceInner">16</CornerRadius>
   <CornerRadius x:Key="RadiusDialog">18</CornerRadius>
+  <CornerRadius x:Key="RadiusButtonSmall">16</CornerRadius>
   <CornerRadius x:Key="RadiusPill">999</CornerRadius>
   <CornerRadius x:Key="RadiusCircle">999</CornerRadius>
   <!-- Scalar geometry tokens for custom drawing controls whose radius property is a Double. -->
   <x:Double x:Key="RadiusSurfaceInnerValue">16</x:Double>
+  <x:Double x:Key="RadiusButtonSmallValue">16</x:Double>
 
   <x:Double x:Key="BorderWidthNone">0</x:Double>
   <x:Double x:Key="BorderWidthDefault">1</x:Double>

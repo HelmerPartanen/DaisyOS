@@ -119,7 +119,7 @@
         <StackPanel VerticalAlignment="Center" Spacing="3" MaxWidth="370">
           <TextBlock x:Name="QueuedFilesText" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" />
           <TextBlock x:Name="FileDetailText" FontSize="{DynamicResource TypeSizeBodySmall}" Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" />
-          <Button x:Name="ChooseFilesButton" Classes="Ghost Compact" Content="{DynamicResource Loc_6D4E30EEA694}"
+          <Button x:Name="ChooseFilesButton" Classes="Ghost Small" Content="{DynamicResource Loc_6D4E30EEA694}"
                   HorizontalAlignment="Left" Click="OnChooseFilesClicked" />
         </StackPanel>
       </StackPanel>
@@ -148,7 +148,7 @@
         <StackPanel x:Name="NoDevicesPanel" HorizontalAlignment="Center" Spacing="8" MaxWidth="330">
           <controls:DaisyIcon Icon="devices" Size="{DynamicResource IconSizeLarge}" Foreground="{DynamicResource ContentTertiaryBrush}" HorizontalAlignment="Center" />
           <TextBlock x:Name="NoDevicesText" Text="{DynamicResource Loc_8CA91FBABAA3}" Foreground="{DynamicResource ContentSecondaryBrush}" TextWrapping="Wrap" TextAlignment="Center" />
-          <Button Classes="Ghost Compact" Content="{DynamicResource Loc_0E9161011702}" HorizontalAlignment="Center" Click="OnRefreshDevicesClicked" />
+          <Button Classes="Ghost Small" Content="{DynamicResource Loc_0E9161011702}" HorizontalAlignment="Center" Click="OnRefreshDevicesClicked" />
         </StackPanel>
         <TextBlock x:Name="ServiceStatusText" Text="{DynamicResource Loc_F19FFA1D4990}" HorizontalAlignment="Center" TextAlignment="Center" Foreground="{DynamicResource ContentTertiaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" TextWrapping="Wrap" />
       </StackPanel>

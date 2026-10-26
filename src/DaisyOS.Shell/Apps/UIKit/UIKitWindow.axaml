@@ -108,7 +108,7 @@
                 <StackPanel Spacing="4">
                   <TextBlock Classes="Title" Text="{DynamicResource Loc_DD951FBF3021}" />
                   <TextBlock Classes="Caption" Text="{DynamicResource Loc_9DCAB8844FBE}" />
-                  <Button Classes="Primary Compact" Content="{DynamicResource Loc_D8B8392E2C54}" HorizontalAlignment="Left" />
+                  <Button Classes="Primary Small" Content="{DynamicResource Loc_D8B8392E2C54}" HorizontalAlignment="Left" />
                 </StackPanel>
               </Border>
               <controls:QuickSettingsSlider Icon="speaker-high" Value="62" />

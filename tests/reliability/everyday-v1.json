@@ -1,0 +1,31 @@
+{
+  "protocol": "daisyos-reliability-v1",
+  "version": 1,
+  "description": "Sanitized deterministic everyday-use rotation. Site-specific app launchers replace fixture validation commands on installed-system qualification runs.",
+  "profiles": [
+    {
+      "id": "productivity-comms",
+      "steps": [
+        {"type": "command", "name": "document-fixture", "argv": ["test", "-s", "${FIXTURES}/document.txt"], "timeoutSeconds": 10},
+        {"type": "checkpoint", "name": "call-and-peripherals", "instructions": "Verify browser tabs, office editing, controlled video call audio/video, camera, microphone, and network remain functional."},
+        {"type": "sleep", "name": "productivity-dwell", "seconds": 60}
+      ]
+    },
+    {
+      "id": "media",
+      "steps": [
+        {"type": "command", "name": "media-fixture", "argv": ["test", "-s", "${FIXTURES}/media.txt"], "timeoutSeconds": 10},
+        {"type": "checkpoint", "name": "media-and-resume", "instructions": "Verify local/streamed playback, audio, fullscreen transitions, suspend/resume, and responsiveness."},
+        {"type": "sleep", "name": "media-dwell", "seconds": 60}
+      ]
+    },
+    {
+      "id": "development-content",
+      "steps": [
+        {"type": "command", "name": "file-fixtures", "argv": ["find", "${FIXTURES}/files", "-type", "f", "-size", "+0c"], "timeoutSeconds": 10},
+        {"type": "checkpoint", "name": "build-and-edit", "instructions": "Verify IDE/build, image or document editing, browser documentation, file synchronization, and visual correctness."},
+        {"type": "sleep", "name": "development-dwell", "seconds": 60}
+      ]
+    }
+  ]
+}

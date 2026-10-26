@@ -15,6 +15,16 @@ daisyos-native-development restart
 # Inspect the current RAM reserve and protected app-memory boundary.
 daisyos-native-development memory status
 
+# RELIABILITY / 8 GB ACCEPTANCE
+sudo -E scripts/daisyos-reliability.py capture --output artifacts/reliability --label before
+# Default 8-hour rotation; use --duration 86400 for release acceptance.
+sudo -E scripts/daisyos-reliability.py run --manifest tests/reliability/everyday-v1.json \
+  --duration 28800 --interval 30 --checkpoint-results tests/reliability/checkpoints.example.json \
+  --output artifacts/reliability --label integrated-before
+scripts/daisyos-reliability.py summarize artifacts/reliability/RUN
+scripts/daisyos-reliability.py compare artifacts/reliability/BEFORE/summary.json \
+  artifacts/reliability/AFTER/summary.json --output artifacts/reliability/comparison.json
+
 # KWIN WINDOW DECORATION
 # One-time installation; the plugin is only activated by Native Development.
 sudo scripts/install-kwin-window-decoration.sh

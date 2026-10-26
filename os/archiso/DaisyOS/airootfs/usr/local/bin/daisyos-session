@@ -56,6 +56,44 @@ log_message() {
   fi
 }
 
+configure_app_memory_boundary() {
+  local total_mib="${DAISYOS_MEMORY_TOTAL_MIB:-}"
+  local reserve_mib apps_high_mib
+
+  if [[ -z "$total_mib" ]]; then
+    total_mib="$(awk '/^MemTotal:/ { print int($2 / 1024); exit }' /proc/meminfo 2>/dev/null || true)"
+  fi
+  if [[ ! "$total_mib" =~ ^[0-9]+$ || "$total_mib" -le 0 ]]; then
+    log_message "Application memory boundary unavailable: installed RAM could not be measured."
+    return 0
+  fi
+
+  if (( total_mib <= 4096 )); then reserve_mib=1280
+  elif (( total_mib <= 8192 )); then reserve_mib=1536
+  elif (( total_mib <= 16384 )); then reserve_mib=2048
+  elif (( total_mib <= 32768 )); then reserve_mib=2560
+  else reserve_mib=3584
+  fi
+  apps_high_mib=$((total_mib - reserve_mib))
+  (( apps_high_mib < 256 )) && apps_high_mib=256
+
+  if ! command -v systemctl >/dev/null 2>&1 \
+    || ! systemctl --user start daisyos-apps.slice >/dev/null 2>&1 \
+    || ! systemctl --user set-property --runtime daisyos-apps.slice \
+      MemoryAccounting=yes \
+      "MemoryHigh=${apps_high_mib}M" \
+      ManagedOOMMemoryPressure=kill \
+      ManagedOOMMemoryPressureLimit=60% >/dev/null 2>&1; then
+    log_message "Application memory boundary unavailable; zram remains active but applications are not isolated from the desktop."
+    return 0
+  fi
+
+  export DAISYOS_MEMORY_APP_SLICE=daisyos-apps.slice
+  log_message "Application memory boundary: ${apps_high_mib} MiB with ${reserve_mib} MiB reserved headroom."
+}
+
+configure_app_memory_boundary
+
 record_crash_diagnostics() {
   local status="$1"
   local attempt="$2"

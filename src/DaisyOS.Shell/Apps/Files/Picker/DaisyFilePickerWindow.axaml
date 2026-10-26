@@ -103,7 +103,7 @@
                   </ContextMenu>
                 </Button.ContextMenu>
               </Button>
-              <Button x:Name="AddFolderButton" Classes="Secondary Compact" Click="OnAddFolderClicked">
+              <Button x:Name="AddFolderButton" Classes="Secondary Small" Click="OnAddFolderClicked">
                 <StackPanel Orientation="Horizontal" Spacing="6">
                   <controls:DaisyIcon Icon="folder-plus" Size="{DynamicResource IconSizeStandard}" />
                   <TextBlock Text="{DynamicResource Loc_7A4DBAB42604}" VerticalAlignment="Center" />

@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+failed=0
+if [[ "$(stat -fc %T /sys/fs/cgroup 2>/dev/null || true)" != cgroup2fs ]]; then
+  echo "DaisyOS memory health: unified cgroup v2 is unavailable." >&2
+  failed=1
+fi
+
+if ! awk 'NR > 1 && $1 ~ /^\/dev\/zram/ { found=1 } END { exit found ? 0 : 1 }' /proc/swaps; then
+  echo "DaisyOS memory health: compressed zram swap is inactive." >&2
+  failed=1
+fi
+
+if ! systemctl is-active --quiet systemd-oomd.service; then
+  echo "DaisyOS memory health: systemd-oomd is inactive." >&2
+  failed=1
+fi
+
+if (( failed )); then
+  logger -t daisyos-memory-health -p daemon.warning "Memory resilience is degraded; inspect zram and systemd-oomd."
+  exit 1
+fi
+
+zram_bytes="$(awk 'NR > 1 && $1 ~ /^\/dev\/zram/ { total += $3 } END { print total + 0 }' /proc/swaps)"
+disk_bytes="$(awk 'NR > 1 && $1 !~ /^\/dev\/zram/ { total += $3 } END { print total + 0 }' /proc/swaps)"
+echo "DaisyOS memory health: ready (zram=${zram_bytes} KiB, disk-fallback=${disk_bytes} KiB)."

@@ -25,7 +25,7 @@
               <controls:DaisyIcon Icon="check-circle" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding IsVerified}" Foreground="{DynamicResource StatusSuccessBrush}" ToolTip.Tip="{DynamicResource Loc_B14AFEAD375A}" />
               <TextBlock Text="{Binding StatusText}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
             </StackPanel>
-            <Button Grid.Column="1" Classes="Compact" Classes.Primary="{Binding CanOpen}" Classes.Secondary="{Binding !CanOpen}" Content="{Binding ActionText}" AutomationProperties.Name="{Binding ActionAccessibilityLabel}" IsEnabled="{Binding !IsBusy}" Click="OnActionButtonClicked" MinWidth="88" />
+            <Button Grid.Column="1" Classes="Small" Classes.Primary="{Binding CanOpen}" Classes.Secondary="{Binding !CanOpen}" Content="{Binding ActionText}" AutomationProperties.Name="{Binding ActionAccessibilityLabel}" IsEnabled="{Binding !IsBusy}" Click="OnActionButtonClicked" MinWidth="88" />
           </Grid>
           <ProgressBar Grid.Row="3" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
           <TextBlock Grid.Row="3" IsVisible="{Binding HasError}" Text="{Binding ErrorMessage}" Foreground="{DynamicResource StatusDangerBrush}" TextWrapping="Wrap" FontSize="{DynamicResource TypeSizeCaption}" />

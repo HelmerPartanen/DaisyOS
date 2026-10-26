@@ -1,0 +1,14 @@
+{
+  "productivity-comms-call-and-peripherals": {
+    "passed": false,
+    "evidence": "Operator initials, UTC time, camera/microphone/network observations, and artifact reference"
+  },
+  "media-media-and-resume": {
+    "passed": false,
+    "evidence": "Operator initials, UTC time, playback/fullscreen/suspend-resume observations, and artifact reference"
+  },
+  "development-content-build-and-edit": {
+    "passed": false,
+    "evidence": "Operator initials, UTC time, build/edit/synchronization observations, and artifact reference"
+  }
+}

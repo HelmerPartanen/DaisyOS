@@ -18,7 +18,7 @@ public sealed class DesignTokenContractTests
             "Space1", "Space2", "Space3", "Space4", "Space6", "Space8",
             "TypeSizeCaption", "TypeSizeBody", "TypeSizeTitle", "TypeSizeHeading", "TypeSizeDisplay",
             "TypeLineCaption", "TypeLineBody", "TypeLineTitle", "TypeLineHeading", "TypeLineDisplay",
-            "RadiusControl", "RadiusSurface", "RadiusDialog", "RadiusPill",
+            "RadiusControl", "RadiusSurface", "RadiusDialog", "RadiusButtonSmall", "RadiusPill",
             "RadiusSurfaceInnerValue",
             "BorderThicknessDefault", "BorderThicknessFocus",
             "HitTargetCompact", "HitTargetStandard", "HitTargetComfortable",
@@ -136,6 +136,21 @@ public sealed class DesignTokenContractTests
     {
         var value = channel / 255d;
         return value <= 0.04045 ? value / 12.92 : Math.Pow((value + 0.055) / 1.055, 2.4);
+    }
+
+    [Fact]
+    public void SmallButtonCornerRadiusIsHalfOfButtonHeight()
+    {
+        var document = XDocument.Load(ThemePath());
+        var heightElement = document.Descendants()
+            .Single(element => (string?)element.Attribute(X + "Key") == "ButtonHeightSmall");
+        var radiusElement = document.Descendants()
+            .Single(element => (string?)element.Attribute(X + "Key") == "RadiusButtonSmall");
+
+        var height = double.Parse(heightElement.Value, CultureInfo.InvariantCulture);
+        var radius = double.Parse(radiusElement.Value, CultureInfo.InvariantCulture);
+
+        Assert.Equal(height / 2.0, radius);
     }
 
     private static Rgb ParseColor(string value)

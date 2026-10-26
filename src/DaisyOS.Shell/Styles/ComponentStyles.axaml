@@ -211,7 +211,7 @@
   <Style Selector="Button.Small, ToggleButton.Small">
     <Setter Property="Height" Value="{DynamicResource ButtonHeightSmall}" />
     <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightSmall}" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusButtonSmall}" />
   </Style>
   <Style Selector="Button.Medium, ToggleButton.Medium">
     <Setter Property="Height" Value="{DynamicResource ButtonHeightMedium}" />
@@ -222,8 +222,9 @@
     <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightLarge}" />
   </Style>
   <Style Selector="Button.Compact, ToggleButton.Compact">
-    <Setter Property="Height" Value="{DynamicResource ControlHeightCompact}" />
-    <Setter Property="MinHeight" Value="{DynamicResource HitTargetCompact}" />
+    <Setter Property="Height" Value="{DynamicResource ButtonHeightSmall}" />
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightSmall}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusButtonSmall}" />
   </Style>
   <Style Selector="Button.Comfortable, ToggleButton.Comfortable">
     <Setter Property="Height" Value="{DynamicResource ControlHeightComfortable}" />
@@ -303,7 +304,7 @@
     <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
   </Style>
   <Style Selector="Button.Small.IconButton, ToggleButton.Small.IconButton">
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RadiusButtonSmall}" />
   </Style>
 
   <Style Selector="Button:disabled, ToggleButton:disabled">

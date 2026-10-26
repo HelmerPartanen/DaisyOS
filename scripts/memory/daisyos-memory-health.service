@@ -1,0 +1,12 @@
+[Unit]
+Description=Verify DaisyOS memory resilience
+After=swap.target systemd-oomd.service
+Wants=systemd-oomd.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/daisyos/daisyos-memory-health
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

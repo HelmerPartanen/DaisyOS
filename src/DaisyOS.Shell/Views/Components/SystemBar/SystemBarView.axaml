@@ -254,11 +254,17 @@
         <!-- ===================================================== -->
 
         <Button x:Name="CalendarButton"
-                Classes="Ghost Small"
+                Classes="ShellButton"
+                Height="{DynamicResource ControlHeightStandard}"
+                Padding="8,0"
+                Background="Transparent"
+                BorderBrush="Transparent"
+                BorderThickness="0"
                 ToolTip.Tip="{DynamicResource Loc_D5D0A30B517E}"
                 Click="OnCalendarRequested">
 
           <Border
+              Height="{DynamicResource ControlHeightStandard}"
               Background="Transparent"
               BorderBrush="Transparent"
               BorderThickness="0"

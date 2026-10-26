@@ -35,6 +35,13 @@ firmware mode, renderer, and kernel in the session log. Production live
 sessions enable bounded .NET minidumps and core dumps so a native crash leaves
 actionable evidence instead of only a generic exit code.
 
+Before starting the shell, the session configures `daisyos-apps.slice` from the
+tiered RAM policy and exports it to application launchers. On an 8 GB system the
+aggregate app high watermark is 6,656 MiB, leaving 1,536 MiB headroom. The slice
+is watched by systemd-oomd; KWin and the shell remain in the protected core
+slice. A configuration failure is logged and startup continues because failure
+of an optional pressure policy must not create a desktop crash loop.
+
 After three failures, the supervisor writes
 `~/.local/state/DaisyOS/use-fallback-session` and starts the fallback terminal.
 The marker persists across X restarts, preventing an auto-login crash loop.

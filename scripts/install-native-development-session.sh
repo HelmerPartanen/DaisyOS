@@ -111,6 +111,11 @@ install_file_atomically() {
 }
 
 install -d -m 0755 "$bin_dir" "$session_dir" "$config_dir" "$prefix/etc/xdg"
+if [[ "$prefix" == / ]]; then
+  "$repo_root/scripts/install-memory-resilience.sh" --root / --disk-swap-gib 4
+else
+  "$repo_root/scripts/install-memory-resilience.sh" --root "$prefix" --no-disk-swap --no-package --no-activate
+fi
 "$repo_root/scripts/stage-gaming-integration.sh" --root "$prefix"
 install_file_atomically 0755 "$repo_root/scripts/daisyos-native-development-session" "$session_target"
 install_file_atomically 0755 "$repo_root/scripts/daisyos-native-development" "$control_target"

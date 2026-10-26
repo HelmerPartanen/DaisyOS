@@ -44,6 +44,7 @@ cp -a "$publish_dir"/. "$iso_shell_dir"/
 
 # Install a normal desktop launcher and on-demand file-manager bus activation.
 iso_root="$repo_root/os/archiso/DaisyOS/airootfs"
+"$repo_root/scripts/install-memory-resilience.sh" --root "$iso_root" --no-disk-swap --no-package --no-activate
 mkdir -p "$iso_root/usr/local/bin" "$iso_root/usr/share/applications" "$iso_root/usr/share/dbus-1/services"
 for application in Files Notes Settings DiskManager; do
   lower="${application,,}"

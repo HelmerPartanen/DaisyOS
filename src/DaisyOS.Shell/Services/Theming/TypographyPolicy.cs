@@ -33,7 +33,16 @@ public static class TypographyPolicy
 
     public static T BindHeight<T>(T control) where T : Control
     {
-        control.Bind(Control.HeightProperty, control.GetResourceObservable(control is TextBox or ComboBox ? "InputHeightStandard" : "ControlHeightStandard"));
+        var resourceKey = control is TextBox or ComboBox
+            ? "InputHeightStandard"
+            : control.Classes.Contains("Small") || control.Classes.Contains("Compact")
+                ? "ButtonHeightSmall"
+                : control.Classes.Contains("Medium")
+                    ? "ButtonHeightMedium"
+                    : control.Classes.Contains("Large")
+                        ? "ButtonHeightLarge"
+                        : "ControlHeightStandard";
+        control.Bind(Control.HeightProperty, control.GetResourceObservable(resourceKey));
         return control;
     }
 
@@ -64,6 +73,8 @@ public static class TypographyPolicy
         var line = Math.Max((double)resources["TypeLineBody"]!, (double)resources["TypeLineBodySmall"]!);
         var height = Math.Max(32, Math.Ceiling((line + 10) / 4) * 4);
         resources["ButtonHeightSmall"] = height;
+        resources["RadiusButtonSmall"] = new CornerRadius(height / 2.0);
+        resources["RadiusButtonSmallValue"] = height / 2.0;
         resources["ButtonHeightMedium"] = height + 4;
         resources["ButtonHeightLarge"] = height + 10;
         resources["QuickSettingsControlHeight"] = height + 12;

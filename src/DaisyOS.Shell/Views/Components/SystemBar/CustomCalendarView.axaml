@@ -8,7 +8,7 @@
   <StackPanel Spacing="16">
     <!-- Header -->
     <Grid ColumnDefinitions="*,Auto,Auto">
-      <Button x:Name="ViewToggle" Grid.Column="0" Classes="Ghost Small" HorizontalAlignment="Left" ToolTip.Tip="{DynamicResource Loc_6BBACD57F69E}" Click="OnViewToggleClicked">
+      <Button x:Name="ViewToggle" Grid.Column="0" Classes="Ghost" HorizontalAlignment="Left" ToolTip.Tip="{DynamicResource Loc_6BBACD57F69E}" Click="OnViewToggleClicked">
       <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
         <TextBlock x:Name="MonthText" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" />
         <TextBlock x:Name="YearText" FontSize="{DynamicResource TypeSizeBodyLarge}" FontWeight="Regular" Foreground="{DynamicResource ContentSecondaryBrush}" />

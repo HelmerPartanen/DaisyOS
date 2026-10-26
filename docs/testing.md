@@ -106,6 +106,20 @@ intervals and writes memory, GC, backdrop, thread, handle, and visual-tree count
 after the requested settling delay. Compare results only when build type,
 display configuration, open windows, wallpaper, and service mode match.
 
+## Everyday reliability and 8 GB acceptance
+
+Use `scripts/daisyos-reliability.py` to collect crash evidence, replay the paced
+everyday workload matrix, sample PSS/kernel/pressure data, classify failures,
+and enforce the installed-system reliability gates. The hardware matrix,
+evidence limits, and 8/24-hour commands are documented in
+[`docs/everyday-reliability.md`](everyday-reliability.md).
+
+Run its isolated parser and failure-semantics tests with:
+
+```bash
+python3 scripts/test-daisyos-reliability.py
+```
+
 ## Stabilization Baseline
 
 The 2026-07-10 stabilization pass recorded these local Linux x64 measurements:

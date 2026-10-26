@@ -10,6 +10,8 @@ if ! command -v dotnet >/dev/null 2>&1; then
 fi
 
 python3 scripts/localization/verify-catalog.py
+python3 scripts/test-daisyos-reliability.py
+scripts/test-memory-resilience.sh
 
 dotnet restore
 dotnet build --no-restore
