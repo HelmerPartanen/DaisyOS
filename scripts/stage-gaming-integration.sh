@@ -18,12 +18,36 @@ LAUNCHER
   chmod 0755 "$root/usr/local/bin/$application"
 done
 for application in wine wine64; do
-  cat > "$root/usr/local/bin/$application" <<LAUNCHER
+  cat > "$root/usr/local/bin/$application" <<'LAUNCHER'
 #!/usr/bin/env bash
-exec /usr/local/bin/daisyos-game-launcher /usr/bin/$application "\$@"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-winemenubuilder.exe=d}"
+target="/usr/bin/$(basename "$0")"
+if [[ ! -x "$target" && -x "$HOME/.local/bin/$(basename "$0")" ]]; then
+  target="$HOME/.local/bin/$(basename "$0")"
+elif [[ ! -x "$target" ]]; then
+  target="$(command -v "$(basename "$0")" || true)"
+fi
+exec /usr/local/bin/daisyos-game-launcher "$target" "$@"
 LAUNCHER
   chmod 0755 "$root/usr/local/bin/$application"
 done
+install -d "$root/usr/local/share/applications"
+cat > "$root/usr/local/share/applications/wine.desktop" <<'DESKTOP'
+[Desktop Entry]
+Type=Application
+Name=Wine Windows Program Loader
+Comment=Run Windows applications seamlessly
+Exec=/usr/local/bin/wine start /unix %f
+MimeType=application/x-ms-dos-executable;application/x-msdownload;application/x-dosexec;application/vnd.microsoft.portable-executable;application/x-msi;application/x-wine-extension-msp;application/x-ms-shortcut;
+Icon=wine
+Terminal=false
+NoDisplay=true
+StartupNotify=true
+Categories=Utility;
+DBusActivatable=false
+DESKTOP
+chmod 0644 "$root/usr/local/share/applications/wine.desktop"
 for application in steam lutris; do
   install -d "$root/usr/local/share/applications"
   desktop_id="$application"

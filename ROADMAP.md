@@ -2174,10 +2174,10 @@ DaisyOS should support non-Steam gaming through user-friendly tools.
 
 Checklist:
 
-- [ ] Add Wine.
-- [ ] Add wine-mono.
-- [ ] Add wine-gecko.
-- [ ] Add winetricks.
+- [x] Add Wine.
+- [x] Add wine-mono.
+- [x] Add wine-gecko.
+- [x] Add winetricks.
 - [ ] Add Lutris.
 - [ ] Add Heroic Games Launcher.
 - [ ] Add Bottles as optional.

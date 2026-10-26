@@ -610,32 +610,32 @@ public class DesktopViewModelTests
             var taskItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.taskmanager.desktop"));
             var calcItem = Assert.Single(vm.Items, item => item.State.Id.EndsWith("org.daisyos.calculator.desktop"));
 
-            Assert.EndsWith("Files_Dark.png", filesItem.IconPath);
-            Assert.EndsWith("Notes_Dark.png", notesItem.IconPath);
-            Assert.EndsWith("Settings_Dark.png", settingsItem.IconPath);
+            Assert.EndsWith("Files.png", filesItem.IconPath);
+            Assert.EndsWith("Notes.png", notesItem.IconPath);
+            Assert.EndsWith("Settings.png", settingsItem.IconPath);
             Assert.EndsWith("Disk_Manager_Dark.png", diskItem.IconPath);
             Assert.EndsWith("System_Monitor_Dark.png", taskItem.IconPath);
-            Assert.EndsWith("Calculator_Dark.png", calcItem.IconPath);
+            Assert.EndsWith("Calculator.png", calcItem.IconPath);
 
             // Switch to light theme
             vm.UpdateTheme(isLight: true);
 
-            Assert.EndsWith("Files_Light.png", filesItem.IconPath);
-            Assert.EndsWith("Notes_Light.png", notesItem.IconPath);
-            Assert.EndsWith("Settings_Light.png", settingsItem.IconPath);
+            Assert.EndsWith("Files.png", filesItem.IconPath);
+            Assert.EndsWith("Notes.png", notesItem.IconPath);
+            Assert.EndsWith("Settings.png", settingsItem.IconPath);
             Assert.EndsWith("Disk_Manager_Light.png", diskItem.IconPath);
             Assert.EndsWith("System_Monitor_Light.png", taskItem.IconPath);
-            Assert.EndsWith("Calculator_Light.png", calcItem.IconPath);
+            Assert.EndsWith("Calculator.png", calcItem.IconPath);
 
             // Switch back to dark theme
             vm.UpdateTheme(isLight: false);
 
-            Assert.EndsWith("Files_Dark.png", filesItem.IconPath);
-            Assert.EndsWith("Notes_Dark.png", notesItem.IconPath);
-            Assert.EndsWith("Settings_Dark.png", settingsItem.IconPath);
+            Assert.EndsWith("Files.png", filesItem.IconPath);
+            Assert.EndsWith("Notes.png", notesItem.IconPath);
+            Assert.EndsWith("Settings.png", settingsItem.IconPath);
             Assert.EndsWith("Disk_Manager_Dark.png", diskItem.IconPath);
             Assert.EndsWith("System_Monitor_Dark.png", taskItem.IconPath);
-            Assert.EndsWith("Calculator_Dark.png", calcItem.IconPath);
+            Assert.EndsWith("Calculator.png", calcItem.IconPath);
         }
         finally
         {
@@ -643,6 +643,5 @@ public class DesktopViewModelTests
         }
     }
 }
-
 
 

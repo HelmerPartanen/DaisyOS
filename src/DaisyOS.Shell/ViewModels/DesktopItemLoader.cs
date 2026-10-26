@@ -56,16 +56,16 @@ public static class DesktopItemLoader
 
         return clean switch
         {
-            "calculator" or "calculatoricon" or "calculator_dark" or "calculator_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Calculator_{suffix}.png",
-            "calendar" or "calendaricon" or "calendar_dark" or "calendar_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Calendar_{suffix}.png",
-            "files" or "filesicon" or "files_dark" or "files_light" or "filemanager" or "file-manager" or "file_manager" => $"avares://DaisyOS.Shell/Assets/AppIcons/Files_{suffix}.png",
-            "launcher" or "launchericon" or "launcher_dark" or "launcher_light" or "start" => $"avares://DaisyOS.Shell/Assets/AppIcons/Launcher_{suffix}.png",
-            "notes" or "notesicon" or "notes_dark" or "notes_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Notes_{suffix}.png",
-            "settings" or "settingsicon" or "settings_dark" or "settings_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Settings_{suffix}.png",
-            "uikit" or "ui-kit" or "uikit_dark" or "uikit_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/UiKit_{suffix}.png",
+            "calculator" or "calculatoricon" or "calculator_dark" or "calculator_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Calculator.png",
+            "calendar" or "calendaricon" or "calendar_dark" or "calendar_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png",
+            "files" or "filesicon" or "files_dark" or "files_light" or "filemanager" or "file-manager" or "file_manager" => "avares://DaisyOS.Shell/Assets/AppIcons/Files.png",
+            "launcher" or "launchericon" or "launcher_dark" or "launcher_light" or "start" => "avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png",
+            "notes" or "notesicon" or "notes_dark" or "notes_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Notes.png",
+            "settings" or "settingsicon" or "settings_dark" or "settings_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Settings.png",
+            "uikit" or "ui-kit" or "uikit_dark" or "uikit_light" => "avares://DaisyOS.Shell/Assets/AppIcons/UiKit.png",
             "diskmanager" or "disk manager" or "disk_manager" or "disk-manager" or "disk_manager_dark" or "disk_manager_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_{suffix}.png",
             "taskmanager" or "task manager" or "systemmonitor" or "system-monitor" or "system monitor" or "system_monitor" or "system_monitor_dark" or "system_monitor_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/System_Monitor_{suffix}.png",
-            "appstore" or "app-store" or "app_store" or "store" or "store_dark" or "store_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Store_{suffix}.png",
+            "appstore" or "app-store" or "app_store" or "store" or "store_dark" or "store_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Store.png",
             "trash" or "trash_dark" or "trash_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Trash_{suffix}.png",
             "trash_item" or "trashitem" or "trash_item_dark" or "trash_item_light" or "desktop.trash" => $"avares://DaisyOS.Shell/Assets/AppIcons/Trash_Item_{suffix}.png",
             _ => string.Empty

@@ -247,7 +247,6 @@ public partial class ConsoleMediaWidget : UserControl
         {
             var bar = CreateSpectrumBar(idleScale);
             Canvas.SetLeft(bar, 3 + index * 4);
-            Canvas.SetTop(bar, 0);
             canvas.Children.Add(bar);
             _spectrumBars.Add(bar);
         }
@@ -280,11 +279,10 @@ public partial class ConsoleMediaWidget : UserControl
         var bar = new Border
         {
             Width = 2,
-            Height = 24,
+            Height = Math.Max(2, 24 * idleScale),
             CornerRadius = new CornerRadius(1),
-            RenderTransformOrigin = RelativePoint.Center,
-            RenderTransform = new ScaleTransform(1, idleScale)
         };
+        Canvas.SetTop(bar, (24 - bar.Height) / 2);
 
         bar.Classes.Add("spectrumBar");
         return bar;
@@ -310,7 +308,7 @@ public partial class ConsoleMediaWidget : UserControl
                 // headroom to use the available height while preserving real band balance.
                 var visualAmplitude = Math.Pow(Math.Clamp(amplitude * 1.35, 0, 1), 0.58);
                 var scale = 0.12 + (visualAmplitude * 0.88);
-                ((ScaleTransform)_spectrumBars[index].RenderTransform!).ScaleY = scale;
+                SetSpectrumBarScale(_spectrumBars[index], scale);
             }
         }
         catch
@@ -328,10 +326,16 @@ public partial class ConsoleMediaWidget : UserControl
 
         foreach (var bar in _spectrumBars)
         {
-            ((ScaleTransform)bar.RenderTransform!).ScaleY = 0.12;
+            SetSpectrumBarScale(bar, 0.12);
         }
 
         _spectrumIsIdle = true;
+    }
+
+    private static void SetSpectrumBarScale(Border bar, double scale)
+    {
+        bar.Height = Math.Max(bar.Width, 24 * scale);
+        Canvas.SetTop(bar, (24 - bar.Height) / 2);
     }
 
     private Color GetResourceColor(string key, Color fallback) =>

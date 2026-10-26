@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Winetricks
+Exec=winetricks
+Icon=winetricks
+Terminal=false
+NoDisplay=true
+Hidden=true
+Categories=Utility;

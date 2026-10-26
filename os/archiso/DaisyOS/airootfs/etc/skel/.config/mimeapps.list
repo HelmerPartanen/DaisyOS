@@ -22,9 +22,23 @@ application/x-tar=org.daisyos.files.desktop
 application/x-compressed-tar=org.daisyos.files.desktop
 application/x-7z-compressed=org.daisyos.files.desktop
 application/pdf=google-chrome.desktop
+application/x-ms-dos-executable=wine.desktop
+application/x-msi=wine.desktop
+application/x-msdownload=wine.desktop
+application/x-dosexec=wine.desktop
+application/vnd.microsoft.portable-executable=wine.desktop
+application/x-wine-extension-msp=wine.desktop
+application/x-ms-shortcut=wine.desktop
 
 [Added Associations]
 text/html=google-chrome.desktop;
 x-scheme-handler/http=google-chrome.desktop;
 x-scheme-handler/https=google-chrome.desktop;
+application/x-ms-dos-executable=wine.desktop;
+application/x-msi=wine.desktop;
+application/x-msdownload=wine.desktop;
+application/x-dosexec=wine.desktop;
+application/vnd.microsoft.portable-executable=wine.desktop;
+application/x-wine-extension-msp=wine.desktop;
+application/x-ms-shortcut=wine.desktop;
 

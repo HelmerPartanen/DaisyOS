@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Name=Wine Windows Program Loader
+Comment=Run Windows applications seamlessly
+Exec=/usr/local/bin/wine start /unix %f
+MimeType=application/x-ms-dos-executable;application/x-msdownload;application/x-dosexec;application/vnd.microsoft.portable-executable;application/x-msi;application/x-wine-extension-msp;application/x-ms-shortcut;
+Icon=wine
+Terminal=false
+NoDisplay=true
+StartupNotify=true
+Categories=Utility;
+DBusActivatable=false

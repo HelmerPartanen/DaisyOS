@@ -215,7 +215,17 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
                 continue;
             }
 
-            foreach (var file in Directory.EnumerateFiles(directory, "*.desktop", SearchOption.TopDirectoryOnly))
+            IEnumerable<string> desktopFiles;
+            try
+            {
+                desktopFiles = Directory.EnumerateFiles(directory, "*.desktop", SearchOption.AllDirectories);
+            }
+            catch
+            {
+                desktopFiles = Directory.EnumerateFiles(directory, "*.desktop", SearchOption.TopDirectoryOnly);
+            }
+
+            foreach (var file in desktopFiles)
             {
                 var fileId = Path.GetFileName(file);
                 if (DesktopApplicationMaskStore.IsDesktopFileHiddenOrMasked(file))
@@ -294,6 +304,11 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
 
     private AppEntry? TryReadDesktopEntry(string file)
     {
+        if (Path.GetFileName(file).Equals("winetricks.desktop", StringComparison.OrdinalIgnoreCase))
+        {
+            return null;
+        }
+
         Dictionary<string, string>? entry = null;
         var inDesktopEntry = false;
 

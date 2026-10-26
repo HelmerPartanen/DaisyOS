@@ -310,7 +310,7 @@ public sealed class AppStoreWorkflowTests
     public async Task AppIconHidesFallbackAndMissingImageRestoresItInCardsAndDetails()
     {
         var path = Path.Combine(Path.GetTempPath(), Guid.NewGuid() + ".png");
-        using (var source = Avalonia.Platform.AssetLoader.Open(new Uri("avares://DaisyOS.Shell/Assets/AppIcons/Store_Light.png")))
+        using (var source = Avalonia.Platform.AssetLoader.Open(new Uri("avares://DaisyOS.Shell/Assets/AppIcons/Store.png")))
         using (var output = File.Create(path)) source.CopyTo(output);
         using var vm = new AppStoreViewModel(new StoreFake()); await vm.PendingLoad;
         var card = vm.Apps[0];

@@ -1,2 +1,11 @@
 #!/usr/bin/env bash
-exec /usr/local/bin/daisyos-game-launcher /usr/bin/wine64 "$@"
+export WINEDEBUG="${WINEDEBUG:--all}"
+export WINEDLLOVERRIDES="${WINEDLLOVERRIDES:-winemenubuilder.exe=d}"
+export WINE_FORCE_PORTAL=1
+target="/usr/bin/$(basename "$0")"
+if [[ ! -x "$target" && -x "$HOME/.local/bin/$(basename "$0")" ]]; then
+  target="$HOME/.local/bin/$(basename "$0")"
+elif [[ ! -x "$target" ]]; then
+  target="$(command -v "$(basename "$0")" || true)"
+fi
+exec /usr/local/bin/daisyos-game-launcher "$target" "$@"

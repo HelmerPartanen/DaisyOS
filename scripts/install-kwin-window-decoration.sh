@@ -67,14 +67,14 @@ done
 }
 
 for required in \
-  "$app_icon_dir/Settings_Dark.png" \
-  "$app_icon_dir/Notes_Dark.png" \
-  "$app_icon_dir/Calendar_Dark.png" \
-  "$app_icon_dir/Calculator_Dark.png" \
-  "$app_icon_dir/Files_Dark.png" \
-  "$app_icon_dir/Store_Dark.png" \
+  "$app_icon_dir/Settings.png" \
+  "$app_icon_dir/Notes.png" \
+  "$app_icon_dir/Calendar.png" \
+  "$app_icon_dir/Calculator.png" \
+  "$app_icon_dir/Files.png" \
+  "$app_icon_dir/Store.png" \
   "$app_icon_dir/Disk_Manager_Dark.png" \
-  "$app_icon_dir/UiKit_Dark.png" \
+  "$app_icon_dir/UiKit.png" \
   "$application_dir/org.daisyos.settings.desktop" \
   "$application_dir/org.daisyos.notes.desktop" \
   "$application_dir/org.daisyos.calendar.desktop" \
@@ -142,14 +142,14 @@ install -m 0755 "$plugin_source" "$install_root/org.daisyos.decoration.so"
 # hicolor icon names and desktop-file IDs lets its DecoratedWindow::icon()
 # resolve the exact DaisyOS artwork instead of the generic KWin fallback.
 declare -A app_icons=(
-  [settings]=Settings_Dark.png
-  [notes]=Notes_Dark.png
-  [calendar]=Calendar_Dark.png
-  [calculator]=Calculator_Dark.png
-  [files]=Files_Dark.png
-  [appstore]=Store_Dark.png
+  [settings]=Settings.png
+  [notes]=Notes.png
+  [calendar]=Calendar.png
+  [calculator]=Calculator.png
+  [files]=Files.png
+  [appstore]=Store.png
   [diskmanager]=Disk_Manager_Dark.png
-  [uikit]=UiKit_Dark.png
+  [uikit]=UiKit.png
 )
 for app_id in "${!app_icons[@]}"; do
   install -m 0644 "$app_icon_dir/${app_icons[$app_id]}" "$icons_root/org.daisyos.$app_id.png"

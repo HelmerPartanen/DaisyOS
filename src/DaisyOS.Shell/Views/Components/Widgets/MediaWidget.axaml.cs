@@ -369,7 +369,6 @@ public partial class MediaWidget : UserControl
         {
             var bar = CreateSpectrumBar(idleScale);
             Canvas.SetLeft(bar, 3 + index * 4);
-            Canvas.SetTop(bar, 2);
             canvas.Children.Add(bar);
             _spectrumBars.Add(bar);
         }
@@ -405,11 +404,10 @@ public partial class MediaWidget : UserControl
         var bar = new Border
         {
             Width = 2,
-            Height = 24,
+            Height = Math.Max(2, 24 * idleScale),
             CornerRadius = new CornerRadius(1),
-            RenderTransformOrigin = RelativePoint.Center,
-            RenderTransform = new ScaleTransform(1, idleScale)
         };
+        Canvas.SetTop(bar, (28 - bar.Height) / 2);
 
         var tintLayer = new Border
         {
@@ -454,7 +452,7 @@ public partial class MediaWidget : UserControl
                 // headroom to use the available height while preserving real band balance.
                 var visualAmplitude = Math.Pow(Math.Clamp(amplitude * 1.35, 0, 1), 0.58);
                 var scale = 0.12 + (visualAmplitude * 0.88);
-                ((ScaleTransform)_spectrumBars[index].RenderTransform!).ScaleY = scale;
+                SetSpectrumBarScale(_spectrumBars[index], scale, 28);
             }
         }
         catch
@@ -472,10 +470,16 @@ public partial class MediaWidget : UserControl
 
         foreach (var bar in _spectrumBars)
         {
-            ((ScaleTransform)bar.RenderTransform!).ScaleY = 0.12;
+            SetSpectrumBarScale(bar, 0.12, 28);
         }
 
         _spectrumIsIdle = true;
+    }
+
+    private static void SetSpectrumBarScale(Border bar, double scale, double canvasHeight)
+    {
+        bar.Height = Math.Max(bar.Width, 24 * scale);
+        Canvas.SetTop(bar, (canvasHeight - bar.Height) / 2);
     }
 
     private static async Task<(Bitmap Bitmap, byte[] Bytes)?> LoadArtworkAsync(string? path, CancellationToken cancellationToken)

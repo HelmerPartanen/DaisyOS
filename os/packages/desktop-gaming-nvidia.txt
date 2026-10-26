@@ -34,6 +34,8 @@ gamescope
 mangohud
 lib32-mangohud
 wine
+wine-gecko
+wine-mono
 winetricks
 lutris
 daisyos-shell

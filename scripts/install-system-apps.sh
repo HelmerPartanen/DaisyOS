@@ -14,7 +14,9 @@ for application in Notes Settings DiskManager; do
   lower="${application,,}"
   icon_name="$application"
   [[ "$application" != DiskManager ]] || icon_name=Disk_Manager
-  install -Dm0644 "$repo_root/src/DaisyOS.Shell/Assets/AppIcons/${icon_name}_Dark.png" "$data_home/icons/hicolor/1024x1024/apps/org.daisyos.$lower.png"
+  icon_suffix=""
+  [[ "$application" != DiskManager ]] || icon_suffix=_Dark
+  install -Dm0644 "$repo_root/src/DaisyOS.Shell/Assets/AppIcons/${icon_name}${icon_suffix}.png" "$data_home/icons/hicolor/1024x1024/apps/org.daisyos.$lower.png"
   ln -sfn "$binary" "$HOME/.local/bin/daisyos-$lower"
   python3 - "$repo_root/src/native/daisy_window_decoration/applications/org.daisyos.$lower.desktop" "$data_home/applications/org.daisyos.$lower.desktop" "$binary" "$lower" <<'PY'
 import sys

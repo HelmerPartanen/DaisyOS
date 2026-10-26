@@ -1,0 +1,56 @@
+Windows Registry Editor Version 5.00
+
+[HKEY_CURRENT_USER\Control Panel\Desktop]
+"FontSmoothing"="2"
+"FontSmoothingType"=dword:00000002
+"FontSmoothingGamma"=dword:000003e8
+"FontSmoothingOrientation"=dword:00000001
+
+[HKEY_CURRENT_USER\Software\Wine\Desktop]
+"FileChooserPolicy"="force"
+
+[HKEY_CURRENT_USER\Software\Wine\WineDbg]
+"ShowCrashDialog"=dword:00000000
+
+[HKEY_CURRENT_USER\Software\Wine\FileOpenAssociations]
+"Enable"="N"
+
+[HKEY_CURRENT_USER\Software\Wine\Fonts\Replacements]
+"Segoe UI"="Inter"
+"Segoe UI Semibold"="Inter SemiBold"
+"Segoe UI Bold"="Inter Bold"
+"MS Shell Dlg"="Inter"
+"MS Shell Dlg 2"="Inter"
+"Tahoma"="Inter"
+"MS Sans Serif"="Inter"
+"Microsoft Sans Serif"="Inter"
+"Arial"="Inter"
+"Helvetica"="Inter"
+"Helvetica Neue"="Inter"
+"system-ui"="Inter"
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\Fonts]
+"Inter (TrueType)"="Inter-Regular.ttf"
+"Inter Bold (TrueType)"="Inter-Bold.ttf"
+"Inter Italic (TrueType)"="Inter-Italic.ttf"
+"Inter Medium (TrueType)"="Inter-Medium.ttf"
+"Inter SemiBold (TrueType)"="Inter-SemiBold.ttf"
+"Segoe UI (TrueType)"="Inter-Regular.ttf"
+"Segoe UI Bold (TrueType)"="Inter-Bold.ttf"
+"Segoe UI Semibold (TrueType)"="Inter-SemiBold.ttf"
+"Tahoma (TrueType)"="Inter-Regular.ttf"
+"Arial (TrueType)"="Inter-Regular.ttf"
+
+[HKEY_LOCAL_MACHINE\Software\Microsoft\Windows NT\CurrentVersion\FontSubstitutes]
+"Segoe UI"="Inter"
+"Segoe UI Semibold"="Inter SemiBold"
+"Segoe UI Bold"="Inter Bold"
+"MS Shell Dlg"="Inter"
+"MS Shell Dlg 2"="Inter"
+"Tahoma"="Inter"
+"MS Sans Serif"="Inter"
+"Microsoft Sans Serif"="Inter"
+"Arial"="Inter"
+"Helvetica"="Inter"
+"Helvetica Neue"="Inter"
+"system-ui"="Inter"

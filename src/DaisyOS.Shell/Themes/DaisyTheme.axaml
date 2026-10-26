@@ -221,18 +221,18 @@
         <GradientStop Offset="1" Color="#FFF0F0F0" />
       </LinearGradientBrush>
       <!-- Theme App and Trash Icons -->
-      <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator.png</Bitmap>
       <SolidColorBrush x:Key="CalendarTodayBackgroundBrush" Color="#FF000000" />
       <SolidColorBrush x:Key="CalendarTodayForegroundBrush" Color="#FFFFFFFF" />
-      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar_Light.png</Bitmap>
-      <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files_Light.png</Bitmap>
-      <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher_Light.png</Bitmap>
-      <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png</Bitmap>
+      <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files.png</Bitmap>
+      <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
+      <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes.png</Bitmap>
       <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Light.png</Bitmap>
       <Bitmap x:Key="AppIconSystemMonitor">avares://DaisyOS.Shell/Assets/AppIcons/System_Monitor_Light.png</Bitmap>
-      <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings_Light.png</Bitmap>
-      <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store_Light.png</Bitmap>
-      <Bitmap x:Key="AppIconUiKit">avares://DaisyOS.Shell/Assets/AppIcons/UiKit_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings.png</Bitmap>
+      <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store.png</Bitmap>
+      <Bitmap x:Key="AppIconUiKit">avares://DaisyOS.Shell/Assets/AppIcons/UiKit.png</Bitmap>
       <Bitmap x:Key="AppIconTrash">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Light.png</Bitmap>
       <Bitmap x:Key="AppIconTrashItem">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Item_Light.png</Bitmap>
     </ResourceDictionary>
@@ -241,7 +241,7 @@
 
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
-      <Color x:Key="SurfaceBaseColor">#330F0F0F</Color>
+      <Color x:Key="SurfaceBaseColor">#1A0F0F0F</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
       <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>
@@ -406,18 +406,18 @@
         <GradientStop Offset="1" Color="#FF000000" />
       </LinearGradientBrush>
       <!-- Theme App and Trash Icons -->
-      <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator.png</Bitmap>
       <SolidColorBrush x:Key="CalendarTodayBackgroundBrush" Color="#FFFFFFFF" />
       <SolidColorBrush x:Key="CalendarTodayForegroundBrush" Color="#FF000000" />
-      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar_Dark.png</Bitmap>
-      <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files_Dark.png</Bitmap>
-      <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher_Dark.png</Bitmap>
-      <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png</Bitmap>
+      <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files.png</Bitmap>
+      <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
+      <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes.png</Bitmap>
       <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Dark.png</Bitmap>
       <Bitmap x:Key="AppIconSystemMonitor">avares://DaisyOS.Shell/Assets/AppIcons/System_Monitor_Dark.png</Bitmap>
-      <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings_Dark.png</Bitmap>
-      <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store_Dark.png</Bitmap>
-      <Bitmap x:Key="AppIconUiKit">avares://DaisyOS.Shell/Assets/AppIcons/UiKit_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings.png</Bitmap>
+      <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store.png</Bitmap>
+      <Bitmap x:Key="AppIconUiKit">avares://DaisyOS.Shell/Assets/AppIcons/UiKit.png</Bitmap>
       <Bitmap x:Key="AppIconTrash">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Dark.png</Bitmap>
       <Bitmap x:Key="AppIconTrashItem">avares://DaisyOS.Shell/Assets/AppIcons/Trash_Item_Dark.png</Bitmap>
     </ResourceDictionary>

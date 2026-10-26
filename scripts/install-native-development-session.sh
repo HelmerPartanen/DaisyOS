@@ -147,9 +147,9 @@ if [[ "$prefix" == "/" ]]; then
     fi
   fi
 
-  # Ensure Bluetooth / AirPods companion runtime and services are installed
+  # Ensure Bluetooth / AirPods companion runtime and Wine compatibility stack are installed
   if command -v pacman >/dev/null 2>&1; then
-    for pkg in qt6-connectivity bluez bluez-utils wireplumber; do
+    for pkg in qt6-connectivity bluez bluez-utils wireplumber wine wine-gecko wine-mono winetricks; do
       if ! pacman -Q "$pkg" >/dev/null 2>&1; then
         pacman -S --needed --noconfirm "$pkg" >/dev/null 2>&1 || true
       fi

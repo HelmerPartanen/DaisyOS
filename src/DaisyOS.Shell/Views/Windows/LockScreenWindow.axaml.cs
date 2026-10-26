@@ -1202,7 +1202,6 @@ public partial class LockScreenWindow : Window
             {
                 var bar = CreateSpectrumBar(idleScale);
                 Canvas.SetLeft(bar, 3 + index * 4);
-                Canvas.SetTop(bar, 2);
                 cCanvas.Children.Add(bar);
                 _collapsedSpectrumBars.Add(bar);
             }
@@ -1215,7 +1214,6 @@ public partial class LockScreenWindow : Window
             {
                 var bar = CreateSpectrumBar(idleScale);
                 Canvas.SetLeft(bar, 3 + index * 4);
-                Canvas.SetTop(bar, 2);
                 eCanvas.Children.Add(bar);
                 _expandedSpectrumBars.Add(bar);
             }
@@ -1229,11 +1227,10 @@ public partial class LockScreenWindow : Window
         var bar = new Border
         {
             Width = 2,
-            Height = 24,
+            Height = Math.Max(2, 24 * idleScale),
             CornerRadius = new CornerRadius(1),
-            RenderTransformOrigin = RelativePoint.Center,
-            RenderTransform = new ScaleTransform(1, idleScale)
         };
+        Canvas.SetTop(bar, (28 - bar.Height) / 2);
 
         var tintLayer = new Border
         {
@@ -1335,11 +1332,11 @@ public partial class LockScreenWindow : Window
 
                 if (index < _collapsedSpectrumBars.Count)
                 {
-                    ((ScaleTransform)_collapsedSpectrumBars[index].RenderTransform!).ScaleY = scale;
+                    SetSpectrumBarScale(_collapsedSpectrumBars[index], scale);
                 }
                 if (index < _expandedSpectrumBars.Count)
                 {
-                    ((ScaleTransform)_expandedSpectrumBars[index].RenderTransform!).ScaleY = scale;
+                    SetSpectrumBarScale(_expandedSpectrumBars[index], scale);
                 }
             }
         }
@@ -1355,14 +1352,20 @@ public partial class LockScreenWindow : Window
 
         foreach (var bar in _collapsedSpectrumBars)
         {
-            ((ScaleTransform)bar.RenderTransform!).ScaleY = 0.12;
+            SetSpectrumBarScale(bar, 0.12);
         }
         foreach (var bar in _expandedSpectrumBars)
         {
-            ((ScaleTransform)bar.RenderTransform!).ScaleY = 0.12;
+            SetSpectrumBarScale(bar, 0.12);
         }
 
         _spectrumIsIdle = true;
+    }
+
+    private static void SetSpectrumBarScale(Border bar, double scale)
+    {
+        bar.Height = Math.Max(bar.Width, 24 * scale);
+        Canvas.SetTop(bar, (28 - bar.Height) / 2);
     }
 
     private static async Task RetireArtworkAsync(Bitmap? bitmap)

@@ -10,7 +10,7 @@ DaisyOS ships with a set of built-in shell applications that provide the core de
 | **Settings**   | Shell settings hub                             | `SettingsIcon.png`   |
 | **Terminal**   | Terminal emulator (system default)              | (system icon)        |
 | **Mozilla Firefox**| Deafult pre installed browser               | apps own favicon       |
-| **Launcher**   | App launcher (activates on click)              | `Launcher_Light.png` / `Launcher_Dark.png` |
+| **Launcher**   | App launcher (activates on click)              | `Launcher.png` |
 
 ## App Launcher
 
