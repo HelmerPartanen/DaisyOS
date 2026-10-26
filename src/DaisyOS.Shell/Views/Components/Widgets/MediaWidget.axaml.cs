@@ -403,15 +403,16 @@ public partial class MediaWidget : UserControl
     {
         var bar = new Border
         {
-            Width = 2,
-            Height = Math.Max(2, 24 * idleScale),
-            CornerRadius = new CornerRadius(1),
+            Width = 3,
+            Height = Math.Max(3, 24 * idleScale),
+            CornerRadius = new CornerRadius(999),
+            ClipToBounds = true,
         };
         Canvas.SetTop(bar, (28 - bar.Height) / 2);
 
         var tintLayer = new Border
         {
-            CornerRadius = new CornerRadius(1),
+            CornerRadius = new CornerRadius(999),
             IsHitTestVisible = false,
             Opacity = 0
         };
