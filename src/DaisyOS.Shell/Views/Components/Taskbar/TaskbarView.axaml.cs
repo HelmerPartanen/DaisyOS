@@ -1394,6 +1394,16 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         private Control CreateAppIconContent(string appId)
         {
+            if (string.Equals(appId, "calendar", StringComparison.OrdinalIgnoreCase))
+            {
+                return new Grid
+                {
+                    Width = 32,
+                    Height = 32,
+                    Children = { new CalendarAppIcon() }
+                };
+            }
+
             if (string.Equals(appId, "appstore", StringComparison.OrdinalIgnoreCase))
             {
                 return new Grid
@@ -1416,7 +1426,6 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
             string? resourceKey = appId.ToLowerInvariant() switch
             {
-                "calendar" => "AppIconCalendar",
                 "notes" => "AppIconNotes",
                 "calculator" => "AppIconCalculator",
                 "settings" => "AppIconSettings",

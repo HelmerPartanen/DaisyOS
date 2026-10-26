@@ -160,9 +160,7 @@
         <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="calendar" ToolTip.Tip="{DynamicResource Loc_D5D0A30B517E}">
           <Panel Width="40" Height="40">
             <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
-              <Image Classes="AppIcon" Source="{DynamicResource AppIconCalendar}"
-                     RenderOptions.BitmapInterpolationMode="HighQuality"
-                     Width="26" Height="26" IsHitTestVisible="False" />
+              <controls:CalendarAppIcon />
             </Grid>
             <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
           </Panel>
