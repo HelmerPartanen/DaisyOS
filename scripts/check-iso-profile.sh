@@ -141,6 +141,10 @@ required_packages=(
   pipewire
   pipewire-pulse
   wireplumber
+  bluez
+  bluez-utils
+  libinput
+  xf86-input-libinput
   mesa
   xorg-server
   xorg-xinit
@@ -165,6 +169,11 @@ for package in "${required_packages[@]}"; do
     exit 1
   fi
 done
+
+if [[ ! -L "$profile/airootfs/usr/lib/systemd/user/default.target.wants/mpris-proxy.service" ]]; then
+  echo "Bluetooth AVRCP controls must start through BlueZ's mpris-proxy user service."
+  exit 1
+fi
 
 if ! grep -Fq -- '--autologin daisyos' \
     "$profile/airootfs/etc/systemd/system/getty@tty1.service.d/autologin.conf"; then

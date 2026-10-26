@@ -149,12 +149,14 @@ if [[ "$prefix" == "/" ]]; then
 
   # Ensure Bluetooth / AirPods companion runtime and Wine compatibility stack are installed
   if command -v pacman >/dev/null 2>&1; then
-    for pkg in qt6-connectivity bluez bluez-utils wireplumber wine wine-gecko wine-mono winetricks; do
+    for pkg in qt6-connectivity bluez bluez-utils wireplumber libinput xf86-input-libinput wine wine-gecko wine-mono winetricks; do
       if ! pacman -Q "$pkg" >/dev/null 2>&1; then
         pacman -S --needed --noconfirm "$pkg" >/dev/null 2>&1 || true
       fi
     done
   fi
+  install -d -m 0755 "$prefix/usr/lib/systemd/user/default.target.wants"
+  ln -sfn /usr/lib/systemd/user/mpris-proxy.service "$prefix/usr/lib/systemd/user/default.target.wants/mpris-proxy.service"
   "$repo_root/scripts/build-librepods.sh" >/dev/null 2>&1 || true
   if [[ -x "$repo_root/artifacts/librepods/librepods" ]]; then
     "$repo_root/scripts/stage-airpods.sh" --root "$prefix" >/dev/null 2>&1 || true

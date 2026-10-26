@@ -27,7 +27,9 @@
     <Color x:Key="SurfaceSunkenColor">#FFEDEDEF</Color>
     <Color x:Key="SurfaceInputColor">#FFF1F1F3</Color>
     <Color x:Key="SurfaceInputHoverColor">#FFE9E9EC</Color>
-    <Color x:Key="ContextMenuBackgroundColor">#FFF1F1F1</Color>
+    <!-- Shared elevated glass used by context menus and shell-owned modal panels. -->
+    <Color x:Key="RaisedPanelBackgroundColor">#FFF7F7F7</Color>
+    <Color x:Key="ContextMenuBackgroundColor">#FFF7F7F7</Color>
 
     <!-- Content -->
     <Color x:Key="ContentPrimaryColor">#FF000000</Color>
@@ -140,13 +142,13 @@
       <SolidColorBrush x:Key="SurfaceRaisedSubtleBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceInputSubtleBrush" Color="{StaticResource SurfaceInputSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceOverlayBrush" Color="{StaticResource SurfaceOverlayColor}" />
-      <SolidColorBrush x:Key="SurfaceModalGlassBrush" Color="{StaticResource SurfaceOverlayColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="SurfaceModalGlassBrush" Color="{StaticResource RaisedPanelBackgroundColor}" Opacity="0.6" />
       <SolidColorBrush x:Key="SurfaceSunkenBrush" Color="{StaticResource SurfaceSunkenColor}" />
       <SolidColorBrush x:Key="SearchFieldBackgroundBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SearchFieldHoverBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceInputBrush" Color="{StaticResource SurfaceInputColor}" />
       <SolidColorBrush x:Key="SurfaceInputHoverBrush" Color="{StaticResource SurfaceInputHoverColor}" />
-      <SolidColorBrush x:Key="ContextMenuBackgroundBrush" Color="{StaticResource ContextMenuBackgroundColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="ContextMenuBackgroundBrush" Color="{StaticResource RaisedPanelBackgroundColor}" Opacity="0.6" />
       <SolidColorBrush x:Key="ContentPrimaryBrush" Color="{StaticResource ContentPrimaryColor}" />
       <SolidColorBrush x:Key="ContentSecondaryBrush" Color="{StaticResource ContentSecondaryColor}" />
       <SolidColorBrush x:Key="ContentTertiaryBrush" Color="{StaticResource ContentTertiaryColor}" />
@@ -241,7 +243,7 @@
 
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
-      <Color x:Key="SurfaceBaseColor">#1A0F0F0F</Color>
+      <Color x:Key="SurfaceBaseColor">#330F0F0F</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
       <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>
@@ -250,7 +252,9 @@
       <Color x:Key="SurfaceSunkenColor">#FF111111</Color>
       <Color x:Key="SurfaceInputColor">#FF242424</Color>
       <Color x:Key="SurfaceInputHoverColor">#FF2B2B2B</Color>
-      <Color x:Key="ContextMenuBackgroundColor">#FF212121</Color>
+      <!-- Shared elevated glass used by context menus and shell-owned modal panels. -->
+      <Color x:Key="RaisedPanelBackgroundColor">#FF1C1C1C</Color>
+      <Color x:Key="ContextMenuBackgroundColor">#FF1C1C1C</Color>
       <Color x:Key="ContentPrimaryColor">#FFF5F5F5</Color>
       <Color x:Key="ContentSecondaryColor">#CCF5F5F5</Color>
       <Color x:Key="ContentTertiaryColor">#99F5F5F5</Color>
@@ -327,13 +331,13 @@
       <SolidColorBrush x:Key="SurfaceRaisedSubtleBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceInputSubtleBrush" Color="{StaticResource SurfaceInputSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceOverlayBrush" Color="{StaticResource SurfaceOverlayColor}" />
-      <SolidColorBrush x:Key="SurfaceModalGlassBrush" Color="{StaticResource SurfaceOverlayColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="SurfaceModalGlassBrush" Color="{StaticResource RaisedPanelBackgroundColor}" Opacity="0.6" />
       <SolidColorBrush x:Key="SurfaceSunkenBrush" Color="{StaticResource SurfaceSunkenColor}" />
       <SolidColorBrush x:Key="SearchFieldBackgroundBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SearchFieldHoverBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceInputBrush" Color="{StaticResource SurfaceInputColor}" />
       <SolidColorBrush x:Key="SurfaceInputHoverBrush" Color="{StaticResource SurfaceInputHoverColor}" />
-      <SolidColorBrush x:Key="ContextMenuBackgroundBrush" Color="{StaticResource ContextMenuBackgroundColor}" Opacity="0.6" />
+      <SolidColorBrush x:Key="ContextMenuBackgroundBrush" Color="{StaticResource RaisedPanelBackgroundColor}" Opacity="0.6" />
       <SolidColorBrush x:Key="ContentPrimaryBrush" Color="{StaticResource ContentPrimaryColor}" />
       <SolidColorBrush x:Key="ContentSecondaryBrush" Color="{StaticResource ContentSecondaryColor}" />
       <SolidColorBrush x:Key="ContentTertiaryBrush" Color="{StaticResource ContentTertiaryColor}" />

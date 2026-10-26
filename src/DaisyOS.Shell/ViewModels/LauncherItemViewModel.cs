@@ -15,6 +15,13 @@ public class LauncherItemViewModel : INotifyPropertyChanged
     public string Name => IsDaisyApp ? Loc.Get(App.Name) : App.Name;
     public string Description => string.IsNullOrWhiteSpace(App.Description) ? Loc.Get("Application") : IsDaisyApp ? Loc.Get(App.Description) : App.Description;
     public string IconName => App.Icon;
+    public bool IsCalendarIcon =>
+        string.Equals(App.Id, "calendar", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(App.Id, "org.daisyos.calendar", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(App.Icon, "calendar", StringComparison.OrdinalIgnoreCase) ||
+        string.Equals(App.Icon, "calendaricon", StringComparison.OrdinalIgnoreCase);
+    public bool IsBitmapIconVisible => !IsCalendarIcon && IconBitmap is not null;
+    public bool IsFallbackIconVisible => !IsCalendarIcon && IconBitmap is null;
     public bool CanRequestUninstall => true;
     public string SearchKey { get; private set; } = string.Empty;
     private void CacheSearchKey() => SearchKey = string.Join("\n", new[] { Name, Description }.Concat(App.Categories ?? Array.Empty<string>()).Concat(App.SearchTerms ?? Array.Empty<string>())).ToUpperInvariant();
@@ -22,13 +29,20 @@ public class LauncherItemViewModel : INotifyPropertyChanged
     public IImage? IconBitmap
     {
         get => _iconBitmap;
-        set { if (ReferenceEquals(_iconBitmap, value)) return; _iconBitmap = value; PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconBitmap))); }
+        set
+        {
+            if (ReferenceEquals(_iconBitmap, value)) return;
+            _iconBitmap = value;
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IconBitmap)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsBitmapIconVisible)));
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(IsFallbackIconVisible)));
+        }
     }
     public void UpdateApp(AppEntry app)
     {
         App = app;
         CacheSearchKey();
-        foreach (var name in new[] { nameof(Name), nameof(Description), nameof(IconName), nameof(CanRequestUninstall) })
+        foreach (var name in new[] { nameof(Name), nameof(Description), nameof(IconName), nameof(IsCalendarIcon), nameof(IsBitmapIconVisible), nameof(IsFallbackIconVisible), nameof(CanRequestUninstall) })
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 

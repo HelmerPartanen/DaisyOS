@@ -315,9 +315,13 @@
     <Border Name="CellCard" IsVisible="{Binding !IsWidgetCard}" Padding="0,4,0,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
       <Grid RowDefinitions="Auto,*">
         <Border Name="IconWrapper" Grid.Row="0" Width="48" Height="48" HorizontalAlignment="Center">
-          <Image Name="AppIcon" 
-                 Source="{Binding IconBitmap}" 
-                 RenderOptions.BitmapInterpolationMode="HighQuality" />
+          <Grid>
+            <Image Name="AppIcon"
+                   Source="{Binding IconBitmap}"
+                   IsVisible="{Binding !IsCalendarIcon}"
+                   RenderOptions.BitmapInterpolationMode="HighQuality" />
+            <controls:CalendarAppIcon Width="48" Height="48" IsVisible="{Binding IsCalendarIcon}" />
+          </Grid>
         </Border>
 
         <!-- Label below the icon (normal display mode) -->

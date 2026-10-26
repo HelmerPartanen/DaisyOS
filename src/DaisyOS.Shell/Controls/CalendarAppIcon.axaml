@@ -6,15 +6,18 @@
              HorizontalAlignment="Center"
              VerticalAlignment="Center"
              IsHitTestVisible="False">
-  <Border Background="#FFF2F2F2"
-          CornerRadius="13">
-    <TextBlock x:Name="DayText"
-               HorizontalAlignment="Center"
-               VerticalAlignment="Center"
-               FontFamily="{DynamicResource ShellFontFamily}"
-               FontSize="14"
-               FontWeight="Medium"
-               Foreground="#FFFF0F13"
-               TextAlignment="Center" />
-  </Border>
+  <Viewbox Stretch="Uniform">
+    <Grid Width="26" Height="26">
+      <Ellipse Fill="#FFF2F2F2" />
+      <TextBlock x:Name="DayText"
+                 HorizontalAlignment="Center"
+                 VerticalAlignment="Center"
+                 FontFamily="{DynamicResource ShellFontFamily}"
+                 FontSize="15"
+                 FontWeight="Medium"
+                 Foreground="#FF1C1C1C"
+                 Margin="0,-1,0,1"
+                 TextAlignment="Center" />
+    </Grid>
+  </Viewbox>
 </UserControl>

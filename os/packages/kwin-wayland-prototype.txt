@@ -17,6 +17,8 @@ pipewire
 wireplumber
 bluez
 bluez-utils
+libinput
+xf86-input-libinput
 qt6-connectivity
 qt6-declarative
 libpulse

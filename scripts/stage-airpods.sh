@@ -10,11 +10,13 @@ for file in LICENSE revision.txt source.tar.gz; do
   install -Dm644 "$payload/$file" "$stage_root/usr/share/daisyos/librepods/$file"
 done
 install -Dm644 "$repo_root/packaging/librepods/daisyos-librepods.service" "$stage_root/usr/lib/systemd/user/daisyos-librepods.service"
-mkdir -p "$stage_root/usr/lib/systemd/user/graphical-session.target.wants" "$stage_root/etc/systemd/system/bluetooth.target.wants" "$stage_root/etc/systemd/system/multi-user.target.wants"
+mkdir -p "$stage_root/usr/lib/systemd/user/graphical-session.target.wants" "$stage_root/usr/lib/systemd/user/default.target.wants" "$stage_root/etc/systemd/system/bluetooth.target.wants" "$stage_root/etc/systemd/system/multi-user.target.wants"
 ln -sfn ../daisyos-librepods.service "$stage_root/usr/lib/systemd/user/graphical-session.target.wants/daisyos-librepods.service"
+ln -sfn /usr/lib/systemd/user/mpris-proxy.service "$stage_root/usr/lib/systemd/user/default.target.wants/mpris-proxy.service"
 ln -sfn /usr/lib/systemd/system/bluetooth.service "$stage_root/etc/systemd/system/bluetooth.target.wants/bluetooth.service"
 ln -sfn /usr/lib/systemd/system/bluetooth.service "$stage_root/etc/systemd/system/multi-user.target.wants/bluetooth.service"
 ln -sfn /usr/lib/systemd/system/bluetooth.service "$stage_root/etc/systemd/system/dbus-org.bluez.service"
-# BlueZ's default reconnect policy already covers A2DP and respects an explicit disconnect.
-# Enable AVRCP via WirePlumber rather than running the conflicting mpris-proxy.
-install -Dm644 "$repo_root/packaging/librepods/51-airpods-avrcp.conf" "$stage_root/usr/share/wireplumber/wireplumber.conf.d/51-airpods-avrcp.conf"
+# BlueZ's default reconnect policy covers A2DP and respects an explicit disconnect.
+# mpris-proxy bridges AVRCP headset controls to the active MPRIS player and reports
+# real playback state back to the accessory.
+install -Dm644 "$repo_root/packaging/librepods/51-bluetooth-devices.conf" "$stage_root/usr/share/wireplumber/wireplumber.conf.d/51-bluetooth-devices.conf"

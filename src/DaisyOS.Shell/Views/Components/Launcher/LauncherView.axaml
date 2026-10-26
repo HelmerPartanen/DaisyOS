@@ -15,13 +15,14 @@
               ToolTip.Tip="{Binding Description}">
         <StackPanel Spacing="5" HorizontalAlignment="Center">
           <Panel Width="52" Height="52" HorizontalAlignment="Center">
+            <controls:CalendarAppIcon Width="52" Height="52" IsVisible="{Binding IsCalendarIcon}" />
             <!-- App Icon with rounded squircle shape -->
             <Border CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True">
-              <Image Source="{Binding IconBitmap}" IsVisible="{Binding IconBitmap, Converter={x:Static ObjectConverters.IsNotNull}}"
+              <Image Source="{Binding IconBitmap}" IsVisible="{Binding IsBitmapIconVisible}"
                      RenderOptions.BitmapInterpolationMode="HighQuality" Width="52" Height="52" Stretch="Uniform"/>
             </Border>
             <!-- Fallback initial letter tile with squircle background -->
-            <Border IsVisible="{Binding IconBitmap, Converter={x:Static ObjectConverters.IsNull}}"
+            <Border IsVisible="{Binding IsFallbackIconVisible}"
                     Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RoundedLG}" Width="52" Height="52">
               <TextBlock Text="{Binding Name[0]}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold"
                          Foreground="{DynamicResource ContentPrimaryBrush}"

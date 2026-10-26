@@ -159,6 +159,16 @@ public class DesktopItemViewModel : INotifyPropertyChanged
         }
     }
 
+    public bool IsCalendarIcon
+    {
+        get
+        {
+            var identity = Path.GetFileNameWithoutExtension(State.Id);
+            return identity.Equals("calendar", StringComparison.OrdinalIgnoreCase) ||
+                   identity.Equals("org.daisyos.calendar", StringComparison.OrdinalIgnoreCase);
+        }
+    }
+
     private Avalonia.Media.IImage? _iconBitmap;
     public Avalonia.Media.IImage? IconBitmap
     {
