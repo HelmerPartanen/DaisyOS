@@ -3305,6 +3305,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 _changingProfilePicture = false;
                 ChooseProfilePictureButton.IsEnabled = RemoveProfilePictureButton.IsEnabled = true;
+                RemoveProfilePictureButton.IsVisible = app.HasProfilePicture;
             }
         }
 
@@ -3319,6 +3320,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 _changingProfilePicture = false;
                 ChooseProfilePictureButton.IsEnabled = RemoveProfilePictureButton.IsEnabled = true;
+                RemoveProfilePictureButton.IsVisible = app.HasProfilePicture;
             }
         }
 
@@ -3565,6 +3567,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             SelectComboByTag(MediaWidgetVisibilityPicker, app.MediaWidgetAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(SystemFontPicker, app.CurrentSystemFontFamily);
             RestoreDefaultFontButton.IsEnabled = !string.Equals(app.CurrentSystemFontFamily, DaisyOS.Shell.Services.Theming.TypographyPolicy.DefaultFamilyName, StringComparison.OrdinalIgnoreCase);
+            RemoveProfilePictureButton.IsVisible = app.HasProfilePicture;
             TextScalePicker.SelectedIndex = app.CurrentTextScalePercent switch { 90 => 0, 110 => 2, 125 => 3, 150 => 4, _ => 1 };
             _wallpaperSelection = app.UsesSolidWallpaper
                 ? WallpaperSelection.Solid

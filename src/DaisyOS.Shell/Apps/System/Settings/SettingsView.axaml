@@ -457,8 +457,8 @@
                     <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                       <TextBlock Text="{DynamicResource Loc_0801F6D62820}" Classes="SettingsDescription" TextWrapping="Wrap" />
                       <WrapPanel>
-                        <Button x:Name="ChooseProfilePictureButton" Classes="Secondary Small" Margin="0,0,8,0" Click="OnChooseProfilePictureClicked" Content="{DynamicResource Loc_6C638DC57DAA}" />
-                        <Button x:Name="RemoveProfilePictureButton" Classes="Secondary Small" Click="OnRemoveProfilePictureClicked" Content="{DynamicResource Loc_1BC6F23B5304}" />
+                        <Button x:Name="ChooseProfilePictureButton" Classes="Primary Small" Margin="0,0,8,0" Click="OnChooseProfilePictureClicked" Content="{DynamicResource Loc_6C638DC57DAA}" />
+                        <Button x:Name="RemoveProfilePictureButton" Classes="Secondary Small" IsVisible="False" Click="OnRemoveProfilePictureClicked" Content="{DynamicResource Loc_1BC6F23B5304}" />
                       </WrapPanel>
                     </StackPanel>
                   </Grid>
@@ -501,7 +501,7 @@
                       <Border x:Name="WallpaperBrowseRow">
                         <TextBlock x:Name="WallpaperChooserLabel" Text="{DynamicResource Loc_0025862BE14D}" Classes="SettingsDescription" />
                       </Border>
-                      <Button x:Name="WallpaperBrowseButton" Classes="Secondary Small" HorizontalAlignment="Left" Click="OnPickWallpaperClicked">
+                      <Button x:Name="WallpaperBrowseButton" Classes="Primary Small" HorizontalAlignment="Left" Click="OnPickWallpaperClicked">
                         <TextBlock x:Name="WallpaperBrowseButtonText" Text="{DynamicResource Loc_5CD3F2FBF7F9}" />
                       </Button>
                       <Border x:Name="SolidWallpaperOptions" Padding="0" IsVisible="False">
@@ -641,7 +641,7 @@
                       </StackPanel>
                       <Button x:Name="RestoreDefaultFontButton" Grid.Column="2" Classes="Secondary Small"
                               Click="OnRestoreDefaultFontClicked" Content="{DynamicResource Loc_19D66A2331B5}" />
-                      <Button Grid.Column="3" Classes="Secondary Small" Click="OnAddFontClicked" Content="{DynamicResource Loc_7CBF964F5B18}" />
+                      <Button Grid.Column="3" Classes="Primary Small" Click="OnAddFontClicked" Content="{DynamicResource Loc_7CBF964F5B18}" />
                     </Grid>
                     <Grid x:Name="FontPickerLayout" Grid.Row="1" Margin="38,0,0,0" ColumnDefinitions="*">
                       <ComboBox x:Name="SystemFontPicker" HorizontalAlignment="Stretch"

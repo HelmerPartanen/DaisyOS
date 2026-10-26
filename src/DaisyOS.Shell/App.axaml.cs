@@ -196,6 +196,7 @@ public partial class App : Application
     public string? CurrentCursorThemeId => _appearanceSettings.CursorThemeId;
     public int CurrentCursorSize => _appearanceSettings.CursorSize;
     public string CurrentLanguageTag => SystemLanguages.Resolve(_appearanceSettings.LanguageTag).Tag;
+    public bool HasProfilePicture => _profilePicture is not null || (!string.IsNullOrWhiteSpace(_appearanceSettings.ProfilePictureUri) && File.Exists(_appearanceSettings.ProfilePictureUri));
 
     public string CurrentSystemFontFamily => _appearanceSettings.SystemFontFamily;
     public int CurrentTextScalePercent => _appearanceSettings.TextScalePercent;
@@ -1157,6 +1158,7 @@ public partial class App : Application
             ? Avalonia.Media.Brushes.Transparent
             : new Avalonia.Media.ImageBrush(picture) { Stretch = Avalonia.Media.Stretch.UniformToFill };
         Resources["ProfilePictureMissing"] = picture is null;
+        Resources["ProfilePicturePresent"] = picture is not null;
         // Let controls consume the new resource before releasing the old image.
         if (previous is not null) Avalonia.Threading.Dispatcher.UIThread.Post(previous.Dispose, Avalonia.Threading.DispatcherPriority.Background);
     }
