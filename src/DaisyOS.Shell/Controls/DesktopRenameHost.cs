@@ -7,7 +7,7 @@ namespace DaisyOS.Shell.Controls;
 /// <summary>Allows the desktop's inline editor to wrap outside its fixed icon cell.</summary>
 public sealed class DesktopRenameHost : Panel
 {
-    private double _editorWidth = 160d;
+    private double _editorWidth = 74d;
 
     private (Point? Origin, Size Window)? _placement;
 
@@ -24,9 +24,11 @@ public sealed class DesktopRenameHost : Panel
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        // Reserve enough room for ordinary filenames, including their extension.
-        // Hidden labels have no reliable measured width when an item starts in rename mode.
-        var width = 160d;
+        // Keep editing inside the desktop item's label column. A wide overlay
+        // obscures neighboring items and no longer matches the committed label.
+        var width = double.IsFinite(availableSize.Width) && availableSize.Width > 0
+            ? availableSize.Width
+            : 74d;
         if (TopLevel.GetTopLevel(this) is { } window && window.Bounds.Width > 8)
             width = Math.Min(width, window.Bounds.Width - 8);
         _editorWidth = width;

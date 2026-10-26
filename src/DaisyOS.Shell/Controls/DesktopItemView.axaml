@@ -347,7 +347,7 @@
         <TextBox x:Name="RenameBox" Classes="RenameBox DesktopRenameBox"
                  Text="{Binding Label, Mode=TwoWay}"
                  IsVisible="{Binding IsRenaming}"
-                 MinWidth="0" MaxWidth="160"
+                 MinWidth="0"
                  FontFamily="{DynamicResource ShellFontFamily}"
                  KeyDown="OnRenameKeyDown"
                  LostFocus="OnRenameLostFocus"

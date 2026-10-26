@@ -99,7 +99,7 @@ public sealed class DesktopRenameLayoutTests
             var position = editor.TranslatePoint(default, window)!.Value;
             Assert.InRange(position.X, 0, window.Bounds.Width - editor.Bounds.Width);
             Assert.InRange(position.Y, 0, window.Bounds.Height - editor.Bounds.Height);
-            Assert.InRange(editor.Bounds.Width, 100, 160);
+            Assert.Equal(view.Bounds.Width, editor.Bounds.Width);
             Assert.InRange(editor.Bounds.Height, 24, 48);
             if (!longName)
             {

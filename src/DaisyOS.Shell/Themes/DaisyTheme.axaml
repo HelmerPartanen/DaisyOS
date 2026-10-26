@@ -430,7 +430,7 @@
 
   </ResourceDictionary.ThemeDictionaries>
 
-  <SolidColorBrush x:Key="ActionPrimaryInsetBorderBrush" Color="#FFFFFF" Opacity="0.05" />
+  <SolidColorBrush x:Key="ActionPrimaryInsetBorderBrush" Color="#FFFFFF" Opacity="0.08" />
 
   <DropShadowEffect x:Key="DesktopLabelShadow" OffsetX="0" OffsetY="1" BlurRadius="2" Color="Black" Opacity="0.65" />
   <DropShadowEffect x:Key="DesktopItemLabelShadow" OffsetX="0" OffsetY="1" BlurRadius="2" Color="Black" Opacity="0.65" />

@@ -16,7 +16,6 @@
                  FontSize="15"
                  FontWeight="Medium"
                  Foreground="#FF1C1C1C"
-                 Margin="0,-1,0,1"
                  TextAlignment="Center" />
     </Grid>
   </Viewbox>

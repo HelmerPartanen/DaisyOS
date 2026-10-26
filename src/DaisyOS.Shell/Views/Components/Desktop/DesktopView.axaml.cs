@@ -490,6 +490,16 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
         private void OnKeyDown(object? sender, KeyEventArgs e)
         {
+            // Desktop shortcuts are registered with handledEventsToo so they still
+            // work after ordinary controls process a key. Never reinterpret text
+            // editor input (notably Space) as Quick Look or another desktop action.
+            if (e.Source is TextBox ||
+                e.Source is Visual source && source.GetVisualAncestors().Any(visual => visual is TextBox) ||
+                _viewModel.Items.Any(item => item.IsRenaming))
+            {
+                return;
+            }
+
             if (e.Key == Key.Space)
             {
                 var selected = _viewModel.Items.FirstOrDefault(i => i.IsSelected);

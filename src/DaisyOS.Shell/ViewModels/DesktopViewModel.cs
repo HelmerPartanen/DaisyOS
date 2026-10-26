@@ -925,6 +925,8 @@ public class DesktopViewModel : INotifyPropertyChanged
         // Reject names that could escape the desktop directory.
         if (newName.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
             || newName.Contains("..", StringComparison.Ordinal)
+            || newName.Contains('\r')
+            || newName.Contains('\n')
             || newName.Contains(Path.DirectorySeparatorChar)
             || newName.Contains(Path.AltDirectorySeparatorChar))
         {
@@ -941,6 +943,14 @@ public class DesktopViewModel : INotifyPropertyChanged
 
         try
         {
+            if (item.IsDesktopEntry)
+            {
+                RenameDesktopEntryLabel(oldPath, newName);
+                item.Label = newName;
+                item.OriginalLabel = newName;
+                return;
+            }
+
             var parentDir = Path.GetDirectoryName(oldPath) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             var newPath = Path.Combine(parentDir, newName);
 
@@ -987,6 +997,47 @@ public class DesktopViewModel : INotifyPropertyChanged
             global::System.Console.Error.WriteLine($"[Desktop] Failed to rename: {ex.Message}");
             item.Label = item.OriginalLabel;
         }
+    }
+
+    private static void RenameDesktopEntryLabel(string path, string newName)
+    {
+        var lines = File.ReadAllLines(path).ToList();
+        var inDesktopEntry = false;
+        var entryHeaderIndex = -1;
+        var nameIndex = -1;
+
+        for (var index = 0; index < lines.Count; index++)
+        {
+            var line = lines[index].Trim();
+            if (line.Equals("[Desktop Entry]", StringComparison.OrdinalIgnoreCase))
+            {
+                inDesktopEntry = true;
+                entryHeaderIndex = index;
+                continue;
+            }
+
+            if (line.StartsWith('['))
+            {
+                inDesktopEntry = false;
+                continue;
+            }
+
+            if (inDesktopEntry && line.StartsWith("Name=", StringComparison.OrdinalIgnoreCase))
+            {
+                nameIndex = index;
+                break;
+            }
+        }
+
+        if (entryHeaderIndex < 0)
+            throw new InvalidDataException("The launcher does not contain a [Desktop Entry] section.");
+
+        if (nameIndex >= 0)
+            lines[nameIndex] = $"Name={newName}";
+        else
+            lines.Insert(entryHeaderIndex + 1, $"Name={newName}");
+
+        File.WriteAllLines(path, lines);
     }
 
     public void CancelRename(DesktopItemViewModel item)

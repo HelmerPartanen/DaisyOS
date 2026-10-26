@@ -642,6 +642,43 @@ public class DesktopViewModelTests
             Directory.Delete(tempDir, recursive: true);
         }
     }
-}
 
+    [Fact]
+    public void RenamingDesktopLauncherUpdatesNameWithoutDestroyingLauncherIdentity()
+    {
+        var tempDir = Path.Combine(Path.GetTempPath(), $"daisy-desktop-rename-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(tempDir);
+        var launcherPath = Path.Combine(tempDir, "spotify.desktop");
+        File.WriteAllText(launcherPath, """
+            [Desktop Entry]
+            Type=Application
+            Name=Spotify (Launcher)
+            Icon=spotify
+            Exec=spotify
+            """);
+
+        try
+        {
+            var vm = CreateTestViewModel();
+            vm.ClearItems();
+            vm.AddDesktopPath(launcherPath);
+            var item = Assert.Single(vm.Items);
+            var originalIcon = item.IconPath;
+
+            vm.StartRenaming(item);
+            vm.CommitRename(item, "Spotify");
+
+            Assert.True(File.Exists(launcherPath));
+            Assert.True(item.IsDesktopEntry);
+            Assert.Equal(launcherPath, item.State.Id);
+            Assert.Equal("Spotify", item.Label);
+            Assert.Equal(originalIcon, item.IconPath);
+            Assert.Contains("Name=Spotify", File.ReadAllLines(launcherPath));
+        }
+        finally
+        {
+            Directory.Delete(tempDir, recursive: true);
+        }
+    }
+}
 
