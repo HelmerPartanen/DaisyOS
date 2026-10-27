@@ -7,7 +7,6 @@ using Avalonia.VisualTree;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
-using ShapePath = Avalonia.Controls.Shapes.Path;
 using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Views.Components.SystemBar;
 using Xunit;
@@ -98,6 +97,7 @@ public sealed class QuickSettingsTests
     [AvaloniaTheory]
     [InlineData(20, 0.3, 0.3, 1.0)]
     [InlineData(50, 0.3, 1.0, 1.0)]
+    [InlineData(80, 1.0, 1.0, 1.0)]
     public void WifiSignalKeepsUnavailableBandsVisibleAtLowerOpacity(
         int signalPercent, double expectedOuter, double expectedInner, double expectedDot)
     {

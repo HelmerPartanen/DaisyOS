@@ -355,7 +355,7 @@
             <!-- Power & Battery Card -->
             <Button Classes="SettingsListItem" Click="OnSystemSettingItemClicked" Tag="Power">
               <Grid ColumnDefinitions="Auto,*,Auto">
-                <controls:DaisyIcon Icon="battery-charging" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="0,0,14,0" />
+                <controls:DaisyIcon Icon="battery" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" Margin="0,0,14,0" />
                 <StackPanel Grid.Column="1" VerticalAlignment="Center">
                   <TextBlock Text="{DynamicResource Loc_28778E1F199F}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}" />
                 </StackPanel>

@@ -1,4 +1,5 @@
 using System.Reflection;
+using System.Xml.Linq;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
@@ -102,6 +103,26 @@ public sealed class BatteryStatusViewTests
             Assert.Equal(icon.BaseBrush, body.Foreground);
         }
         finally { window.Close(); }
+    }
+
+    [Fact]
+    public void BatteryFillClipMatchesTheUpdatedSvgBodyExactly()
+    {
+        var root = FindRepoRoot();
+        var svg = XDocument.Load(Path.Combine(root, "src", "DaisyOS.Shell", "Assets", "Icons", "HugeIcons", "battery.svg"));
+        var body = svg.Root!.Elements().First().Attribute("d")!.Value;
+        var view = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Controls", "BatteryLevelIcon.axaml"));
+        Assert.Contains($"Clip=\"{body}\"", view);
+        var settings = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Apps", "System", "Settings", "SettingsView.axaml"));
+        Assert.DoesNotContain("Icon=\"battery-charging\"", settings);
+    }
+
+    private static string FindRepoRoot()
+    {
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "src")))
+            directory = directory.Parent;
+        return directory?.FullName ?? throw new DirectoryNotFoundException("Repository root not found.");
     }
 
     [Theory]
