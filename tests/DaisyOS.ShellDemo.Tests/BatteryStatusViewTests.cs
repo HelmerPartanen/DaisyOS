@@ -84,6 +84,25 @@ public sealed class BatteryStatusViewTests
         finally { window.Close(); }
     }
 
+    [AvaloniaFact]
+    public void FillIsOpticallyInsetFromOutlineAntialiasing()
+    {
+        var icon = new BatteryLevelIcon { Percentage = 85 };
+        var window = new Window { Content = icon };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            var canvas = Assert.IsType<Canvas>(Assert.IsType<Viewbox>(icon.Content).Child);
+            var fill = icon.FindControl<Border>("FillBar")!;
+            Assert.Equal(2, Canvas.GetLeft(fill));
+            Assert.Equal(2, Canvas.GetTop(fill));
+            Assert.Equal(9.5, fill.Height);
+            Assert.Equal(18.5 * 0.85, fill.Width, 5);
+        }
+        finally { window.Close(); }
+    }
+
     [Theory]
     [InlineData("Charging", true)]
     [InlineData("charging", true)]

@@ -42,10 +42,14 @@ public class DiskManagerTests
             foreach (var button in toolbar.Children.OfType<Button>())
             {
                 Assert.True(button.Bounds.Width > 0);
+                Assert.Contains("Small", button.Classes);
                 var contents = Assert.IsType<StackPanel>(button.Content);
                 Assert.IsType<DaisyIcon>(contents.Children[0]);
                 Assert.IsType<TextBlock>(contents.Children[1]);
             }
+            Assert.Contains("Danger", toolbar.Children.OfType<Button>().Single(x => x.Name == "ActionErase").Classes);
+            Assert.Contains("Primary", toolbar.Children.OfType<Button>().Single(x => x.Name == "ActionMount").Classes);
+            Assert.Contains("Secondary", toolbar.Children.OfType<Button>().Single(x => x.Name == "ActionRefresh").Classes);
             Assert.True(list.Bounds.Height > 200);
             var details = window.FindControl<StackPanel>("DeviceDetails")!;
             Assert.True(details.Children.OfType<Border>().Count() + details.Children.OfType<StackPanel>().Count(x => x.Children.OfType<Border>().Any()) >= 2);

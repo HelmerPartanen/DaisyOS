@@ -212,7 +212,7 @@ show_memory_status() {
     exit 1
   fi
 
-  local total reserve core_min apps_high
+  local total reserve core_min apps_high zram_kib disk_swap_kib
   total="$(read_runtime_value memory.total-mib || true)"
   reserve="$(read_runtime_value memory.reserve-mib || true)"
   core_min="$(read_runtime_value memory.core-min-mib || true)"
@@ -231,6 +231,13 @@ show_memory_status() {
     printf '  Early OOM recovery: active\n'
   else
     printf '  Early OOM recovery: inactive\n'
+  fi
+  zram_kib="$(awk 'NR > 1 && $1 ~ /^\/dev\/zram/ { total += $3 } END { print total + 0 }' /proc/swaps)"
+  disk_swap_kib="$(awk 'NR > 1 && $1 !~ /^\/dev\/zram/ { total += $3 } END { print total + 0 }' /proc/swaps)"
+  printf '  Compressed zram swap: %s MiB\n' "$((zram_kib / 1024))"
+  printf '  Disk emergency swap: %s MiB\n' "$((disk_swap_kib / 1024))"
+  if (( zram_kib == 0 )); then
+    printf '  Warning: compressed swap is inactive; memory exhaustion can become an abrupt OOM kill.\n'
   fi
 }
 

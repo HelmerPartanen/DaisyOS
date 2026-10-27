@@ -73,22 +73,22 @@
         <!-- Action Buttons -->
         <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,0,0,12">
           <!-- New Note Button -->
-          <Button Grid.Column="0" Classes="Large SettingsNavItem"
+          <Button x:Name="NewNoteButton" Grid.Column="0" Classes="Primary Small"
                   Margin="0,0,4,0"
                   Command="{Binding AddNoteCommand}">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <controls:DaisyIcon Icon="plus" Classes="NavIcon" />
-              <TextBlock Text="{DynamicResource Loc_18FDD549B2ED}" Classes="NavLabel" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeSmall}" />
+              <TextBlock Text="{DynamicResource Loc_18FDD549B2ED}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
           
           <!-- Open File Button -->
-          <Button Grid.Column="1" Classes="Large SettingsNavItem"
+          <Button x:Name="OpenNoteButton" Grid.Column="1" Classes="Secondary Small"
                   Margin="4,0,0,0"
                   Click="OnOpenFileClick">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <controls:DaisyIcon Icon="folder-open" Classes="NavIcon" />
-              <TextBlock Text="{DynamicResource Loc_ED077F3D8125}" Classes="NavLabel" FontWeight="SemiBold" />
+            <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="folder-open" Size="{DynamicResource IconSizeSmall}" />
+              <TextBlock Text="{DynamicResource Loc_ED077F3D8125}" VerticalAlignment="Center" />
             </StackPanel>
           </Button>
         </Grid>

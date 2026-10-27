@@ -13,9 +13,8 @@ internal enum BatteryLevelSeverity
 
 public partial class BatteryLevelIcon : UserControl
 {
-    // The shared battery silhouette's 1.5px stroke leaves this exact
-    // horizontal cavity: x=1.5 through x=21 in its 25x14 view box.
-    private const double InteriorWidth = 19.5;
+    // Optically inset from the antialiased inside edge of the 1.5px outline.
+    private const double InteriorWidth = 18.5;
 
     public static readonly StyledProperty<int> PercentageProperty =
         AvaloniaProperty.Register<BatteryLevelIcon, int>(nameof(Percentage));

@@ -1,0 +1,11 @@
+[Unit]
+Description=DaisyOS low-priority emergency disk swap
+After=local-fs.target
+
+[Swap]
+What=/var/lib/daisyos/swapfile
+Priority=10
+Options=discard=once
+
+[Install]
+WantedBy=swap.target

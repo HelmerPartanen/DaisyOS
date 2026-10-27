@@ -86,3 +86,20 @@ policy.
 
 The checked-in harness records these as failures or pending evidence rather than
 treating missing measurements as passes.
+
+## Memory-resilience implementation follow-up
+
+The repository now has one idempotent installer shared by native-development
+hosts and ISO staging. It installs a zram-generator drop-in with up to 4 GiB
+zstd swap at priority 100, systemd-oomd policy, `vm.swappiness=100`,
+`vm.page-cluster=0`, and a boot health check. Real host installations also
+create a 4 GiB swap file at priority 10, using the filesystem-native Btrfs
+operation or a staged ext4/XFS allocation. It refuses insufficient space,
+unsupported filesystems, oversized requests, and existing non-swap targets.
+
+The live ISO intentionally does not create disk swap on its boot medium. Its
+automatic layer is zram plus systemd-oomd and protected cgroups. The installed
+or native-development path supplies the disk fallback. These changes passed
+staging, ISO-profile, session-supervisor, memory-policy, and reliability-harness
+tests, but their effect on OOM rate and interaction latency remains a hardware
+measurement, not an inferred success.

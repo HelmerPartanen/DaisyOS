@@ -21,6 +21,7 @@ file_permissions=(
   ["/usr/local/bin/wine"]="0:0:755"
   ["/usr/local/bin/wine64"]="0:0:755"
   ["/usr/local/lib/daisyos/gaming-environment"]="0:0:644"
+  ["/usr/local/lib/daisyos/daisyos-memory-health"]="0:0:755"
   ["/usr/share/polkit-1/rules.d/60-daisyos-gamemode.rules"]="0:0:644"
   ["/opt/DaisyOS/shell/DaisyOS.Shell"]="0:0:755"
   ["/opt/DaisyOS/shell/createdump"]="0:0:755"

@@ -18,6 +18,11 @@ required_files=(
   airootfs/etc/locale.gen
   airootfs/etc/vconsole.conf
   airootfs/etc/systemd/system/daisyos-setup.service
+  airootfs/etc/systemd/system/daisyos-memory-health.service
+  airootfs/etc/systemd/system/multi-user.target.d/20-daisyos-memory-health.conf
+  airootfs/etc/systemd/zram-generator.conf
+  airootfs/etc/systemd/oomd.conf.d/10-daisyos-oomd.conf
+  airootfs/etc/sysctl.d/90-daisyos-memory.conf
   airootfs/etc/systemd/system/getty@tty1.service.d/autologin.conf
   airootfs/usr/local/bin/daisyos-setup.sh
   airootfs/usr/local/bin/daisyos-start-session
@@ -29,6 +34,7 @@ required_files=(
   airootfs/usr/local/bin/steam
   airootfs/usr/local/bin/lutris
   airootfs/usr/local/lib/daisyos/gaming-environment
+  airootfs/usr/local/lib/daisyos/daisyos-memory-health
   airootfs/usr/share/polkit-1/rules.d/60-daisyos-gamemode.rules
 )
 
@@ -38,6 +44,19 @@ for file in "${required_files[@]}"; do
     exit 1
   fi
 done
+
+if ! grep -Fq 'zram-size = min(ram / 2, 4096)' "$profile/airootfs/etc/systemd/zram-generator.conf" \
+  || ! grep -Fq 'compression-algorithm = zstd' "$profile/airootfs/etc/systemd/zram-generator.conf" \
+  || ! grep -Fq 'swap-priority = 100' "$profile/airootfs/etc/systemd/zram-generator.conf"; then
+  echo "The ISO must provide the bounded high-priority zstd zram policy."
+  exit 1
+fi
+
+if ! grep -Fq 'Wants=daisyos-memory-health.service' \
+  "$profile/airootfs/etc/systemd/system/multi-user.target.d/20-daisyos-memory-health.conf"; then
+  echo "The ISO must verify memory resilience during boot."
+  exit 1
+fi
 
 if ! grep -Eq '^bootmodes=\([^)]*"bios\.syslinux"[^)]*"uefi\.systemd-boot"' \
     "$profile/profiledef.sh"; then

@@ -167,6 +167,12 @@ public sealed class NotesEditorTests
             using var frame = window.CaptureRenderedFrame();
             Assert.NotNull(frame);
             var rich = view.FindControl<RichEditorView>("RichEditor")!;
+            var newButton = view.FindControl<Button>("NewNoteButton")!;
+            var openButton = view.FindControl<Button>("OpenNoteButton")!;
+            Assert.Contains("Primary", newButton.Classes);
+            Assert.Contains("Small", newButton.Classes);
+            Assert.Contains("Secondary", openButton.Classes);
+            Assert.Contains("Small", openButton.Classes);
             var toolbar = rich.FindControl<Border>("FloatingToolbar")!;
             var blocks = rich.FindControl<StackPanel>("BlocksContainer")!;
             Assert.True(toolbar.Bounds.Width <= rich.Bounds.Width - 24);
@@ -180,7 +186,7 @@ public sealed class NotesEditorTests
             Assert.Equal(toolbar.Bounds.Height + 24, blocks.Margin.Top);
             Assert.Equal(view.FindControl<Border>("NavigationSidebar")!.Background, toolbar.Background);
             Assert.True(rich.FindControl<ComboBox>("FontFamilyCombo")!.IsVisible);
-            Assert.Equal(92, rich.FindControl<ComboBox>("FontFamilyCombo")!.Bounds.Width);
+            Assert.Equal(104, rich.FindControl<ComboBox>("FontFamilyCombo")!.Bounds.Width);
             foreach (var name in new[] { "BlockTypeCombo", "FontFamilyCombo", "FontWeightCombo" })
             {
                 var picker = rich.FindControl<ComboBox>(name)!;

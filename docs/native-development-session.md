@@ -59,6 +59,12 @@ pressure, `systemd-oomd` ends the affected app cgroup before KWin or the shell
 become an out-of-memory victim. The installer enables `systemd-oomd` when it
 is available; use `daisyos-native-development memory status` to confirm it.
 
+The installer also configures up to 4 GiB of zstd-compressed zram and, on a real
+host installation, a 4 GiB low-priority disk swap file. Zram absorbs short
+bursts without storage I/O; the disk file is an emergency fallback for sustained
+or poorly compressible pressure. It can increase SSD writes and may make a
+severely pressured workload slower, but avoids the no-swap failure cliff.
+
 ## Recovery behavior
 
 The native session never falls back to a fullscreen Avalonia window: the shell

@@ -88,8 +88,11 @@ and [Apple's memory footprint guidance](https://developer.apple.com/library/arch
 The relevant principles here are to reduce dirty retained allocations, avoid
 unneeded background work, and retain useful reclaimable caches. DaisyOS's image
 already configures zstd compressed RAM swap through zram (up to 4 GiB). The
-current development host reports no active swap; image configuration does not
-prove that this host uses compression. Its swap configuration was not changed.
+native-development installer now applies the same zram policy and adds a
+low-priority 4 GiB disk fallback on supported filesystems. A boot health unit
+reports missing zram or systemd-oomd rather than treating configuration as proof
+of activation. Measurements made before that installer runs still represent a
+no-swap host.
 
 ## Remaining performance work
 

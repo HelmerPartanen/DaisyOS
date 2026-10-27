@@ -42,9 +42,13 @@ For a blank UEFI disk, the proposed automatic layout is:
 | DaisyOS system | Remaining space minus recovery | Btrfs | Root system and snapshots |
 | Recovery | 4 GiB | Read-only image/filesystem | Offline repair and reinstall tools |
 
-Swap should initially use a Btrfs-compatible swap file sized from memory and
-hibernation requirements. Existing partitions must never be resized without a
-separate manual-partitioning flow and an explicit backup warning.
+Installed systems should combine up to 4 GiB zstd zram at priority 100 with a
+4 GiB Btrfs-compatible emergency swap file at priority 10 on 8 GB hardware.
+The installer must use `btrfs filesystem mkswapfile` rather than a generic
+copy-on-write file. Hibernation sizing is a separate mode because a 4 GiB
+fallback cannot hold an 8 GB memory image. Existing partitions must never be
+resized without a separate manual-partitioning flow and an explicit backup
+warning.
 
 Before writing anything, a real installer must show the stable device path,
 model, serial suffix, capacity, connection type, current partitions, mount

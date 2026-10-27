@@ -16,6 +16,8 @@ daisyos-native-development restart
 daisyos-native-development memory status
 
 # RELIABILITY / 8 GB ACCEPTANCE
+sudo scripts/install-memory-resilience.sh --disk-swap-gib 4
+daisyos-native-development memory status
 sudo -E scripts/daisyos-reliability.py capture --output artifacts/reliability --label before
 # Default 8-hour rotation; use --duration 86400 for release acceptance.
 sudo -E scripts/daisyos-reliability.py run --manifest tests/reliability/everyday-v1.json \

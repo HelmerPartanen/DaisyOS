@@ -5,6 +5,18 @@ without assuming that memory is the cause. The installed DaisyOS image is the
 authoritative target. Development sessions are useful supplemental evidence but
 do not prove the shipped zram, cgroup, or OOM policy.
 
+Install or repair the host memory-resilience layer with:
+
+```bash
+sudo scripts/install-memory-resilience.sh --disk-swap-gib 4
+```
+
+This installs zstd zram (up to 4 GiB), a 4 GiB low-priority disk fallback,
+systemd-oomd policy, cgroup-v2 health checks, and conservative VM tuning. The
+operation is idempotent and refuses unsupported filesystems, insufficient free
+space, oversized requests, and pre-existing non-swap files. Disk swap may add
+SSD writes and latency only after faster RAM and compressed swap are pressured.
+
 ## Commands
 
 Capture the current boot before changing the system:

@@ -46,7 +46,7 @@ else
 fi
 [[ "$disk_swap_gib" =~ ^[0-9]+$ ]] || { echo "Disk swap size must be a whole number of GiB." >&2; exit 2; }
 
-if (( install_package )) && ! command -v zram-generator >/dev/null 2>&1 \
+if (( install_package )) && [[ ! -x /usr/lib/systemd/system-generators/zram-generator ]] \
   && ! systemctl cat systemd-zram-setup@.service >/dev/null 2>&1; then
   if command -v pacman >/dev/null 2>&1; then
     pacman -S --needed --noconfirm zram-generator
@@ -56,7 +56,8 @@ if (( install_package )) && ! command -v zram-generator >/dev/null 2>&1 \
   fi
 fi
 
-install -Dm644 "$repo_root/scripts/memory/zram-generator.conf" "$target_root/etc/systemd/zram-generator.conf"
+install -Dm644 "$repo_root/scripts/memory/zram-generator.conf" \
+  "$target_root/etc/systemd/zram-generator.conf.d/90-daisyos.conf"
 install -Dm644 "$repo_root/scripts/memory/10-daisyos-oomd.conf" "$target_root/etc/systemd/oomd.conf.d/10-daisyos-oomd.conf"
 install -Dm644 "$repo_root/scripts/memory/90-daisyos-memory.conf" "$target_root/etc/sysctl.d/90-daisyos-memory.conf"
 install -Dm755 "$repo_root/scripts/memory/daisyos-memory-health" "$target_root/usr/local/lib/daisyos/daisyos-memory-health"
@@ -65,10 +66,12 @@ install -Dm644 "$repo_root/scripts/memory/daisyos-memory-health.service" "$targe
 create_disk_swap() {
   local swap_dir=/var/lib/daisyos
   local swap_file="$swap_dir/swapfile"
+  local staged_swap="$swap_dir/swapfile.new"
   local filesystem available_kib required_kib
   filesystem="$(findmnt -no FSTYPE --target "$swap_dir" 2>/dev/null || findmnt -no FSTYPE --target /)"
-  available_kib="$(df --output=avail -k "$swap_dir" 2>/dev/null | awk 'NR == 2 { print $1 }')"
+  available_kib="$(df --output=avail -k /var/lib 2>/dev/null | awk 'NR == 2 { print $1 }')"
   required_kib=$((disk_swap_gib * 1024 * 1024))
+  [[ "$available_kib" =~ ^[0-9]+$ ]] || { echo "Could not measure free space for disk swap." >&2; return 1; }
   (( available_kib >= required_kib + 1024 * 1024 )) || {
     echo "Refusing disk swap: keep at least 1 GiB free after allocation." >&2
     return 1
@@ -81,29 +84,22 @@ create_disk_swap() {
     }
   elif [[ "$filesystem" == btrfs ]]; then
     command -v btrfs >/dev/null || { echo "Btrfs tooling is required for a safe swap file." >&2; return 1; }
-    btrfs filesystem mkswapfile --size "${disk_swap_gib}G" "$swap_file"
+    [[ ! -e "$staged_swap" ]] || { echo "Remove stale staging file before retrying: $staged_swap" >&2; return 1; }
+    btrfs filesystem mkswapfile --size "${disk_swap_gib}G" "$staged_swap"
+    mv "$staged_swap" "$swap_file"
   elif [[ "$filesystem" == ext4 || "$filesystem" == xfs ]]; then
-    fallocate -l "${disk_swap_gib}G" "$swap_file"
-    chmod 600 "$swap_file"
-    mkswap "$swap_file" >/dev/null
+    [[ ! -e "$staged_swap" ]] || { echo "Remove stale staging file before retrying: $staged_swap" >&2; return 1; }
+    fallocate -l "${disk_swap_gib}G" "$staged_swap"
+    chmod 600 "$staged_swap"
+    mkswap "$staged_swap" >/dev/null
+    mv "$staged_swap" "$swap_file"
   else
     echo "Unsupported swap-file filesystem: $filesystem" >&2
     return 1
   fi
   chmod 600 "$swap_file"
-  cat > /etc/systemd/system/var-lib-daisyos-swapfile.swap <<'EOF'
-[Unit]
-Description=DaisyOS low-priority emergency disk swap
-After=local-fs.target
-
-[Swap]
-What=/var/lib/daisyos/swapfile
-Priority=10
-Options=discard=once
-
-[Install]
-WantedBy=swap.target
-EOF
+  install -Dm644 "$repo_root/scripts/memory/var-lib-daisyos-swapfile.swap" \
+    /etc/systemd/system/var-lib-daisyos-swapfile.swap
 }
 
 if [[ "$target_root" == / ]] && (( disk_swap_gib > 0 )); then

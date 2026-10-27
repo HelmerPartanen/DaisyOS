@@ -7,7 +7,7 @@ trap 'rm -rf "$temp_dir"' EXIT
 
 "$repo_root/scripts/install-memory-resilience.sh" --root "$temp_dir" --no-disk-swap --no-package --no-activate
 
-cmp "$repo_root/scripts/memory/zram-generator.conf" "$temp_dir/etc/systemd/zram-generator.conf"
+cmp "$repo_root/scripts/memory/zram-generator.conf" "$temp_dir/etc/systemd/zram-generator.conf.d/90-daisyos.conf"
 cmp "$repo_root/scripts/memory/10-daisyos-oomd.conf" "$temp_dir/etc/systemd/oomd.conf.d/10-daisyos-oomd.conf"
 cmp "$repo_root/scripts/memory/90-daisyos-memory.conf" "$temp_dir/etc/sysctl.d/90-daisyos-memory.conf"
 cmp "$repo_root/scripts/memory/daisyos-memory-health" "$temp_dir/usr/local/lib/daisyos/daisyos-memory-health"

@@ -131,7 +131,7 @@ def capture_raw(output):
         "system-status.txt": ["systemctl", "--failed", "--no-pager"],
         "user-status.txt": ["systemctl", "--user", "--failed", "--no-pager"],
         "oomd-status.txt": ["oomctl", "--no-pager"],
-        "swap.txt": ["swapon", "--show", "--bytes", "--output=NAME,TYPE,SIZE,USED,PRIO"],
+        "swap.txt": ["swapon", "--show=NAME,TYPE,SIZE,USED,PRIO", "--bytes"],
         "zram.txt": ["zramctl", "--output-all"],
         "block-devices.json": ["lsblk", "--json", "--output", "NAME,TYPE,SIZE,FSTYPE,MOUNTPOINTS,MODEL,SERIAL,ROTA"],
         "storage-health-scan.txt": ["smartctl", "--scan-open"],

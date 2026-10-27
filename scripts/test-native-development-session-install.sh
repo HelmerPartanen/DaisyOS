@@ -53,9 +53,14 @@ grep -Fq 'MemoryHigh=${memory_apps_high_mib}M' "$session_launcher"
 grep -Fq 'ManagedOOMMemoryPressure=kill' "$session_launcher"
 grep -Fq 'DAISYOS_MEMORY_APP_SLICE=daisyos-apps.slice' "$session_launcher"
 grep -Fq 'memory status' "$control"
+grep -Fq 'Compressed zram swap:' "$control"
+grep -Fq 'Disk emergency swap:' "$control"
 grep -Fq -- '--add-port=53317/tcp' "$installer"
 grep -Fq -- '--add-port=53317/udp' "$installer"
 [[ -x "$memory_policy" ]]
+[[ -f "$stage_root/etc/systemd/zram-generator.conf.d/90-daisyos.conf" ]]
+[[ -f "$stage_root/etc/systemd/oomd.conf.d/10-daisyos-oomd.conf" ]]
+[[ -f "$stage_root/etc/sysctl.d/90-daisyos-memory.conf" ]]
 grep -Fq 'prepare-screen-sharing.sh' "$session_launcher"
 grep -Fxq 'org.freedesktop.impl.portal.FileChooser=daisyos' \
   "$stage_root/usr/share/xdg-desktop-portal/daisyos-portals.conf"

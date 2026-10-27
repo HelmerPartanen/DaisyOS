@@ -53,7 +53,7 @@
         <StackPanel x:Name="FormattingContent" Orientation="Horizontal" Spacing="0">
           <!-- Block Type Selector DropDown -->
           <ComboBox x:Name="BlockTypeCombo"
-                    Width="110"
+                    Width="120"
                     AutomationProperties.Name="{DynamicResource Loc_9AA08BE49BDD}"
                     Height="{DynamicResource ControlHeightCompact}"
                     MinHeight="{DynamicResource ControlHeightCompact}"
@@ -77,7 +77,7 @@
                     Height="{DynamicResource ControlHeightCompact}"
                     MinHeight="{DynamicResource ControlHeightCompact}"
                     VerticalAlignment="Center"
-                    Width="92"
+                    Width="104"
                     FontSize="{DynamicResource TypeSizeCaption}"
                     CornerRadius="{DynamicResource RadiusControlInner}"
                     SelectionChanged="OnFontFamilySelectionChanged">
@@ -170,7 +170,7 @@
                     Height="{DynamicResource ControlHeightCompact}"
                     MinHeight="{DynamicResource ControlHeightCompact}"
                     VerticalAlignment="Center"
-                    Width="88"
+                    Width="104"
                     FontSize="{DynamicResource TypeSizeCaption}"
                     CornerRadius="{DynamicResource RadiusControlInner}"
                     SelectionChanged="OnFontWeightSelectionChanged">

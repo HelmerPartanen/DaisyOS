@@ -35,7 +35,8 @@ public sealed partial class DiskManagerWindow : Window
             this.FindControl<Grid>("MainPaneLayout")!, "Auto,Auto,*,Auto", "0,Auto,*,Auto");
         foreach (var (action, icon) in new[] { ("Erase", "trash"), ("Partition", "hard-drive"), ("Mount", "folder-open"), ("First Aid", "shield-check"), ("Health", "gauge"), ("Restore / Clone", "copy"), ("Refresh", "arrows-clockwise") })
         {
-            var button = new Button { Name = "Action" + action.Replace(" / ", "").Replace(" ", ""), Classes = { "Secondary" } };
+            var variant = action switch { "Erase" => "Danger", "Mount" => "Primary", _ => "Secondary" };
+            var button = new Button { Name = "Action" + action.Replace(" / ", "").Replace(" ", ""), Classes = { variant, "Small" } };
             button.Content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6, Children = { new DaisyIcon { Icon = icon, Size = 16 }, new TextBlock { Text = action, VerticalAlignment = VerticalAlignment.Center } } };
             ToolTip.SetTip(button, action);
             button.Click += async (_, _) => await Action(action == "Mount" && _list.SelectedItem is DiskItem selected && DiskService.ResolveMountVolume(selected, _items)?.Mounted == true ? "Unmount" : action);
