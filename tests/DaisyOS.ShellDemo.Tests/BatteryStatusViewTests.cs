@@ -48,13 +48,11 @@ public sealed class BatteryStatusViewTests
         try
         {
             Dispatcher.UIThread.RunJobs();
-            var chargingIcon = view.FindControl<DaisyIcon>("ChargingIcon")!;
             var levelIcon = view.FindControl<BatteryLevelIcon>("LevelIcon")!;
-            Assert.True(chargingIcon.IsVisible);
             Assert.True(levelIcon.IsVisible);
-            Assert.Equal("battery-charging", chargingIcon.Icon);
-            Assert.Equal(Color.Parse("#8899AA"),
-                Assert.IsAssignableFrom<ISolidColorBrush>(chargingIcon.Foreground).Color);
+            var chargingIcon = levelIcon.FindControl<DaisyIcon>("ChargingGlyph")!;
+            Assert.True(chargingIcon.IsVisible);
+            Assert.Equal("lightning", chargingIcon.Icon);
             Assert.Equal(Color.Parse("#34C759"),
                 Assert.IsAssignableFrom<ISolidColorBrush>(levelIcon.FillBrush).Color);
             Assert.Equal(BatteryLevelIcon.GetFillWidth(75),
@@ -85,7 +83,7 @@ public sealed class BatteryStatusViewTests
     }
 
     [AvaloniaFact]
-    public void FillIsOpticallyInsetFromOutlineAntialiasing()
+    public void ChargeOverlaysSolidBodyWithoutAStroke()
     {
         var icon = new BatteryLevelIcon { Percentage = 85 };
         var window = new Window { Content = icon };
@@ -95,10 +93,13 @@ public sealed class BatteryStatusViewTests
             Dispatcher.UIThread.RunJobs();
             var canvas = Assert.IsType<Canvas>(Assert.IsType<Viewbox>(icon.Content).Child);
             var fill = icon.FindControl<Border>("FillBar")!;
-            Assert.Equal(2, Canvas.GetLeft(fill));
-            Assert.Equal(2, Canvas.GetTop(fill));
-            Assert.Equal(9.5, fill.Height);
-            Assert.Equal(18.5 * 0.85, fill.Width, 5);
+            Assert.Equal(0, Canvas.GetLeft(fill));
+            Assert.Equal(1, Canvas.GetTop(fill));
+            Assert.Equal(12, fill.Height);
+            Assert.Equal(21 * 0.85, fill.Width, 5);
+            var body = icon.FindControl<DaisyIcon>("BatteryBody")!;
+            Assert.Equal("battery", body.Icon);
+            Assert.Equal(icon.BaseBrush, body.Foreground);
         }
         finally { window.Close(); }
     }

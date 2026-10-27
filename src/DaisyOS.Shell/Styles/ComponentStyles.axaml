@@ -231,6 +231,24 @@
     <Setter Property="MinHeight" Value="{DynamicResource HitTargetComfortable}" />
     <Setter Property="Padding" Value="{DynamicResource ControlPaddingComfortable}" />
   </Style>
+  <!-- Opt-in for localized or user-provided labels in constrained layouts.
+       Parents should place these controls in a WrapPanel or star-sized Grid. -->
+  <Style Selector="Button.Flexible, ToggleButton.Flexible">
+    <Setter Property="Width" Value="NaN" />
+    <Setter Property="Height" Value="NaN" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="HorizontalAlignment" Value="Stretch" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.Flexible TextBlock, ToggleButton.Flexible TextBlock">
+    <Setter Property="TextWrapping" Value="Wrap" />
+    <Setter Property="TextTrimming" Value="None" />
+    <Setter Property="TextAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.Small.Flexible, ToggleButton.Small.Flexible">
+    <Setter Property="MinHeight" Value="{DynamicResource ButtonHeightSmall}" />
+  </Style>
 
   <Style Selector="Button.Primary, ToggleButton.Primary">
     <Setter Property="Background" Value="{DynamicResource ActionPrimaryBrush}" />

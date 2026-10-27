@@ -50,8 +50,6 @@ public partial class BatteryStatusView : UserControl
             percent.Text = $"{Math.Clamp(ChargePercent, 0, 100)}%";
         if (this.FindControl<BatteryLevelIcon>("LevelIcon") is not { } icon) return;
         icon.Classes.Set("Charging", IsCharging);
-        if (this.FindControl<DaisyIcon>("ChargingIcon") is { } chargingIcon)
-            chargingIcon.IsVisible = IsCharging;
         icon.Classes.Set("Low", BatteryLevelIcon.GetSeverity(ChargePercent) == BatteryLevelSeverity.Low);
         icon.Classes.Set("Critical", BatteryLevelIcon.GetSeverity(ChargePercent) == BatteryLevelSeverity.Critical);
     }

@@ -25,11 +25,20 @@
       <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
       <Setter Property="VerticalContentAlignment" Value="Center" />
     </Style>
-    <Style Selector="Button.ToolbarPill:pointerover">
+    <!-- Apply interaction colour to the template surface only. Styling both the
+         Button and presenter caused two competing hover transitions to flash. -->
+    <Style Selector="Button.ToolbarPill /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="Transitions"><Transitions /></Setter>
+    </Style>
+    <Style Selector="Button.ToolbarPill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
     </Style>
-    <Style Selector="Button.ToolbarPill.Active">
+    <Style Selector="Button.ToolbarPill.Active /template/ ContentPresenter#PART_ContentPresenter,
+                     Button.ToolbarPill.Active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource ActionPrimarySubtleBrush}" />
+    </Style>
+    <Style Selector="Button.ToolbarPill.Active">
       <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
     </Style>
   </UserControl.Styles>
@@ -50,10 +59,11 @@
           <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeStandard}" />
         </Button>
       <ScrollViewer Grid.Column="1" x:Name="FormattingScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
-        <StackPanel x:Name="FormattingContent" Orientation="Horizontal" Spacing="0">
+        <StackPanel x:Name="FormattingContent" Orientation="Horizontal" Spacing="4">
           <!-- Block Type Selector DropDown -->
           <ComboBox x:Name="BlockTypeCombo"
-                    Width="120"
+                    Classes="Flexible"
+                    MinWidth="120"
                     AutomationProperties.Name="{DynamicResource Loc_9AA08BE49BDD}"
                     Height="{DynamicResource ControlHeightCompact}"
                     MinHeight="{DynamicResource ControlHeightCompact}"
@@ -74,10 +84,11 @@
 
           <!-- Font Family Selector -->
           <ComboBox x:Name="FontFamilyCombo"
+                    Classes="Flexible"
                     Height="{DynamicResource ControlHeightCompact}"
                     MinHeight="{DynamicResource ControlHeightCompact}"
                     VerticalAlignment="Center"
-                    Width="104"
+                    MinWidth="104"
                     FontSize="{DynamicResource TypeSizeCaption}"
                     CornerRadius="{DynamicResource RadiusControlInner}"
                     SelectionChanged="OnFontFamilySelectionChanged">
@@ -167,10 +178,11 @@
 
           <!-- Font Weight Selector -->
           <ComboBox x:Name="FontWeightCombo"
+                    Classes="Flexible"
                     Height="{DynamicResource ControlHeightCompact}"
                     MinHeight="{DynamicResource ControlHeightCompact}"
                     VerticalAlignment="Center"
-                    Width="104"
+                    MinWidth="104"
                     FontSize="{DynamicResource TypeSizeCaption}"
                     CornerRadius="{DynamicResource RadiusControlInner}"
                     SelectionChanged="OnFontWeightSelectionChanged">

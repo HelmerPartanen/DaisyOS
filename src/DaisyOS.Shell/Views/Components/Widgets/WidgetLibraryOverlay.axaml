@@ -57,13 +57,42 @@
       <Setter Property="RenderTransform" Value="scale(1.01)" />
       <Setter Property="BoxShadow" Value="{DynamicResource ElevationFlyoutShadow}" />
     </Style>
+    <Style Selector="TextBlock.WidgetGalleryTitle">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.WidgetGalleryHint">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="TextWrapping" Value="Wrap" />
+    </Style>
+    <Style Selector="Border.SizeBadge">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+      <Setter Property="Padding" Value="7,3" />
+    </Style>
+    <Style Selector="Border.SizeBadge TextBlock">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+    </Style>
   </UserControl.Styles>
   <Grid Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
     <controls:ShellFrameBorder Classes="WidgetLibraryFrame" Width="820" Height="480" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,58" x:Name="LibraryFrame">
       <controls:ShellFrameBorder Classes="WidgetLibraryHighlight">
         <Border x:Name="LibraryCard" Classes="WidgetLibraryCard">
-          <Grid RowDefinitions="*,Auto" RowSpacing="14">
-            <Grid Grid.Row="0" ColumnDefinitions="160,*" ColumnSpacing="24">
+          <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <StackPanel Spacing="3">
+                <TextBlock Text="Widget Gallery" Classes="WidgetGalleryTitle" />
+                <TextBlock Text="Choose a style and size, then drag it onto your desktop." Classes="WidgetGalleryHint" />
+              </StackPanel>
+              <Border Grid.Column="1" Classes="SizeBadge" VerticalAlignment="Center">
+                <TextBlock Text="4 widget families" />
+              </Border>
+            </Grid>
+            <Grid Grid.Row="1" ColumnDefinitions="160,*" ColumnSpacing="24">
               <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Top">
                 <Button x:Name="ClockCategoryButton" Classes="CategoryButton Active" Click="OnClockCategoryClicked">
                   <StackPanel Orientation="Horizontal" Spacing="10">
@@ -100,7 +129,10 @@
                         </Grid>
                       </Viewbox>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_3E0AF27D2BF9}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_3E0AF27D2BF9}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
+                    </StackPanel>
                   </Grid>
                   <Grid Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
                     <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnClockDigitalPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
@@ -110,7 +142,10 @@
                         </Grid>
                       </Viewbox>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_68B82C427301}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_68B82C427301}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
+                    </StackPanel>
                   </Grid>
                   <Grid Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
                     <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnClockAnalogPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
@@ -120,7 +155,10 @@
                         </Grid>
                       </Viewbox>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_AC1EE367E355}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_AC1EE367E355}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
+                    </StackPanel>
                   </Grid>
                 </Grid>
                 <Grid x:Name="CalendarPreviewsPanel" ColumnDefinitions="3*,4*" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0" IsVisible="False" ColumnSpacing="16">
@@ -132,7 +170,10 @@
                         </Grid>
                       </Viewbox>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
+                    </StackPanel>
                   </Grid>
                   <Grid Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
                     <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnCalendarLargePressed" Tag="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
@@ -142,7 +183,10 @@
                         </Grid>
                       </Viewbox>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                      <Border Classes="SizeBadge"><TextBlock Text="4 × 2" /></Border>
+                    </StackPanel>
                   </Grid>
                 </Grid>
                 <Grid x:Name="MediaPreviewsPanel" RowDefinitions="Auto,*" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0" IsVisible="False" RowSpacing="16">
@@ -187,7 +231,10 @@
                           </Grid>
                         </Viewbox>
                       </Border>
-                      <TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                        <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
+                      </StackPanel>
                     </Grid>
                     <Grid Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
                       <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnMediaLargePressed" Tag="5,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
@@ -227,7 +274,10 @@
                           </Grid>
                         </Viewbox>
                       </Border>
-                      <TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
+                        <TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
+                        <Border Classes="SizeBadge"><TextBlock Text="5 × 2" /></Border>
+                      </StackPanel>
                     </Grid>
                   </Grid>
                 </Grid>
@@ -242,7 +292,7 @@
                         </StackPanel>
                       </Border>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" /><Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border></StackPanel>
                   </Grid>
                   <Grid RowDefinitions="*,Auto" RowSpacing="8" Grid.Column="0" Grid.Row="1">
                     <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnPhotosLargePressed" Tag="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
@@ -254,7 +304,7 @@
                         </StackPanel>
                       </Border>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" /><Border Classes="SizeBadge"><TextBlock Text="4 × 2" /></Border></StackPanel>
                   </Grid>
                   <Grid RowDefinitions="*,Auto" RowSpacing="8" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
                     <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnPhotosExtraLargePressed" Tag="5,4" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
@@ -266,13 +316,14 @@
                         </StackPanel>
                       </Border>
                     </Border>
-                    <TextBlock Text="{DynamicResource Loc_CC16912B3B97}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" Grid.Row="1" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><TextBlock Text="{DynamicResource Loc_CC16912B3B97}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" /><Border Classes="SizeBadge"><TextBlock Text="5 × 4" /></Border></StackPanel>
                   </Grid>
                 </Grid>
               </Grid>
             </Grid>
-            <Grid Grid.Row="1" HorizontalAlignment="Right">
-              <Button Classes="Primary Small" Content="{DynamicResource Loc_11A6767D5674}" Click="OnDoneClicked" />
+            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+              <TextBlock Text="Tip: widget sizes align to the desktop grid." Classes="WidgetGalleryHint" VerticalAlignment="Center" />
+              <Button Grid.Column="1" Classes="Primary Small" Content="{DynamicResource Loc_11A6767D5674}" Click="OnDoneClicked" />
             </Grid>
           </Grid>
         </Border>

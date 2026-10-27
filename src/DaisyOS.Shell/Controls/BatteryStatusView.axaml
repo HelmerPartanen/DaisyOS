@@ -6,7 +6,7 @@
   <UserControl.Styles>
     <Style Selector="controls|BatteryLevelIcon.BatteryLevel">
       <Setter Property="FillBrush" Value="{Binding Foreground, ElementName=Root}" />
-      <Setter Property="OutlineBrush" Value="{Binding Foreground, ElementName=Root}" />
+      <Setter Property="BaseBrush" Value="{DynamicResource ContentTertiaryBrush}" />
     </Style>
     <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Low">
       <Setter Property="FillBrush" Value="#FFCC00" />
@@ -16,7 +16,6 @@
     </Style>
     <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Charging">
       <Setter Property="FillBrush" Value="{DynamicResource BatteryChargingBrush}" />
-      <Setter Property="OutlineBrush" Value="Transparent" />
     </Style>
   </UserControl.Styles>
 
@@ -25,13 +24,8 @@
           Height="{Binding IconHeight, ElementName=Root}">
       <controls:BatteryLevelIcon x:Name="LevelIcon"
                                  Classes="BatteryLevel"
-                                 Percentage="{Binding ChargePercent, ElementName=Root}" />
-      <controls:DaisyIcon x:Name="ChargingIcon"
-                          Icon="battery-charging"
-                          Width="{Binding IconWidth, ElementName=Root}"
-                          Height="{Binding IconHeight, ElementName=Root}"
-                          Foreground="{Binding Foreground, ElementName=Root}"
-                          IsVisible="False" />
+                                 Percentage="{Binding ChargePercent, ElementName=Root}"
+                                 IsCharging="{Binding IsCharging, ElementName=Root}" />
     </Grid>
     <TextBlock x:Name="PercentText"
                FontSize="{Binding LabelFontSize, ElementName=Root}"

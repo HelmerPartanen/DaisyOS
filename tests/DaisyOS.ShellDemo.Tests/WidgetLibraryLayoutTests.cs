@@ -35,6 +35,9 @@ public sealed class WidgetLibraryLayoutTests
         library.Open();
         try
         {
+            window.UpdateLayout();
+            Assert.Contains(library.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Widget Gallery");
+            Assert.Contains(library.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "4 widget families");
             foreach (var category in new[] { "Clock", "Calendar", "Media", "Photos" })
             {
                 library.FindControl<Button>($"{category}CategoryButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -43,6 +46,7 @@ public sealed class WidgetLibraryLayoutTests
                 var panel = library.FindControl<Control>($"{category}PreviewsPanel")!;
                 var cards = panel.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("PreviewCard")).ToArray();
                 Assert.Equal(category is "Photos" or "Clock" ? 3 : 2, cards.Length);
+                Assert.Equal(cards.Length, panel.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("SizeBadge")));
                 var rectangles = cards.Select(card =>
                 {
                     Assert.True(card.Bounds.Width > 50 && card.Bounds.Height > 50);

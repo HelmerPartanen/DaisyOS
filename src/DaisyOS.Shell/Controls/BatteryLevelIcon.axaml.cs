@@ -13,8 +13,7 @@ internal enum BatteryLevelSeverity
 
 public partial class BatteryLevelIcon : UserControl
 {
-    // Optically inset from the antialiased inside edge of the 1.5px outline.
-    private const double InteriorWidth = 18.5;
+    private const double BodyWidth = 21;
 
     public static readonly StyledProperty<int> PercentageProperty =
         AvaloniaProperty.Register<BatteryLevelIcon, int>(nameof(Percentage));
@@ -22,8 +21,11 @@ public partial class BatteryLevelIcon : UserControl
     public static readonly StyledProperty<IBrush?> FillBrushProperty =
         AvaloniaProperty.Register<BatteryLevelIcon, IBrush?>(nameof(FillBrush));
 
-    public static readonly StyledProperty<IBrush?> OutlineBrushProperty =
-        AvaloniaProperty.Register<BatteryLevelIcon, IBrush?>(nameof(OutlineBrush));
+    public static readonly StyledProperty<IBrush?> BaseBrushProperty =
+        AvaloniaProperty.Register<BatteryLevelIcon, IBrush?>(nameof(BaseBrush));
+
+    public static readonly StyledProperty<bool> IsChargingProperty =
+        AvaloniaProperty.Register<BatteryLevelIcon, bool>(nameof(IsCharging));
 
     static BatteryLevelIcon()
     {
@@ -48,10 +50,16 @@ public partial class BatteryLevelIcon : UserControl
         set => SetValue(FillBrushProperty, value);
     }
 
-    public IBrush? OutlineBrush
+    public IBrush? BaseBrush
     {
-        get => GetValue(OutlineBrushProperty);
-        set => SetValue(OutlineBrushProperty, value);
+        get => GetValue(BaseBrushProperty);
+        set => SetValue(BaseBrushProperty, value);
+    }
+
+    public bool IsCharging
+    {
+        get => GetValue(IsChargingProperty);
+        set => SetValue(IsChargingProperty, value);
     }
 
     internal static BatteryLevelSeverity GetSeverity(int percentage) => Math.Clamp(percentage, 0, 100) switch
@@ -62,7 +70,7 @@ public partial class BatteryLevelIcon : UserControl
     };
 
     internal static double GetFillWidth(int percentage) =>
-        InteriorWidth * Math.Clamp(percentage, 0, 100) / 100d;
+        BodyWidth * Math.Clamp(percentage, 0, 100) / 100d;
 
     private void UpdateFill()
     {

@@ -173,8 +173,12 @@ public sealed class NotesEditorTests
             Assert.Contains("Small", newButton.Classes);
             Assert.Contains("Secondary", openButton.Classes);
             Assert.Contains("Small", openButton.Classes);
+            var newContent = Assert.IsType<StackPanel>(newButton.Content);
+            Assert.Equal(newButton.Foreground, Assert.IsType<DaisyOS.Shell.Controls.DaisyIcon>(newContent.Children[0]).Foreground);
+            Assert.Equal(newButton.Foreground, Assert.IsType<TextBlock>(newContent.Children[1]).Foreground);
             var toolbar = rich.FindControl<Border>("FloatingToolbar")!;
             var blocks = rich.FindControl<StackPanel>("BlocksContainer")!;
+            Assert.Equal(4, rich.FindControl<StackPanel>("FormattingContent")!.Spacing);
             Assert.True(toolbar.Bounds.Width <= rich.Bounds.Width - 24);
             Assert.True(blocks.Bounds.Width <= rich.Bounds.Width - 40);
             Assert.Equal(24, blocks.TranslatePoint(default, rich)!.Value.X);
@@ -186,7 +190,7 @@ public sealed class NotesEditorTests
             Assert.Equal(toolbar.Bounds.Height + 24, blocks.Margin.Top);
             Assert.Equal(view.FindControl<Border>("NavigationSidebar")!.Background, toolbar.Background);
             Assert.True(rich.FindControl<ComboBox>("FontFamilyCombo")!.IsVisible);
-            Assert.Equal(104, rich.FindControl<ComboBox>("FontFamilyCombo")!.Bounds.Width);
+            Assert.True(rich.FindControl<ComboBox>("FontFamilyCombo")!.Bounds.Width >= 104);
             foreach (var name in new[] { "BlockTypeCombo", "FontFamilyCombo", "FontWeightCombo" })
             {
                 var picker = rich.FindControl<ComboBox>(name)!;

@@ -73,17 +73,19 @@
         <!-- Action Buttons -->
         <Grid Grid.Row="1" ColumnDefinitions="*,*" Margin="0,0,0,12">
           <!-- New Note Button -->
-          <Button x:Name="NewNoteButton" Grid.Column="0" Classes="Primary Small"
+          <Button x:Name="NewNoteButton" Grid.Column="0" Classes="Primary Small Flexible"
                   Margin="0,0,4,0"
                   Command="{Binding AddNoteCommand}">
             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-              <controls:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeSmall}" />
-              <TextBlock Text="{DynamicResource Loc_18FDD549B2ED}" VerticalAlignment="Center" />
+              <controls:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeSmall}"
+                                  Foreground="{DynamicResource ContentOnPrimaryActionBrush}" />
+              <TextBlock Text="{DynamicResource Loc_18FDD549B2ED}" VerticalAlignment="Center"
+                         Foreground="{DynamicResource ContentOnPrimaryActionBrush}" />
             </StackPanel>
           </Button>
           
           <!-- Open File Button -->
-          <Button x:Name="OpenNoteButton" Grid.Column="1" Classes="Secondary Small"
+          <Button x:Name="OpenNoteButton" Grid.Column="1" Classes="Secondary Small Flexible"
                   Margin="4,0,0,0"
                   Click="OnOpenFileClick">
             <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
