@@ -29,8 +29,10 @@ public sealed class QuickSettingsSliderTests
         var content = File.ReadAllText(xamlPath);
 
         // The thumb follows theme changes instead of pinning light-theme colors.
+        // It is a control surface, so it keeps its own white token rather than
+        // the accent-dependent content-on-action color.
         Assert.Contains(@"x:Name=""ProgressThumb""", content);
-        Assert.Contains(@"Background=""{DynamicResource ContentOnActionBrush}""", content);
+        Assert.Contains(@"Background=""{DynamicResource SliderThumbBrush}""", content);
         Assert.Contains(@"BorderBrush=""{DynamicResource StrokeDefaultBrush}""", content);
         Assert.Contains(@"BorderThickness=""1""", content);
     }

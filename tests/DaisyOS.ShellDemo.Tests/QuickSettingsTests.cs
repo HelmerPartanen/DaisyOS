@@ -235,9 +235,22 @@ public sealed class QuickSettingsTests
                 var foreground = label.Foreground;
                 var weight = label.FontWeight;
                 tile.IsChecked = true;
-                await Task.Delay(250);
-                Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-                Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                // Brush transitions advance with the compositor clock. Headless
+                // ticks do not map one-to-one to wall time, so pump frames until
+                // the active accent has actually settled instead of sampling once.
+                Color? accentColor = null;
+                for (var tick = 0; tick < 60; tick++)
+                {
+                    Avalonia.Headless.AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                    Avalonia.Threading.Dispatcher.UIThread.RunJobs();
+                    if (tile.TryFindResource("ActionPrimaryBrush", theme, out var accentBrush))
+                        accentColor = ((Avalonia.Media.ISolidColorBrush)accentBrush!).Color;
+                    if (accentColor is { } expected && tile.GetVisualDescendants()
+                            .OfType<DaisyOS.Shell.Controls.DaisyIcon>()
+                            .All(icon => (icon.Foreground as Avalonia.Media.ISolidColorBrush)?.Color == expected))
+                        break;
+                    await Task.Delay(10);
+                }
                 Assert.Equal(foreground, label.Foreground);
                 Assert.Equal(weight, label.FontWeight);
                 foreach (var icon in tile.GetVisualDescendants().OfType<DaisyOS.Shell.Controls.DaisyIcon>())

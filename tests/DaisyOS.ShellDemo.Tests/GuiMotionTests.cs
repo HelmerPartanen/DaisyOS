@@ -34,7 +34,10 @@ public sealed class GuiMotionTests
             Assert.False(launcher.ClipToBounds);
             Assert.True(root.ClipToBounds);
             Assert.True(overlay.Viewport.ClipToBounds);
-            Assert.Equal((int)Math.Floor(cardTop) + 1, regions.Min(region => region.Y));
+            // Blur masks deliberately round fractional edges outward to cover the
+            // antialiased edge, so the first scanline is at floor(cardTop), not
+            // inside the card.
+            Assert.Equal((int)Math.Floor(cardTop), regions.Min(region => region.Y));
             using var frame = window.CaptureRenderedFrame();
             frame!.Save("/tmp/daisy-launcher-overshoot.png");
         }
@@ -294,6 +297,50 @@ public sealed class GuiMotionTests
             Assert.True(host.IsVisible);
             Assert.True(host.IsHitTestVisible);
             Assert.Null(content.RenderTransform);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public async Task EntranceSettlesUntransformedOnItsFinalFrame()
+    {
+        var content = new Border { Width = 120, Height = 80 };
+        var host = new Border { Child = content, IsVisible = false };
+        var window = new Window { Content = host };
+        window.Show();
+        try
+        {
+            var sawCrispFinalFrame = false;
+            content.PropertyChanged += (_, change) =>
+            {
+                // Easing legitimately reports fractional opacities above 0.999
+                // while the transform is still a fraction of a pixel away, so
+                // only the exact endpoint tells us whether the final frame is
+                // crisp. The regression being guarded against mounted an
+                // identity transform until the awaited continuation ran, which
+                // rendered one soft sampled frame at full opacity.
+                if (change.Property == Visual.OpacityProperty &&
+                    change.GetNewValue<double>() == 1 &&
+                    change.GetOldValue<double>() < 1)
+                {
+                    sawCrispFinalFrame = true;
+                    Assert.Null(content.RenderTransform);
+                }
+            };
+
+            var reveal = GuiMotion.SetVisibleAsync(host, content, true, offset: 82,
+                durationOverride: TimeSpan.FromMilliseconds(80), fadeOnEnter: true);
+            for (var tick = 0; tick < 40 && !reveal.IsCompleted; tick++)
+            {
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                await Task.Delay(10);
+            }
+            await reveal;
+
+            Assert.True(sawCrispFinalFrame);
+            Assert.Null(content.RenderTransform);
+            Assert.Equal(1, content.Opacity);
+            Assert.True(host.IsVisible);
         }
         finally { window.Close(); }
     }

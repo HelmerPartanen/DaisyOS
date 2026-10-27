@@ -27,7 +27,8 @@ public sealed class WorkflowPolishContractTests
         var source = File.ReadAllText(Path.Combine(
             RepoRoot(), "src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml"));
 
-        Assert.Equal(2, Regex.Matches(source, "Header=\"Send with LocalSend\"").Count);
+        Assert.Equal(2, Regex.Matches(source, "Click=\"OnShareEntryContextClicked\"").Count);
+        Assert.Equal(2, Regex.Matches(source, "Icon=\"LocalSend\"").Count);
         Assert.DoesNotContain("<MenuItem Header=\"Share\">", source);
     }
 
@@ -72,7 +73,6 @@ public sealed class WorkflowPolishContractTests
     [Theory]
     [InlineData("Apps/Calendar/CalendarWindow.axaml")]
     [InlineData("Apps/Calculator/CalculatorWindow.axaml")]
-    [InlineData("Apps/AppStore/AppStoreWindow.axaml")]
     [InlineData("Apps/UIKit/UIKitWindow.axaml")]
     [InlineData("Apps/Files/Picker/DaisyFilePickerWindow.axaml")]
     public void StandardAppsUseKWinWindowDecorations(string relativePath)
@@ -94,6 +94,7 @@ public sealed class WorkflowPolishContractTests
     }
     [Theory]
     [InlineData("Apps/Files/FilesWindow.axaml")]
+    [InlineData("Apps/AppStore/AppStoreWindow.axaml")]
     [InlineData("Apps/Notes/NotesWindow.axaml")]
     [InlineData("Apps/System/Settings/SettingsWindow.axaml")]
     [InlineData("Apps/System/Diagnostics/TaskManagerWindow.axaml")]

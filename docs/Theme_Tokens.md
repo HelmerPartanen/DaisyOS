@@ -6,10 +6,10 @@
 
 | Group | Tokens | Rationale |
 |---|---|---|
-| Surfaces | `SurfaceCanvas`, `SurfaceBase`, `SurfaceRaised`, `SurfaceOverlay`, `SurfaceSunken`, `SurfaceInput` | Six roles describe depth and input affordance without feature-specific colors. |
+| Surfaces | `SurfaceCanvas`, `SurfaceBase`, `SurfaceRaised`, `SurfaceCard`, `SurfaceOverlay`, `SurfaceSunken`, `SurfaceInput`, `SurfaceGlassSolid` | Opaque depth roles plus solid glass for floating tool surfaces; feature views never invent a fill. |
 | Content | `ContentPrimary`, `ContentSecondary`, `ContentTertiary`, `ContentDisabled`, `ContentOnAction` | Text and icons choose importance and context rather than literal neutral colors. |
 | Borders | `StrokeSubtle`, `StrokeDefault`, `StrokeStrong`, `ShellFrameOuterEdge`, `ShellFrameInnerHighlight` | Three ordinary stroke strengths plus two glass-frame roles cover separators, controls, and shell materials. |
-| Actions | `ActionPrimary`, `ActionPrimaryHover`, `ActionPrimaryPressed`, `ActionSecondary`, `ActionSecondaryHover`, `ActionSecondaryPressed` | Every action state derives from one semantic hierarchy. |
+| Actions | `ActionPrimary`, `ActionPrimaryHover`, `ActionPrimaryPressed`, `ActionPrimarySubtle`, `ActionSecondary`, `ActionSecondaryHover`, `ActionSecondaryPressed` | Every action state derives from one semantic hierarchy; `ActionPrimarySubtle` is the translucent accent used by selected/active surfaces. |
 | Feedback | `StatusSuccess`, `StatusWarning`, `StatusDanger`, `StatusInfo` and matching `Container` brushes | Foreground/container pairs communicate meaning and meet WCAG AA for normal text in both themes. |
 | Interaction | `StateHover`, `StatePressed`, `StateSelected`, `FocusRing`, `OverlayScrim` | Interaction feedback remains consistent regardless of component type. |
 
@@ -138,8 +138,10 @@ Input sizing follow-up: `InputHeightStandard`, `SearchHeightStandard` and `Searc
 
 System button variants use `Small`, `Medium`, and `Large` classes, with `ButtonHeightSmall` (32px), `ButtonHeightMedium` (36px), and `ButtonHeightLarge` (42px). Large follows the existing Files sidebar reference exactly; Small follows widget library Done and is fully rounded via `RadiusButtonSmall` (half of `ButtonHeightSmall`). TypographyPolicy grows all three with measured font height and keeps `RadiusButtonSmall` synchronized. Settings, Notes and Files sidebar rows share Large; pinned Files containers follow the same height. Use the size class alongside the action/material class, for example `Classes="Primary Medium"`.
 Filled destructive actions use `ActionDangerBrush`, `ActionDangerHoverBrush`,
-and `ActionDangerPressedBrush`, with `ContentOnActionBrush` for white content.
-Keep `StatusDangerBrush` for error text and destructive menu labels. Native close
+and `ActionDangerPressedBrush`, with `ContentOnDangerBrush` for white content.
+`ContentOnActionBrush` follows the active accent's contrast pairing (dark content
+on the default blue and pastel accents, white on dark fills). Keep
+`StatusDangerBrush` for error text and destructive menu labels. Native close
 buttons export the filled-action hover role rather than using the lighter text color.
 Translated action buttons use content-measured widths with `MinWidth` when a
 minimum hit area is needed. Avoid fixed button/group widths for translated labels;

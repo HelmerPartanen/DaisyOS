@@ -47,7 +47,7 @@ public sealed class OverallPolishTests
         picker.Show();
         try
         {
-            var entries = picker.FindControl<ItemsControl>("EntriesView")!;
+            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
             for (var attempt = 0; attempt < 200 && entries.ItemCount != 5; attempt++) await Task.Delay(10);
             Assert.Equal(5, entries.ItemCount);
             var search = picker.FindControl<SearchBar>("SearchBox")!;
@@ -84,7 +84,7 @@ public sealed class OverallPolishTests
         picker.Show();
         try
         {
-            var entries = picker.FindControl<ItemsControl>("EntriesView")!;
+            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
             for (var attempt = 0; attempt < 200 && entries.ItemCount != 2; attempt++) await Task.Delay(10);
             var items = entries.ItemsSource!.Cast<PickerEntry>().ToArray();
             Assert.Equal(2, items.Length);

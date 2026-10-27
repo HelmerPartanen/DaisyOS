@@ -236,7 +236,7 @@
                   HorizontalAlignment="Right"
                   VerticalAlignment="Top">
                 <TextBlock x:Name="NotificationBadgeCount"
-                           FontSize="9"
+                           FontSize="{DynamicResource TypeSizeNano}"
                            FontWeight="SemiBold"
                            Foreground="{DynamicResource ContentOnActionBrush}"
                            HorizontalAlignment="Center"

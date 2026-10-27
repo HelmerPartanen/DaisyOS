@@ -305,7 +305,7 @@
 
   <Style Selector="Button.Danger, ToggleButton.Danger">
     <Setter Property="Background" Value="{DynamicResource ActionDangerBrush}" />
-    <Setter Property="Foreground" Value="{DynamicResource ContentOnActionBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentOnDangerBrush}" />
     <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
   </Style>
   <Style Selector="Button.Danger:pointerover /template/ ContentPresenter#PART_ContentPresenter, ToggleButton.Danger:pointerover /template/ ContentPresenter#PART_ContentPresenter">

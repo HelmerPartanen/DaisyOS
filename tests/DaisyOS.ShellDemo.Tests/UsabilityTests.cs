@@ -358,7 +358,7 @@ public sealed class UsabilityTests
         picker.Show();
         try
         {
-            var entries = picker.FindControl<ItemsControl>("EntriesView")!;
+            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
             for (var attempt = 0; attempt < 100 && entries.ItemCount < 2; attempt++) await Task.Delay(10);
             Assert.Equal(2, entries.ItemCount);
             picker.UpdateLayout();

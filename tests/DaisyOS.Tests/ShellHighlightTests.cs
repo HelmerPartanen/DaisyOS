@@ -37,7 +37,7 @@ public sealed class ShellHighlightTests
     }
 
     [Theory]
-    [InlineData("App.axaml")]
+    [InlineData("Themes/WidgetContainerTheme.axaml")]
     [InlineData("Views/Components/Taskbar/TaskbarView.axaml")]
     [InlineData("Views/Components/SystemBar/SystemBarView.axaml")]
     [InlineData("Views/Components/Launcher/LauncherView.axaml")]
@@ -64,8 +64,9 @@ public sealed class ShellHighlightTests
         Assert.Equal(2, theme.Split("<Color x:Key=\"QuickSettingActiveSurfaceColor\">#FFFFFFFF</Color>").Length - 1);
         Assert.Contains("Background\" Value=\"{DynamicResource QuickSettingActiveSurfaceBrush}", app, StringComparison.Ordinal);
         Assert.Contains("Foreground\" Value=\"{DynamicResource ContentSecondaryBrush}", app, StringComparison.Ordinal);
-        Assert.DoesNotContain("Border.QuickSettingSplitDivider.Active", tile, StringComparison.Ordinal);
         Assert.Contains("Background\" Value=\"{DynamicResource StrokeDefaultBrush}", tile, StringComparison.Ordinal);
+        Assert.Contains("Border.QuickSettingSplitDivider.Active", tile, StringComparison.Ordinal);
+        Assert.Contains("Background\" Value=\"{DynamicResource QuickSettingActiveDividerBrush}", tile, StringComparison.Ordinal);
         Assert.Contains("Foreground\" Value=\"{DynamicResource ActionPrimaryBrush}", tile, StringComparison.Ordinal);
     }
 }

@@ -3138,10 +3138,21 @@ public partial class App : Application
         (byte)Math.Round(from.G + ((to.G - from.G) * amount)),
         (byte)Math.Round(from.B + ((to.B - from.B) * amount)));
 
-    private static Color GetHighestContrastContent(Color background) =>
-        RelativeLuminance(background) >= 0.65
-            ? Color.Parse("#FF111113")
-            : Colors.White;
+    private static Color GetHighestContrastContent(Color background)
+    {
+        // Pick by actual WCAG contrast instead of a luminance threshold: pastel
+        // dark-theme accents need dark labels, saturated light-theme accents read
+        // better with dark labels too. White only wins on genuinely dark fills.
+        var dark = Color.Parse("#FF111113");
+        return ContrastRatio(background, dark) >= ContrastRatio(background, Colors.White) ? dark : Colors.White;
+    }
+
+    private static double ContrastRatio(Color first, Color second)
+    {
+        var light = Math.Max(RelativeLuminance(first), RelativeLuminance(second));
+        var dark = Math.Min(RelativeLuminance(first), RelativeLuminance(second));
+        return (light + 0.05) / (dark + 0.05);
+    }
 
     private static double RelativeLuminance(Color color)
     {

@@ -449,7 +449,7 @@
                   <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
                     <Border Width="64" Height="64" CornerRadius="32" Background="{DynamicResource SurfaceRaisedBrush}">
                       <Grid>
-                        <controls:DaisyIcon Icon="user" IsVisible="{DynamicResource ProfilePictureMissing}" Size="24"
+                        <controls:DaisyIcon Icon="user" IsVisible="{DynamicResource ProfilePictureMissing}" Size="{DynamicResource IconSizeLarge}"
                                             HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
                         <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
                       </Grid>

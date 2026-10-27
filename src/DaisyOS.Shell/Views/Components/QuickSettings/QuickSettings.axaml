@@ -236,36 +236,36 @@
                 <ToggleButton x:Name="AirPodsOff" Classes="ShellButton QuickSetting AirPodsMode" Tag="Off"
                               AutomationProperties.Name="Off" ToolTip.Tip="Off"
                               Click="OnAirPodsModeClicked">
-                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Off" Size="24" />
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Off" Size="{DynamicResource IconSizeLarge}" />
                 </ToggleButton>
-                <TextBlock Text="Off" FontSize="11" HorizontalAlignment="Center" />
+                <TextBlock Text="Off" FontSize="{DynamicResource TypeSizeMicro}" HorizontalAlignment="Center" />
               </StackPanel>
               <StackPanel Grid.Column="1" Spacing="4">
                 <ToggleButton x:Name="AirPodsTransparency" Classes="ShellButton QuickSetting AirPodsMode" Tag="Transparency"
                               AutomationProperties.Name="Transparency" ToolTip.Tip="Transparency"
                               Click="OnAirPodsModeClicked">
-                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Transparency" Size="24" />
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Transparency" Size="{DynamicResource IconSizeLarge}" />
                 </ToggleButton>
-                <TextBlock Text="Transparency" FontSize="11" HorizontalAlignment="Center" />
+                <TextBlock Text="Transparency" FontSize="{DynamicResource TypeSizeMicro}" HorizontalAlignment="Center" />
               </StackPanel>
               <StackPanel Grid.Column="2" Spacing="4">
                 <ToggleButton x:Name="AirPodsAnc" Classes="ShellButton QuickSetting AirPodsMode" Tag="Anc"
                               AutomationProperties.Name="ANC" ToolTip.Tip="ANC"
                               Click="OnAirPodsModeClicked">
-                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_ANC" Size="24" />
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_ANC" Size="{DynamicResource IconSizeLarge}" />
                 </ToggleButton>
-                <TextBlock Text="ANC" FontSize="11" HorizontalAlignment="Center" />
+                <TextBlock Text="ANC" FontSize="{DynamicResource TypeSizeMicro}" HorizontalAlignment="Center" />
               </StackPanel>
               <StackPanel Grid.Column="3" Spacing="4">
                 <ToggleButton x:Name="AirPodsAdaptive" Classes="ShellButton QuickSetting AirPodsMode" Tag="Adaptive"
                               AutomationProperties.Name="Adaptive" ToolTip.Tip="Adaptive"
                               Click="OnAirPodsModeClicked">
-                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Adaptive" Size="24" />
+                  <controls:DaisyIcon Classes="QuickSettingIcon" Icon="NoiseControl_Adaptive" Size="{DynamicResource IconSizeLarge}" />
                 </ToggleButton>
-                <TextBlock Text="Adaptive" FontSize="11" HorizontalAlignment="Center" />
+                <TextBlock Text="Adaptive" FontSize="{DynamicResource TypeSizeMicro}" HorizontalAlignment="Center" />
               </StackPanel>
             </Grid>
-            <TextBlock x:Name="AirPodsDetail" IsVisible="False" TextWrapping="Wrap" FontSize="11"
+            <TextBlock x:Name="AirPodsDetail" IsVisible="False" TextWrapping="Wrap" FontSize="{DynamicResource TypeSizeMicro}"
                        Foreground="{DynamicResource ContentSecondaryBrush}" />
           </StackPanel>
 

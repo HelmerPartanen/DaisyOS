@@ -69,6 +69,14 @@ public sealed class WidgetSnapOutline : Control
             || brush is not IBrush accent) return;
         double radius = this.TryFindResource("RoundedXXL", ActualThemeVariant, out var corner)
             && corner is CornerRadius rounded ? rounded.TopLeft : 32;
-        context.DrawRectangle(null, new Pen(accent, 2), bounds, radius, radius);
+        if (_pen is null || !ReferenceEquals(_penBrush, accent))
+        {
+            _penBrush = accent;
+            _pen = new Pen(accent, 2);
+        }
+        context.DrawRectangle(null, _pen, bounds, radius, radius);
     }
+
+    private Pen? _pen;
+    private IBrush? _penBrush;
 }

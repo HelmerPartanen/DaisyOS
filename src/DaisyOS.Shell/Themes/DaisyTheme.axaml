@@ -13,6 +13,12 @@
   <SolidColorBrush x:Key="ActionDangerBrush" Color="{StaticResource ActionDangerColor}" />
   <SolidColorBrush x:Key="ActionDangerHoverBrush" Color="{StaticResource ActionDangerHoverColor}" />
   <SolidColorBrush x:Key="ActionDangerPressedBrush" Color="{StaticResource ActionDangerPressedColor}" />
+  <!-- Filled destructive surfaces keep white content: the fixed danger red is
+       dark enough that the action-content role would drop below 4.5:1. -->
+  <SolidColorBrush x:Key="ContentOnDangerBrush" Color="#FFFFFFFF" />
+  <!-- Slider thumbs are a control surface, not content, and stay white on the
+       accent-filled track. -->
+  <SolidColorBrush x:Key="SliderThumbBrush" Color="#FFFFFFFF" />
   <ResourceDictionary.ThemeDictionaries>
    <ResourceDictionary x:Key="Light">
     <!-- Surfaces -->
@@ -73,8 +79,10 @@
     <Color x:Key="ActionPrimaryColor">#FF1598FF</Color>
     <Color x:Key="ActionPrimaryHoverColor">#FF138CEB</Color>
     <Color x:Key="ActionPrimaryPressedColor">#FF1283DB</Color>
-    <Color x:Key="ContentOnActionColor">#FFFFFFFF</Color>
-      <Color x:Key="ContentOnPrimaryActionColor">#FFFFFFFF</Color>
+    <!-- Tinted, translucent accent for selected/active surfaces. -->
+    <Color x:Key="ActionPrimarySubtleColor">#331598FF</Color>
+    <Color x:Key="ContentOnActionColor">#FF111113</Color>
+    <Color x:Key="ContentOnPrimaryActionColor">#FFFFFFFF</Color>
     <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
     <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
     <Color x:Key="QuickSettingActiveSurfacePressedColor">#FFECECEF</Color>
@@ -96,7 +104,7 @@
         <Color x:Key="SelectedBlue">#FF1598FF</Color>
 
     <!-- Status: Success -->
-    <Color x:Key="StatusSuccessColor">#FF00CA48</Color>
+    <Color x:Key="StatusSuccessColor">#FF0E7A38</Color>
     <Color x:Key="StatusSuccessContainerColor">#FFE4F6EA</Color>
     <Color x:Key="BatteryChargingColor">#FF00CA48</Color>
 
@@ -139,6 +147,8 @@
       <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
       <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
       <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
+      <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource SurfaceRaisedColor}" />
+      <SolidColorBrush x:Key="SurfaceGlassSolidBrush" Color="{StaticResource RaisedPanelBackgroundColor}" />
       <SolidColorBrush x:Key="SurfaceRaisedSubtleBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceInputSubtleBrush" Color="{StaticResource SurfaceInputSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceOverlayBrush" Color="{StaticResource SurfaceOverlayColor}" />
@@ -168,6 +178,7 @@
       <SolidColorBrush x:Key="FullscreenBottomScrimBrush" Color="{StaticResource FullscreenBottomScrimColor}" />
       <SolidColorBrush x:Key="ToggleTrackOffBrush" Color="#FFB6B6B6" />
       <SolidColorBrush x:Key="ActionPrimaryBrush" Color="{StaticResource ActionPrimaryColor}" />
+      <SolidColorBrush x:Key="ActionPrimarySubtleBrush" Color="{StaticResource ActionPrimarySubtleColor}" />
       <!-- Storage capacity segments: soft blue and quiet neutral fills. -->
       <SolidColorBrush x:Key="StorageUsedBrush" Color="#2997E8" />
       <SolidColorBrush x:Key="StorageOtherVolumesBrush" Color="#A5ACB8" />
@@ -286,7 +297,8 @@
       <Color x:Key="ActionPrimaryColor">#FF148BE8</Color>
       <Color x:Key="ActionPrimaryHoverColor">#FF2794EA</Color>
       <Color x:Key="ActionPrimaryPressedColor">#FF359BEB</Color>
-      <Color x:Key="ContentOnActionColor">#FFFFFFFF</Color>
+      <Color x:Key="ActionPrimarySubtleColor">#40148BE8</Color>
+      <Color x:Key="ContentOnActionColor">#FF111113</Color>
       <Color x:Key="ContentOnPrimaryActionColor">#FFFFFFFF</Color>
       <Color x:Key="QuickSettingActiveSurfaceColor">#FFFFFFFF</Color>
       <Color x:Key="QuickSettingActiveSurfaceHoverColor">#FFF6F6F7</Color>
@@ -328,6 +340,8 @@
       <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
             <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
       <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
+      <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource SurfaceRaisedColor}" />
+      <SolidColorBrush x:Key="SurfaceGlassSolidBrush" Color="{StaticResource RaisedPanelBackgroundColor}" />
       <SolidColorBrush x:Key="SurfaceRaisedSubtleBrush" Color="{StaticResource SurfaceRaisedSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceInputSubtleBrush" Color="{StaticResource SurfaceInputSubtleColor}" />
       <SolidColorBrush x:Key="SurfaceOverlayBrush" Color="{StaticResource SurfaceOverlayColor}" />
@@ -355,6 +369,7 @@
       <SolidColorBrush x:Key="FullscreenBottomScrimBrush" Color="{StaticResource FullscreenBottomScrimColor}" />
       <SolidColorBrush x:Key="ToggleTrackOffBrush" Color="#FF4B4B4B" />
       <SolidColorBrush x:Key="ActionPrimaryBrush" Color="{StaticResource ActionPrimaryColor}" />
+      <SolidColorBrush x:Key="ActionPrimarySubtleBrush" Color="{StaticResource ActionPrimarySubtleColor}" />
       <!-- Storage capacity segments: soft blue and quiet neutral fills. -->
       <SolidColorBrush x:Key="StorageUsedBrush" Color="#4CA8E8" />
       <SolidColorBrush x:Key="StorageOtherVolumesBrush" Color="#738093" />
@@ -536,10 +551,14 @@
   <x:Double x:Key="DialogHeaderIconSize">48</x:Double>
   <x:Double x:Key="DialogButtonMinWidth">96</x:Double>
 
+  <x:Double x:Key="TypeSizeNano">9</x:Double>
+  <x:Double x:Key="TypeSizeMicro">11</x:Double>
   <x:Double x:Key="TypeSizeCaption">12</x:Double>
   <x:Double x:Key="TypeSizeBodySmall">13</x:Double>
   <x:Double x:Key="TypeSizeBody">14</x:Double>
+  <x:Double x:Key="TypeSizeBodyMedium">15</x:Double>
   <x:Double x:Key="TypeSizeBodyLarge">16</x:Double>
+  <x:Double x:Key="TypeSizeSubtitle">18</x:Double>
   <x:Double x:Key="TypeSizeTitle">20</x:Double>
   <x:Double x:Key="TypeSizeHeading">24</x:Double>
   <x:Double x:Key="TypeSizeDisplay">32</x:Double>
@@ -598,7 +617,10 @@
   <x:Double x:Key="IconSizeStandard">16</x:Double>
   <x:Double x:Key="IconSizeMedium">20</x:Double>
   <x:Double x:Key="IconSizeLarge">24</x:Double>
+  <x:Double x:Key="IconSizeMedia">26</x:Double>
   <x:Double x:Key="IconSizeHero">32</x:Double>
+  <x:Double x:Key="IconSizeArtwork">40</x:Double>
+  <x:Double x:Key="IconSizeArtworkLarge">56</x:Double>
   <x:Double x:Key="ReadableContentMaxWidth">820</x:Double>
   <x:Double x:Key="MenuMinWidth">184</x:Double>
   <x:Double x:Key="MenuMaxHeight">288</x:Double>

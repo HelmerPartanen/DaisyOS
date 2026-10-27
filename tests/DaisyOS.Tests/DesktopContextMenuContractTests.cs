@@ -31,19 +31,19 @@ public sealed class DesktopContextMenuContractTests
         Assert.Contains("Icon=\"widget_small\"", item);
         Assert.Contains("Icon=\"widget_medium\"", item);
         Assert.Contains("Icon=\"widget_large\"", item);
-        Assert.Contains("Icon=\"widget_extralarge\"", item);
+        Assert.Contains("Icon=\"{Binding ExtraLargeSizeIcon}\"", item);
         Assert.Contains("Classes=\"WidgetSizeIcon\"", item);
         Assert.Contains("Icon=\"widget_small\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", item);
         Assert.Contains("Icon=\"widget_medium\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", item);
         Assert.Contains("Icon=\"widget_large\" Classes=\"WidgetSizeIcon\" Width=\"26\" Height=\"18\"", item);
-        Assert.Contains("Icon=\"widget_extralarge\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", item);
+        Assert.Contains("Icon=\"{Binding ExtraLargeSizeIcon}\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", item);
         Assert.Contains("ContextMenu controls|DaisyIcon", styles);
         Assert.Contains("Button.WidgetSizeButton controls|DaisyIcon.WidgetSizeIcon", styles);
         Assert.DoesNotContain("Icon=\"widget_small\" Classes=\"WidgetSizeIcon\" Size=", item);
         Assert.Contains("Icon=\"widget_small\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", overlay);
         Assert.Contains("Icon=\"widget_medium\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", overlay);
         Assert.Contains("Icon=\"widget_large\" Classes=\"WidgetSizeIcon\" Width=\"26\" Height=\"18\"", overlay);
-        Assert.Contains("Icon=\"widget_extralarge\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", overlay);
+        Assert.Contains("Icon=\"{Binding ExtraLargeSizeIcon}\" Classes=\"WidgetSizeIcon\" Width=\"18\" Height=\"18\"", overlay);
         Assert.Contains("\"widget_small\": \"widget_small\"", aliases);
         Assert.Contains("\"widget_medium\": \"widget_medium\"", aliases);
         Assert.Contains("\"widget_large\": \"widget_large\"", aliases);
@@ -69,11 +69,11 @@ public sealed class DesktopContextMenuContractTests
     public void EveryDesktopWidgetUsesTheSharedBlurMaterialContainer()
     {
         var root = FindRepoRoot();
-        var app = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "App.axaml"));
+        var widgetTheme = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Themes", "WidgetContainerTheme.axaml"));
         var startup = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "App.axaml.cs"));
 
-        Assert.Contains("TargetType=\"controls:WidgetContainer\"", app);
-        Assert.Contains("Background=\"{TemplateBinding Background}\"", app);
+        Assert.Contains("TargetType=\"controls:WidgetContainer\"", widgetTheme);
+        Assert.Contains("Background=\"{TemplateBinding Background}\"", widgetTheme);
         Assert.Contains("border.Name is \"OuterFrame\"", startup);
 
         foreach (var file in new[] { "ClockWidget.axaml", "DigitalClockWidget.axaml", "CalendarWidget.axaml", "MediaWidget.axaml", "ImageWidget.axaml" })
@@ -101,7 +101,7 @@ public sealed class DesktopContextMenuContractTests
         Assert.Contains("StartDragForPreview(\"image\", 4, 2", libraryCode);
         Assert.Contains("StartDragForPreview(\"image\", 5, 4", libraryCode);
         Assert.Contains("SupportsExtraLargeSize = true", desktop);
-        Assert.Contains("IsSizeExtraLarge => ColumnSpan == 5 && RowSpan == 4", desktop);
+        Assert.Contains("IsSizeExtraLarge => IsMediaWidget ? RowSpan > 2 : ColumnSpan == 5 && RowSpan == 4", desktop);
     }
 
     [Fact]
@@ -127,7 +127,8 @@ public sealed class DesktopContextMenuContractTests
         var root = FindRepoRoot();
         var media = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "DesktopWidgets", "MediaWidget.axaml"));
 
-        Assert.Contains("CornerRadius=\"{DynamicResource RoundedLG}\"", media);
+        Assert.Contains("Border#LargeArtworkFrame", media);
+        Assert.Contains("CornerRadius\" Value=\"{DynamicResource RoundedLG}\"", media);
         Assert.DoesNotContain("BoxShadow=\"0 0 18 0 #50000000", media);
         Assert.DoesNotContain("CornerRadius=\"16\"", media);
     }

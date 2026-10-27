@@ -73,6 +73,9 @@ public sealed class FilesUiContractTests
         var source = File.ReadAllText(Path.Combine(
             RepoRoot(), "src", "DaisyOS.Shell", "Apps", "Files", "FilesWindow.axaml"));
 
+        var viewModel = File.ReadAllText(Path.Combine(
+            RepoRoot(), "src", "DaisyOS.Shell", "Apps", "Files", "FilesViewModel.cs"));
+
         Assert.Contains("controls:ToolbarSearchPopover", source);
         Assert.Contains("Classes=\"FilesBreadcrumb\"", source);
         Assert.Contains("CornerRadius\" Value=\"{DynamicResource RadiusControlInner}\"", source);
@@ -83,16 +86,16 @@ public sealed class FilesUiContractTests
         Assert.Contains("ItemsSource=\"{Binding PinnedLocations}\"", source);
         Assert.Contains("Icon=\"pin-02\"", source);
         Assert.Contains("Click=\"OnUnpinLocationClicked\"", source);
-        Assert.Contains("Foreground=\"{DynamicResource OrangeSwatchBrush}\"", source);
+        Assert.Contains("theming:ThemeResourceBrush.ForegroundKey=\"{Binding ColorResourceKey}\"", source);
+        Assert.Contains("\"OrangeSwatchBrush\"", viewModel);
         Assert.Contains("Classes=\"PinnedLocationRow\"", source);
         Assert.Contains("Classes=\"Large SettingsNavItem PinnedLocationBody\"", source);
-        Assert.Contains("Classes=\"PinnedUnpin\"", source);
-        Assert.Contains("Button.PinnedUnpin:pointerover", source);
+        Assert.Contains("<ContextMenu>", source);
         Assert.Contains("Border.PinnedLocationRow", source);
         Assert.Contains("Border.PinnedLocationRow:pointerover", source);
         Assert.Contains("Property=\"Background\" Value=\"Transparent\"", source);
         Assert.Contains("Background\" Value=\"{DynamicResource StateHoverBrush}\"", source);
-        Assert.Contains("Width=\"220\" Background=\"{DynamicResource SurfaceRaisedSubtleBrush}\"", source);
+        Assert.Contains("MinWidth=\"220\" Background=\"{DynamicResource SurfaceRaisedSubtleBrush}\"", source);
         Assert.Contains("Classes=\"ShellButton FilesHiddenToggle\"", source);
         Assert.Contains("ToggleButton.FilesHiddenToggle:checked", source);
         Assert.Contains("ToggleButton.FilesHiddenToggle:not(:checked):pointerover", source);

@@ -4,7 +4,6 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Data;
 using Avalonia.Media;
-using Avalonia.Threading;
 
 namespace DaisyOS.Shell.Services.Theming;
 
@@ -12,7 +11,6 @@ namespace DaisyOS.Shell.Services.Theming;
 internal sealed class ThemeImageTransition : IObservable<IImage?>
 {
     private readonly Image _image;
-    private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromMilliseconds(16) };
     private IObserver<IImage?>? _observer;
     private IDisposable? _binding;
     private IImage? _from, _to, _frame;
@@ -20,6 +18,7 @@ internal sealed class ThemeImageTransition : IObservable<IImage?>
     private TimeSpan _duration;
     private Size _targetSize;
     private bool _updating;
+    private int _generation;
 
     public ThemeImageTransition(Image image)
     {
@@ -30,7 +29,6 @@ internal sealed class ThemeImageTransition : IObservable<IImage?>
                 Start(change.OldValue as IImage, change.NewValue as IImage);
         };
         image.DetachedFromVisualTree += (_, _) => Finish();
-        _timer.Tick += (_, _) => Tick();
     }
 
     private void Start(IImage? from, IImage? to)
@@ -49,15 +47,25 @@ internal sealed class ThemeImageTransition : IObservable<IImage?>
         _updating = true;
         try { _binding ??= _image.Bind(Image.SourceProperty, this, BindingPriority.Animation); }
         finally { _updating = false; }
-        _timer.Start();
+        // Paint on the compositor's animation clock instead of an independent
+        // 16 ms timer so the cross-fade lands on the same vsync as everything else.
+        RequestFrame(++_generation);
     }
 
-    private void Tick()
+    private void RequestFrame(int generation)
     {
+        if (generation != _generation) return;
+        if (TopLevel.GetTopLevel(_image) is not { } topLevel) { Finish(); return; }
+        topLevel.RequestAnimationFrame(_ => Tick(generation));
+    }
+
+    private void Tick(int generation)
+    {
+        if (generation != _generation) return;
         if (!ThemeTransitionPolicy.GetEnabled(_image)) { Finish(); return; }
         var target = _image.GetBaseValue(Image.SourceProperty).GetValueOrDefault();
         if (target == null) { Finish(); return; }
-        if (!ReferenceEquals(target, _to)) Start(_frame, target);
+        if (!ReferenceEquals(target, _to)) { Start(_frame, target); return; }
         if (_binding == null) return;
         if (_image.TryFindResource("MotionDurationBase", out var value) && value is TimeSpan duration && duration <= TimeSpan.Zero)
         { Finish(); return; }
@@ -67,11 +75,12 @@ internal sealed class ThemeImageTransition : IObservable<IImage?>
         _updating = true;
         try { _observer?.OnNext(_frame); }
         finally { _updating = false; }
+        RequestFrame(generation);
     }
 
     private void Finish()
     {
-        _timer.Stop();
+        _generation++;
         _updating = true;
         try { _binding?.Dispose(); _binding = null; _observer = null; _from = _to = _frame = null; }
         finally { _updating = false; }

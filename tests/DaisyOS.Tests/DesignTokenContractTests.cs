@@ -118,6 +118,45 @@ public sealed class DesignTokenContractTests
         }
     }
 
+    [Fact]
+    public void EveryDynamicResourceReferenceResolvesInTheShell()
+    {
+        var root = RepoRoot();
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var references = new Dictionary<string, string>(StringComparer.Ordinal);
+
+        foreach (var path in Directory.EnumerateFiles(Path.Combine(root, "src"), "*.*", SearchOption.AllDirectories))
+        {
+            if (path.Contains($"{Path.DirectorySeparatorChar}obj{Path.DirectorySeparatorChar}", StringComparison.Ordinal) ||
+                path.Contains($"{Path.DirectorySeparatorChar}bin{Path.DirectorySeparatorChar}", StringComparison.Ordinal))
+                continue;
+
+            if (path.EndsWith(".axaml", StringComparison.Ordinal))
+            {
+                var source = File.ReadAllText(path);
+                foreach (Match match in Regex.Matches(source, "x:Key=\"([^\"]+)\""))
+                    keys.Add(match.Groups[1].Value);
+                foreach (Match match in Regex.Matches(source, "\\{DynamicResource\\s+([^\\s}]+)"))
+                    references.TryAdd(match.Groups[1].Value, path);
+            }
+            else if (path.EndsWith(".cs", StringComparison.Ordinal))
+            {
+                foreach (Match match in Regex.Matches(File.ReadAllText(path), "Resources\\[\"([^\"]+)\"\\]"))
+                    keys.Add(match.Groups[1].Value);
+            }
+        }
+
+        // Loc_* keys come from the generated localization catalog rather than XAML dictionaries.
+        var missing = references
+            .Where(reference => !reference.Key.StartsWith("Loc_", StringComparison.Ordinal) && !keys.Contains(reference.Key))
+            .Select(reference => $"{reference.Key} ({Path.GetRelativePath(root, reference.Value)})")
+            .OrderBy(value => value, StringComparer.Ordinal)
+            .ToArray();
+
+        Assert.True(missing.Length == 0,
+            "DynamicResource references without a definition in src:" + Environment.NewLine + string.Join(Environment.NewLine, missing));
+    }
+
     private static void AssertContrast(Rgb foreground, Rgb background, string theme, string role) =>
         Assert.True(Contrast(foreground, background) >= 4.5,
             $"{theme} {role} contrast was {Contrast(foreground, background):F2}:1; expected at least 4.5:1.");

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
@@ -8,6 +9,7 @@ using Avalonia.LogicalTree;
 using Avalonia.Markup.Xaml;
 using Avalonia.VisualTree;
 using DaisyOS.Shell.DesktopWidgets;
+using DaisyOS.Shell.Services.Motion;
 
 namespace DaisyOS.Shell.Views.Components.Widgets;
 
@@ -16,7 +18,9 @@ public partial class WidgetLibraryOverlay : UserControl
     public event Action<string, int, int, Point, Point, Size>? WidgetDragRequested;
     public event Action? Dismissed;
 
-    public bool IsOpen => IsVisible;
+    private bool _dismissing;
+
+    public bool IsOpen => GuiMotion.IsOpen(this);
 
     public WidgetLibraryOverlay()
     {
@@ -71,7 +75,18 @@ public partial class WidgetLibraryOverlay : UserControl
 
     public void Open()
     {
-        IsVisible = true;
+        var frame = this.FindControl<Control>("LibraryFrame");
+        if (frame is null)
+        {
+            IsVisible = true;
+        }
+        else
+        {
+            // Scale + fade the sheet instead of snapping a full-screen surface in.
+            // The host stays non-hit-testable until the animation owns input.
+            _ = GuiMotion.SetScaleVisibleAsync(this, frame, true, closedScale: 0.96);
+        }
+
         FitLibrary();
         FitPreviews();
 
@@ -84,8 +99,35 @@ public partial class WidgetLibraryOverlay : UserControl
 
     public void Dismiss()
     {
-        IsVisible = false;
-        Dismissed?.Invoke();
+        // A second dismiss while the sheet is already leaving must not hide the
+        // host early or report the dismissal twice.
+        if (_dismissing) return;
+        var frame = this.FindControl<Control>("LibraryFrame");
+        if (frame is null || !GuiMotion.IsOpen(this))
+        {
+            if (frame is not null) GuiMotion.Cancel(frame);
+            if (!IsVisible) { Dismissed?.Invoke(); return; }
+            IsVisible = false;
+            Dismissed?.Invoke();
+            return;
+        }
+        _dismissing = true;
+        _ = DismissAsync(frame);
+    }
+
+    private async Task DismissAsync(Control frame)
+    {
+        try
+        {
+            await GuiMotion.SetScaleVisibleAsync(this, frame, false, closedScale: 0.96);
+            // Reopening cancels the exit. Only report a dismissal that actually
+            // finished so callers cannot tear down state the sheet still owns.
+            if (!GuiMotion.IsOpen(this)) Dismissed?.Invoke();
+        }
+        finally
+        {
+            _dismissing = false;
+        }
     }
 
     private void OnBackdropPointerPressed(object? sender, PointerPressedEventArgs e)

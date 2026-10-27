@@ -148,43 +148,104 @@ public class CartoucheBorder : Decorator
         double tw = TailWidth;
         double tx = TailX;
         double cr = CornerRadius;
+        bool tailOnTop = TailOnTop;
+
+        var geometry = GetGeometry(w, h, tx, tw, th, cr, tailOnTop);
 
         // 1. Multi-layered soft drop shadow
-        var shadowGeom = BuildGeometry(w, h, tx, tw, th, cr, 0, TailOnTop);
         using (context.PushTransform(Matrix.CreateTranslation(0, 4)))
         {
-            context.DrawGeometry(ShadowFarBrush, null, shadowGeom);
+            context.DrawGeometry(ShadowFarBrush, null, geometry.Shadow);
         }
         using (context.PushTransform(Matrix.CreateTranslation(0, 2)))
         {
-            context.DrawGeometry(ShadowMiddleBrush, null, shadowGeom);
+            context.DrawGeometry(ShadowMiddleBrush, null, geometry.Shadow);
         }
         using (context.PushTransform(Matrix.CreateTranslation(0, 1)))
         {
-            context.DrawGeometry(ShadowNearBrush, null, shadowGeom);
+            context.DrawGeometry(ShadowNearBrush, null, geometry.Shadow);
         }
 
         // 2. Tier 3: Surface fill
-        var fillGeom = BuildGeometry(w, h, tx, tw, th, cr, 2.0, TailOnTop);
         var fillBrush = Background
                         ?? (this.TryFindResource("SurfaceOverlayBrush", out var resFill) ? resFill as IBrush : null)
                         ?? (Application.Current != null && Application.Current.TryFindResource("SurfaceOverlayBrush", out var appFill) ? appFill as IBrush : null)
                         ?? FallbackSurfaceBrush;
-        context.DrawGeometry(fillBrush, null, fillGeom);
+        context.DrawGeometry(fillBrush, null, geometry.Fill);
 
         // 3. Tier 2: Inner highlight (1px inset frame)
-        var innerGeom = BuildGeometry(w, h, tx, tw, th, cr, 1.5, TailOnTop);
         var innerHighlightBrush = (this.TryFindResource("ShellFrameInnerHighlightBrush", out var resInner) ? resInner as IBrush : null)
                                   ?? InnerHighlightBrush
                                   ?? FallbackHighlightBrush;
-        context.DrawGeometry(null, new Pen(innerHighlightBrush, 1.0), innerGeom);
+        context.DrawGeometry(null, RefPen(ref _innerPen, ref _innerPenBrush, innerHighlightBrush, 1.0), geometry.Inner);
 
         // 4. Tier 1: Outer edge perimeter (1px outer frame)
-        var outerGeom = BuildGeometry(w, h, tx, tw, th, cr, 0.5, TailOnTop);
         var outerEdgeBrush = (this.TryFindResource("ShellFrameOuterEdgeBrush", out var resOuter) ? resOuter as IBrush : null)
                              ?? BorderBrush
                              ?? FallbackEdgeBrush;
-        context.DrawGeometry(null, new Pen(outerEdgeBrush, 1.0), outerGeom);
+        context.DrawGeometry(null, RefPen(ref _outerPen, ref _outerPenBrush, outerEdgeBrush, 1.0), geometry.Outer);
+    }
+
+    private sealed class GeometryBundle(
+        StreamGeometry shadow,
+        StreamGeometry fill,
+        StreamGeometry inner,
+        StreamGeometry outer)
+    {
+        public StreamGeometry Shadow { get; } = shadow;
+        public StreamGeometry Fill { get; } = fill;
+        public StreamGeometry Inner { get; } = inner;
+        public StreamGeometry Outer { get; } = outer;
+    }
+
+    private GeometryBundle? _geometry;
+    private double _geometryWidth, _geometryHeight, _geometryTailX, _geometryTailWidth;
+    private double _geometryTailHeight, _geometryCornerRadius;
+    private bool _geometryTailOnTop;
+    private Pen? _innerPen, _outerPen;
+    private IBrush? _innerPenBrush, _outerPenBrush;
+
+    private GeometryBundle GetGeometry(
+        double width,
+        double height,
+        double tailX,
+        double tailWidth,
+        double tailHeight,
+        double cornerRadius,
+        bool tailOnTop)
+    {
+        if (_geometry is { } cached &&
+            _geometryWidth.Equals(width) && _geometryHeight.Equals(height) &&
+            _geometryTailX.Equals(tailX) && _geometryTailWidth.Equals(tailWidth) &&
+            _geometryTailHeight.Equals(tailHeight) && _geometryCornerRadius.Equals(cornerRadius) &&
+            _geometryTailOnTop == tailOnTop)
+        {
+            return cached;
+        }
+
+        _geometryWidth = width;
+        _geometryHeight = height;
+        _geometryTailX = tailX;
+        _geometryTailWidth = tailWidth;
+        _geometryTailHeight = tailHeight;
+        _geometryCornerRadius = cornerRadius;
+        _geometryTailOnTop = tailOnTop;
+        _geometry = new GeometryBundle(
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0, tailOnTop),
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 2.0, tailOnTop),
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 1.5, tailOnTop),
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0.5, tailOnTop));
+        return _geometry;
+    }
+
+    private static Pen RefPen(ref Pen? pen, ref IBrush? cachedBrush, IBrush brush, double thickness)
+    {
+        if (pen is null || !ReferenceEquals(cachedBrush, brush))
+        {
+            cachedBrush = brush;
+            pen = new Pen(brush, thickness);
+        }
+        return pen;
     }
 
     private static StreamGeometry BuildGeometry(double width, double height, double tailX, double tailWidth, double tailHeight, double cornerRadius, double inset, bool tailOnTop)

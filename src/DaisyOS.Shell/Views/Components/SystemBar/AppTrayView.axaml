@@ -10,9 +10,9 @@
         BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
       <Border Background="{DynamicResource SurfaceBaseBrush}" Padding="16" CornerRadius="{DynamicResource RoundedXXLDoubleInset}">
         <StackPanel x:Name="MotionContent" Spacing="12">
-          <TextBlock Text="{DynamicResource Loc_D15070AD05F6}" FontSize="{DynamicResource FontSizeBody}" Foreground="{DynamicResource ContentPrimaryBrush}"/>
+          <TextBlock Text="{DynamicResource Loc_D15070AD05F6}" FontSize="{DynamicResource TypeSizeBody}" Foreground="{DynamicResource ContentPrimaryBrush}"/>
           <TextBlock x:Name="EmptyMessage" Text="{DynamicResource Loc_655A9EB76CC7}" TextWrapping="Wrap"
-              FontSize="{DynamicResource FontSizeBody}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
+              FontSize="{DynamicResource TypeSizeBody}" Foreground="{DynamicResource ContentSecondaryBrush}"/>
           <ScrollViewer MaxHeight="240" HorizontalScrollBarVisibility="Disabled">
             <WrapPanel x:Name="TrayItems"/>
           </ScrollViewer>

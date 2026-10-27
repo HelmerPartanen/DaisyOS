@@ -38,7 +38,7 @@
       </Canvas>
       <Border x:Name="ProgressThumb"
               Width="24" Height="16"
-              Background="{DynamicResource ContentOnActionBrush}"
+              Background="{DynamicResource SliderThumbBrush}"
               BorderBrush="{DynamicResource StrokeDefaultBrush}"
               BorderThickness="1"
               CornerRadius="{DynamicResource RadiusControlInner}"

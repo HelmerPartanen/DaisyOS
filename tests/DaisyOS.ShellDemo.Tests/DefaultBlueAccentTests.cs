@@ -27,7 +27,7 @@ public class DefaultBlueAccentTests
             window.UpdateLayout(); AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             var presenter = button.GetVisualDescendants().OfType<ContentPresenter>().Single(x => x.Name == "PART_ContentPresenter");
             Assert.Equal(Color.Parse(normal), ((ISolidColorBrush)presenter.Background!).Color);
-            Assert.Equal(Color.Parse("#111113"), ((ISolidColorBrush)button.Foreground!).Color);
+            Assert.Equal(Colors.White, ((ISolidColorBrush)button.Foreground!).Color);
             var point = button.TranslatePoint(new Point(90, 20), window)!.Value;
             window.MouseMove(point); await Task.Delay(250); Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             Assert.Equal(Color.Parse(hover), ((ISolidColorBrush)presenter.Background!).Color);

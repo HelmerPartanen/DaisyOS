@@ -595,7 +595,7 @@
                     <controls:DaisyIcon x:Name="ExpandedSourceGlyph"
                                         Icon="music-note"
                                         Weight="Fill"
-                                        Size="56"
+                                        Size="{DynamicResource IconSizeArtworkLarge}"
                                         Foreground="{DynamicResource ContentTertiaryBrush}"
                                         HorizontalAlignment="Center"
                                         VerticalAlignment="Center" />
@@ -671,7 +671,7 @@
                     <TextBlock x:Name="ExpandedElapsedText"
                                Grid.Column="0"
                                Text="0.00"
-                               FontSize="11"
+                               FontSize="{DynamicResource TypeSizeMicro}"
                                FontWeight="Medium"
                                Foreground="{DynamicResource ContentSecondaryBrush}"
                                VerticalAlignment="Center"
@@ -703,7 +703,7 @@
                     <TextBlock x:Name="ExpandedRemainingText"
                                Grid.Column="2"
                                Text="- 0.00"
-                               FontSize="11"
+                               FontSize="{DynamicResource TypeSizeMicro}"
                                FontWeight="Medium"
                                Foreground="{DynamicResource ContentSecondaryBrush}"
                                VerticalAlignment="Center"
@@ -737,7 +737,7 @@
                       <controls:DaisyIcon x:Name="ExpandedPlayPauseGlyph"
                                           Icon="play"
                                           Weight="Fill"
-                                          Size="26"
+                                          Size="{DynamicResource IconSizeMedia}"
                                           Foreground="{DynamicResource ContentPrimaryBrush}" />
                     </Button>
                     <Button x:Name="ExpandedNextButton"
@@ -797,7 +797,7 @@
                   <controls:DaisyIcon x:Name="MorphingSourceGlyph"
                                       Icon="music-note"
                                       Weight="Fill"
-                                      Size="40"
+                                      Size="{DynamicResource IconSizeArtwork}"
                                       Foreground="{DynamicResource ContentTertiaryBrush}"
                                       HorizontalAlignment="Center"
                                       VerticalAlignment="Center" />

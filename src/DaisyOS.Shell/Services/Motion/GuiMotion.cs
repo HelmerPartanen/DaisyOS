@@ -102,7 +102,8 @@ public static class GuiMotion
         // AnimateAsync samples current values before cancelling the old animation.
         // Request identity below protects visibility from stale completions.
         var animation = AnimateAsync(content, visible, offset, immediate, request.Token, durationOverride,
-            preserveExitPosition: !visible, fadeOnExit: fadeOnExit, fadeOnEnter: fadeOnEnter, easingOverride: easingOverride);
+            preserveExitPosition: !visible, fadeOnExit: fadeOnExit, fadeOnEnter: fadeOnEnter, easingOverride: easingOverride,
+            topLevel: TopLevel.GetTopLevel(host) ?? TopLevel.GetTopLevel(content));
         await animation;
         if (request.IsCancellationRequested || !ReferenceEquals(state.Visibility, request)) return;
         if (!visible)
@@ -147,7 +148,8 @@ public static class GuiMotion
         if (visible) host.IsVisible = true;
         changed?.Invoke();
         await AnimateScaleAsync(content, visible, closedScale, immediate, request.Token,
-            durationOverride, easingOverride);
+            durationOverride, easingOverride,
+            topLevel: TopLevel.GetTopLevel(host) ?? TopLevel.GetTopLevel(content));
         if (request.IsCancellationRequested || !ReferenceEquals(state.Visibility, request)) return;
         if (!visible)
         {
@@ -170,8 +172,10 @@ public static class GuiMotion
         state.Animation?.Cancel();
         state.Animation?.Dispose();
         state.Animation = null;
-        content.Opacity = 1;
+        // Clear the transform before restoring opacity so observers never see an
+        // opaque frame that is still going through a render transform.
         content.RenderTransform = null;
+        content.Opacity = 1;
     }
 
     private static async Task AnimateAsync(
@@ -184,7 +188,8 @@ public static class GuiMotion
         bool preserveExitPosition = false,
         bool fadeOnExit = true,
         bool fadeOnEnter = true,
-        Easing? easingOverride = null)
+        Easing? easingOverride = null,
+        TopLevel? topLevel = null)
     {
         var state = GetState(content);
         var interrupted = state.Animation is not null;
@@ -200,7 +205,7 @@ public static class GuiMotion
         var duration = immediate || Application.Current is App { ReduceMotionEnabled: true }
             ? TimeSpan.Zero
             : durationOverride ?? Duration(content, entering);
-        if (duration > TimeSpan.Zero && TopLevel.GetTopLevel(content) is { } topLevel)
+        if (duration > TimeSpan.Zero && (topLevel ?? TopLevel.GetTopLevel(content)) is { } frameHost)
         {
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             using var registration = current.Token.Register(() => completion.TrySetResult());
@@ -216,6 +221,18 @@ public static class GuiMotion
                     ? configured : entering ? new CubicEaseOut() : new CubicEaseIn());
             var animationElapsed = 0d;
             var transform = (TranslateTransform)content.RenderTransform!;
+            void Settle()
+            {
+                // Write the exact endpoint on the last animated frame instead of
+                // leaving a transform mounted until the await resumes. An identity
+                // transform forces Avalonia through a render layer, which softens
+                // text and can flash one extra sampled frame. Transform first so
+                // observers never see the final opacity with a stale transform.
+                content.RenderTransform = !entering && preserveExitPosition
+                    ? new TranslateTransform(offset.X, offset.Y)
+                    : null;
+                content.Opacity = entering || !fadeOnExit ? 1 : 0;
+            }
             void Frame(TimeSpan timestamp)
             {
                 if (current.IsCancellationRequested || !ReferenceEquals(state.Animation, current)) return;
@@ -223,6 +240,12 @@ public static class GuiMotion
                     ? Math.Max(0, (timestamp - previous).TotalSeconds) : 0;
                 lastFrame = timestamp;
                 animationElapsed += elapsed;
+                if (animationElapsed >= duration.TotalSeconds)
+                {
+                    Settle();
+                    completion.TrySetResult();
+                    return;
+                }
                 var progress = Math.Clamp(animationElapsed / duration.TotalSeconds, 0, 1);
                 var eased = easing.Ease(progress);
                 x = startX + (targetX - startX) * eased;
@@ -231,19 +254,17 @@ public static class GuiMotion
                 transform.X = x;
                 transform.Y = y;
                 content.Opacity = Math.Clamp(opacity, 0, 1);
-                if (animationElapsed >= duration.TotalSeconds)
-                    completion.TrySetResult();
-                else topLevel.RequestAnimationFrame(Frame);
+                frameHost.RequestAnimationFrame(Frame);
             }
-            topLevel.RequestAnimationFrame(Frame);
+            frameHost.RequestAnimationFrame(Frame);
             await completion.Task;
         }
         if (!ReferenceEquals(state.Animation, current)) return;
         state.Animation = null;
-        content.Opacity = entering || !fadeOnExit ? 1 : 0;
         content.RenderTransform = !entering && preserveExitPosition
             ? new TranslateTransform(offset.X, offset.Y)
             : null;
+        content.Opacity = entering || !fadeOnExit ? 1 : 0;
     }
 
     private static async Task AnimateScaleAsync(
@@ -253,7 +274,8 @@ public static class GuiMotion
         bool immediate,
         CancellationToken cancellation,
         TimeSpan? durationOverride,
-        Easing? easingOverride)
+        Easing? easingOverride,
+        TopLevel? topLevel = null)
     {
         var state = GetState(content);
         var interrupted = state.Animation is not null;
@@ -268,7 +290,7 @@ public static class GuiMotion
         var duration = immediate || Application.Current is App { ReduceMotionEnabled: true }
             ? TimeSpan.Zero
             : durationOverride ?? Duration(content, entering);
-        if (duration > TimeSpan.Zero && TopLevel.GetTopLevel(content) is { } topLevel)
+        if (duration > TimeSpan.Zero && (topLevel ?? TopLevel.GetTopLevel(content)) is { } frameHost)
         {
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
             using var registration = current.Token.Register(() => completion.TrySetResult());
@@ -280,6 +302,11 @@ public static class GuiMotion
                 (content.TryFindResource(entering ? "MotionEaseEnter" : "MotionEaseExit", out var resource) && resource is Easing configured
                     ? configured : entering ? new CubicEaseOut() : new CubicEaseIn());
             var transform = (ScaleTransform)content.RenderTransform;
+            void Settle()
+            {
+                content.RenderTransform = entering ? null : new ScaleTransform(closedScale, closedScale);
+                content.Opacity = entering ? 1 : 0;
+            }
             void Frame(TimeSpan timestamp)
             {
                 if (current.IsCancellationRequested || !ReferenceEquals(state.Animation, current)) return;
@@ -287,22 +314,26 @@ public static class GuiMotion
                     ? Math.Max(0, (timestamp - previous).TotalSeconds) : 0;
                 lastFrame = timestamp;
                 animationElapsed += elapsed;
+                if (animationElapsed >= duration.TotalSeconds)
+                {
+                    Settle();
+                    completion.TrySetResult();
+                    return;
+                }
                 var progress = Math.Clamp(animationElapsed / duration.TotalSeconds, 0, 1);
                 var eased = easing.Ease(progress);
                 var scale = startScale + (targetScale - startScale) * eased;
                 transform.ScaleX = scale;
                 transform.ScaleY = scale;
                 content.Opacity = Math.Clamp(startOpacity + (targetOpacity - startOpacity) * eased, 0, 1);
-                if (animationElapsed >= duration.TotalSeconds)
-                    completion.TrySetResult();
-                else topLevel.RequestAnimationFrame(Frame);
+                frameHost.RequestAnimationFrame(Frame);
             }
-            topLevel.RequestAnimationFrame(Frame);
+            frameHost.RequestAnimationFrame(Frame);
             await completion.Task;
         }
         if (!ReferenceEquals(state.Animation, current)) return;
         state.Animation = null;
-        content.Opacity = entering ? 1 : 0;
         content.RenderTransform = entering ? null : new ScaleTransform(closedScale, closedScale);
+        content.Opacity = entering ? 1 : 0;
     }
 }

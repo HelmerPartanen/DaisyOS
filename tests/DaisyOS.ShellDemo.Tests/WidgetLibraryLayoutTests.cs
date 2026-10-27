@@ -81,4 +81,93 @@ public sealed class WidgetLibraryLayoutTests
         }
         finally { window.Close(); }
     }
+
+    [AvaloniaFact]
+    public async Task LibraryScalesInAndReleasesInputBeforeFinishingItsExit()
+    {
+        var library = new WidgetLibraryOverlay();
+        library.Resources["MotionDurationEnter"] = TimeSpan.FromMilliseconds(80);
+        library.Resources["MotionDurationExit"] = TimeSpan.FromMilliseconds(80);
+        var window = new Window { Width = 1024, Height = 768, Content = library };
+        window.Show();
+        try
+        {
+            var frame = library.FindControl<Control>("LibraryFrame")!;
+            Assert.False(library.IsVisible);
+
+            library.Open();
+            Assert.True(library.IsVisible);
+            Assert.True(library.IsOpen);
+            Assert.True(library.IsHitTestVisible);
+            Assert.NotNull(frame.RenderTransform);
+            Assert.InRange(frame.RenderTransform!.Value.M11, 0.9, 0.999);
+            Assert.InRange(frame.Opacity, 0, 0.999);
+
+            await SettleAsync(() => frame.RenderTransform is null && library.IsHitTestVisible);
+            Assert.Equal(1, frame.Opacity);
+            Assert.Null(frame.RenderTransform);
+
+            library.Dismiss();
+            // Input is released the moment dismissal starts even though the sheet
+            // is still painting its exit.
+            Assert.False(library.IsHitTestVisible);
+            Assert.False(library.IsOpen);
+            Assert.NotNull(frame.RenderTransform);
+
+            await SettleAsync(() => !library.IsVisible);
+            Assert.False(library.IsVisible);
+            Assert.Equal(1, frame.Opacity);
+            Assert.Null(frame.RenderTransform);
+        }
+        finally { window.Close(); }
+
+        static async Task SettleAsync(Func<bool> condition)
+        {
+            for (var tick = 0; tick < 60 && !condition(); tick++)
+            {
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                await Task.Delay(10);
+            }
+            Assert.True(condition());
+        }
+    }
+
+    [AvaloniaFact]
+    public async Task ReopeningDuringExitReportsNoDismissalAndKeepsTheSheetInteractive()
+    {
+        var library = new WidgetLibraryOverlay();
+        library.Resources["MotionDurationEnter"] = TimeSpan.FromMilliseconds(120);
+        library.Resources["MotionDurationExit"] = TimeSpan.FromMilliseconds(120);
+        var window = new Window { Width = 1024, Height = 768, Content = library };
+        window.Show();
+        try
+        {
+            var frame = library.FindControl<Control>("LibraryFrame")!;
+            var dismissals = 0;
+            library.Dismissed += () => dismissals++;
+
+            library.Open();
+            await SettleAsync(() => library.IsHitTestVisible && frame.RenderTransform is null);
+
+            library.Dismiss();
+            library.Open();
+            await SettleAsync(() => library.IsHitTestVisible && frame.RenderTransform is null);
+
+            Assert.Equal(0, dismissals);
+            Assert.True(library.IsOpen);
+            Assert.True(library.IsVisible);
+            Assert.Equal(1, frame.Opacity);
+        }
+        finally { window.Close(); }
+
+        static async Task SettleAsync(Func<bool> condition)
+        {
+            for (var tick = 0; tick < 60 && !condition(); tick++)
+            {
+                AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+                await Task.Delay(10);
+            }
+            Assert.True(condition());
+        }
+    }
 }
