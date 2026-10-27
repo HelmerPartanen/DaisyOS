@@ -1295,7 +1295,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         {
                             Orientation = Orientation.Horizontal, Spacing = 6,
                             Children = { action, forget }
-                        }, "wifi-02"));
+                        }, leadingOverride: CreateWifiSignalIcon(network.SignalPercent)));
                     }
                     if (knownRows.Count == 0)
                         knownRows.Add(InfoRow(Loc.Get("Known networks"), Loc.Get("Networks you connect to will appear here.")));
@@ -1319,7 +1319,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         };
                         var security = IsOpenWirelessNetwork(network.Security) ? Loc.Get("Open network") : network.Security;
                         otherRows.Add(PreferenceRow(network.Ssid,
-                            Loc.Format("{0} · {1}% signal", security, network.SignalPercent), action, "wifi-02"));
+                            Loc.Format("{0} · {1}% signal", security, network.SignalPercent), action,
+                            leadingOverride: CreateWifiSignalIcon(network.SignalPercent)));
                     }
                     if (otherRows.Count == 0)
                         otherRows.Add(InfoRow(Loc.Get("Searching…"), Loc.Get("Looking for other Wi-Fi networks nearby.")));
@@ -2985,19 +2986,40 @@ namespace DaisyOS.Shell.Apps.System.Settings
             return PreferenceRow(title, input ? Loc.Get("Microphone") : Loc.Get("System output"), slider);
         }
 
-        private Border PreferenceRow(string title, string? description, Control? trailing, string? iconOverride = null)
+        private WifiSignalIcon CreateWifiSignalIcon(int signalPercent) => new()
         {
-            var icon = iconOverride is null ? GetSettingIcon(Loc.Original(title)) : new SettingIcon(iconOverride);
+            SignalPercent = signalPercent,
+            Width = 20,
+            Height = 20,
+            ActiveBrush = TryBrush("ContentSecondaryBrush"),
+            InactiveBrush = TryBrush("ContentTertiaryBrush"),
+            VerticalAlignment = VerticalAlignment.Center,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            Margin = new Thickness(0, 0, 14, 0)
+        };
+
+        private Border PreferenceRow(string title, string? description, Control? trailing,
+            string? iconOverride = null, Control? leadingOverride = null)
+        {
+            var icon = leadingOverride is null
+                ? iconOverride is null ? GetSettingIcon(Loc.Original(title)) : new SettingIcon(iconOverride)
+                : null;
+            var hasLeading = leadingOverride is not null || icon is not null;
             var content = new Grid
             {
-                ColumnDefinitions = new ColumnDefinitions(icon is null ? "*,Auto" : "Auto,*,Auto"),
-                ColumnSpacing = icon is null ? 16 : 0,
+                ColumnDefinitions = new ColumnDefinitions(hasLeading ? "Auto,*,Auto" : "*,Auto"),
+                ColumnSpacing = hasLeading ? 0 : 16,
                 VerticalAlignment = VerticalAlignment.Center
             };
             var copy = new StackPanel { Spacing = 4, VerticalAlignment = VerticalAlignment.Center };
             copy.Children.Add(new TextBlock { Text = title, Classes = { "SettingsLabel" } });
             if (!string.IsNullOrWhiteSpace(description)) copy.Children.Add(Secondary(description));
-            if (icon is not null)
+            if (leadingOverride is not null)
+            {
+                content.Children.Add(leadingOverride);
+                Grid.SetColumn(copy, 1);
+            }
+            else if (icon is not null)
             {
                 var iconBlock = new DaisyIcon { Icon = icon.Glyph, Foreground = TryBrush(icon.BrushResource ?? "ContentSecondaryBrush") };
                 iconBlock.Classes.Add("SettingsRowIcon");
@@ -3028,7 +3050,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     var narrow = row.Bounds.Width < 600 * fontScale && trailing is not ToggleSwitch;
                     if (trailing is ComboBox picker && double.IsNaN(picker.Width))
                     {
-                        var available = row.Bounds.Width - row.Padding.Left - row.Padding.Right - (icon is null ? 0 : 38);
+                        var available = row.Bounds.Width - row.Padding.Left - row.Padding.Right - (hasLeading ? 38 : 0);
                         picker.MaxWidth = Math.Max(0, Math.Min(440, available));
                         picker.MinWidth = Math.Min(picker.MinWidth, picker.MaxWidth);
                     }
@@ -3037,7 +3059,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     content.RowDefinitions = new RowDefinitions(narrow ? "Auto,Auto" : "Auto");
                     content.RowSpacing = narrow ? 12 : 0;
                     Grid.SetRow(trailing, narrow ? 1 : 0);
-                    Grid.SetColumn(trailing, narrow ? (icon is null ? 0 : 1) : (icon is null ? 1 : 2));
+                    Grid.SetColumn(trailing, narrow ? (hasLeading ? 1 : 0) : (hasLeading ? 2 : 1));
                     trailing.HorizontalAlignment = narrow ? HorizontalAlignment.Left : HorizontalAlignment.Right;
                 };
             }

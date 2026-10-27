@@ -114,13 +114,14 @@ public sealed class QuickSettingsTests
         try
         {
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-            var bands = icon.GetVisualDescendants().OfType<ShapePath>().ToArray();
+            var bands = icon.GetVisualDescendants().OfType<DaisyIcon>().ToArray();
             Assert.Equal(3, bands.Length);
+            Assert.All(bands, band => Assert.Equal("wifi-02", band.Icon));
             Assert.Equal(expectedOuter, bands[0].Opacity);
             Assert.Equal(expectedInner, bands[1].Opacity);
             Assert.Equal(expectedDot, bands[2].Opacity);
             Assert.All(bands, band => Assert.Equal(blue.Color,
-                Assert.IsAssignableFrom<ISolidColorBrush>(band.Fill).Color));
+                Assert.IsAssignableFrom<ISolidColorBrush>(band.Foreground).Color));
         }
         finally { window.Close(); }
     }
