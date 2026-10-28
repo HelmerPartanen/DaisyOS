@@ -1,0 +1,76 @@
+syntax = "proto3";
+package daisyos.continuity.v1;
+option csharp_namespace = "DaisyOS.Continuity.Protocol.V1";
+
+// Experimental contract. No production network endpoint or generated binding
+// consumes it yet. Pairing is deliberately absent pending reviewed design.
+message Envelope {
+  uint32 protocol_major = 1;
+  uint32 protocol_minor = 2;
+  bytes request_id = 3; // exactly 16 random bytes
+  oneof message {
+    Hello hello = 10;
+    Ping ping = 11;
+    Pong pong = 12;
+    ClipboardOffer clipboard_offer = 20;
+    ClipboardGet clipboard_get = 21;
+    ClipboardData clipboard_data = 22;
+    FileOffer file_offer = 30;
+    FileDecision file_decision = 31;
+    FileChunk file_chunk = 32;
+    FileComplete file_complete = 33;
+    FileCancel file_cancel = 34;
+    Error error = 40;
+  }
+  reserved 4 to 9, 13 to 19, 23 to 29, 35 to 39;
+}
+enum Capability {
+  CAPABILITY_UNSPECIFIED = 0;
+  TEXT_CLIPBOARD = 1;
+  FILES = 2;
+}
+message Hello {
+  bytes device_id = 1; // 32 bytes; must match verified transport identity
+  repeated Capability capabilities = 2;
+  bytes nonce = 3; // 32 fresh random bytes
+}
+message Ping { uint64 sequence = 1; }
+message Pong { uint64 sequence = 1; }
+message ClipboardOffer {
+  bytes update_id = 1;
+  bytes origin_peer_id = 2;
+  repeated string mime_types = 3;
+  uint64 size = 4;
+  bytes sha256 = 5;
+}
+message ClipboardGet { bytes update_id = 1; string mime_type = 2; }
+message ClipboardData { bytes update_id = 1; string mime_type = 2; bytes data = 3; }
+message FileOffer {
+  bytes transfer_id = 1;
+  string display_name = 2; // one basename, never a destination path
+  uint64 length = 3;
+  bytes sha256 = 4;
+  string mime_hint = 5;
+}
+message FileDecision {
+  bytes transfer_id = 1;
+  bool accepted = 2;
+  uint64 resume_offset = 3; // only with matching authenticated persisted manifest
+}
+message FileChunk { bytes transfer_id = 1; uint64 offset = 2; bytes data = 3; }
+message FileComplete { bytes transfer_id = 1; bytes verified_sha256 = 2; }
+message FileCancel { bytes transfer_id = 1; }
+message Error {
+  enum Code {
+    UNSPECIFIED = 0;
+    INCOMPATIBLE_VERSION = 1;
+    UNAUTHORIZED = 2;
+    INVALID_MESSAGE = 3;
+    LIMIT_EXCEEDED = 4;
+    CANCELLED = 5;
+    UNAVAILABLE = 6;
+    CHECKSUM_MISMATCH = 7;
+  }
+  Code code = 1;
+  string safe_description = 2;
+}
