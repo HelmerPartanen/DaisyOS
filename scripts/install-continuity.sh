@@ -31,5 +31,5 @@ if systemctl is-active --quiet firewalld 2>/dev/null && ! grep -q '47621' /etc/f
       sudo firewall-cmd --reload >/dev/null || true
   fi
 fi
-printf 'Installed under %s. Install dependencies: .NET 10 ASP.NET runtime, avahi, wl-clipboard.\n' "$prefix"
+printf 'Installed under %s. Install dependencies: .NET 10 ASP.NET runtime, avahi, wl-clipboard; media also needs libei, GStreamer/PipeWire plugins and libpulse (pactl/pacat).\n' "$prefix"
 printf 'Reload user units with systemctl --user daemon-reload, then start daisyos-continuity.service. Sharing stays off until enabled in Settings.\n'

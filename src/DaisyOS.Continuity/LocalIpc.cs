@@ -14,8 +14,13 @@ public sealed partial class ContinuityDaemon
         if (context.IsDBusIntrospectRequest)
         {
             context.ReplyIntrospectXml(new[] { (ReadOnlyMemory<byte>)Encoding.UTF8.GetBytes(
-                "<interface name='org.daisyos.Continuity1'><method name='Execute'><arg type='s' direction='in'/><arg type='s' direction='out'/></method></interface>") });
+                "<interface name='org.daisyos.Continuity1'><method name='Execute'><arg type='s' direction='in'/><arg type='s' direction='out'/></method><method name='ReadFrame'><arg type='s' direction='in'/><arg type='ay' direction='out'/></method></interface>") });
             return default;
+        }
+        if (context.Request.InterfaceAsString == ContinuityClient.BusName && context.Request.MemberAsString == "ReadFrame" && context.Request.SignatureAsString == "s")
+        {
+            var id = context.Request.GetBodyReader().ReadString();
+            return new ValueTask(ReplyFrameAsync(context, id));
         }
         if (context.Request.InterfaceAsString != ContinuityClient.BusName || context.Request.MemberAsString != "Execute" ||
             context.Request.SignatureAsString != "s")
@@ -28,6 +33,16 @@ public sealed partial class ContinuityDaemon
             return new ValueTask(ReplyAsync(context, command));
         }
         catch { context.ReplyError("org.freedesktop.DBus.Error.InvalidArgs", "Invalid Continuity request."); return default; }
+    }
+    private async Task ReplyFrameAsync(MethodContext context, string id)
+    {
+        try
+        {
+            if (id.Length != 32 || await BusUintAsync("GetConnectionUnixUser", context.Request.SenderAsString!) != GetUid()) throw new UnauthorizedAccessException();
+            using var writer = context.CreateReplyWriter("ay");
+            writer.WriteArray(ReadFrame(id)); context.Reply(writer.CreateMessage());
+        }
+        catch { context.ReplyError("org.daisyos.Continuity1.RequestFailed", "Frame unavailable."); }
     }
     private async Task<uint> BusUintAsync(string member, string sender)
     {
@@ -102,7 +117,9 @@ public sealed partial class ContinuityDaemon
                 {
                     if (!_state.Settings.Peers.TryGetValue(command.Id, out var peer)) throw new InvalidDataException();
                     _state.Settings.Peers[command.Id] = command.Value switch
-                    { "clipboard" => peer with { Clipboard = command.Allowed }, "files" => peer with { Files = command.Allowed }, _ => throw new InvalidDataException() };
+                    { "clipboard" => peer with { Clipboard = command.Allowed }, "files" => peer with { Files = command.Allowed },
+                      "input" => peer with { Input = command.Allowed }, "handoff" => peer with { Handoff = command.Allowed },
+                      "screen" => peer with { Screen = command.Allowed }, "audio" => peer with { Audio = command.Allowed }, _ => throw new InvalidDataException() };
                     if (!command.Allowed)
                     {
                         _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with { GrantId = Guid.NewGuid().ToString("N") };
@@ -180,6 +197,18 @@ public sealed partial class ContinuityDaemon
                     if (_transferCancellation.TryGetValue(command.Id, out var cancellation)) _ = cancellation.CancelAsync();
                     if (_transferResumeRecords.TryGetValue(command.Id, out var record)) File.Delete(record);
                 }
+                return;
+            case "live":
+                StartLive(command.Id, command.Value, command.Allowed);
+                return;
+            case "live-stop":
+                lock (_gate) if (_live.TryGetValue(command.Id, out var live)) _ = live.Stop.CancelAsync();
+                return;
+            case "live-input":
+                QueueInput(command.Id, command.Value);
+                return;
+            case "handoff":
+                StartHandoff(command.Id, command.Value);
                 return;
             case "clipboard":
                 if (command.Value.Length > 1_400_000) throw new InvalidDataException();

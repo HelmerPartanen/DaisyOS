@@ -22,6 +22,11 @@ message Envelope {
     FileComplete file_complete = 33;
     FileCancel file_cancel = 34;
     Error error = 40;
+    LiveStart live_start = 50;
+    LiveDecision live_decision = 51;
+    LivePacket live_packet = 52;
+    ActivityOffer activity_offer = 60;
+    ActivityResult activity_result = 61;
   }
   reserved 4 to 9, 14 to 19, 23 to 29, 35 to 39;
 }
@@ -29,6 +34,10 @@ enum Capability {
   CAPABILITY_UNSPECIFIED = 0;
   TEXT_CLIPBOARD = 1;
   FILES = 2;
+  INPUT = 3;
+  HANDOFF = 4;
+  SCREEN = 5;
+  AUDIO = 6;
 }
 message Hello {
   bytes device_id = 1; // 32 bytes; must match verified transport identity
@@ -80,3 +89,11 @@ message Error {
 // platform TLS chain engine and full fingerprints must be verified locally.
 message Bootstrap { uint32 major = 1; bytes certificate = 2; string name = 3; bool pairing = 4; uint32 port = 5; }
 message PairConsent { bool approved = 1; }
+
+// One bounded, independently cancellable TLS connection per live session.
+message LiveStart { string session_id = 1; string kind = 2; bool control = 3; }
+message LiveDecision { bool accepted = 1; }
+message LivePacket { uint64 sequence = 1; bytes data = 2; }
+// Allowlisted native activity, never a command, executable or local file path.
+message ActivityOffer { string app_id = 1; string kind = 2; uint32 schema_version = 3; string title = 4; string text = 5; }
+message ActivityResult { bool accepted = 1; }

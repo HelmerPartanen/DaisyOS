@@ -17,6 +17,7 @@ namespace DaisyOS.Continuity;
 public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHandler
 {
     private readonly SecureState _state;
+    private readonly string? _mediaExecutableDirectory;
     private readonly int _port;
     private int _boundPort;
     private readonly object _gate = new();
@@ -54,9 +55,9 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     // Composition seam for isolated policy/transfer tests. Program always uses
     // the public constructor with the real logind + shell session authority.
     internal ContinuityDaemon(SecureState state, int port, Func<bool>? sessionIsActive,
-        string? downloadsDirectory, string? sessionBusAddress)
+        string? downloadsDirectory, string? sessionBusAddress, string? mediaExecutableDirectory = null)
     {
-        _state = state; _port = port; _boundPort = port;
+        _state = state; _mediaExecutableDirectory = mediaExecutableDirectory; _port = port; _boundPort = port;
         _sessionIsActive = sessionIsActive ?? (() => _sessionReady);
         _downloadsDirectory = downloadsDirectory ?? DaisyOS.Core.Storage.UserDirectoryPaths.Load()["Downloads"];
         _bus = new(sessionBusAddress ?? DBusAddress.Session ?? throw new IOException("No session bus."));
@@ -81,6 +82,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         if (Socket.OSSupportsIPv6) _listener.Server.DualMode = true;
         _listener.Start(16);
         _boundPort = ((IPEndPoint)_listener.LocalEndpoint).Port;
+        try { await RecoverAudioRouteAsync(); } catch (IOException) { Console.Error.WriteLine("[continuity] audio_route_cleanup_pending"); }
         await _bus.ConnectAsync();
         _ = FailClosedOnDisconnectAsync(_bus);
         await StartSessionGuardAsync();
@@ -216,6 +218,8 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             if (envelope.Ping is { } ping) await wire.SendAsync(new Envelope { Pong = new Pong { Sequence = ping.Sequence } }, lifetime.Token);
             else if (envelope.ClipboardOffer is { } offer) await ReceiveClipboardAsync(wire, offer, lifetime.Token);
             else if (envelope.FileOffer is { } file) await ReceiveFileAsync(wire, file, lifetime.Token);
+            else if (envelope.LiveStart is { } live) await ReceiveLiveAsync(wire, live, lifetime.Token);
+            else if (envelope.ActivityOffer is { } activity) await ReceiveActivityAsync(wire, activity, lifetime.Token);
             else throw new InvalidDataException("Unsupported operation.");
         }
         finally { EndPeer(wire.PeerId, lifetime); }
@@ -242,7 +246,9 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         lock (_gate)
         {
             if (!Ready || _revoked.Contains(id) || !_state.Settings.Peers.TryGetValue(id, out var peer) ||
-                feature == "clipboard" && !peer.Clipboard || feature == "files" && !peer.Files)
+                feature == "clipboard" && !peer.Clipboard || feature == "files" && !peer.Files ||
+                feature == "input" && !peer.Input || feature == "handoff" && !peer.Handoff ||
+                feature == "screen" && !peer.Screen || feature == "audio" && !peer.Audio)
                 throw new UnauthorizedAccessException();
         }
     }
@@ -255,7 +261,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             if (!Ready || _prompts.Count >= 16) return false;
             _prompts.Add(request, (new(request, kind, id, SecureState.SafeName(name), detail), decision));
         }
-        _ = NotifyAsync(kind == "pair" ? "Continuity pairing request" : "File receive request", "Open Settings → Continuity to review.");
+        _ = NotifyAsync(kind == "pair" ? "Continuity pairing request" : "Continuity " + kind + " request", "Open Settings → Continuity to review.");
         try { return await decision.Task.WaitAsync(TimeSpan.FromMinutes(2), token); }
         catch (TimeoutException) { return false; }
         finally { lock (_gate) _prompts.Remove(request); }
@@ -307,13 +313,13 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             {
                 var nearby = _nearby.GetValueOrDefault(pair.Key);
                 return new ContinuityDevice(pair.Key, pair.Value.Name, nearby?.Address ?? pair.Value.Address,
-                    nearby?.Status ?? "Trusted · unreachable", true, pair.Value.Clipboard, pair.Value.Files);
+                    nearby?.Status ?? "Trusted · unreachable", true, pair.Value.Clipboard, pair.Value.Files, pair.Value.Input, pair.Value.Handoff, pair.Value.Screen, pair.Value.Audio);
             }).Concat(_nearby.Values.Where(d => !_state.Settings.Peers.ContainsKey(d.Id))).ToArray();
             var summary = !_state.Settings.Enabled ? "Continuity is off." : _state.Settings.Paused ? "Continuity is paused." :
                 !_sessionIsActive() ? "Sharing is unavailable outside an active unlocked DaisyOS session." : "Continuity is enabled for trusted devices.";
             if (_diagnostic.Length > 0) summary += " " + _diagnostic;
             return new(_state.Settings.Enabled, _state.Settings.Visible, _state.Settings.Paused, _sessionIsActive(), _state.Settings.Name,
-                _state.Id, _clipboard.Status, summary, devices, _prompts.Values.Select(p => p.Prompt).ToArray(), _transfers.Values.ToArray());
+                _state.Id, _clipboard.Status, summary, devices, _prompts.Values.Select(p => p.Prompt).ToArray(), _transfers.Values.ToArray(), _live.Values.Select(l => l.Info).ToArray());
         }
     }
     private void SaveSettings()

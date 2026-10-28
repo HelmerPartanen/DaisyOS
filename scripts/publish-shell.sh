@@ -108,6 +108,8 @@ for application in Files Notes Settings DiskManager Continuity; do
     --no-restore --output "$output_dir/apps/$application" "${publish_properties[@]}"
 done
 
+"$repo_root/scripts/build-continuity-media.sh" "$output_dir/apps/Continuity"
+
 install -m644 "$repo_root/packaging/continuity/daisyos-continuity.service" "$output_dir/daisyos-continuity.service"
 
 if [[ "$fast" == true ]]; then

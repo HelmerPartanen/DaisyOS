@@ -14,6 +14,8 @@ public sealed class PeerWire : IAsyncDisposable
     public SslStream Stream { get; }
     public Bootstrap Remote { get; }
     public string PeerId { get; }
+    private readonly HashSet<Capability> _capabilities = [];
+    public bool Supports(Capability capability) => _capabilities.Contains(capability);
     private PeerWire(TcpClient client, SslStream stream, Bootstrap remote)
     { _client = client; Stream = stream; Remote = remote; PeerId = SecureState.Fingerprint(remote.Certificate.Span); }
 
@@ -54,17 +56,18 @@ public sealed class PeerWire : IAsyncDisposable
             var wire = new PeerWire(client, ssl, remote);
             await wire.SendAsync(new Envelope { Hello = new Hello { DeviceId = ByteString.CopyFrom(Convert.FromHexString(state.Id)),
                 Nonce = ByteString.CopyFrom(global::System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)),
-                Capabilities = { Capability.TextClipboard, Capability.Files } } }, ct);
+                Capabilities = { Capability.TextClipboard, Capability.Files, Capability.Input, Capability.Handoff, Capability.Screen, Capability.Audio } } }, ct);
             var hello = await wire.ReceiveAsync(ct);
             if (hello.Hello is null || hello.Hello.DeviceId != ByteString.CopyFrom(Convert.FromHexString(id)) || hello.Hello.Nonce.Length != 32)
                 throw new InvalidDataException("Invalid Hello identity.");
+            wire._capabilities.UnionWith(hello.Hello.Capabilities);
             return wire;
         }
         catch { await ssl.DisposeAsync(); throw; }
     }
     public async Task SendAsync(Envelope envelope, CancellationToken token)
     {
-        envelope.ProtocolMajor = 1; envelope.ProtocolMinor = 0;
+        envelope.ProtocolMajor = 1; envelope.ProtocolMinor = 1;
         envelope.RequestId = ByteString.CopyFrom(Guid.NewGuid().ToByteArray());
         var encoded = envelope.ToByteArray();
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);

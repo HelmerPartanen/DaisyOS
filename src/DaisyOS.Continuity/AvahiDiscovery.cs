@@ -276,7 +276,7 @@ public sealed class AvahiDiscovery : IAsyncDisposable
             RedirectStandardOutput = true,
             RedirectStandardError = true
         };
-        foreach (var arg in new[] { "--no-fail", name, "_daisycont._tcp", port.ToString(), "pv=1", "id=" + id, "cap=clipboard,files" })
+        foreach (var arg in new[] { "--no-fail", name, "_daisycont._tcp", port.ToString(), "pv=1", "id=" + id, "cap=clipboard,files,input,handoff,screen,audio" })
             start.ArgumentList.Add(arg);
         _publisher = global::System.Diagnostics.Process.Start(start);
         return Task.CompletedTask;
