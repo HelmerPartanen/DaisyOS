@@ -82,7 +82,39 @@ snapshots and cancellation are needed on every dispatch/state change.
 ## Deferred contracts
 
 Pairing/SAS, local D-Bus introspection, permission mutations and their authorized
-callers, retry scheduling, peer identity scheme/transport binding and migration
+callers, daemon retry wiring, peer identity scheme/transport binding and migration
 serialization remain unresolved. Do not ship this schema as a compatible stable
 protocol until those contracts and cross-language conformance tests exist.
 Input, handoff and display are not advertised, and core policy rejects them.
+
+## Trusted-peer lifecycle prototype
+
+`src/DaisyOS.Core/Continuity/ContinuityPeerSession.cs` now supplies a run-once,
+per-trusted-peer controller with injectable `IContinuityPeerConnector` and
+`IContinuityRetryDelay`. It starts offline, dials, checks the adapter's verified
+identity, exchanges Hello and intersects the two MVP capability bits. Negotiation
+does not grant clipboard/file permissions. Identity/protocol failures stop in
+Error with a stable diagnostic enum; transient IO failures/disconnects use
+exponential backoff (500 ms initial ceiling, 30 s cap, half-to-full jitter).
+Backoff is not reset by Hello, so rapidly flapping connections cannot reset it.
+Connect plus Hello have a ten-second cancellation deadline. Adapters must honor
+cancellation and supply their own transport idle/dead-peer detection.
+
+Revoke clears capabilities synchronously before cancelling the run. Late completion
+cannot restore Connected. Stop clears features synchronously for lock/pause/logout. Dispose/caller
+cancellation ends the run and releases the connection. Session integration must
+call Stop and discard this object;
+there is no automatic unlock resume or persistent trust mutation. The host must
+supervise unexpected adapter exceptions and cannot treat a stopped run as active.
+
+Snapshot revisions and a bounded, coalescing asynchronous state feed support a
+future IPC/UI adapter without synchronous callbacks on network paths. The feed
+is for one subscriber, not broadcast; consumers obtain Snapshot for current state.
+The prototype's `ContinuityHello` is an in-process test model, not a serialization
+contract or substitute for generated Protobuf validation. Its canonical 64-character
+lowercase hex IDs represent the wire's 32-byte identities, whose cryptographic
+binding is still pending. No constructor argument can cryptographically establish
+trust: only the future daemon's verified trust store may create production sessions.
+The test-only mock transport never opens sockets and is not packaged as a TLS bypass.
+Connection election, discovery dedup, generated bindings, IPC, pairing, persistent
+trust, keepalive and feature dispatch remain outstanding.

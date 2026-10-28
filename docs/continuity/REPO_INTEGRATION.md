@@ -92,3 +92,14 @@ races; lock signals arriving after data dispatch; clipboard selection lifetimes;
 IPv6 link-local scope; canonical path checks versus symlink races; authenticated
 resume manifests; cross-language generated bindings; package/release installation
 and independent service restart without a Settings window.
+
+## Second increment: trusted-peer lifecycle
+
+Added `src/DaisyOS.Core/Continuity/ContinuityPeerSession.cs` and
+`tests/DaisyOS.Core.Tests/ContinuityPeerSessionTests.cs`. The lifecycle can now
+be exercised with two bounded in-memory mock peers and deterministic retry
+scheduling. Snapshot changes are asynchronous and coalesced for a future adapter.
+This completes the mock transport/retry test seam portion of milestone 0;
+generated bindings and a passing full regression remain outstanding. It is an
+isolated milestone 1 building block, not a daemon/IPC implementation. There is
+still no Continuity service or UI activation to install or enable.

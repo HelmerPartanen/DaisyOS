@@ -114,3 +114,39 @@ The change contains no daemon, UI activation or new package dependency. Remainin
 milestone 0 work includes a mock peer/clock abstraction and generated cross-language
 bindings. All live milestones still require their separate implementations and
 acceptance evidence before enablement.
+
+## Second increment: peer lifecycle (2026-10-28)
+
+New files:
+
+- `src/DaisyOS.Core/Continuity/ContinuityPeerSession.cs`
+- `tests/DaisyOS.Core.Tests/ContinuityPeerSessionTests.cs`
+
+Updated documentation: `PROTOCOL.md`, `REPO_INTEGRATION.md`, `TEST_MATRIX.md`.
+
+Twelve new test cases cover two isolated peers exchanging Hello, transport identity
+mismatch, incompatible major version, spoofed Hello identity, deterministic
+reconnection/backoff cancellation, revoke during a deliberately late handshake,
+dispose before start/repeated disposal, bounded state-feed completion, rejection
+of noncanonical/self identities, masking unknown capability bits, active-connection
+cleanup, immediate idempotent stop, concurrent duplicate run and already-cancelled startup. Mocks are test-only;
+no real TLS, pairing or live network acceptance is implied.
+
+Manual/repeatable script:
+
+```sh
+dotnet test tests/DaisyOS.Core.Tests/DaisyOS.Core.Tests.csproj --no-restore -v minimal
+dotnet build DaisyOS.sln --no-restore -v quiet
+git diff --check
+```
+
+The mock retry scheduler releases attempts explicitly; no wall-clock sleeps are
+used to drive retry tests. Ten-second test timeouts detect deadlocks rather than
+serving as timing assertions. Existing graphical regression failures recorded
+above are not fixed or reclassified by this change. Do not enable live sharing.
+
+Second-increment results: focused Core tests exited 0, **34 passed, 0 failed,
+0 skipped** (125 ms test duration). Solution build exited 0, **68 warnings,
+0 errors** (2m03.26s). `git diff --check` passed. The existing full graphical
+suite was not rerun; its previously recorded failures remain unresolved.
+Logs: `artifacts/continuity/peer-session-tests.log` and `peer-session-build.log`.
