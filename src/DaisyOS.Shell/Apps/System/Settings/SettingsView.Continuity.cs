@@ -1,10 +1,13 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input;
 using Avalonia.Layout;
-using Avalonia.Threading;
+using Avalonia.Media;
 using DaisyOS.Core.Continuity;
+using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Services.Localization;
 using DaisyOS.System.Continuity;
+using DaisyOS.System.Processes;
 
 namespace DaisyOS.Shell.Apps.System.Settings;
 
@@ -22,73 +25,148 @@ public partial class SettingsView
         _continuitySendPath = path;
         SelectCategory("Continuity");
     }
+
     private void BuildContinuity(int version)
     {
-        _continuityPage?.Cancel(); _continuityPage?.Dispose();
-        _continuityPage = new();
+        _continuityPage?.Cancel();
+        _continuityPage?.Dispose();
+        _continuityPage = new CancellationTokenSource();
         _ = LoadContinuityAsync(version, _continuityPage.Token);
     }
+
     private async Task LoadContinuityAsync(int version, CancellationToken token)
     {
         try
         {
             var state = await _continuity.ExecuteAsync(new("status"), token);
             if (version != _categoryBuildVersion || token.IsCancellationRequested) return;
-            AddSection(Loc.Get("CONTINUITY"), Loc.Get("Works across local Wi-Fi and Ethernet. Both devices must be reachable on the same local network."),
-                Toggle("Continuity", "continuity.enabled", state.Enabled, value => _ = SetContinuityEnabledAsync(value)),
-                Toggle("Visible to nearby devices", "continuity.visible", state.Visible, value => _ = ContinuityActionAsync(new("visible", Allowed: value))),
-                Toggle("Pause Continuity", "continuity.paused", state.Paused, value => _ = ContinuityActionAsync(new("pause", Allowed: value))));
-            var name = new TextBox { Text = state.Name, Watermark = Loc.Get("Device name"), MinWidth = 180 };
-            var rename = ContinuityButton("Save name", () => new("name", Value: name.Text ?? "DaisyOS"));
-            AddSection(Loc.Get("THIS DEVICE"), null, PreferenceRow(Loc.Get("Device name"), null, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { name, rename } }),
-                InfoRow(Loc.Get("Public identity fingerprint"), state.DeviceId));
-            if (_continuitySendPath is { } selected) AddSection(Loc.Get("SEND FILE"), null, InfoRow(Loc.Get("Selected file"), Path.GetFileName(selected)));
-            _continuityStructure = null; _continuityTransferControls.Clear();
-            _continuityLive = new StackPanel { Spacing = 12 };
-            CategoryContent.Children.Add(_continuityLive);
-            UpdateContinuityLive(state);
+            BuildContinuityPage(state);
+
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
             while (await timer.WaitForNextTickAsync(token))
             {
                 if (version != _categoryBuildVersion || _activeCategory != "Continuity") return;
-                var refreshed = await _continuity.ExecuteAsync(new("status"), token);
-                UpdateContinuityLive(refreshed);
+                UpdateContinuityLive(await _continuity.ExecuteAsync(new("status"), token));
             }
         }
         catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         catch
         {
-            if (version == _categoryBuildVersion && !token.IsCancellationRequested)
-            {
-                AddUnavailableMessage(Loc.Get("Continuity service is unavailable. Start the per-user service, then reopen this page."));
-                var start = new Button { Content = Loc.Get("Start Continuity service") };
-                start.Click += async (_, _) =>
-                {
-                    await new DaisyOS.System.Processes.SafeCommandRunner().RunAsync("systemctl", ["--user", "start", "daisyos-continuity.service"], TimeSpan.FromSeconds(5));
-                    SelectCategory("Continuity");
-                };
-                CategoryContent.Children.Add(start);
-            }
+            if (version == _categoryBuildVersion && !token.IsCancellationRequested) BuildContinuityUnavailable();
         }
     }
+
+    private void BuildContinuityPage(ContinuityStatus state)
+    {
+        while (CategoryContent.Children.Count > 1)
+            CategoryContent.Children.RemoveAt(CategoryContent.Children.Count - 1);
+
+        AddSection(Loc.Get("CONTINUITY"), Loc.Get("Nearby trusted devices connect automatically on your local network."),
+            Toggle("Continuity", "continuity.enabled", state.Enabled, value => _ = SetContinuityEnabledAsync(value)));
+
+        if (state.Enabled)
+        {
+            var name = new TextBox
+            {
+                Text = state.Name,
+                PlaceholderText = Loc.Get("Device name"),
+                MinWidth = 200,
+                MaxWidth = 320,
+                HorizontalAlignment = HorizontalAlignment.Right
+            };
+            var savedName = state.Name;
+            async Task SaveNameAsync()
+            {
+                var requested = name.Text?.Trim();
+                if (string.IsNullOrWhiteSpace(requested) || requested == savedName)
+                {
+                    name.Text = savedName;
+                    return;
+                }
+                name.IsEnabled = false;
+                try
+                {
+                    var refreshed = await _continuity.ExecuteAsync(new("name", Value: requested));
+                    savedName = refreshed.Name;
+                    name.Text = savedName;
+                    UpdateContinuityLive(refreshed);
+                }
+                catch
+                {
+                    name.Text = savedName;
+                    (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t rename this device."));
+                }
+                finally { name.IsEnabled = true; }
+            }
+            name.LostFocus += async (_, _) => await SaveNameAsync();
+            name.KeyDown += async (_, args) =>
+            {
+                if (args.Key != Key.Enter) return;
+                args.Handled = true;
+                await SaveNameAsync();
+            };
+            AddSection(Loc.Get("THIS DEVICE"), Loc.Get("This is the name shown to nearby DaisyOS devices."),
+                PreferenceRow(Loc.Get("Device name"), Loc.Get("Changes save automatically."), name, "computer-settings"));
+        }
+
+        _continuityStructure = null;
+        _continuityTransferControls.Clear();
+        _continuityLive = new StackPanel { Spacing = 24 };
+        CategoryContent.Children.Add(_continuityLive);
+        UpdateContinuityLive(state);
+    }
+
+    private void BuildContinuityUnavailable()
+    {
+        var start = new Button { Content = Loc.Get("Turn on Continuity") };
+        start.Classes.Add("Primary");
+        start.Click += async (_, _) =>
+        {
+            start.IsEnabled = false;
+            try
+            {
+                await EnsureContinuityFirewallAllowedAsync();
+                var result = await new SafeCommandRunner().RunAsync("systemctl",
+                    ["--user", "enable", "--now", "daisyos-continuity.service"], TimeSpan.FromSeconds(8));
+                if (!result.Succeeded) throw new IOException();
+                await Task.Delay(250);
+                SelectCategory("Continuity");
+            }
+            catch
+            {
+                start.IsEnabled = true;
+                (Application.Current as App)?.Feedback.Show(Loc.Get("Continuity isn’t available yet. Check that the Continuity service is installed."));
+            }
+        };
+        AddSection(Loc.Get("GET STARTED"), Loc.Get("Turn on Continuity to find and pair with nearby DaisyOS devices."),
+            PreferenceRow(Loc.Get("Continuity"), Loc.Get("Uses your local Wi-Fi or Ethernet connection. No account or internet connection is required."), start, "continuity"));
+    }
+
     private async Task SetContinuityEnabledAsync(bool enabled)
     {
         try
         {
-            // Turning sharing off must succeed independently of startup-unit state.
             if (!enabled) UpdateContinuityLive(await _continuity.ExecuteAsync(new("enable", Allowed: false)));
             if (enabled) await EnsureContinuityFirewallAllowedAsync();
-            var result = await new DaisyOS.System.Processes.SafeCommandRunner().RunAsync("systemctl",
-                ["--user", enabled ? "enable" : "disable", "daisyos-continuity.service"], TimeSpan.FromSeconds(5));
+            var result = await new SafeCommandRunner().RunAsync("systemctl",
+                ["--user", enabled ? "enable" : "disable", "--now", "daisyos-continuity.service"], TimeSpan.FromSeconds(8));
             if (!result.Succeeded) throw new IOException();
-            if (enabled) UpdateContinuityLive(await _continuity.ExecuteAsync(new("enable", Allowed: true)));
+            if (enabled)
+            {
+                await Task.Delay(250);
+                UpdateContinuityLive(await _continuity.ExecuteAsync(new("enable", Allowed: true)));
+            }
         }
         catch
         {
-            (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t update Continuity startup. Check that the user service is installed."));
+            (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t update Continuity. Check that the Continuity service is installed."));
+        }
+        finally
+        {
             if (_activeCategory == "Continuity") SelectCategory("Continuity");
         }
     }
+
     private static async Task EnsureContinuityFirewallAllowedAsync()
     {
         try
@@ -97,7 +175,7 @@ public partial class SettingsView
             var configured = Directory.EnumerateFiles("/etc/firewalld/zones", "*.xml")
                 .Any(path => File.ReadAllText(path).Contains("47621", StringComparison.Ordinal));
             if (configured) return;
-            var runner = new DaisyOS.System.Processes.SafeCommandRunner();
+            var runner = new SafeCommandRunner();
             var active = await runner.RunAsync("systemctl", ["is-active", "--quiet", "firewalld"], TimeSpan.FromSeconds(2));
             if (!active.Succeeded) return;
             await runner.RunAsync("firewall-cmd", ["--permanent", "--add-port=47621/tcp", "--add-port=47621/udp"], TimeSpan.FromSeconds(60));
@@ -105,82 +183,186 @@ public partial class SettingsView
         }
         catch { }
     }
-    private Button ContinuityButton(string label, Func<ContinuityCommand> command)
+
+    private Button ContinuityButton(string label, Func<ContinuityCommand> command, bool primary = false)
     {
-        var button = new Button { Content = Loc.Get(label), Classes = { "Subtle", "Small" } };
-        button.Click += async (_, _) => { button.IsEnabled = false; try { await ContinuityActionAsync(command()); } finally { button.IsEnabled = true; } };
+        var button = new Button { Content = Loc.Get(label) };
+        button.Classes.Add(primary ? "Primary" : "Subtle");
+        button.Classes.Add("Small");
+        button.Click += async (_, _) =>
+        {
+            button.IsEnabled = false;
+            try { await ContinuityActionAsync(command()); }
+            finally { button.IsEnabled = true; }
+        };
         return button;
     }
+
     private async Task ContinuityActionAsync(ContinuityCommand command)
     {
         try
         {
             if (command.Action is "pair" or "connect") await EnsureContinuityFirewallAllowedAsync();
-            var state = await _continuity.ExecuteAsync(command);
-            UpdateContinuityLive(state);
+            UpdateContinuityLive(await _continuity.ExecuteAsync(command));
         }
-        catch { (Application.Current as App)?.Feedback.Show(Loc.Get("Continuity couldn’t complete the request. Check the service, session and device connection.")); }
+        catch
+        {
+            (Application.Current as App)?.Feedback.Show(Loc.Get("Continuity couldn’t complete the request. Make sure both devices are awake and on the same local network."));
+        }
     }
+
     private void UpdateContinuityLive(ContinuityStatus state)
     {
         if (_activeCategory != "Continuity" || _continuityLive is null) return;
         var structure = global::System.Text.Json.JsonSerializer.Serialize(
-            state with { Transfers = state.Transfers.Select(t => t with { Completed = 0 }).ToArray() },
+            state with { Transfers = state.Transfers.Select(transfer => transfer with { Completed = 0 }).ToArray() },
             DaisyOS.Core.Serialization.DaisyCoreJsonContext.Default.ContinuityStatus);
         if (_continuityStructure == structure)
         {
             foreach (var transfer in state.Transfers)
-                if (_continuityTransferControls.TryGetValue(transfer.Id, out var controls))
-                {
-                    controls.Label.Text = $"{transfer.Name} · {transfer.Status} · {transfer.Completed:N0}/{transfer.Length:N0}";
-                    controls.Progress.Value = transfer.Completed;
-                }
+            {
+                if (!_continuityTransferControls.TryGetValue(transfer.Id, out var controls)) continue;
+                controls.Label.Text = TransferLabel(transfer);
+                controls.Progress.Value = transfer.Completed;
+            }
             return;
         }
-        _continuityStructure = structure; _continuityTransferControls.Clear();
+
+        _continuityStructure = structure;
+        _continuityTransferControls.Clear();
         _continuityLive.Children.Clear();
-        _continuityLive.Children.Add(Secondary(Loc.Get(state.SessionReady ? state.Diagnostic : "Sharing is unavailable while locked or outside an active DaisyOS session.")));
-        _continuityLive.Children.Add(Secondary(Loc.Get(state.ClipboardStatus)));
+        if (!state.Enabled) return;
+
         foreach (var prompt in state.Prompts)
         {
-            var row = new StackPanel { Spacing = 8 };
-            row.Children.Add(new TextBlock { Text = prompt.Name, Classes = { "SettingsSectionTitle" } });
-            row.Children.Add(new SelectableTextBlock { Text = prompt.Detail, TextWrapping = Avalonia.Media.TextWrapping.Wrap });
-            row.Children.Add(new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children =
-            { ContinuityButton(prompt.Kind == "pair" ? "Both fingerprints match — approve" : "Accept file", () => new("decide", Id: prompt.Id, Allowed: true)),
-              ContinuityButton("Decline", () => new("decide", Id: prompt.Id, Allowed: false)) } });
-            _continuityLive.Children.Add(row);
-        }
-        foreach (var peer in state.Devices)
-        {
-            var controls = new StackPanel { Spacing = 8 };
-            controls.Children.Add(new TextBlock { Text = peer.Name + " · " + Loc.Get(peer.Status), Classes = { "SettingsSectionTitle" } });
-            if (!peer.Trusted)
-                controls.Children.Add(ContinuityButton("Pair", () => new("pair", peer.Id, peer.Address)));
-            else
+            var actions = new StackPanel
             {
-                controls.Children.Add(Toggle("Text clipboard", "continuity.peer.clipboard", peer.Clipboard,
-                    allowed => _ = ContinuityActionAsync(new("permission", peer.Id, "clipboard", allowed))));
-                controls.Children.Add(Toggle("File sharing", "continuity.peer.files", peer.Files,
-                    allowed => _ = ContinuityActionAsync(new("permission", peer.Id, "files", allowed))));
-                controls.Children.Add(ContinuityButton("Connect", () => new("connect", peer.Id, peer.Address)));
-                controls.Children.Add(ContinuityButton("Forget and revoke", () => new("forget", peer.Id)));
-                if (_continuitySendPath is { } path)
-                    controls.Children.Add(ContinuityButton("Send selected file", () => new("send", peer.Id, path)));
-            }
-            _continuityLive.Children.Add(controls);
+                Orientation = Orientation.Horizontal,
+                Spacing = 8,
+                Children =
+                {
+                    ContinuityButton(prompt.Kind == "pair" ? "Approve pairing" : "Accept file", () => new("decide", Id: prompt.Id, Allowed: true), true),
+                    ContinuityButton("Decline", () => new("decide", Id: prompt.Id, Allowed: false))
+                }
+            };
+            _continuityLive.Children.Add(CreateSection(
+                prompt.Kind == "pair" ? Loc.Get("PAIRING REQUEST") : Loc.Get("INCOMING FILE"),
+                prompt.Detail,
+                PreferenceRow(prompt.Name, prompt.Kind == "pair" ? Loc.Get("Confirm that the fingerprint shown on both devices matches.") : Loc.Get("Choose whether to receive this file."), actions,
+                    prompt.Kind == "pair" ? "continuity" : "file-download")));
         }
-        if (state.Devices.Length == 0) _continuityLive.Children.Add(Secondary(Loc.Get("No devices found. Check guest Wi-Fi isolation, Avahi, and the TCP firewall, or connect by address.")));
-        foreach (var transfer in state.Transfers)
+
+        var paired = state.Devices.Where(device => device.Trusted).ToArray();
+        if (paired.Length > 0)
         {
-            var row = new StackPanel { Spacing = 4 };
-            var label = new TextBlock { Text = $"{transfer.Name} · {transfer.Status} · {transfer.Completed:N0}/{transfer.Length:N0}" };
-            var progress = new ProgressBar { Minimum = 0, Maximum = Math.Max(1, transfer.Length), Value = transfer.Completed };
-            row.Children.Add(label); row.Children.Add(progress);
-            _continuityTransferControls[transfer.Id] = (label, progress);
-            if (transfer.Status is not ("Complete" or "Failed" or "Cancelled")) row.Children.Add(ContinuityButton("Cancel transfer", () => new("cancel", transfer.Id)));
-            _continuityLive.Children.Add(row);
+            _continuityLive.Children.Add(CreateSection(Loc.Get("MY DEVICES"), Loc.Get("Trusted devices reconnect automatically when they are nearby."),
+                paired.Select(CreateTrustedDeviceRow).ToArray()));
         }
-        _continuityLive.Children.Add(Secondary(Loc.Get("Keyboard & Mouse, app handoff and display streaming are not available in this release.")));
+
+        var nearby = state.Devices.Where(device => !device.Trusted).ToArray();
+        var nearbyRows = nearby.Length > 0
+            ? nearby.Select(CreateNearbyDeviceRow).ToArray()
+            : [InfoRow(Loc.Get("Looking for devices…"), Loc.Get("Keep Continuity open on the other DaisyOS device."))];
+        _continuityLive.Children.Add(CreateSection(Loc.Get("NEARBY DEVICES"), Loc.Get("Devices appear automatically when they are on the same local network."), nearbyRows));
+
+        if (state.Transfers.Length > 0)
+        {
+            _continuityLive.Children.Add(CreateSection(Loc.Get("FILE TRANSFERS"), null,
+                state.Transfers.Select(CreateTransferRow).ToArray()));
+        }
+
+        if (!state.SessionReady)
+        {
+            _continuityLive.Children.Add(CreateSection(Loc.Get("AVAILABILITY"), null,
+                InfoRow(Loc.Get("Sharing paused"), Loc.Get("Unlock this DaisyOS session to resume Continuity."))));
+        }
+    }
+
+    private Border CreateNearbyDeviceRow(ContinuityDevice peer) =>
+        PreferenceRow(peer.Name, Loc.Get("Ready to pair"),
+            ContinuityButton("Pair", () => new("pair", peer.Id, peer.Address), true), "continuity");
+
+    private Border CreateTrustedDeviceRow(ContinuityDevice peer)
+    {
+        var actions = new WrapPanel
+        {
+            Orientation = Orientation.Horizontal,
+            ItemSpacing = 8,
+            LineSpacing = 8,
+            HorizontalAlignment = HorizontalAlignment.Left
+        };
+        if (!string.Equals(peer.Status, "Connected", StringComparison.OrdinalIgnoreCase))
+            actions.Children.Add(ContinuityButton("Connect", () => new("connect", peer.Id, peer.Address), true));
+        if (_continuitySendPath is { } path)
+            actions.Children.Add(ContinuityButton("Send file", () => new("send", peer.Id, path), true));
+        actions.Children.Add(ContinuityButton("Forget", () => new("forget", peer.Id)));
+
+        var title = new StackPanel { Spacing = 3 };
+        title.Children.Add(new TextBlock { Text = peer.Name, Classes = { "SettingsLabel" } });
+        title.Children.Add(new TextBlock
+        {
+            Text = Loc.Get(peer.Status),
+            Classes = { "SettingsDescription" }
+        });
+
+        var permissions = new StackPanel { Spacing = 0 };
+        permissions.Children.Add(ContinuityPermissionRow("Text clipboard", "Copy on one device and paste on the other.", peer.Clipboard,
+            allowed => _ = ContinuityActionAsync(new("permission", peer.Id, "clipboard", allowed))));
+        permissions.Children.Add(new Border { Height = 1, Background = TryBrush("StrokeDefaultBrush") });
+        permissions.Children.Add(ContinuityPermissionRow("File sharing", "Send files from the Files app.", peer.Files,
+            allowed => _ = ContinuityActionAsync(new("permission", peer.Id, "files", allowed))));
+
+        var content = new StackPanel { Spacing = 14, Children = { title, permissions, actions } };
+        var row = new Border { Child = content, Tag = peer.Name };
+        row.Classes.Add("SettingsGroupRow");
+        return row;
+    }
+
+    private Control ContinuityPermissionRow(string label, string description, bool enabled, Action<bool> changed)
+    {
+        var toggle = new ToggleSwitch
+        {
+            IsChecked = enabled,
+            OnContent = string.Empty,
+            OffContent = string.Empty,
+            VerticalAlignment = VerticalAlignment.Center
+        };
+        toggle.Click += (_, _) => changed(toggle.IsChecked == true);
+        var copy = new StackPanel
+        {
+            Spacing = 2,
+            VerticalAlignment = VerticalAlignment.Center,
+            Children =
+            {
+                new TextBlock { Text = Loc.Get(label), Classes = { "SettingsLabel" } },
+                new TextBlock { Text = Loc.Get(description), Classes = { "SettingsDescription" } }
+            }
+        };
+        var row = new Grid
+        {
+            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
+            ColumnSpacing = 16,
+            MinHeight = 52,
+            Children = { copy, toggle }
+        };
+        Grid.SetColumn(toggle, 1);
+        return row;
+    }
+
+    private Border CreateTransferRow(ContinuityTransfer transfer)
+    {
+        var label = new TextBlock { Text = TransferLabel(transfer), Classes = { "SettingsDescription" } };
+        var progress = new ProgressBar { Minimum = 0, Maximum = Math.Max(1, transfer.Length), Value = transfer.Completed, MinWidth = 180 };
+        var controls = new StackPanel { Spacing = 8, Children = { label, progress } };
+        if (transfer.Status is not ("Complete" or "Failed" or "Cancelled"))
+            controls.Children.Add(ContinuityButton("Cancel", () => new("cancel", transfer.Id)));
+        _continuityTransferControls[transfer.Id] = (label, progress);
+        return PreferenceRow(transfer.Name, null, controls, "file-download");
+    }
+
+    private static string TransferLabel(ContinuityTransfer transfer)
+    {
+        var percent = transfer.Length <= 0 ? 0 : (int)Math.Clamp(transfer.Completed * 100 / transfer.Length, 0, 100);
+        return $"{Loc.Get(transfer.Status)} · {percent}%";
     }
 }

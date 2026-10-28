@@ -2787,7 +2787,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             return "Unknown";
         }
 
-        private void AddSection(string label, string? description, params Control[] rows)
+        private StackPanel CreateSection(string label, string? description, params Control[] rows)
         {
             var section = new StackPanel { Spacing = 12 };
             var heading = new StackPanel { Spacing = 4 };
@@ -2824,8 +2824,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 section.Children.Add(button);
             }
             else section.Children.Add(group);
-            CategoryContent.Children.Add(section);
-
             if (string.Equals(_pendingSection, Loc.Original(label), StringComparison.Ordinal))
             {
                 _pendingSection = null;
@@ -2842,6 +2840,12 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         ?.Focus(NavigationMethod.Directional);
                 }, DispatcherPriority.Render);
             }
+            return section;
+        }
+
+        private void AddSection(string label, string? description, params Control[] rows)
+        {
+            CategoryContent.Children.Add(CreateSection(label, description, rows));
         }
 
         private void FocusAppearanceSearchTarget(string? title)

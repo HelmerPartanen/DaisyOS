@@ -14,6 +14,60 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class SettingsLayoutTests
 {
     [AvaloniaFact]
+    public async Task ContinuityUsesSidebarIconAndSharedSettingsCards()
+    {
+        var window = new SettingsWindow { Width = 1000, Height = 900 };
+        window.Show();
+        try
+        {
+            window.SelectCategory("Continuity");
+            var view = window.FindControl<SettingsView>("SettingsContent")!;
+            var lifetime = typeof(SettingsView).GetField("_continuityPage",
+                global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.NonPublic)!;
+            ((CancellationTokenSource?)lifetime.GetValue(view))?.Cancel();
+            var state = new DaisyOS.Core.Continuity.ContinuityStatus(
+                true, true, false, true, "Daisy Laptop", "local-id", "Ready", "Ready",
+                [
+                    new("trusted", "Office Desktop", "192.168.1.20", "Connected", true, true, false),
+                    new("nearby", "Living Room PC", "192.168.1.21", "Discovered", false, false, false)
+                ], [], []);
+            var render = typeof(SettingsView).GetMethod("BuildContinuityPage",
+                global::System.Reflection.BindingFlags.Instance | global::System.Reflection.BindingFlags.NonPublic)!;
+            render.Invoke(view, [state]);
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+
+            var navigation = view.FindControl<Button>("NavContinuity")!;
+            Assert.Equal("Continuity", navigation.Tag);
+            Assert.Contains(navigation.GetVisualDescendants().OfType<DaisyOS.Shell.Controls.DaisyIcon>(), icon => icon.Icon == "continuity");
+
+            var content = view.FindControl<StackPanel>("CategoryContent")!;
+            Assert.Contains(content.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Office Desktop");
+            Assert.Contains(content.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Living Room PC");
+            Assert.Contains(content.GetVisualDescendants().OfType<Button>(), button => button.Content as string == "Pair" && button.Classes.Contains("Primary"));
+            Assert.True(content.GetVisualDescendants().OfType<Border>().Count(border => border.Classes.Contains("SettingsGroupCard")) >= 4);
+            Assert.All(content.GetVisualDescendants().OfType<Border>().Where(border => border.Classes.Contains("SettingsGroupRow")), row =>
+            {
+                var point = row.TranslatePoint(default, content);
+                Assert.NotNull(point);
+                Assert.True(point!.Value.X >= -1 && point.Value.X + row.Bounds.Width <= content.Bounds.Width + 1);
+            });
+
+            await Task.Delay(300);
+            using var frame = window.CaptureRenderedFrame();
+            Assert.NotNull(frame);
+            var artifacts = Environment.GetEnvironmentVariable("DAISYOS_UX_ARTIFACTS");
+            if (!string.IsNullOrWhiteSpace(artifacts))
+            {
+                Directory.CreateDirectory(artifacts);
+                frame.Save(Path.Combine(artifacts, "settings-continuity.png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            }
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task WallpaperPreviewLoadsOnlyOnAppearanceAndCanReloadAfterDetach()
     {
         var view = new SettingsView();

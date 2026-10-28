@@ -272,9 +272,9 @@
             </StackPanel>
           </Button>
 
-          <Button Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="{DynamicResource Loc_8971F58F9CCF}">
+          <Button x:Name="NavContinuity" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Continuity">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <controls:DaisyIcon Icon="Ethernet" Classes="NavIcon SecondaryText" />
+              <controls:DaisyIcon Icon="continuity" Classes="NavIcon SecondaryText" />
               <TextBlock Text="{DynamicResource Loc_8971F58F9CCF}" Classes="NavLabel" />
             </StackPanel>
           </Button>
