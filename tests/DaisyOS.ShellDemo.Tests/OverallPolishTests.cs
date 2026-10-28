@@ -3,6 +3,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Interactivity;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.VisualTree;
@@ -93,5 +94,31 @@ public sealed class OverallPolishTests
             Assert.DoesNotContain(items, item => item.Name == "excluded.bin");
         }
         finally { picker.Close(); Directory.Delete(folder, true); }
+    }
+
+    [AvaloniaFact]
+    public async Task SingleFilePickerAcceptsAFileOnDoubleClick()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "daisy-double-pick-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(folder);
+        var file = Path.Combine(folder, "report.txt");
+        File.WriteAllText(file, "sample");
+        var picker = new DaisyFilePickerWindow(new DaisyFilePickerOptions("Choose", false, false, [".txt"], InitialFolder: folder));
+        picker.Show();
+        try
+        {
+            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
+            for (var attempt = 0; attempt < 200 && entries.ItemCount != 1; attempt++) await Task.Delay(10);
+            picker.UpdateLayout();
+            var button = entries.GetVisualDescendants().OfType<Button>().Single(control => control.DataContext is PickerEntry);
+            button.RaiseEvent(new RoutedEventArgs(InputElement.DoubleTappedEvent));
+            Assert.True(picker.WasConfirmed);
+            Assert.Equal(file, Assert.Single(picker.SelectedPaths));
+        }
+        finally
+        {
+            if (picker.IsVisible) picker.Close();
+            Directory.Delete(folder, true);
+        }
     }
 }

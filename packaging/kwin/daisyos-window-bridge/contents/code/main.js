@@ -51,8 +51,10 @@ function requestShellAction(action) {
 }
 
 // Keep launcher input independent of the overview effect's QML lifecycle.
+// A bare Meta press may also be used by a running game, so it is routed
+// through the shell's two-stage fullscreen gesture policy.
 registerShortcut("DaisyOS Launcher", "Toggle DaisyOS Launcher", "Meta", function () {
-    requestShellAction("launcher");
+    requestShellAction("launcher-meta");
 });
 
 registerShortcut("DaisyOS Capture Screen", "Capture the active display with DaisyOS Screenshot", "Print", function () {

@@ -42,12 +42,12 @@ partial class WindowBaseImpl
         }
 
         void IWSurfaceEventSink.OnPointerAxis(ulong timestamp, Vector delta, RawInputModifiers modifiers,
-            Point position)
+            Point position, bool isPrecise, bool isScrollEnd)
         {
             if (InputRoot is null)
                 return;
             ScheduleInput(new RawMouseWheelEventArgs(Mouse, timestamp, InputRoot,
-                position, delta, modifiers));
+                position, delta, modifiers) { IsPrecise = isPrecise, IsScrollEnd = isScrollEnd });
         }
 
         void IWSurfaceEventSink.OnTouchDown(ulong timestamp, int touchId, Point position, object? platformCookie)

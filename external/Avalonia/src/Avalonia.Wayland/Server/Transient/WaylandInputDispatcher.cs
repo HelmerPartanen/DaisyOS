@@ -296,6 +296,8 @@ partial class WaylandInputDispatcher : IDisposable
         // For continuous sources (touchpad), there is no value120 and we fall back to the
         // raw axis value. We accumulate the two streams independently and combine at frame
         // flush time, preferring v120 per axis when present). This is robust to either event order.
+        private bool _axisIsPrecise;
+        private bool _frameAxisStopped;
         private bool _frameHasAxis;
         private ulong _frameAxisTimestamp;
         private double _frameAxisRawX;
@@ -395,6 +397,7 @@ partial class WaylandInputDispatcher : IDisposable
         {
             _frameActions.Clear();
             _frameHasAxis = false;
+            _frameAxisStopped = false;
             _frameAxisRawX = 0;
             _frameAxisRawY = 0;
             _frameV120X = 0;
@@ -486,12 +489,13 @@ partial class WaylandInputDispatcher : IDisposable
                     // if any v120 event fired this frame; otherwise fall back to the raw axis.
                     var deltaX = handler._frameV120SeenX ? handler._frameV120X : handler._frameAxisRawX;
                     var deltaY = handler._frameV120SeenY ? handler._frameV120Y : handler._frameAxisRawY;
-                    if (deltaX != 0 || deltaY != 0)
+                    if (deltaX != 0 || deltaY != 0 || handler._frameAxisStopped)
                     {
                         // Wayland: positive = scroll down/right. Avalonia: positive Y = scroll up.
                         var delta = new Vector(-deltaX, -deltaY);
                         handler._focusedSink?.OnPointerAxis(handler._frameAxisTimestamp, delta,
-                            handler._modifiers | handler._seat.KeyboardModifiers, handler._pointerPosition);
+                            handler._modifiers | handler._seat.KeyboardModifiers, handler._pointerPosition,
+                            handler._axisIsPrecise, handler._frameAxisStopped);
                     }
                 });
             }
@@ -510,10 +514,14 @@ partial class WaylandInputDispatcher : IDisposable
 
             protected override void AxisSource(WlPointer eventSender, WlPointer.AxisSourceEnum axisSource)
             {
+                handler._axisIsPrecise = axisSource is WlPointer.AxisSourceEnum.Finger or WlPointer.AxisSourceEnum.Continuous;
             }
 
             protected override void AxisStop(WlPointer eventSender, uint time, WlPointer.AxisEnum axis)
             {
+                handler._frameAxisTimestamp = time;
+                handler._frameAxisStopped = true;
+                EnqueueAxisDispatchIfNeeded();
             }
 
             protected override void AxisDiscrete(WlPointer eventSender, WlPointer.AxisEnum axis, int discrete)

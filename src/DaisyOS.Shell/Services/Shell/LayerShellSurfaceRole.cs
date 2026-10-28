@@ -104,12 +104,29 @@ public sealed record LayerShellSurfaceOptions(
         LayerShellKeyboardInteractivity.OnDemand,
         outputName);
 
-    // Keep the launcher inside the work area reserved above the bottom panel.
-    // Besides preventing visual overlap, this leaves the panel's Wayland input
-    // region exposed so taskbar hover, previews, and buttons remain interactive
-    // while the launcher is open.
+    // Keep the launcher below the overlay-layer bottom bars and flyouts.
+    // The backdrop extends beneath them; only the launcher content reserves
+    // a bottom safe area, including when auto-hide removes their exclusive zone.
     public static LayerShellSurfaceOptions LauncherOverlay(string? outputName = null) =>
-        Overlay("daisyos.overlay.launcher", outputName);
+        Overlay("daisyos.overlay.launcher", outputName) with
+        {
+            Role = LayerShellSurfaceRole.Panel,
+            ExclusiveZone = IgnoreOtherExclusiveZones
+        };
+
+    /// <summary>
+    /// A small, input-transparent confirmation hint used while a fullscreen
+    /// client keeps focus. It never reserves output space and never takes
+    /// pointer or keyboard input.
+    /// </summary>
+    public static LayerShellSurfaceOptions LauncherHint(string? outputName = null) =>
+        PassiveOverlay("daisyos.overlay.launcher-hint", outputName) with
+        {
+            Anchor = LayerShellAnchor.Bottom,
+            ExclusiveZone = IgnoreOtherExclusiveZones,
+            Width = 520,
+            Height = 120
+        };
 
     public static LayerShellSurfaceOptions Overlay(string surfaceNamespace, string? outputName = null) => new(
         LayerShellSurfaceRole.Overlay,
@@ -132,11 +149,8 @@ public sealed record LayerShellSurfaceOptions(
         outputName);
 
     /// <summary>
-    /// A transient shell surface that must appear above normal applications
-    /// but below the launcher.  Keeping these on the protocol's <c>top</c>
-    /// layer gives the launcher the sole <c>overlay</c> layer, so opening it
-    /// is a compositor-level guarantee rather than an accidental creation
-    /// order between several equally stacked surfaces.
+    /// A transient shell surface above normal applications, below the
+    /// overlay layer used by bottom bars and system flyouts.
     /// </summary>
     public static LayerShellSurfaceOptions TopTransient(string surfaceNamespace, string? outputName = null) => new(
         LayerShellSurfaceRole.Panel,

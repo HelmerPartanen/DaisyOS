@@ -24,16 +24,16 @@
             <widgets:MediaWidget x:Name="MediaWidgetContent"
                                  HorizontalAlignment="Left"
                                  VerticalAlignment="Bottom" />
-            <taskbar:TaskbarView x:Name="TaskbarContent"
+            <taskbar:TaskbarView x:Name="TaskbarContent" ZIndex="30"
                                  HorizontalAlignment="Center"
                                  VerticalAlignment="Bottom" />
-            <systembar:SystemBarView x:Name="SystemBarContent"
+            <systembar:SystemBarView x:Name="SystemBarContent" ZIndex="30"
                                      HorizontalAlignment="Right"
                                      VerticalAlignment="Bottom" />
             <launcher:LauncherView x:Name="LauncherContent"
                                    IsVisible="False"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Stretch"
                                    ZIndex="20" />
 
             <Border x:Name="FeedbackHost" ZIndex="100" IsVisible="False"

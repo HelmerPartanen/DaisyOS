@@ -80,19 +80,33 @@ public sealed class LayerShellSurfaceTests
 
         var launcher = Assert.Single(plan, surface => surface.Namespace == "daisyos.overlay.launcher");
         var system = Assert.Single(plan, surface => surface.Namespace == "daisyos.overlay.system");
-        Assert.Equal(LayerShellSurfaceRole.Overlay, launcher.Role);
-        Assert.Equal(0, launcher.ExclusiveZone);
+        Assert.Equal(LayerShellSurfaceRole.Panel, launcher.Role);
+        // The fullscreen launcher deliberately covers the bottom panel's
+        // exclusive zone so the dock cannot remain visible over its backdrop.
+        Assert.Equal(LayerShellSurfaceOptions.IgnoreOtherExclusiveZones, launcher.ExclusiveZone);
         Assert.Equal(LayerShellSurfaceRole.Overlay, system.Role);
     }
 
     [Fact]
-    public void Normal_transient_surfaces_use_the_top_layer_so_the_launcher_is_unambiguously_frontmost()
+    public void Launcher_hint_is_passive_and_bottom_anchored()
+    {
+        var hint = LayerShellSurfaceOptions.LauncherHint();
+
+        Assert.Equal(LayerShellSurfaceRole.Overlay, hint.Role);
+        Assert.Equal(LayerShellAnchor.Bottom, hint.Anchor);
+        Assert.Equal(LayerShellKeyboardInteractivity.None, hint.KeyboardInteractivity);
+        Assert.True(hint.InputPassthrough);
+        Assert.Equal(LayerShellSurfaceOptions.IgnoreOtherExclusiveZones, hint.ExclusiveZone);
+    }
+
+    [Fact]
+    public void Launcher_uses_the_top_layer_below_overlay_bars_and_flyouts()
     {
         var launcher = LayerShellSurfaceOptions.LauncherOverlay();
         var transient = LayerShellSurfaceOptions.TopTransient("daisyos.overlay.system");
         var toasts = LayerShellSurfaceOptions.NotificationOverlay();
 
-        Assert.Equal(LayerShellSurfaceRole.Overlay, launcher.Role);
+        Assert.Equal(LayerShellSurfaceRole.Panel, launcher.Role);
         Assert.Equal(LayerShellSurfaceRole.Panel, transient.Role);
         Assert.Equal(LayerShellSurfaceRole.Panel, toasts.Role);
         Assert.True(toasts.InputPassthrough);

@@ -12,14 +12,14 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class GuiMotionTests
 {
     [AvaloniaFact]
-    public void LauncherTransformedCardKeepsTheWholeCardAndBlurVisible()
+    public void LauncherBackdropAndBlurFillOutputWhileContentReservesBottomSafeArea()
     {
         var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
             new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
-        { IsVisible = false, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom };
+        { IsVisible = false };
         launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
-        var overlay = new DaisyOS.Shell.Services.Shell.BottomChromeOverlayHost();
-        overlay.Viewport.Children.Add(launcher);
+        var overlay = new Grid();
+        overlay.Children.Add(launcher);
         var window = new Window { Width = 1280, Height = 900, Content = overlay };
         window.Show();
         try
@@ -27,19 +27,21 @@ public sealed class GuiMotionTests
             launcher.AnimateIn();
             window.UpdateLayout();
             var root = launcher.FindControl<Border>("LauncherRootBorder")!;
-            root.RenderTransform = new Avalonia.Media.TranslateTransform(0, -30);
             using var blur = new DaisyOS.Shell.Services.Compositor.KWinBlur(window, launcher, () => [root]);
             var regions = blur.BuildRegions();
-            var cardTop = root.TranslatePoint(default, window)!.Value.Y;
-            Assert.False(launcher.ClipToBounds);
+            Assert.True(launcher.ClipToBounds);
             Assert.True(root.ClipToBounds);
-            Assert.True(overlay.Viewport.ClipToBounds);
-            // Blur masks deliberately round fractional edges outward to cover the
-            // antialiased edge, so the first scanline is at floor(cardTop), not
-            // inside the card.
-            Assert.Equal((int)Math.Floor(cardTop), regions.Min(region => region.Y));
+            Assert.Equal(0, regions.Min(region => region.X));
+            Assert.Equal(0, regions.Min(region => region.Y));
+            Assert.Equal((int)Math.Ceiling(window.Bounds.Width),
+                regions.Max(region => region.X + region.Width));
+            Assert.Equal((int)Math.Ceiling(window.Bounds.Height),
+                regions.Max(region => region.Y + region.Height));
+            var content = launcher.FindControl<Grid>("LauncherInteractiveContent")!;
+            var contentBottom = content.TranslatePoint(new Point(0, content.Bounds.Height), launcher)!.Value.Y;
+            Assert.True(contentBottom <= window.Bounds.Height - 82);
             using var frame = window.CaptureRenderedFrame();
-            frame!.Save("/tmp/daisy-launcher-overshoot.png");
+            frame!.Save("/tmp/daisy-launcher-fullscreen.png");
         }
         finally { launcher.CloseImmediate(); window.Close(); }
     }
@@ -191,15 +193,11 @@ public sealed class GuiMotionTests
     }
 
     [AvaloniaFact]
-    public async Task LauncherIsCenteredAndUsesApplicationStyleScaleAndFade()
+    public async Task LauncherFillsTheOutputAndUsesFadeOnlyMotion()
     {
         var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
             new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
-        {
-            IsVisible = false,
-            HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center,
-            VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center
-        };
+        { IsVisible = false };
         launcher.Resources["MotionDurationEnter"] = TimeSpan.FromSeconds(1);
         launcher.Resources["MotionDurationExit"] = TimeSpan.FromSeconds(1);
         var overlay = new Grid();
@@ -211,13 +209,11 @@ public sealed class GuiMotionTests
             using (window.CaptureRenderedFrame()) { }
             launcher.AnimateIn();
             var root = launcher.FindControl<Border>("LauncherRootBorder")!;
-            Assert.Equal(680, launcher.Bounds.Width);
-            Assert.Equal(560, launcher.Bounds.Height);
-            Assert.Equal((window.Bounds.Width - launcher.Bounds.Width) / 2,
-                launcher.TranslatePoint(default, window)!.Value.X, precision: 1);
-            Assert.Equal((window.Bounds.Height - launcher.Bounds.Height) / 2,
-                launcher.TranslatePoint(default, window)!.Value.Y, precision: 1);
-            Assert.InRange(root.RenderTransform!.Value.M11, 0.939, 0.941);
+            Assert.Equal(window.Bounds.Width, launcher.Bounds.Width);
+            Assert.Equal(window.Bounds.Height, launcher.Bounds.Height);
+            Assert.Equal(0, launcher.TranslatePoint(default, window)!.Value.X, precision: 1);
+            Assert.Equal(0, launcher.TranslatePoint(default, window)!.Value.Y, precision: 1);
+            Assert.Equal(1, root.RenderTransform!.Value.M11, precision: 3);
             Assert.Equal(0, root.RenderTransform.Value.M31);
             Assert.Equal(0, root.RenderTransform.Value.M32);
             Assert.Equal(0, root.Opacity);
@@ -226,14 +222,13 @@ public sealed class GuiMotionTests
             await Task.Delay(30);
             Dispatcher.UIThread.RunJobs(DispatcherPriority.Render);
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-            Assert.InRange(root.RenderTransform!.Value.M11, 0.941, 0.999);
+            Assert.Equal(1, root.RenderTransform!.Value.M11, precision: 3);
             Assert.InRange(root.Opacity, 0.001, 0.999);
-            var intermediateScale = root.RenderTransform.Value.M11;
             var intermediateOpacity = root.Opacity;
             var closed = false;
             launcher.AnimateOut(() => closed = true);
             launcher.AnimateIn();
-            Assert.InRange(root.RenderTransform!.Value.M11, intermediateScale - 0.001, intermediateScale + 0.001);
+            Assert.Equal(1, root.RenderTransform!.Value.M11, precision: 3);
             Assert.InRange(root.Opacity, intermediateOpacity - 0.001, intermediateOpacity + 0.001);
             Assert.Equal(1, launcher.Opacity);
             Assert.False(closed);

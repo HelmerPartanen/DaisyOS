@@ -26,6 +26,9 @@
     <!-- Translucent so KWin's native background effect remains visible. -->
     <Color x:Key="SurfaceBaseColor">#99F2F2F2</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FFF2F2F2</Color>
+    <!-- Fullscreen launcher glass. Heavy enough for readable labels over any
+         wallpaper or application, still translucent so KWin's blur shows. -->
+    <Color x:Key="LauncherBackdropColor">#CCF2F2F2</Color>
     <Color x:Key="SurfaceRaisedColor">#FFFFFFFF</Color>
     <Color x:Key="SurfaceRaisedSubtleColor">#0F000000</Color>
     <Color x:Key="SurfaceInputSubtleColor">#12FFFFFF</Color>
@@ -146,6 +149,7 @@
       <SolidColorBrush x:Key="SurfaceCanvasBrush" Color="{StaticResource SurfaceCanvasColor}" />
       <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
       <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
+      <SolidColorBrush x:Key="LauncherBackdropBrush" Color="{StaticResource LauncherBackdropColor}" />
       <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
       <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource SurfaceRaisedColor}" />
       <SolidColorBrush x:Key="SurfaceGlassSolidBrush" Color="{StaticResource RaisedPanelBackgroundColor}" />
@@ -256,6 +260,8 @@
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
       <Color x:Key="SurfaceBaseColor">#330F0F0F</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
+      <!-- Fullscreen launcher glass. See the light theme for the contract. -->
+      <Color x:Key="LauncherBackdropColor">#66101010</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
       <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>
       <Color x:Key="SurfaceInputSubtleColor">#0FFFFFFF</Color>
@@ -339,6 +345,7 @@
        <SolidColorBrush x:Key="SelectedBlueBrush" Color="{StaticResource SelectedBlue}" />
       <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
             <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
+      <SolidColorBrush x:Key="LauncherBackdropBrush" Color="{StaticResource LauncherBackdropColor}" />
       <SolidColorBrush x:Key="SurfaceRaisedBrush" Color="{StaticResource SurfaceRaisedColor}" />
       <SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource SurfaceRaisedColor}" />
       <SolidColorBrush x:Key="SurfaceGlassSolidBrush" Color="{StaticResource RaisedPanelBackgroundColor}" />

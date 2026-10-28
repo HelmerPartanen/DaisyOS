@@ -1,0 +1,35 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             x:Class="DaisyOS.Shell.Views.Components.Launcher.LauncherHint"
+             IsVisible="False" IsHitTestVisible="False" Focusable="False">
+  <UserControl.Transitions>
+    <Transitions>
+      <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseEnter}" />
+    </Transitions>
+  </UserControl.Transitions>
+
+  <controls:ShellFrameBorder Margin="24,24,24,28"
+                            HorizontalAlignment="Center" VerticalAlignment="Bottom"
+                            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                            CornerRadius="{DynamicResource RoundedXL}" Padding="1"
+                            BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+    <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                               BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                               BorderThickness="1" BackgroundSizing="InnerBorderEdge"
+                               CornerRadius="{DynamicResource RoundedXLInset}">
+      <Border Background="{DynamicResource SurfaceBaseSolidBrush}"
+              CornerRadius="{DynamicResource RoundedXLDoubleInset}" Padding="16,10">
+        <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+          <controls:DaisyIcon Icon="grid-four" Size="{DynamicResource IconSizeStandard}"
+                              Foreground="{DynamicResource ContentSecondaryBrush}"
+                              VerticalAlignment="Center" />
+          <TextBlock Text="{DynamicResource Loc_90CEEDBC1B28}"
+                     FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium"
+                     Foreground="{DynamicResource ContentPrimaryBrush}"
+                     VerticalAlignment="Center" />
+        </StackPanel>
+      </Border>
+    </controls:ShellFrameBorder>
+  </controls:ShellFrameBorder>
+</UserControl>

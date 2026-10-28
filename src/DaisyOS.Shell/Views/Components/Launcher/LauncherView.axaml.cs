@@ -34,8 +34,42 @@ public partial class LauncherView : UserControl
     public event EventHandler<bool>? OpenStateChanged;
     public event EventHandler<bool>? PowerMenuVisibilityChanged;
     public event EventHandler<bool>? AppContextMenuVisibilityChanged;
+    public event EventHandler? BackdropStyleChanged;
+    public bool UseSolidBackdrop { get; private set; }
     public bool IsPowerMenuVisible => (_powerMenu ?? this.FindControl<Border>("MenuBlurHost"))?.IsVisible == true;
     public bool IsAppContextMenuVisible => (_appContextMenu ?? this.FindControl<Border>("LauncherAppContextMenuHost"))?.IsVisible == true;
+
+    /// <summary>
+    /// Gaming mode and fullscreen clients use an opaque backdrop. A full-output
+    /// KWin blur sample is unnecessary there and competes with the game for
+    /// GPU time; the translucent role is only used on the desktop.
+    /// </summary>
+    public void SetSolidBackdrop(bool solid)
+    {
+        if (UseSolidBackdrop == solid) return;
+        UseSolidBackdrop = solid;
+        var root = this.FindControl<Border>("LauncherRootBorder");
+        root?.Classes.Set("SolidBackdrop", solid);
+        BackdropStyleChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    /// <summary>True when the pointer landed on the live launcher column.</summary>
+    public bool IsWithinInteractiveContent(Visual source) =>
+        this.FindControl<Grid>("LauncherInteractiveContent") is { } content &&
+        IsWithin(source, content);
+
+    /// <summary>
+    /// True when the pointer landed on live launcher chrome. Everything else is
+    /// the dismissal backdrop, including the area around the centred column.
+    /// </summary>
+    public bool IsWithinInteractiveSurface(Visual source) =>
+        IsWithinInteractiveContent(source) ||
+        (this.FindControl<Border>("MenuBlurHost") is { } powerMenu && IsWithin(source, powerMenu)) ||
+        (this.FindControl<Border>("LauncherAppContextMenuHost") is { } appMenu && IsWithin(source, appMenu));
+
+    private static bool IsWithin(Visual source, Visual target) =>
+        ReferenceEquals(source, target) ||
+        source.GetVisualAncestors().Any(ancestor => ReferenceEquals(ancestor, target));
 
     public async void AnimateIn()
     {
@@ -64,8 +98,10 @@ public partial class LauncherView : UserControl
             _ = GuiMotion.SetScaleVisibleAsync(
                 this,
                 content,
-                true);
+                true,
+                closedScale: 1.0);
         }
+        ViewModel.GoToPage(0);
         Opacity = 1;
         OpenStateChanged?.Invoke(this, true);
 
@@ -87,6 +123,7 @@ public partial class LauncherView : UserControl
     public void CloseImmediate()
     {
         IsOpen = false;
+        CancelPageDrag();
         _animationCts?.Cancel();
         _animationCts?.Dispose();
         _animationCts = null;
@@ -98,7 +135,8 @@ public partial class LauncherView : UserControl
                 this,
                 content,
                 false,
-                immediate: true);
+                immediate: true,
+                closedScale: 1.0);
         }
         ClosePowerMenu();
         CloseAppContextMenu();
@@ -122,6 +160,7 @@ public partial class LauncherView : UserControl
         }
 
         IsOpen = false;
+        CancelPageDrag();
         OpenStateChanged?.Invoke(this, false);
         _animationCts?.Cancel();
         _animationCts?.Dispose();
@@ -135,7 +174,8 @@ public partial class LauncherView : UserControl
             await GuiMotion.SetScaleVisibleAsync(
                 this,
                 content,
-                false);
+                false,
+                closedScale: 1.0);
         }
         if (!cts.IsCancellationRequested && ReferenceEquals(_animationCts, cts))
         {
@@ -218,11 +258,225 @@ public partial class LauncherView : UserControl
         });
     }
 
+    private double _pageWheelDelta;
+    private long _lastPageWheelTime;
+    private long _lastPageChangeTime;
+
+    private void OnPageViewportSizeChanged(object? sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is not LauncherViewModel model) return;
+        model.SetPageLayout((int)(e.NewSize.Width / 136), (int)(e.NewSize.Height / 128));
+    }
+
+    private void OnPageWheel(object? sender, PointerWheelEventArgs e)
+    {
+        if (IsWithinFlyout(e.Source as Visual ?? this)) return;
+        if (e.IsPrecise)
+        {
+            e.Handled = true;
+            DragPage(e.Delta);
+            if (e.IsScrollEnd) SettlePageDrag();
+            return;
+        }
+        var now = Environment.TickCount64;
+        if (now - _lastPageWheelTime > 180) _pageWheelDelta = 0;
+        _lastPageWheelTime = now;
+        e.Handled = true;
+        if (now - _lastPageChangeTime < 300) return;
+        var delta = Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y) ? e.Delta.X : e.Delta.Y;
+        _pageWheelDelta += delta;
+        if (Math.Abs(_pageWheelDelta) < 1) return;
+        ViewModel.GoToPage(ViewModel.PageIndex + (_pageWheelDelta < 0 ? 1 : -1));
+        _pageWheelDelta = 0;
+        _lastPageChangeTime = now;
+    }
+
+    private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(160) };
+    private bool _pageDragging;
+    private bool _committingDrag;
+    private double _pageDragOffset;
+    private int _dragNeighbour = -1;
+    private int _dragGeneration;
+    private double PageStride => Math.Max(1, this.FindControl<Grid>("LauncherPageViewport")!.Bounds.Width);
+
+    private void DragPage(Vector delta)
+    {
+        if (ViewModel.PageCount <= 1) return;
+        var movement = Math.Abs(delta.X) > Math.Abs(delta.Y) ? delta.X : delta.Y;
+        if (movement == 0) return;
+        if (!_pageDragging)
+        {
+            ++_pageTransitionGeneration;
+            var current = this.FindControl<ItemsControl>("ApplicationGrid")!;
+            GuiMotion.Cancel(current);
+            GuiMotion.Cancel(this.FindControl<ItemsControl>("OutgoingPageGrid")!);
+            _pageDragOffset = 0;
+            _pageDragging = true;
+            current.IsHitTestVisible = false;
+            CloseAppContextMenu();
+        }
+        ++_dragGeneration; // Interrupt settling without resetting the finger position.
+        _pageDragOffset = Math.Clamp(_pageDragOffset + movement, -PageStride, PageStride);
+        RenderPageDrag(_pageDragOffset);
+        _pageDragIdle.Stop();
+        _pageDragIdle.Start(); // Fallback for devices that do not send axis_stop.
+    }
+
+    private void RenderPageDrag(double offset)
+    {
+        var current = this.FindControl<ItemsControl>("ApplicationGrid")!;
+        var neighbour = this.FindControl<ItemsControl>("OutgoingPageGrid")!;
+        var direction = offset < 0 ? 1 : -1;
+        var index = ViewModel.PageIndex + direction;
+        var valid = index >= 0 && index < ViewModel.PageCount;
+        if (_dragNeighbour != index || neighbour.ItemsSource is null)
+        {
+            _dragNeighbour = index;
+            neighbour.ItemsSource = valid ? ViewModel.GetPageApps(index) : null;
+        }
+        neighbour.IsVisible = valid;
+        // Resist pulling beyond the first or last page.
+        var visibleOffset = valid ? offset : offset * 0.2;
+        current.Opacity = neighbour.Opacity = 1;
+        current.RenderTransform = new Avalonia.Media.TranslateTransform(visibleOffset, 0);
+        neighbour.RenderTransform = new Avalonia.Media.TranslateTransform(visibleOffset + direction * PageStride, 0);
+    }
+
+    private void SettlePageDrag()
+    {
+        _pageDragIdle.Stop();
+        if (!_pageDragging) return;
+        var generation = ++_dragGeneration;
+        var from = _pageDragOffset;
+        var direction = from < 0 ? 1 : -1;
+        var targetPage = ViewModel.PageIndex + direction;
+        var commit = Math.Abs(from) >= Math.Min(60, PageStride * 0.10) &&
+            targetPage >= 0 && targetPage < ViewModel.PageCount;
+        var to = commit ? -direction * PageStride : 0;
+        TimeSpan? start = null;
+        void Finish()
+        {
+            if (generation != _dragGeneration) return;
+            _committingDrag = true;
+            _pageDragging = false;
+            _pageDragOffset = 0;
+            ViewModel.GoToPage(commit ? targetPage : ViewModel.PageIndex);
+            _committingDrag = false;
+        }
+        if (GuiMotion.Duration(this, true) == TimeSpan.Zero || TopLevel.GetTopLevel(this) is not { } host)
+        {
+            Finish();
+            return;
+        }
+        void Frame(TimeSpan time)
+        {
+            if (generation != _dragGeneration) return;
+            start ??= time;
+            var t = Math.Clamp((time - start.Value).TotalMilliseconds / 200, 0, 1);
+            _pageDragOffset = from + (to - from) * (1 - Math.Pow(1 - t, 3));
+            RenderPageDrag(_pageDragOffset);
+            if (t >= 1) Finish();
+            else host.RequestAnimationFrame(Frame);
+        }
+        host.RequestAnimationFrame(Frame);
+    }
+
+    private void CancelPageDrag()
+    {
+        ++_dragGeneration;
+        _pageDragIdle.Stop();
+        _pageDragging = false;
+        _pageDragOffset = 0;
+        _dragNeighbour = -1;
+        this.FindControl<ItemsControl>("ApplicationGrid")!.IsHitTestVisible = true;
+    }
+
+    private LauncherItemViewModel[] _displayedPage = [];
+    private int _displayedPageIndex;
+    private int _pageTransitionGeneration;
+
+    private async void OnPageChanged()
+    {
+        CancelPageDrag();
+        var incoming = this.FindControl<ItemsControl>("ApplicationGrid")!;
+        var outgoing = this.FindControl<ItemsControl>("OutgoingPageGrid")!;
+        var previous = _displayedPage;
+        var direction = Math.Sign(ViewModel.PageIndex - _displayedPageIndex);
+        _displayedPageIndex = ViewModel.PageIndex;
+        _displayedPage = ViewModel.PageApps.ToArray();
+        var generation = ++_pageTransitionGeneration;
+        GuiMotion.Cancel(incoming);
+        GuiMotion.Cancel(outgoing);
+        incoming.Opacity = 1;
+        incoming.RenderTransform = null;
+        outgoing.IsVisible = false;
+        outgoing.ItemsSource = null;
+        UpdatePageIndicators();
+        if (_committingDrag || direction == 0 || previous.Length == 0 || !IsEffectivelyVisible ||
+            TopLevel.GetTopLevel(this) is null || GuiMotion.Duration(this, true) == TimeSpan.Zero)
+            return;
+
+        CloseAppContextMenu();
+        outgoing.ItemsSource = previous;
+        outgoing.IsVisible = true;
+        outgoing.Opacity = 1;
+        outgoing.RenderTransform = null;
+        // Move only the tiles: the material, search, dots, and footer stay still.
+        var duration = TimeSpan.FromMilliseconds(240);
+        await Task.WhenAll(
+            GuiMotion.SlideOutAsync(outgoing, new Point(-direction * PageStride, 0), duration),
+            GuiMotion.SlideInAsync(incoming, new Point(direction * PageStride, 0), duration));
+        if (generation != _pageTransitionGeneration) return;
+        outgoing.IsVisible = false;
+        outgoing.ItemsSource = null;
+    }
+
+    private void UpdatePageIndicators()
+    {
+        var host = this.FindControl<StackPanel>("LauncherPageIndicators");
+        if (host is null) return;
+        if (host.Children.Count == ViewModel.PageCount)
+        {
+            for (var i = 0; i < host.Children.Count; i++)
+                if (host.Children[i] is Button { Content: Avalonia.Controls.Shapes.Ellipse dot })
+                    dot.Opacity = i == ViewModel.PageIndex ? 0.95 : 0.3;
+            return;
+        }
+        host.Children.Clear();
+        for (var index = 0; index < ViewModel.PageCount; index++)
+        {
+            var page = index;
+            var button = new Button
+            {
+                Width = 28, Height = 28, Padding = new Thickness(10),
+                Background = Avalonia.Media.Brushes.Transparent,
+                BorderThickness = new Thickness(0),
+                Content = new Avalonia.Controls.Shapes.Ellipse
+                {
+                    Width = 8, Height = 8, Fill = Avalonia.Media.Brushes.White,
+                    Opacity = index == ViewModel.PageIndex ? 0.95 : 0.3,
+                    IsHitTestVisible = false,
+                    Transitions = new Avalonia.Animation.Transitions
+                    {
+                        new Avalonia.Animation.DoubleTransition
+                        {
+                            Property = OpacityProperty, Duration = GuiMotion.Duration(this, true)
+                        }
+                    }
+                }
+            };
+            Avalonia.Automation.AutomationProperties.SetName(button, $"Page {index + 1} of {ViewModel.PageCount}");
+            button.Click += (_, _) => ViewModel.GoToPage(page);
+            host.Children.Add(button);
+        }
+    }
+
     public LauncherView() : this(null) { }
 
     internal LauncherView(LauncherViewModel? viewModel)
     {
         InitializeComponent();
+        _pageDragIdle.Tick += (_, _) => SettlePageDrag();
         // This menu is later reparented to a separate native layer surface.
         // Retain named children while the Launcher name scope is still intact.
         _appContextUninstallItem = this.FindControl<MenuItem>("LauncherUninstallMenuItem");
@@ -280,6 +534,12 @@ public partial class LauncherView : UserControl
         ViewModel.AllApps.CollectionChanged += (_, _) => PreloadCatalogIcons();
         PreloadCatalogIcons();
         DataContext = ViewModel;
+        ViewModel.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(LauncherViewModel.PageIndex)) OnPageChanged();
+        };
+        AddHandler(InputElement.PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
+        OnPageChanged();
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -293,6 +553,7 @@ public partial class LauncherView : UserControl
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
+        CancelPageDrag();
         base.OnDetachedFromVisualTree(e);
         if (TopLevel.GetTopLevel(this) is Window window)
         {
@@ -559,6 +820,17 @@ public partial class LauncherView : UserControl
 
         if (e.Source is not Visual src || IsInteractive(src))
         {
+            return;
+        }
+
+        if (!IsWithinInteractiveSurface(src))
+        {
+            // The fullscreen backdrop is the dismissal target. The native
+            // surface has the same boundary in App.ConfigureTransientSurfaceDismissal;
+            // keeping it here too preserves the behaviour when the launcher is
+            // hosted inline by the windowed prototype.
+            e.Handled = true;
+            (Application.Current as App)?.HideLauncher();
             return;
         }
 

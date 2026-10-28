@@ -12,6 +12,7 @@
                           Canvas.Top="1"
                           Width="24"
                           Height="12"
+                          Opacity="0.62"
                           Foreground="{Binding BaseBrush, ElementName=Root}" />
 
       <!-- The charge uses the exact body silhouette as its clip, so partial

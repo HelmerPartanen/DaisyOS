@@ -6405,4 +6405,7 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
   <data name="Loc_EC9F969D1008" xml:space="preserve">
     <value>Paritetaan…</value>
   </data>
+  <data name="Loc_90CEEDBC1B28" xml:space="preserve">
+    <value>Paina Meta uudelleen avataksesi sovellukset</value>
+  </data>
 </root>

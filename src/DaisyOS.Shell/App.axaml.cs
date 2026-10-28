@@ -105,6 +105,12 @@ public partial class App : Application
     private ILayerShellWindowBackend? _layerShellBackend;
     private Window? _nativePanelSurface;
     private Window? _nativeLauncherSurface;
+    private Views.Components.Launcher.LauncherHint? _launcherHint;
+    private Window? _launcherHintSurface;
+    private DispatcherTimer? _launcherHintTimer;
+    private readonly LauncherGesturePolicy _launcherGesture = new();
+    private string? _launcherReturnWindowId;
+    private bool _launcherLaunchedApp;
     private Window? _nativeSystemFlyoutSurface;
     private DesktopContextMenuOverlay? _nativeDesktopMenus;
     private Window? _nativeScreenshotSurface;
@@ -322,6 +328,7 @@ public partial class App : Application
                 AirPods?.Dispose();
                 _ = AppTray.DisposeAsync();
                 SessionState.Changed -= OnGamingPrefetchPolicyChanged;
+                _launcherHintTimer?.Stop();
                 _recentPrefetch.Dispose();
                 _memoryTrimmer?.Dispose();
                 _powerIdleService?.Dispose();
@@ -542,6 +549,12 @@ public partial class App : Application
                 KeyboardInteractivity = LayerShellKeyboardInteractivity.None
             }, launcherContent);
         _nativeLauncherSurface = launcherSurface;
+        // The confirmation hint is mapped on first use. Its surface is
+        // deliberately keyboard-less and input-transparent so a fullscreen
+        // game keeps focus while the first Meta press is evaluated.
+        _launcherHint = new Views.Components.Launcher.LauncherHint();
+        _launcherHintSurface = backend.CreateWindow(
+            LayerShellSurfaceOptions.LauncherHint(), _launcherHint);
         var systemFlyoutSurface = backend.CreateWindow(
             LayerShellSurfaceOptions.SystemFlyoutOverlay() with
             {
@@ -591,6 +604,7 @@ public partial class App : Application
         _nativeShellSurfaces.Add(panelSurface);
         _nativeShellSurfaces.Add(bottomEdgeSensorSurface);
         _nativeShellSurfaces.Add(launcherSurface);
+        if (_launcherHintSurface is not null) _nativeShellSurfaces.Add(_launcherHintSurface);
         _nativeShellSurfaces.Add(systemFlyoutSurface);
         var tooltipSurface = backend.CreateWindow(
             LayerShellSurfaceOptions.BottomTooltipOverlay(), shell.DetachBottomTooltipsForNativeOverlay());
@@ -640,7 +654,8 @@ public partial class App : Application
         // in the same layout transaction as the popup itself.
         var launcherBlur = new KWinBlur(launcherSurface, launcherSurface, () =>
         {
-            if (!shell.Launcher.IsEffectivelyVisible || shell.Launcher.Opacity <= 0.001)
+            if (!shell.Launcher.IsEffectivelyVisible || shell.Launcher.Opacity <= 0.001 ||
+                shell.Launcher.UseSolidBackdrop)
                 return [];
             var root = shell.Launcher.FindControl<Border>("LauncherRootBorder");
             var regions = launcherSurface.GetVisualDescendants().OfType<Border>()
@@ -652,6 +667,7 @@ public partial class App : Application
         });
         _launcherBlur = launcherBlur;
         shell.Launcher.OpenStateChanged += (_, _) => launcherBlur.Invalidate();
+        shell.Launcher.BackdropStyleChanged += (_, _) => launcherBlur.RefreshImmediately();
         _blurEffects.Add(new KWinBlur(systemFlyoutSurface, systemFlyoutSurface, () =>
             new[] { shell.SystemBar.QuickSettingsMaterialFrame,
                 shell.SystemBar.NotificationMaterialFrame, shell.SystemBar.CalendarMaterialFrame, shell.SystemBar.AppTrayMaterialFrame,
@@ -681,7 +697,7 @@ public partial class App : Application
         ConfigureTransientSurfaceDismissal(
             launcherSurface,
             () => shell.IsLauncherVisible,
-            source => IsWithin(source, launcherContent),
+            source => shell.Launcher.IsWithinInteractiveSurface(source),
             () => HideLauncher());
         var desktopMenus = _nativeDesktopMenus = new DesktopContextMenuOverlay(shell.Desktop, systemFlyoutContent, visible =>
         {
@@ -1260,37 +1276,86 @@ public partial class App : Application
     }
 
     /// <summary>Shows or hides the launcher within the shell window.</summary>
-    public void ToggleLauncher()
-    {
-        if (_shellView?.IsLauncherVisible == true)
-        {
-            HideLauncher();
-        }
-        else
-        {
-            ShowLauncher();
-        }
-    }
+    public void ToggleLauncher() => RequestLauncher(LauncherRequestSource.Explicit);
 
-    public void HideLauncher(bool immediate = false)
+    private void RequestLauncher(LauncherRequestSource source)
     {
         if (_shellView is null)
         {
             return;
         }
 
-        if (_shellView.IsLauncherVisible || _shellView.Launcher.IsOpen || _shellView.Launcher.IsVisible)
+        var decision = _launcherGesture.Decide(
+            source,
+            _shellView.IsLauncherVisible || _shellView.Launcher.IsVisible,
+            IsFullscreenAppActive(),
+            DateTime.UtcNow);
+
+        switch (decision)
         {
-            _shellView.HideLauncher(immediate, () => LauncherVisibilityChanged?.Invoke(this, false));
-            if (immediate)
-            {
-                if (_nativeLauncherSurface is not null)
-                {
-                    SetNativeSurfaceVisible(_nativeLauncherSurface, false, captureKeyboard: true);
-                }
-                _launcherBlur?.RefreshImmediately();
-            }
+            case LauncherGestureDecision.Close:
+                HideLauncher();
+                break;
+            case LauncherGestureDecision.Open:
+                ShowLauncher();
+                break;
+            case LauncherGestureDecision.Arm:
+                ShowLauncherHint();
+                break;
         }
+    }
+
+    /// <summary>True when the focused compositor window is a fullscreen client.</summary>
+    private bool IsFullscreenAppActive() =>
+        _compositorWindows?.Windows.Any(window => window.IsActive && window.IsFullScreen) == true;
+
+    /// <summary>
+    /// True when any fullscreen client is present. Backdrop selection uses this
+    /// rather than the active window: opening the launcher moves keyboard focus
+    /// away from the game, but the game still deserves the opaque material.
+    /// </summary>
+    private bool HasFullscreenWindow() =>
+        _compositorWindows?.Windows.Any(window =>
+            window.IsFullScreen && !window.IsMinimized && window.IsOnCurrentWorkspace) == true;
+
+    /// <summary>
+    /// Hides the launcher. <paramref name="restoreFocus"/> is false when the
+    /// caller is deliberately handing focus to another window, so returning to
+    /// the pre-launcher client would steal that new focus.
+    /// </summary>
+    public void HideLauncher(bool immediate = false, bool restoreFocus = true)
+    {
+        if (_shellView is null)
+        {
+            return;
+        }
+
+        HideLauncherHint();
+        _launcherGesture.Reset();
+
+        var returnWindowId = restoreFocus && !_launcherLaunchedApp ? _launcherReturnWindowId : null;
+        _launcherReturnWindowId = null;
+        _launcherLaunchedApp = false;
+
+        if (!(_shellView.IsLauncherVisible || _shellView.Launcher.IsOpen || _shellView.Launcher.IsVisible))
+        {
+            RestoreLauncherFocus(returnWindowId);
+            return;
+        }
+
+        _shellView.HideLauncher(immediate, () =>
+        {
+            // Release the native keyboard grab before restoring the previous
+            // client; otherwise KWin would hand focus back to the closing
+            // layer surface instead of the game or application.
+            LauncherVisibilityChanged?.Invoke(this, false);
+            if (immediate && _nativeLauncherSurface is not null)
+            {
+                SetNativeSurfaceVisible(_nativeLauncherSurface, false, captureKeyboard: true);
+            }
+            _launcherBlur?.RefreshImmediately();
+            RestoreLauncherFocus(returnWindowId);
+        });
     }
 
     private void ShowLauncher()
@@ -1301,8 +1366,77 @@ public partial class App : Application
         }
 
         HideQuickSettings();
+        HideLauncherHint(immediate: true);
+        _launcherGesture.Reset();
+        // Capture the pre-launcher focus target before the overlay takes the
+        // keyboard. The KWin snapshot may no longer report it once the layer
+        // surface owns input.
+        _launcherReturnWindowId = _compositorWindows?.Windows
+            .FirstOrDefault(window => window.IsActive)?.Id;
+        _launcherLaunchedApp = false;
+        _shellView.Launcher.SetSolidBackdrop(SessionState.GamingMode || HasFullscreenWindow());
         _shellView.ShowLauncher();
         LauncherVisibilityChanged?.Invoke(this, true);
+    }
+
+    private void RestoreLauncherFocus(string? windowId)
+    {
+        if (string.IsNullOrEmpty(windowId) || _compositorWindows is null)
+        {
+            return;
+        }
+
+        var window = _compositorWindows.Windows.FirstOrDefault(candidate => candidate.Id == windowId);
+        if (window is null)
+        {
+            return;
+        }
+
+        _ = _compositorWindows.ActivateOrMinimizeAsync(window.Id, wasActive: false);
+    }
+
+    private void ShowLauncherHint()
+    {
+        if (_launcherHint is null)
+        {
+            return;
+        }
+
+        _launcherHint.ShowHint();
+        if (_launcherHintSurface is { } surface)
+        {
+            if (!surface.IsVisible)
+            {
+                surface.Show();
+                LayerShellWindow.SetInputPassthrough(surface, true);
+                LayerShellWindow.SetKeyboardInteractivity(
+                    surface,
+                    ZwlrLayerSurfaceV1.KeyboardInteractivity.None);
+            }
+        }
+
+        _launcherHintTimer ??= new DispatcherTimer
+        {
+            Interval = LauncherGesturePolicy.ConfirmationWindow
+        };
+        _launcherHintTimer.Stop();
+        _launcherHintTimer.Tick -= OnLauncherHintTimeout;
+        _launcherHintTimer.Tick += OnLauncherHintTimeout;
+        _launcherHintTimer.Start();
+    }
+
+    private void OnLauncherHintTimeout(object? sender, EventArgs e)
+    {
+        _launcherHintTimer?.Stop();
+        _launcherGesture.Reset();
+        HideLauncherHint();
+    }
+
+    private void HideLauncherHint(bool immediate = false)
+    {
+        _launcherHintTimer?.Stop();
+        if (immediate) _launcherHint?.HideImmediately();
+        else _launcherHint?.Dismiss();
     }
 
     private void ConfigureShellOverlays(ShellView shell)
@@ -1325,7 +1459,11 @@ public partial class App : Application
         shell.SystemBar.QuickSettingsRequested += (_, _) => ToggleQuickSettings();
         shell.SystemBar.QuickSettingsDismissRequested += (_, _) => HideQuickSettings();
         shell.SystemBar.ConsoleModeRequested += (_, _) => shell.RequestConsoleMode();
-        shell.Launcher.AppLaunchRequested += (_, _) => HideLauncher();
+        shell.Launcher.AppLaunchRequested += (_, _) =>
+        {
+            _launcherLaunchedApp = true;
+            HideLauncher();
+        };
         LauncherVisibilityChanged += (_, isVisible) => shell.SetLauncherOpen(isVisible);
     }
 
@@ -1396,6 +1534,11 @@ public partial class App : Application
                     DesktopOcclusionChanged?.Invoke(this, EventArgs.Empty);
                 }
                 shell.SetExternalFullscreenActive(isFullscreen);
+                if (shell.IsLauncherVisible)
+                {
+                    shell.Launcher.SetSolidBackdrop(
+                        SessionState.GamingMode || HasFullscreenWindow());
+                }
                 ApplyNativeBottomChromeState(shell);
             }
         });
@@ -1450,8 +1593,11 @@ public partial class App : Application
                     LayerShellWindow.SetInputPassthrough(gamingSurface, true);
                 }
                 break;
+            case "launcher-meta":
+                RequestLauncher(LauncherRequestSource.Meta);
+                break;
             case "launcher":
-                ToggleLauncher();
+                RequestLauncher(LauncherRequestSource.Explicit);
                 break;
             case "trash":
                 _ = ShowTrashAsync();
@@ -1684,6 +1830,11 @@ public partial class App : Application
     {
         _recentPrefetch.SetSuspended(SessionState.GamingMode ||
             (_compositorWindows is KWinWindowBridge bridge && bridge.HasFullscreenWindow));
+        if (_shellView?.IsLauncherVisible == true)
+        {
+            _shellView.Launcher.SetSolidBackdrop(
+                SessionState.GamingMode || HasFullscreenWindow());
+        }
         if (_lastGamingModeForTrim != SessionState.GamingMode)
         {
             _lastGamingModeForTrim = SessionState.GamingMode;
@@ -1747,7 +1898,7 @@ public partial class App : Application
             return;
         }
 
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         _shellView.SystemBar.ShowQuickSettingsPanel();
     }
 
@@ -1849,7 +2000,7 @@ public partial class App : Application
         }
         _recentTaskbarActivations[appId] = activationTime;
 
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         _shellView?.Taskbar.HideContextMenu();
 
         // An owned window has an immediate, local activation state. Handle an
@@ -2232,7 +2383,7 @@ public partial class App : Application
     /// <summary>Opens one normal, compositor-managed instance of the DaisyOS Settings app.</summary>
     public async void ShowSettings(string? category = null)
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.settings");
         var result = await PackagedApplicationLauncher.LaunchAsync("Settings", category is null ? [] : ["--category=" + category]);
         if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
@@ -2326,7 +2477,7 @@ public partial class App : Application
 
     private async void LaunchNotes(bool newNote)
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.notes");
         var result = await PackagedApplicationLauncher.LaunchAsync("Notes", newNote ? ["--new-note"] : []);
         if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
@@ -2336,7 +2487,7 @@ public partial class App : Application
     /// <summary>Opens one instance of the native DaisyOS Calendar app.</summary>
     public void ShowCalendar()
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         if (_nativeWindowTracker.RestoreAndActivate("calendar"))
         {
             return;
@@ -2363,7 +2514,7 @@ public partial class App : Application
     /// <summary>Opens one instance of the native DaisyOS Calculator app.</summary>
     public void ShowCalculator()
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         if (_nativeWindowTracker.RestoreAndActivate("calculator"))
         {
             return;
@@ -2388,7 +2539,7 @@ public partial class App : Application
     /// <summary>Opens one instance of the native DaisyOS App Store.</summary>
     public void ShowAppStore()
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         if (_nativeWindowTracker.RestoreAndActivate("appstore"))
         {
             return;
@@ -2415,7 +2566,7 @@ public partial class App : Application
     /// <summary>Opens one instance of Disk Manager in its own application process.</summary>
     public async void ShowDiskManager()
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.diskmanager");
         var result = await PackagedApplicationLauncher.LaunchAsync("DiskManager");
         if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
@@ -2425,7 +2576,7 @@ public partial class App : Application
     /// <summary>Opens one instance of the native DaisyOS System Monitor.</summary>
     public void ShowTaskManager()
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         if (_nativeWindowTracker.RestoreAndActivate("taskmanager"))
         {
             return;
@@ -2464,7 +2615,7 @@ public partial class App : Application
     /// <summary>Opens the live catalog of reusable DaisyOS interface components.</summary>
     public void ShowUIKit()
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         if (_nativeWindowTracker.RestoreAndActivate("uikit"))
         {
             return;
@@ -2519,7 +2670,7 @@ public partial class App : Application
             share(paths);
             return;
         }
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         if (IsNativeShellSession && _localSendWindow is not null && _nativeLocalSendSurface is not null)
         {
             _localSendWindow.Open(_localSendService, _localSendUnavailable, paths);
@@ -2565,7 +2716,7 @@ public partial class App : Application
 
     private async void ShowFiles(FileManagerActivationRequest? activation)
     {
-        HideLauncher();
+        HideLauncher(restoreFocus: false);
         var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.files");
         var result = await PackagedApplicationLauncher.LaunchFilesAsync(activation);
         if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
@@ -2665,7 +2816,8 @@ public partial class App : Application
 
     public void DismissAllTransientShellSurfaces()
     {
-        HideLauncher(immediate: true);
+        HideLauncher(immediate: true, restoreFocus: false);
+        HideLauncherHint(immediate: true);
 
         if (_shellView is not null)
         {

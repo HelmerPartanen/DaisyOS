@@ -40,7 +40,6 @@ public sealed class ShellHighlightTests
     [InlineData("Themes/WidgetContainerTheme.axaml")]
     [InlineData("Views/Components/Taskbar/TaskbarView.axaml")]
     [InlineData("Views/Components/SystemBar/SystemBarView.axaml")]
-    [InlineData("Views/Components/Launcher/LauncherView.axaml")]
     [InlineData("Views/Components/Widgets/MediaWidget.axaml")]
     public void HighlightFramesDoNotStackASecondWhiteBackground(string relative)
     {

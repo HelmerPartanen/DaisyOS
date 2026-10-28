@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using Avalonia.Threading;
 using DaisyOS.Shell.Apps.Files.Collections;
 using DaisyOS.Shell.Services.Diagnostics;
+using DaisyOS.Shell.Services.Localization;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.Services;
 using DaisyOS.System.Processes;
@@ -25,7 +26,41 @@ public class LauncherViewModel : INotifyPropertyChanged
 
     public FastObservableCollection<LauncherItemViewModel> AllApps { get; } = new();
     public FastObservableCollection<LauncherItemViewModel> FilteredApps { get; } = new();
-    public FastObservableCollection<LauncherItemViewModel> MostUsedApps { get; } = new();
+
+    public FastObservableCollection<LauncherItemViewModel> PageApps { get; } = new();
+    private int _pageSize = 24;
+    private int _pageIndex;
+    private int _pageColumns = 8;
+    public int PageIndex => _pageIndex;
+    public int PageCount => Math.Max(1, (FilteredApps.Count + _pageSize - 1) / _pageSize);
+    public double PageGridWidth => _pageColumns * 136;
+    public void SetPageLayout(int columns, int rows)
+    {
+        columns = Math.Max(1, columns);
+        var size = columns * Math.Max(1, rows);
+        if (size == _pageSize && columns == _pageColumns) return;
+        _pageSize = size;
+        _pageColumns = columns;
+        OnPropertyChanged(nameof(PageGridWidth));
+        RefreshPage();
+    }
+
+    internal LauncherItemViewModel[] GetPageApps(int index) =>
+        FilteredApps.Skip(index * _pageSize).Take(_pageSize).ToArray();
+
+    public void GoToPage(int index)
+    {
+        _pageIndex = Math.Clamp(index, 0, PageCount - 1);
+        RefreshPage();
+    }
+
+    private void RefreshPage()
+    {
+        _pageIndex = Math.Clamp(_pageIndex, 0, PageCount - 1);
+        PageApps.ReplaceAll(FilteredApps.Skip(_pageIndex * _pageSize).Take(_pageSize));
+        OnPropertyChanged(nameof(PageIndex));
+        OnPropertyChanged(nameof(PageCount));
+    }
 
     public LauncherItemViewModel? TopSearchResult { get; private set; }
 
@@ -36,7 +71,7 @@ public class LauncherViewModel : INotifyPropertyChanged
 
     public bool HasSearchQuery => !string.IsNullOrWhiteSpace(SearchText);
     public bool ShowNoResults => HasSearchQuery && FilteredApps.Count == 0;
-    public bool HasMostUsedApps => MostUsedApps.Count > 0;
+    public string AllAppsCountText => Loc.Format("{0} items", AllApps.Count);
     public Task ApplicationsReady { get; }
 
     private int _searchGeneration;
@@ -140,7 +175,7 @@ public class LauncherViewModel : INotifyPropertyChanged
             return new LauncherItemViewModel(app);
         }).ToArray();
         AllApps.ReplaceAll(items);
-        UpdateMostUsedApps();
+        OnPropertyChanged(nameof(AllAppsCountText));
         UpdateFilteredApps();
     }
 
@@ -159,6 +194,8 @@ public class LauncherViewModel : INotifyPropertyChanged
             TopSearchResult.IsTopSearchResult = true;
         }
 
+        _pageIndex = 0;
+        RefreshPage();
         OnPropertyChanged(nameof(TopSearchResult));
         OnPropertyChanged(nameof(ShowNoResults));
     }
@@ -170,36 +207,6 @@ public class LauncherViewModel : INotifyPropertyChanged
         ++_searchGeneration;
         UpdateFilteredApps();
         return TopSearchResult;
-    }
-
-    private void UpdateMostUsedApps()
-    {
-        var mostUsed = new List<LauncherItemViewModel>();
-
-        var appsById = AllApps
-            .Where(app => !string.IsNullOrWhiteSpace(app.App.Id))
-            .GroupBy(app => app.App.Id, StringComparer.Ordinal)
-            .ToDictionary(group => group.Key, group => group.First(), StringComparer.Ordinal);
-
-        foreach (var applicationId in _sessionState.GetMostUsedApplicationIds(maximumCount: 7))
-        {
-            if (appsById.TryGetValue(applicationId, out var app))
-            {
-                mostUsed.Add(app);
-            }
-        }
-
-        foreach (var app in AllApps)
-        {
-            if (mostUsed.Count >= 7) break;
-            if (!mostUsed.Contains(app))
-            {
-                mostUsed.Add(app);
-            }
-        }
-
-        MostUsedApps.ReplaceAll(mostUsed);
-        OnPropertyChanged(nameof(HasMostUsedApps));
     }
 
     private bool MatchesSearch(LauncherItemViewModel item)
@@ -237,7 +244,6 @@ public class LauncherViewModel : INotifyPropertyChanged
     public void RecordSuccessfulLaunch(LauncherItemViewModel item)
     {
         _sessionState.RecordApplicationLaunch(item.App.Id);
-        UpdateMostUsedApps();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

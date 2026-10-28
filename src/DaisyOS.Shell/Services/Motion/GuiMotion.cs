@@ -60,6 +60,12 @@ public static class GuiMotion
     public static Task RevealAsync(Control content, Point offset, TimeSpan? durationOverride = null) =>
         AnimateAsync(content, true, offset, durationOverride: durationOverride);
 
+    public static Task SlideInAsync(Control content, Point offset, TimeSpan duration) =>
+        AnimateAsync(content, true, offset, durationOverride: duration, fadeOnEnter: false);
+
+    public static Task SlideOutAsync(Control content, Point offset, TimeSpan duration) =>
+        AnimateAsync(content, false, offset, durationOverride: duration, preserveExitPosition: true, fadeOnExit: false);
+
     public static Task SetVisibleAsync(
         Control host,
         Control content,

@@ -319,6 +319,28 @@ public partial class DaisyFilePickerWindow : Window
         else if (!_options.SelectDirectory) ToggleSelection(entry);
     }
 
+    private void OnEntryDoubleTapped(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: PickerEntry entry }) return;
+        e.Handled = true;
+        if (entry.IsDirectory)
+        {
+            OpenFolder(entry.Path);
+            return;
+        }
+        if (_options.AllowMultiple || _options.SaveFile || _options.SelectDirectory || !IsAllowedFile(entry.Path))
+            return;
+
+        // Two Click events may have toggled the row before DoubleTapped fires.
+        // Establish the intended single selection deterministically, then use
+        // the normal confirmation path so validation and portal results match.
+        ClearSelection();
+        _selection.Add(new PickerSelection(entry.Path, OwnThumbnail(LoadThumbnail(entry.Path, 80))));
+        entry.IsSelected = true;
+        UpdateSelectionUi();
+        OnConfirmClicked(ConfirmButton, new RoutedEventArgs(Button.ClickEvent));
+    }
+
     private void ToggleSelection(PickerEntry entry)
     {
         var existing = _selection.FirstOrDefault(item => string.Equals(item.Path, entry.Path, PathComparison));
@@ -393,7 +415,7 @@ public partial class DaisyFilePickerWindow : Window
             _ => Loc.Format("{0} {1} selected", _selection.Count, _options.ItemNamePlural)
         };
         SelectionHint.Text = _selection.Count == 0
-            ? Loc.Get("Select a file to continue.")
+            ? Loc.Get(_options.AllowMultiple ? "Select a file to continue." : "Select a file, or double-click it to open.")
             : Loc.Get("Select an item again, or use ×, to remove it.");
         SelectionTrayScroller.IsVisible = _selection.Count > 0;
         ConfirmButton.IsEnabled = _selection.Count > 0 || _hadInitialSelection;

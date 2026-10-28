@@ -200,7 +200,7 @@ namespace DaisyOS.Shell.Views
             ApplyBottomBarVisibility(immediate: isFullScreen);
             if (isFullScreen)
             {
-                HideLauncher();
+                (Application.Current as App)?.HideLauncher(restoreFocus: false);
                 SystemBar.HideQuickSettingsPanel();
                 SystemBar.HideCalendarPanel();
                 SystemBar.HideAppTrayPanel();
@@ -267,10 +267,16 @@ namespace DaisyOS.Shell.Views
             if (isOpen)
             {
                 _taskbarRevealed = true;
+                _systemBarRevealed = true;
                 _taskbarAutoHideTimer.Stop();
+                _systemBarAutoHideTimer.Stop();
                 ApplyBottomBarVisibility();
             }
-            else ScheduleTaskbarAutoHide();
+            else
+            {
+                ScheduleTaskbarAutoHide();
+                ScheduleSystemBarAutoHide();
+            }
         }
 
         private void RevealTaskbarTemporarily()
@@ -297,8 +303,8 @@ namespace DaisyOS.Shell.Views
 
         private void ApplyBottomBarVisibility(bool immediate = false)
         {
-            var taskbarVisible = !_lockScreenActive && (!_externalFullscreenActive || _taskbarAutoHide) && IsTaskbarVisibleByPreference;
-            var systemBarVisible = !_lockScreenActive && (!_externalFullscreenActive || _systemBarAutoHide) && (!_systemBarAutoHide || _systemBarRevealed);
+            var taskbarVisible = !_lockScreenActive && (!_externalFullscreenActive || _taskbarAutoHide || IsLauncherVisible) && IsTaskbarVisibleByPreference;
+            var systemBarVisible = !_lockScreenActive && (!_externalFullscreenActive || _systemBarAutoHide || IsLauncherVisible) && (!_systemBarAutoHide || _systemBarRevealed || IsLauncherVisible);
             _ = GuiMotion.SetVisibleAsync(
                 TaskbarContent,
                 TaskbarContent.FindControl<Border>("TaskbarBody")!,
@@ -348,7 +354,7 @@ namespace DaisyOS.Shell.Views
         private void ScheduleSystemBarAutoHide()
         {
             _systemBarAutoHideTimer.Stop();
-            if (_systemBarAutoHide && _systemBarRevealed && !SystemBar.IsQuickSettingsVisible &&
+            if (_systemBarAutoHide && _systemBarRevealed && !IsLauncherVisible && !SystemBar.IsQuickSettingsVisible &&
                 !SystemBar.IsNotificationPanelVisible && !SystemBar.IsCalendarPanelVisible && !SystemBar.IsAppTrayVisible)
                 _systemBarAutoHideTimer.Start();
         }
@@ -370,7 +376,7 @@ namespace DaisyOS.Shell.Views
         private void HideSystemBarIfUnhovered()
         {
             _systemBarAutoHideTimer.Stop();
-            if (!_systemBarAutoHide || !_systemBarRevealed || SystemBarContent.IsPointerOver ||
+            if (!_systemBarAutoHide || !_systemBarRevealed || IsLauncherVisible || SystemBarContent.IsPointerOver ||
                 SystemBar.IsQuickSettingsVisible || SystemBar.IsNotificationPanelVisible || SystemBar.IsCalendarPanelVisible || SystemBar.IsAppTrayVisible) return;
             _systemBarRevealed = false;
             ApplyBottomBarVisibility();
@@ -417,15 +423,11 @@ namespace DaisyOS.Shell.Views
                 parent.Children.Remove(LauncherContent);
             }
 
-            // The launcher is an application-like centered card. Its full-output
-            // host keeps that center independent of the bottom panel geometry.
+            // The launcher reserves room for the bottom bars within its own layout.
             var overlay = new Grid();
-            // The native launcher surface stops above the taskbar so pointer
-            // input can reach it. Offset the centered card by half that reserved
-            // strip to preserve its full-output visual position.
-            LauncherContent.Margin = new Thickness(0, ShellSurfacePlan.PrimaryPanelExclusiveZone, 0, 0);
-            LauncherContent.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
-            LauncherContent.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center;
+            LauncherContent.Margin = default;
+            LauncherContent.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
+            LauncherContent.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
             overlay.Children.Add(LauncherContent);
             return overlay;
         }
@@ -860,7 +862,7 @@ namespace DaisyOS.Shell.Views
 
             // The taskbar/System Bar toggles must see their own press before they decide
             // whether to open or close an overlay. Everything else is an outside click.
-            if (IsLauncherVisible && !IsWithin(source, LauncherContent) && !IsWithin(source, TaskbarContent))
+            if (IsLauncherVisible && !IsWithin(source, LauncherContent) && !IsWithin(source, TaskbarContent) && !IsWithin(source, SystemBarContent))
             {
                 (Application.Current as App)?.HideLauncher();
             }

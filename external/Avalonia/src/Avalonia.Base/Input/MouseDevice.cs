@@ -105,7 +105,7 @@ namespace Avalonia.Input
                     e.Handled = MouseMove(mouse, e.Timestamp, e.Root, e.Position, props, keyModifiers, e.IntermediatePoints, e.InputHitTestResult.firstEnabledAncestor);
                     break;
                 case RawPointerEventType.Wheel:
-                    e.Handled = MouseWheel(mouse, e.Timestamp, e.Root, e.Position, props, ((RawMouseWheelEventArgs)e).Delta, keyModifiers, e.InputHitTestResult.firstEnabledAncestor);
+                    e.Handled = MouseWheel(mouse, e.Timestamp, e.Root, e.Position, props, ((RawMouseWheelEventArgs)e).Delta, keyModifiers, e.InputHitTestResult.firstEnabledAncestor, ((RawMouseWheelEventArgs)e).IsPrecise, ((RawMouseWheelEventArgs)e).IsScrollEnd);
                     break;
                 case RawPointerEventType.Magnify:
                     e.Handled = GestureMagnify(mouse, e.Timestamp, e.Root, e.Position, props, ((RawPointerGestureEventArgs)e).Delta, keyModifiers, e.InputHitTestResult.firstEnabledAncestor);
@@ -231,7 +231,7 @@ namespace Avalonia.Input
 
         private bool MouseWheel(IMouseDevice device, ulong timestamp, IInputRoot root, Point p,
             PointerPointProperties props,
-            Vector delta, KeyModifiers inputModifiers, IInputElement? hitTest)
+            Vector delta, KeyModifiers inputModifiers, IInputElement? hitTest, bool isPrecise = false, bool isScrollEnd = false)
         {
             var rawDelta = delta;
             device = device ?? throw new ArgumentNullException(nameof(device));
@@ -241,7 +241,7 @@ namespace Avalonia.Input
 
             if (source is not null)
             {
-                var e = new PointerWheelEventArgs(source, _pointer, root.RootElement, p, timestamp, props, inputModifiers, delta);
+                var e = new PointerWheelEventArgs(source, _pointer, root.RootElement, p, timestamp, props, inputModifiers, delta) { IsPrecise = isPrecise, IsScrollEnd = isScrollEnd };
 
                 source?.RaiseEvent(e);
                 return e.Handled;

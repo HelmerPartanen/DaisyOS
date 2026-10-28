@@ -6483,4 +6483,9 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: {0} folders selected
 Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
   </data>
+  <data name="Loc_90CEEDBC1B28" xml:space="preserve">
+    <value>Press Meta again to open Applications</value>
+    <comment>Source: Press Meta again to open Applications
+Used by: src/DaisyOS.Shell/Views/Components/Launcher/LauncherHint.axaml</comment>
+  </data>
 </root>

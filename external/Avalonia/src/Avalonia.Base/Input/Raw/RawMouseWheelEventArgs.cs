@@ -17,6 +17,9 @@ namespace Avalonia.Input.Raw
             Delta = delta;
         }
 
+        public bool IsPrecise { get; set; }
+        public bool IsScrollEnd { get; set; }
+
         public Vector Delta { get; private set; }
     }
 }

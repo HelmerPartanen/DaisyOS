@@ -41,7 +41,25 @@ public sealed class ComboBoxBehavior : AvaloniaObject
 
     private static void OnPointerWheelChanged(ComboBox sender, PointerWheelEventArgs e)
     {
-        if (!sender.IsDropDownOpen) e.Handled = true;
+        if (sender.IsDropDownOpen) return;
+
+        // A closed selector must not change value under the pointer, but it must
+        // also not become a dead zone in a scrolling Settings page. Forward the
+        // wheel/trackpad delta to the first ancestor that can move in that
+        // direction. Precise deltas are already expressed in logical pixels.
+        var multiplier = e.IsPrecise ? 1d : 48d;
+        foreach (var scroll in sender.GetVisualAncestors().OfType<ScrollViewer>())
+        {
+            var maximumY = Math.Max(0, scroll.Extent.Height - scroll.Viewport.Height);
+            var maximumX = Math.Max(0, scroll.Extent.Width - scroll.Viewport.Width);
+            var targetY = Math.Clamp(scroll.Offset.Y - e.Delta.Y * multiplier, 0, maximumY);
+            var targetX = Math.Clamp(scroll.Offset.X - e.Delta.X * multiplier, 0, maximumX);
+            if (Math.Abs(targetY - scroll.Offset.Y) < 0.01 && Math.Abs(targetX - scroll.Offset.X) < 0.01)
+                continue;
+            scroll.Offset = new Vector(targetX, targetY);
+            e.Handled = true;
+            return;
+        }
     }
 
     private static void ScheduleMeasure(ComboBox comboBox)

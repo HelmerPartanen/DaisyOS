@@ -25,33 +25,32 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class UsabilityTests
 {
     [AvaloniaFact]
-    public void LauncherFavouritesScrollWithAppsAndGridRemainsVirtualized()
+    public void LauncherHasNoFavouritesAndOnlyDisplaysTheCurrentPage()
     {
         using var fixture = new TemporaryFolder();
         var apps = Enumerable.Range(0, 200)
             .Select(index => new AppEntry($"app-{index}", $"App {index:D3}", "", "notes", false))
             .ToArray();
         var model = new LauncherViewModel(new ShellSessionState(Path.Combine(fixture.Path, "state.json")), apps);
-        var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView { DataContext = model };
-        var window = new Window { Width = 720, Height = 620, Content = launcher };
+        var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(model);
+        var window = new Window { Width = 1280, Height = 900, Content = launcher };
         window.Show();
         try
         {
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
-            var scroll = launcher.FindControl<ScrollViewer>("LauncherBrowseScroll")!;
-            var header = launcher.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Text == "Favourites");
-            var grid = launcher.GetVisualDescendants().OfType<VirtualizingLauncherGrid>()
-                .First(panel => panel.FindAncestorOfType<ScrollViewer>() == scroll);
-            var initialY = header.TranslatePoint(default, scroll)!.Value.Y;
-            Assert.True(scroll.Extent.Height > scroll.Viewport.Height);
+            launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+            Assert.DoesNotContain(launcher.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Favourites");
+            var firstPage = model.PageApps.ToArray();
+            Assert.True(model.PageCount > 1);
+            Assert.DoesNotContain(launcher.FindControl<Grid>("LauncherPageViewport")!.GetVisualDescendants(), visual => visual is ScrollViewer);
 
-            scroll.Offset = new Avalonia.Vector(0, 200);
+            model.GoToPage(1);
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
 
-            Assert.True(header.TranslatePoint(default, scroll)!.Value.Y < initialY - 150);
-            Assert.InRange(grid.RealizedCount, 1, 100);
+            Assert.DoesNotContain(model.PageApps, app => firstPage.Contains(app));
+            Assert.Equal(model.PageApps.Count, launcher.FindControl<ItemsControl>("ApplicationGrid")!.ItemCount);
         }
         finally { window.Close(); }
     }

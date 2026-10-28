@@ -1,5 +1,7 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Input;
 using Avalonia.Threading;
 using DaisyOS.Shell.Controls;
 using Xunit;
@@ -38,6 +40,27 @@ public sealed class ComboBoxBehaviorTests
             window.Closed += (_, _) => closed = true;
             window.Close();
             Assert.True(closed);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void ClosedComboForwardsPreciseTrackpadScrollToContainingPage()
+    {
+        var picker = new ComboBox { ItemsSource = new[] { "One", "Two" }, SelectedIndex = 0 };
+        ComboBoxBehavior.SetUseAdaptiveWidth(picker, true);
+        var page = new StackPanel { Height = 1400, Children = { new Border { Height = 420 }, picker } };
+        var scroller = new ScrollViewer { Height = 300, Content = page };
+        var window = new Window { Width = 500, Height = 300, Content = scroller };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
+            picker.RaiseEvent(new PointerWheelEventArgs(picker, pointer, window, new Point(10, 10), 0,
+                new PointerPointProperties(), KeyModifiers.None, new Vector(0, -36)) { IsPrecise = true });
+            Assert.Equal(36, scroller.Offset.Y, 1);
+            Assert.Equal(0, picker.SelectedIndex);
         }
         finally { window.Close(); }
     }

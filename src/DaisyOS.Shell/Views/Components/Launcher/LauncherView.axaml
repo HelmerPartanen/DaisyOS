@@ -4,7 +4,20 @@
              xmlns:vm="clr-namespace:DaisyOS.Shell.ViewModels"
              x:Class="DaisyOS.Shell.Views.Components.Launcher.LauncherView"
              x:DataType="vm:LauncherViewModel"
-             Width="680" Height="560" ClipToBounds="False">
+             ClipToBounds="True">
+
+  <UserControl.Styles>
+    <!-- A fullscreen launcher needs a fullscreen material. The translucent
+         role keeps the compositor blur visible behind the grid; gaming mode
+         swaps to the opaque role so a running game never pays for a
+         full-output blur sample while the launcher is open. -->
+    <Style Selector="Border.LauncherBackdrop">
+      <Setter Property="Background" Value="{DynamicResource LauncherBackdropBrush}" />
+    </Style>
+    <Style Selector="Border.LauncherBackdrop.SolidBackdrop">
+      <Setter Property="Background" Value="{DynamicResource SurfaceBaseSolidBrush}" />
+    </Style>
+  </UserControl.Styles>
 
   <UserControl.Resources>
     <DataTemplate x:Key="LauncherTileTemplate" DataType="vm:LauncherItemViewModel">
@@ -13,17 +26,17 @@
               PointerPressed="OnTilePointerPressed"
               Click="OnAppItemClick"
               ToolTip.Tip="{Binding Description}">
-        <StackPanel Spacing="5" HorizontalAlignment="Center">
-          <Panel Width="52" Height="52" HorizontalAlignment="Center">
-            <controls:CalendarAppIcon Width="52" Height="52" IsVisible="{Binding IsCalendarIcon}" />
+        <StackPanel Spacing="10" HorizontalAlignment="Center">
+          <Panel Width="60" Height="60" HorizontalAlignment="Center">
+            <controls:CalendarAppIcon Width="60" Height="60" IsVisible="{Binding IsCalendarIcon}" />
             <!-- App Icon with rounded squircle shape -->
             <Border CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True">
               <Image Source="{Binding IconBitmap}" IsVisible="{Binding IsBitmapIconVisible}"
-                     RenderOptions.BitmapInterpolationMode="HighQuality" Width="52" Height="52" Stretch="Uniform"/>
+                     RenderOptions.BitmapInterpolationMode="HighQuality" Width="60" Height="60" Stretch="Uniform"/>
             </Border>
             <!-- Fallback initial letter tile with squircle background -->
             <Border IsVisible="{Binding IsFallbackIconVisible}"
-                    Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RoundedLG}" Width="52" Height="52">
+                    Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RoundedLG}" Width="60" Height="60">
               <TextBlock Text="{Binding Name[0]}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold"
                          Foreground="{DynamicResource ContentPrimaryBrush}"
                          HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -31,327 +44,223 @@
           </Panel>
           <TextBlock Text="{Binding Name}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" TextAlignment="Center"
                      Foreground="{DynamicResource ContentPrimaryBrush}"
-                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="74" HorizontalAlignment="Center"/>
+                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="100" HorizontalAlignment="Center"/>
         </StackPanel>
       </Button>
     </DataTemplate>
   </UserControl.Resources>
 
+  <Border x:Name="LauncherRootBorder" Classes="LauncherBackdrop"
+          RenderTransformOrigin="50%,50%" ClipToBounds="True">
+    <Grid x:Name="LauncherContentGrid">
 
+      <!-- Keep the bottom 82px clear for the bars while the backdrop fills the output. -->
+      <!-- One centred column keeps the app grid, search field, and footer on
+           the same optical axis at every output size. The column is also the
+           launcher's interactive boundary: clicking the surrounding backdrop
+           dismisses it, while every control inside stays live. -->
+      <Grid x:Name="LauncherInteractiveContent"
+            MaxWidth="1088" Margin="48,56,48,106" RowDefinitions="*,Auto,Auto,Auto"
+            Background="Transparent"
+            HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.Styles>
+          <Style Selector="Button.LauncherUtility">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
+            <Setter Property="Padding" Value="8"/>
+            <Setter Property="RenderTransform" Value="none"/>
+            <Setter Property="Transitions">
+              <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
+              </Transitions>
+            </Setter>
+          </Style>
+          <Style Selector="Button.LauncherUtility:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+          </Style>
+          <Style Selector="Button.LauncherUtility:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.92)"/>
+          </Style>
 
-  <controls:ShellFrameBorder x:Name="LauncherRootBorder"
-          Classes="LauncherRoot"
-          RenderTransformOrigin="50%,50%"
-          Background="{DynamicResource ShellFrameOuterEdgeBrush}"
-          Padding="1"
-          CornerRadius="{DynamicResource RoundedXXL}"
-          ClipToBounds="True">
-    <controls:ShellFrameBorder Background="Transparent"
-            BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
-            BorderThickness="1"
-            CornerRadius="{DynamicResource RoundedXXLInset}">
-      <Border Background="{DynamicResource SurfaceBaseBrush}"
-              CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
-              ClipToBounds="True">
-        <Grid x:Name="LauncherContentGrid" RowDefinitions="Auto,*,Auto,Auto">
-          <Grid.Styles>
-            <Style Selector="Button.LauncherUtility">
-              <Setter Property="Background" Value="Transparent"/>
-              <Setter Property="BorderThickness" Value="0"/>
-              <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
-              <Setter Property="Padding" Value="8"/>
-              <Setter Property="RenderTransform" Value="none"/>
-              <Setter Property="Transitions">
-                <Transitions>
-                  <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
-                </Transitions>
-              </Setter>
-            </Style>
-            <Style Selector="Button.LauncherUtility:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-              <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
-            </Style>
-            <Style Selector="Button.LauncherUtility:pressed">
-              <Setter Property="RenderTransform" Value="scale(0.92)"/>
-            </Style>
+          <!-- One tile style keeps browsing and search results on the same spacing. -->
+          <Style Selector="Button.LauncherTile">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}"/>
+            <Setter Property="Width" Value="104"/>
+            <Setter Property="Height" Value="104"/>
+            <Setter Property="Padding" Value="4,6"/>
+            <Setter Property="Margin" Value="16,12"/>
+            <Setter Property="HorizontalContentAlignment" Value="Center"/>
+            <Setter Property="RenderTransform" Value="none"/>
+            <Setter Property="Transitions">
+              <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
+              </Transitions>
+            </Setter>
+          </Style>
+          <Style Selector="Button.LauncherTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+          </Style>
+          <Style Selector="Button.LauncherTile:pressed">
+            <Setter Property="RenderTransform" Value="scale(0.96)"/>
+          </Style>
+          <Style Selector="Button.LauncherTile:pressed /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/>
+          </Style>
+          <Style Selector="Button.LauncherTile.SearchSelected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}"/>
+          </Style>
+          <Style Selector="Button.LauncherTile.ContextMenuActive /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+          </Style>
+        </Grid.Styles>
 
-            <!-- One tile style powers quick access, all apps, and search results — same rhythm everywhere. -->
-            <Style Selector="Button.LauncherTile">
-              <Setter Property="Background" Value="Transparent"/>
-              <Setter Property="BorderThickness" Value="0"/>
-              <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
-              <Setter Property="Width" Value="84"/>
-              <Setter Property="Padding" Value="4,6"/>
-              <Setter Property="Margin" Value="2,2"/>
-              <Setter Property="HorizontalContentAlignment" Value="Center"/>
-              <Setter Property="RenderTransform" Value="none"/>
-              <Setter Property="Transitions">
-                <Transitions>
-                  <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
-                </Transitions>
-              </Setter>
-            </Style>
-            <Style Selector="Button.LauncherTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-              <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
-            </Style>
-            <Style Selector="Button.LauncherTile:pressed">
-              <Setter Property="RenderTransform" Value="scale(0.96)"/>
-            </Style>
-            <Style Selector="Button.LauncherTile:pressed /template/ ContentPresenter#PART_ContentPresenter">
-              <Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/>
-            </Style>
-            <Style Selector="Button.LauncherTile.SearchSelected /template/ ContentPresenter#PART_ContentPresenter">
-              <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}"/>
-            </Style>
-            <Style Selector="Button.LauncherTile.ContextMenuActive /template/ ContentPresenter#PART_ContentPresenter">
-              <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
-            </Style>
-
-            <!-- User profile pill hover -->
-            <Style Selector="Border.UserProfileBadge:pointerover">
-              <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
-            </Style>
-          </Grid.Styles>
-
-          <!-- Row 0: Full-Width Search Bar matching the mockup -->
-          <Border Grid.Row="0" Padding="24,18,24,12">
-            <controls:SearchBar x:Name="LauncherSearchBar"
-                                Height="{DynamicResource SearchHeightStandard}"
-                                CornerRadius="{DynamicResource RadiusSurface}"
-                                Text="{Binding SearchText, Mode=TwoWay}"
-                                PlaceholderText="{DynamicResource Loc_49C266BAAAA7}"
-                                KeyDown="OnSearchKeyDown"
-                                HorizontalAlignment="Stretch" />
-          </Border>
-
-          <!-- Row 1: Main Content Area -->
-          <Grid Grid.Row="1" Margin="20,0,20,6">
-
-            <!-- Normal View (when search query is empty) -->
-            <ScrollViewer x:Name="LauncherBrowseScroll" IsVisible="{Binding !HasSearchQuery}"
-                          HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-              <Grid RowDefinitions="Auto,Auto,Auto,Auto,Auto">
-
-                <!-- Favourites Header -->
-                <TextBlock Grid.Row="0" Text="{DynamicResource Loc_D97D51D37092}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium"
-                           Foreground="{DynamicResource ContentPrimaryBrush}" Margin="10,2,10,8"/>
-
-                <!-- Favourites 7-item Row -->
-                <ItemsControl Grid.Row="1" ItemsSource="{Binding MostUsedApps}" ItemTemplate="{StaticResource LauncherTileTemplate}">
-                  <ItemsControl.ItemsPanel>
-                    <ItemsPanelTemplate>
-                      <!-- Tile margins already produce the same 88px cell rhythm as
-                           VirtualizingLauncherGrid in the All section. -->
-                      <StackPanel Orientation="Horizontal" HorizontalAlignment="Center"/>
-                    </ItemsPanelTemplate>
-                  </ItemsControl.ItemsPanel>
-                </ItemsControl>
-
-                <!-- Subtle Divider Line -->
-                <Rectangle Grid.Row="2" Height="1" Fill="{DynamicResource StrokeDefaultBrush}" Margin="8,12,8,10"/>
-
-                <!-- All Apps Header with count indicator -->
-                <Grid Grid.Row="3" Margin="10,0,10,6" ColumnDefinitions="*,Auto">
-                  <TextBlock Grid.Column="0" Text="{DynamicResource Loc_9CB965E5630E}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium"
-                             Foreground="{DynamicResource ContentPrimaryBrush}"/>
-                  <TextBlock Grid.Column="1" Text="{Binding AllApps.Count, StringFormat='{}{0} items'}"
-                             FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}"
-                             VerticalAlignment="Center"/>
-                </Grid>
-
-                <!-- All Apps 7-Column Virtualized Grid -->
-                <Grid Grid.Row="4">
-                  <ListBox x:Name="ApplicationGrid" ItemsSource="{Binding FilteredApps}"
-                           ItemTemplate="{StaticResource LauncherTileTemplate}" Background="Transparent"
-                           BorderThickness="0" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                    <!-- The browse scroller owns Favourites and All Apps together.
-                         Keep the virtualized presenter without a nested scroll area. -->
-                    <ListBox.Template>
-                      <ControlTemplate>
-                        <ItemsPresenter Name="PART_ItemsPresenter" ItemsPanel="{TemplateBinding ItemsPanel}" />
-                      </ControlTemplate>
-                    </ListBox.Template>
-                    <ListBox.Styles>
-                      <Style Selector="ListBoxItem">
-                        <Setter Property="Padding" Value="0" />
-                        <Setter Property="Margin" Value="0" />
-                        <Setter Property="Background" Value="Transparent" />
-                        <Setter Property="MinHeight" Value="0" />
-                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                        <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                      </Style>
-                      <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-                        <Setter Property="Background" Value="Transparent" />
-                      </Style>
-                      <Style Selector="ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
-                        <Setter Property="Background" Value="Transparent" />
-                      </Style>
-                      <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-                        <Setter Property="Background" Value="Transparent" />
-                      </Style>
-                      <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-                        <Setter Property="Background" Value="Transparent" />
-                      </Style>
-                      <Style Selector="ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
-                        <Setter Property="Background" Value="Transparent" />
-                      </Style>
-                      <Style Selector="ListBoxItem:focus /template/ ContentPresenter#PART_ContentPresenter">
-                        <Setter Property="Background" Value="Transparent" />
-                      </Style>
-                    </ListBox.Styles>
-                    <ListBox.ItemsPanel>
-                      <ItemsPanelTemplate><controls:VirtualizingLauncherGrid HorizontalAlignment="Center" /></ItemsPanelTemplate>
-                    </ListBox.ItemsPanel>
-                  </ListBox>
-                </Grid>
-              </Grid>
-            </ScrollViewer>
-
-            <!-- Search Results View (when searching) -->
-            <Grid IsVisible="{Binding HasSearchQuery}" RowDefinitions="Auto,*">
-              <TextBlock Grid.Row="0" Text="{DynamicResource Loc_E978B00DE465}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium"
-                         Foreground="{DynamicResource ContentPrimaryBrush}" Margin="10,2,10,8"/>
-
-              <Grid Grid.Row="1">
-                <ListBox ItemsSource="{Binding FilteredApps}"
-                         ItemTemplate="{StaticResource LauncherTileTemplate}" Background="Transparent"
-                         BorderThickness="0" Padding="0" ScrollViewer.HorizontalScrollBarVisibility="Disabled">
-                  <ListBox.Styles>
-                    <Style Selector="ListBoxItem">
-                      <Setter Property="Padding" Value="0" />
-                      <Setter Property="Margin" Value="0" />
-                      <Setter Property="Background" Value="Transparent" />
-                      <Setter Property="MinHeight" Value="0" />
-                      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                      <Setter Property="VerticalContentAlignment" Value="Stretch" />
-                    </Style>
-                    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-                      <Setter Property="Background" Value="Transparent" />
-                    </Style>
-                    <Style Selector="ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter">
-                      <Setter Property="Background" Value="Transparent" />
-                    </Style>
-                    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
-                      <Setter Property="Background" Value="Transparent" />
-                    </Style>
-                    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-                      <Setter Property="Background" Value="Transparent" />
-                    </Style>
-                    <Style Selector="ListBoxItem:selected:pressed /template/ ContentPresenter#PART_ContentPresenter">
-                      <Setter Property="Background" Value="Transparent" />
-                    </Style>
-                    <Style Selector="ListBoxItem:focus /template/ ContentPresenter#PART_ContentPresenter">
-                      <Setter Property="Background" Value="Transparent" />
-                    </Style>
-                  </ListBox.Styles>
-                  <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate><controls:VirtualizingLauncherGrid HorizontalAlignment="Center" /></ItemsPanelTemplate>
-                  </ListBox.ItemsPanel>
-                </ListBox>
-
-                <StackPanel Classes="EmptyState" IsVisible="{Binding ShowNoResults}">
-                  <controls:DaisyIcon Icon="magnifying-glass-minus"/>
-                  <TextBlock Text="{DynamicResource Loc_68940BCF6E81}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                </StackPanel>
-              </Grid>
-            </Grid>
+        <Grid Grid.Row="0" RowDefinitions="Auto,*" ClipToBounds="True">
+          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Width="{Binding PageGridWidth}" HorizontalAlignment="Center" Margin="0,0,0,20">
+            <TextBlock Text="{DynamicResource Loc_9CB965E5630E}" IsVisible="{Binding !HasSearchQuery}"
+                       FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            <TextBlock Text="{DynamicResource Loc_E978B00DE465}" IsVisible="{Binding HasSearchQuery}"
+                       FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            <TextBlock Grid.Column="1" Text="{Binding AllAppsCountText}" IsVisible="{Binding !HasSearchQuery}"
+                       FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" />
           </Grid>
+          <Grid x:Name="LauncherPageViewport" Grid.Row="1" SizeChanged="OnPageViewportSizeChanged" ClipToBounds="True">
+            <ItemsControl x:Name="OutgoingPageGrid" IsVisible="False" IsHitTestVisible="False"
+                          Width="{Binding PageGridWidth}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          ItemTemplate="{StaticResource LauncherTileTemplate}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+            <ItemsControl x:Name="ApplicationGrid" ItemsSource="{Binding PageApps}"
+                          Width="{Binding PageGridWidth}" HorizontalAlignment="Center" VerticalAlignment="Center"
+                          ItemTemplate="{StaticResource LauncherTileTemplate}">
+              <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+              </ItemsControl.ItemsPanel>
+            </ItemsControl>
+            <StackPanel Classes="EmptyState" IsVisible="{Binding ShowNoResults}">
+              <controls:DaisyIcon Icon="magnifying-glass-minus" />
+              <TextBlock Text="{DynamicResource Loc_68940BCF6E81}" HorizontalAlignment="Center" />
+            </StackPanel>
+          </Grid>
+        </Grid>
+        <StackPanel x:Name="LauncherPageIndicators" Grid.Row="1" Orientation="Horizontal"
+                    HorizontalAlignment="Center" Spacing="4" Margin="0,16,0,0" />
 
-          <!-- Row 2: Subtle Divider above Footer -->
-          <Rectangle Grid.Row="2" Height="1" Fill="{DynamicResource StrokeDefaultBrush}" Margin="24,0"/>
+      <!-- Search belongs below the app grid, directly above the footer. -->
+      <Border Grid.Row="2" Padding="0,18,0,10">
+        <controls:SearchBar x:Name="LauncherSearchBar"
+                            Height="{DynamicResource SearchHeightStandard}"
+                            CornerRadius="{DynamicResource RadiusPill}"
+                            Text="{Binding SearchText, Mode=TwoWay}"
+                            PlaceholderText="{DynamicResource Loc_49C266BAAAA7}"
+                            KeyDown="OnSearchKeyDown"
+                            Width="420"
+                            HorizontalAlignment="Center" />
+      </Border>
 
-          <!-- Row 3: Refined Bottom Footer Bar with User Profile & Power Menu -->
-          <Border Grid.Row="3" Padding="24,8,24,10" Background="Transparent">
-            <Grid ColumnDefinitions="Auto,*,Auto">
-              <!-- Left: User Profile Pill -->
-              <Border Grid.Column="0" Classes="UserProfileBadge" Padding="4,4,10,4" Background="Transparent" CornerRadius="{DynamicResource RoundedMD}">
-                <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                  <Border Width="28" Height="28" CornerRadius="14"
-                          Background="{DynamicResource SurfaceRaisedBrush}"
-                          BorderBrush="{DynamicResource StrokeSubtleBrush}"
-                          BorderThickness="1">
-                    <Grid>
-                      <TextBlock Text="{Binding UserInitial}" IsVisible="{DynamicResource ProfilePictureMissing}"
-                                 FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold" Foreground="{DynamicResource ActionPrimaryBrush}"
-                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
-                      <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
-                    </Grid>
-                  </Border>
-                  <TextBlock Text="{Binding UserName}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium"
-                             Foreground="{DynamicResource ContentPrimaryBrush}"
-                             VerticalAlignment="Center"/>
-                </StackPanel>
+      <!-- Footer: identity on the left, dismissal hint in the centre, power on
+           the right. The three anchors keep the bar balanced at any width. -->
+      <Border Grid.Row="3" Padding="0,6,0,0">
+        <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Stretch">
+          <Border Grid.Column="0" HorizontalAlignment="Left" Padding="6,6,14,6"
+                  Background="{DynamicResource SurfaceBaseBrush}"
+                  BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                  BorderThickness="1"
+                  CornerRadius="{DynamicResource RadiusPill}"
+                  VerticalAlignment="Center">
+            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+              <Border Width="30" Height="30" CornerRadius="15"
+                      Background="{DynamicResource SurfaceRaisedSubtleBrush}">
+                <Grid>
+                  <TextBlock Text="{Binding UserInitial}" IsVisible="{DynamicResource ProfilePictureMissing}"
+                             FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold" Foreground="{DynamicResource ActionPrimaryBrush}"
+                             HorizontalAlignment="Center" VerticalAlignment="Center" />
+                  <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
+                </Grid>
               </Border>
-
-              <!-- Right: Power Menu Button. Its menu is detached to the native
-                   system overlay so KWin can blur the launcher below it. -->
-              <Button x:Name="PowerButton" Grid.Column="2" Classes="LauncherUtility" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Padding="0"
-                      ToolTip.Tip="{DynamicResource Loc_E40690533ABD}" Click="OnPowerButtonClicked">
-                <controls:DaisyIcon Icon="power" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentPrimaryBrush}"
-                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
-              </Button>
-            </Grid>
+              <TextBlock Text="{Binding UserName}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium"
+                         Foreground="{DynamicResource ContentPrimaryBrush}"
+                         VerticalAlignment="Center"/>
+            </StackPanel>
           </Border>
 
-          <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
-                  HorizontalAlignment="Left" VerticalAlignment="Top"
-                  Background="{DynamicResource ShellFrameOuterEdgeBrush}"
-                  CornerRadius="{DynamicResource RoundedLG}" Padding="1"
-                  BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="100">
-            <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
-                    CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
-              <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
-                      CornerRadius="{DynamicResource RoundedMD}" Padding="4">
-                <StackPanel>
-                    <MenuItem Header="{DynamicResource Loc_DB44B8DB4F05}" Click="OnLockClicked">
-                      <MenuItem.Icon>
-                        <controls:DaisyIcon Icon="lock" Classes="MenuIcon"/>
-                      </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{DynamicResource Loc_D466BCF52EB6}" Click="OnSuspendClicked">
-                      <MenuItem.Icon>
-                        <controls:DaisyIcon Icon="moon" Classes="MenuIcon"/>
-                      </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{DynamicResource Loc_49616145514E}" Click="OnLogOutClicked">
-                      <MenuItem.Icon>
-                        <controls:DaisyIcon Icon="sign-out" Classes="MenuIcon"/>
-                      </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{DynamicResource Loc_6B983A81E5E8}" Click="OnRestartClicked">
-                      <MenuItem.Icon>
-                        <controls:DaisyIcon Icon="arrows-clockwise" Classes="MenuIcon"/>
-                      </MenuItem.Icon>
-                    </MenuItem>
-                    <MenuItem Header="{DynamicResource Loc_A4193461E8AC}" Click="OnShutdownClicked">
-                      <MenuItem.Icon>
-                        <controls:DaisyIcon Icon="power" Classes="MenuIcon"/>
-                      </MenuItem.Icon>
-                    </MenuItem>
-                </StackPanel>
-              </Border>
-            </controls:ShellFrameBorder>
-          </controls:ShellFrameBorder>
+          <TextBlock Grid.Column="1" Text="{DynamicResource Loc_961B2A04403E}"
+                     FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}"
+                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
 
-          <controls:ShellFrameBorder x:Name="LauncherAppContextMenuHost" IsVisible="False" Width="204"
-                  HorizontalAlignment="Left" VerticalAlignment="Top"
-                  Background="{DynamicResource ShellFrameOuterEdgeBrush}"
-                  CornerRadius="{DynamicResource RoundedLG}" Padding="1"
-                  BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="101">
-            <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}" CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
-              <Border Background="{DynamicResource ContextMenuBackgroundBrush}" CornerRadius="{DynamicResource RoundedMD}" Padding="4">
-                <StackPanel>
-                  <MenuItem Header="{DynamicResource Loc_ED077F3D8125}" Click="OnContextOpenClicked"><MenuItem.Icon><controls:DaisyIcon Icon="arrow-square-out" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
-                  <Separator />
-                  <MenuItem Header="{DynamicResource Loc_79614996AD63}" Click="OnAddToDesktopClicked"><MenuItem.Icon><controls:DaisyIcon Icon="desktop" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
-                  <MenuItem Header="{DynamicResource Loc_83F1B0FAC0CE}" Click="OnPinToTaskbarClicked"><MenuItem.Icon><controls:DaisyIcon Icon="push-pin" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
-                  <Separator />
-                  <MenuItem x:Name="LauncherUninstallMenuItem" Header="{DynamicResource Loc_FE199528850A}" Classes="Danger" Click="OnLauncherUninstallClicked"><MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
-                </StackPanel>
-              </Border>
-            </controls:ShellFrameBorder>
-          </controls:ShellFrameBorder>
+          <!-- Right: Power Menu Button. Its menu is detached to the native
+               system overlay so KWin can blur the launcher below it. -->
+          <Button x:Name="PowerButton" Grid.Column="2" Classes="LauncherUtility" HorizontalAlignment="Right" Width="40" Height="40" Padding="0"
+                  ToolTip.Tip="{DynamicResource Loc_E40690533ABD}" Click="OnPowerButtonClicked">
+            <controls:DaisyIcon Icon="power" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Button>
         </Grid>
       </Border>
-    </controls:ShellFrameBorder>
-  </controls:ShellFrameBorder>
+    </Grid>
+
+      <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
+              HorizontalAlignment="Left" VerticalAlignment="Top"
+              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+              CornerRadius="{DynamicResource RoundedLG}" Padding="1"
+              BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="100">
+        <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
+          <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                  CornerRadius="{DynamicResource RoundedMD}" Padding="4">
+            <StackPanel>
+                <MenuItem Header="{DynamicResource Loc_DB44B8DB4F05}" Click="OnLockClicked">
+                  <MenuItem.Icon>
+                    <controls:DaisyIcon Icon="lock" Classes="MenuIcon"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{DynamicResource Loc_D466BCF52EB6}" Click="OnSuspendClicked">
+                  <MenuItem.Icon>
+                    <controls:DaisyIcon Icon="moon" Classes="MenuIcon"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{DynamicResource Loc_49616145514E}" Click="OnLogOutClicked">
+                  <MenuItem.Icon>
+                    <controls:DaisyIcon Icon="sign-out" Classes="MenuIcon"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{DynamicResource Loc_6B983A81E5E8}" Click="OnRestartClicked">
+                  <MenuItem.Icon>
+                    <controls:DaisyIcon Icon="arrows-clockwise" Classes="MenuIcon"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+                <MenuItem Header="{DynamicResource Loc_A4193461E8AC}" Click="OnShutdownClicked">
+                  <MenuItem.Icon>
+                    <controls:DaisyIcon Icon="power" Classes="MenuIcon"/>
+                  </MenuItem.Icon>
+                </MenuItem>
+            </StackPanel>
+          </Border>
+        </controls:ShellFrameBorder>
+      </controls:ShellFrameBorder>
+
+      <controls:ShellFrameBorder x:Name="LauncherAppContextMenuHost" IsVisible="False" Width="204"
+              HorizontalAlignment="Left" VerticalAlignment="Top"
+              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+              CornerRadius="{DynamicResource RoundedLG}" Padding="1"
+              BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="101">
+        <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}" CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
+          <Border Background="{DynamicResource ContextMenuBackgroundBrush}" CornerRadius="{DynamicResource RoundedMD}" Padding="4">
+            <StackPanel>
+              <MenuItem Header="{DynamicResource Loc_ED077F3D8125}" Click="OnContextOpenClicked"><MenuItem.Icon><controls:DaisyIcon Icon="arrow-square-out" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
+              <Separator />
+              <MenuItem Header="{DynamicResource Loc_79614996AD63}" Click="OnAddToDesktopClicked"><MenuItem.Icon><controls:DaisyIcon Icon="desktop" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
+              <MenuItem Header="{DynamicResource Loc_83F1B0FAC0CE}" Click="OnPinToTaskbarClicked"><MenuItem.Icon><controls:DaisyIcon Icon="push-pin" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
+              <Separator />
+              <MenuItem x:Name="LauncherUninstallMenuItem" Header="{DynamicResource Loc_FE199528850A}" Classes="Danger" Click="OnLauncherUninstallClicked"><MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>
+            </StackPanel>
+          </Border>
+        </controls:ShellFrameBorder>
+      </controls:ShellFrameBorder>
+    </Grid>
+  </Border>
 </UserControl>

@@ -35,12 +35,16 @@
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="HorizontalContentAlignment" Value="Stretch" />
       <Setter Property="VerticalContentAlignment" Value="Stretch" />
+      <Setter Property="Transitions"><Transitions><TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" /></Transitions></Setter>
     </Style>
     <Style Selector="Button.FileTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
     </Style>
     <Style Selector="Button.FileTile.Selected /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+    <Style Selector="Button.FileTile:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.98)" />
     </Style>
     <Style Selector="Button.FileRow">
       <Setter Property="Height" Value="40" />
@@ -64,7 +68,8 @@
       </ScrollViewer>
     </Border>
     <Grid Grid.Column="1" RowDefinitions="58,*,Auto">
-      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,200" Margin="14,9" ColumnSpacing="6">
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,200" Margin="14,9" ColumnSpacing="6"
+            Background="{DynamicResource SurfaceRaisedSubtleBrush}">
         <Button x:Name="BackButton" Classes="PickerIconButton" Click="OnBackClicked" ToolTip.Tip="{DynamicResource Loc_4AE57F86C932}" AutomationProperties.Name="{DynamicResource Loc_76900F1BFD16}">
           <controls:DaisyIcon Icon="chevron-left" Size="{DynamicResource IconSizeStandard}" />
         </Button>
@@ -122,7 +127,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="picker:PickerEntry">
-                    <Button Classes="FileTile" Classes.Selected="{Binding IsSelected}" Click="OnEntryClicked" AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Name}">
+                    <Button Classes="FileTile" Classes.Selected="{Binding IsSelected}" Click="OnEntryClicked" DoubleTapped="OnEntryDoubleTapped" AutomationProperties.Name="{Binding Name}" ToolTip.Tip="{Binding Name}">
                       <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="4">
                         <Border Height="58" MaxWidth="96" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="{DynamicResource RoundedSM}" ClipToBounds="True">
                           <Grid>
@@ -143,7 +148,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                   <DataTemplate x:DataType="picker:PickerEntry">
-                    <Button Classes="FileRow" Classes.Selected="{Binding IsSelected}" Click="OnEntryClicked" AutomationProperties.Name="{Binding Name}">
+                    <Button Classes="FileRow" Classes.Selected="{Binding IsSelected}" Click="OnEntryClicked" DoubleTapped="OnEntryDoubleTapped" AutomationProperties.Name="{Binding Name}">
                       <Grid ColumnDefinitions="*,Auto,Auto,Auto" VerticalAlignment="Center">
                         <Grid Grid.Column="0" ColumnDefinitions="Auto,*" VerticalAlignment="Center" Margin="0,0,16,0">
                           <Border Width="26" Height="26" Margin="0,0,8,0" CornerRadius="{DynamicResource RoundedXS}" ClipToBounds="True">
