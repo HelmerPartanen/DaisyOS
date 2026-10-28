@@ -100,9 +100,8 @@ public partial class SettingsView
             var runner = new DaisyOS.System.Processes.SafeCommandRunner();
             var active = await runner.RunAsync("systemctl", ["is-active", "--quiet", "firewalld"], TimeSpan.FromSeconds(2));
             if (!active.Succeeded) return;
-            await runner.RunAsync("pkexec",
-                ["sh", "-c", "firewall-cmd --permanent --add-port=47621/tcp --add-port=47621/udp --add-service=mdns && firewall-cmd --add-port=47621/tcp --add-port=47621/udp --add-service=mdns"],
-                TimeSpan.FromSeconds(60));
+            await runner.RunAsync("firewall-cmd", ["--permanent", "--add-port=47621/tcp", "--add-port=47621/udp"], TimeSpan.FromSeconds(60));
+            await runner.RunAsync("firewall-cmd", ["--reload"], TimeSpan.FromSeconds(30));
         }
         catch { }
     }
@@ -116,6 +115,7 @@ public partial class SettingsView
     {
         try
         {
+            if (command.Action is "pair" or "connect") await EnsureContinuityFirewallAllowedAsync();
             var state = await _continuity.ExecuteAsync(command);
             UpdateContinuityLive(state);
         }
