@@ -272,6 +272,13 @@
             </StackPanel>
           </Button>
 
+          <Button Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="{DynamicResource Loc_8971F58F9CCF}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="Ethernet" Classes="NavIcon SecondaryText" />
+              <TextBlock Text="{DynamicResource Loc_8971F58F9CCF}" Classes="NavLabel" />
+            </StackPanel>
+          </Button>
+
           <Button x:Name="NavAppearance" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Appearance">
             <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
               <controls:DaisyIcon Icon="palette" Classes="NavIcon SecondaryText" />

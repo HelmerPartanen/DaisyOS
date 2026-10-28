@@ -216,6 +216,7 @@ public partial class App : Application
         _hasAnyOpenExternalWindow ||
         (_compositorWindows?.Windows.Any(window => !window.IsMinimized && window.IsOnCurrentWorkspace) ?? false);
     /// <summary>True when the lock screen is active and occluding the desktop workspace.</summary>
+    private DaisyOS.System.Continuity.ContinuitySessionBridge? _continuitySession;
     public bool IsLockScreenActive => _lockScreenWindow is not null;
     /// <summary>LocalSend only accepts inbound transfers while the user has explicitly enabled this temporary window.</summary>
     public bool IsLocalSendReceivingEnabled => _localSendService?.IsReceivingEnabled == true;
@@ -309,6 +310,11 @@ public partial class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var traceLifetime = new CancellationTokenSource();
+            if (IsNativeShellSession)
+            {
+                _continuitySession = new DaisyOS.System.Continuity.ContinuitySessionBridge();
+                _ = _continuitySession.RunAsync(traceLifetime.Token);
+            }
             StartApplicationSettingsService(traceLifetime.Token);
             _ = DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.RunAsync(traceLifetime.Token);
             _ = Task.Run(() => ShellResourceTrace.RunAsync(traceLifetime.Token));
@@ -322,6 +328,7 @@ public partial class App : Application
             gamingAutomation.Start();
             desktop.Exit += (_, _) =>
             {
+                _continuitySession?.Dispose();
                 traceLifetime.Cancel();
                 gamingAutomation.Dispose();
                 _bluetoothConnectionMonitor?.Dispose();
@@ -2805,7 +2812,7 @@ public partial class App : Application
             ?? PowerPreferences.ParseBool(GetPreference(PowerPreferences.LockOnSuspendKey, "true"), true);
         if (lockFirst && _lockScreenWindow is null)
         {
-            LockSession();
+            await LockSessionAsync();
             // Let the lock surface map before the system freezes, so the
             // desktop never flashes on resume.
             await Task.Delay(400);
@@ -2852,8 +2859,15 @@ public partial class App : Application
         }
     }
 
-    public void LockSession()
+    public void LockSession() => _ = LockSessionAsync();
+
+    private Task? _continuityLockTask;
+    private Task LockSessionAsync() => _continuityLockTask is { IsCompleted: false }
+        ? _continuityLockTask : _continuityLockTask = LockSessionCoreAsync();
+
+    private async Task LockSessionCoreAsync()
     {
+        if (_continuitySession is not null) await _continuitySession.SetLockedAsync(true);
         _shellView?.Screenshot.Close();
         if (_gamingOverlay?.IsVisible == true) _gamingOverlay.Toggle();
         if (_volumeIndicator is { } indicator) _ = indicator.DismissAsync();
@@ -2893,6 +2907,7 @@ public partial class App : Application
         _lockScreenWindow.Closed += (_, _) =>
         {
             _lockScreenWindow = null;
+            if (_continuitySession is not null) _ = _continuitySession.SetLockedAsync(false);
             _shellView?.SetLockScreenActive(false);
             if (_shellView is not null) ApplyNativeBottomChromeState(_shellView);
             DesktopOcclusionChanged?.Invoke(this, EventArgs.Empty);

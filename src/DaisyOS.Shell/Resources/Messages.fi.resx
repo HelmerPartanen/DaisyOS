@@ -6408,4 +6408,209 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
   <data name="Loc_90CEEDBC1B28" xml:space="preserve">
     <value>Paina Meta uudelleen avataksesi sovellukset</value>
   </data>
+  <data name="Loc_145AFB394FFA" xml:space="preserve">
+    <value>Accept file</value>
+    <comment>Source: Accept file
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_56EF8F20955F" xml:space="preserve">
+    <value>Address</value>
+    <comment>Source: Address
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_2C5F347A7B32" xml:space="preserve">
+    <value>Both fingerprints match — approve</value>
+    <comment>Source: Both fingerprints match — approve
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_71A4D6249D89" xml:space="preserve">
+    <value>CONNECT BY ADDRESS</value>
+    <comment>Source: CONNECT BY ADDRESS
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_005F94427D8E" xml:space="preserve">
+    <value>CONTINUITY</value>
+    <comment>Source: CONTINUITY
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_F48E8DC778DC" xml:space="preserve">
+    <value>Cancel transfer</value>
+    <comment>Source: Cancel transfer
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_8971F58F9CCF" xml:space="preserve">
+    <value>Continuity</value>
+    <comment>Source: Continuity
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_18BACAC25E71" xml:space="preserve">
+    <value>Continuity couldn’t complete the request. Check the service, session and device connection.</value>
+    <comment>Source: Continuity couldn’t complete the request. Check the service, session and device connection.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_A698D5DBBD4C" xml:space="preserve">
+    <value>Continuity service is unavailable. Start the per-user service, then reopen this page.</value>
+    <comment>Source: Continuity service is unavailable. Start the per-user service, then reopen this page.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_3827C50D35FC" xml:space="preserve">
+    <value>Couldn’t open Continuity settings.</value>
+    <comment>Source: Couldn’t open Continuity settings.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_A2D285B35287" xml:space="preserve">
+    <value>Decline</value>
+    <comment>Source: Decline
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_155106BE1173" xml:space="preserve">
+    <value>Device name</value>
+    <comment>Source: Device name
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_2CF78EB35E2D" xml:space="preserve">
+    <value>Forget and revoke</value>
+    <comment>Source: Forget and revoke
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_7B83F0E258B4" xml:space="preserve">
+    <value>Keyboard &amp; Mouse, app handoff and display streaming are not available in this release.</value>
+    <comment>Source: Keyboard &amp; Mouse, app handoff and display streaming are not available in this release.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_02BD5E50FAF0" xml:space="preserve">
+    <value>No devices found. Check guest Wi-Fi isolation, Avahi, and the TCP firewall, or connect by address.</value>
+    <comment>Source: No devices found. Check guest Wi-Fi isolation, Avahi, and the TCP firewall, or connect by address.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_24B7A249668F" xml:space="preserve">
+    <value>Pairing requires approval on both devices. Compare both full fingerprints before approving.</value>
+    <comment>Source: Pairing requires approval on both devices. Compare both full fingerprints before approving.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_0462F728EAEE" xml:space="preserve">
+    <value>Pause Continuity</value>
+    <comment>Source: Pause Continuity
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_F2F5F364F410" xml:space="preserve">
+    <value>Public identity fingerprint</value>
+    <comment>Source: Public identity fingerprint
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_578C157A106B" xml:space="preserve">
+    <value>Receive files</value>
+    <comment>Source: Receive files
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_B7297226FD1F" xml:space="preserve">
+    <value>Save name</value>
+    <comment>Source: Save name
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_3C857C11B905" xml:space="preserve">
+    <value>Send selected file</value>
+    <comment>Source: Send selected file
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_2E862E602434" xml:space="preserve">
+    <value>Send to DaisyOS device…</value>
+    <comment>Source: Send to DaisyOS device…
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_2DE69D5AF10E" xml:space="preserve">
+    <value>Sharing is unavailable while locked or outside an active DaisyOS session.</value>
+    <comment>Source: Sharing is unavailable while locked or outside an active DaisyOS session.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_55F513124AD7" xml:space="preserve">
+    <value>Start Continuity service</value>
+    <comment>Source: Start Continuity service
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_6B3507C09568" xml:space="preserve">
+    <value>THIS DEVICE</value>
+    <comment>Source: THIS DEVICE
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_3C14B833D3CD" xml:space="preserve">
+    <value>Text clipboard</value>
+    <comment>Source: Text clipboard
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_35AB063D1B46" xml:space="preserve">
+    <value>Visible to nearby devices</value>
+    <comment>Source: Visible to nearby devices
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_B27A609E209A" xml:space="preserve">
+    <value>Works across local Wi-Fi and Ethernet. Both devices must be reachable on the same local network.</value>
+    <comment>Source: Works across local Wi-Fi and Ethernet. Both devices must be reachable on the same local network.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_DBBD691E4523" xml:space="preserve">
+    <value>hostname:47621 or [IPv6]:47621</value>
+    <comment>Source: hostname:47621 or [IPv6]:47621
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_FCE3AA8372E7" xml:space="preserve">
+    <value>Continuity service is unavailable.</value>
+    <comment>Source: Continuity service is unavailable.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_8A3D08ABC9E5" xml:space="preserve">
+    <value>File sharing</value>
+    <comment>Source: File sharing
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_6673D0361052" xml:space="preserve">
+    <value>Resume Continuity</value>
+    <comment>Source: Resume Continuity
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_054A1127F43D" xml:space="preserve">
+    <value>Couldn’t update Continuity startup. Check that the user service is installed.</value>
+    <comment>Source: Couldn’t update Continuity startup. Check that the user service is installed.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_F002C9B78395" xml:space="preserve">
+    <value>SEND FILE</value>
+    <comment>Source: SEND FILE
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_2D7AD28A0E0E" xml:space="preserve">
+    <value>Selected file</value>
+    <comment>Source: Selected file
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_FD61FCD6211A" xml:space="preserve">
+    <value>Archive the folder first, then send the archive with Continuity.</value>
+    <comment>Source: Archive the folder first, then send the archive with Continuity.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_8E0D01A5A323" xml:space="preserve">
+    <value>Device pairing</value>
+    <comment>Source: Device pairing
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_5CE52B4912C5" xml:space="preserve">
+    <value>Pair trusted DaisyOS devices on the local network</value>
+    <comment>Source: Pair trusted DaisyOS devices on the local network
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_49B376C48B04" xml:space="preserve">
+    <value>Share copied text with a trusted device</value>
+    <comment>Source: Share copied text with a trusted device
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_67A4ADDF77BB" xml:space="preserve">
+    <value>Send files to a paired DaisyOS device</value>
+    <comment>Source: Send files to a paired DaisyOS device
+  Continuity; English fallback pending translation review.</comment>
+  </data>
+  <data name="Loc_7CC295474731" xml:space="preserve">
+    <value>Share clipboard text and files with trusted DaisyOS devices on your local network.</value>
+    <comment>Source: Share clipboard text and files with trusted DaisyOS devices on your local network.
+  Continuity; English fallback pending translation review.</comment>
+  </data>
 </root>

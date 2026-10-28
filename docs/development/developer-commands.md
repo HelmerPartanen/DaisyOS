@@ -48,3 +48,14 @@ scripts/build-librepods.sh
 sudo scripts/install-airpods.sh --install
 systemctl --user daemon-reload
 systemctl --user start daisyos-librepods.service
+
+# CONTINUITY (opt-in native session MVP)
+dotnet test tests/DaisyOS.Continuity.Tests/DaisyOS.Continuity.Tests.csproj
+scripts/build-continuity.sh
+scripts/install-continuity.sh
+systemctl --user daemon-reload
+systemctl --user start daisyos-continuity.service
+# Review full fingerprint pairing and limitations before enabling sharing:
+# docs/continuity/OPERATIONS.md
+# Isolated smoke test; does not install/enable a real user service:
+dbus-run-session -- python3 scripts/test-continuity-daemon.py

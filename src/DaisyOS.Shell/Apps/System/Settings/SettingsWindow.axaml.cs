@@ -24,6 +24,8 @@ public partial class SettingsWindow : Window
         base.OnClosed(e);
     }
 
+    public void PrepareContinuitySend(string path) => SettingsContent.PrepareContinuitySend(path);
+
     public void SelectCategory(string category) => SettingsContent.SelectCategory(category);
 
     private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)

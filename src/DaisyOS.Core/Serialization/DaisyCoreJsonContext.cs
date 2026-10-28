@@ -8,6 +8,8 @@ namespace DaisyOS.Core.Serialization;
     WriteIndented = true,
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(DaisyOS.Core.Continuity.ContinuityCommand))]
+[JsonSerializable(typeof(DaisyOS.Core.Continuity.ContinuityStatus))]
 [JsonSerializable(typeof(ControllerKeybindingsConfig))]
 [JsonSerializable(typeof(GameArtworkMetadata))]
 [JsonSerializable(typeof(GameArtworkAssets))]

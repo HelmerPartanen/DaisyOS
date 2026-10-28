@@ -1366,6 +1366,21 @@ public partial class FilesWindow : Window
         }
     }
 
+    private void OnContinuitySendClicked(object? sender, RoutedEventArgs e)
+    {
+        if (GetContextEntry(sender) is not { } entry) return;
+        if (entry.IsDirectory)
+        {
+            (Application.Current as App)?.Feedback.Show(Loc.Get("Archive the folder first, then send the archive with Continuity."));
+            return;
+        }
+        var sibling = global::System.IO.Path.GetFullPath(global::System.IO.Path.Combine(AppContext.BaseDirectory, "..", "Settings", "DaisyOS.Settings"));
+        var binary = File.Exists(sibling) ? sibling : "daisyos-settings";
+        var result = new DaisyOS.System.Processes.SafeProcessLauncher().Launch(binary,
+            ["--continuity-send=" + entry.Path, "--category=Continuity"]);
+        if (!result.Succeeded) (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t open Continuity settings."));
+    }
+
     private void OnShareEntryContextClicked(object? sender, RoutedEventArgs e)
     {
         if (GetContextEntry(sender) is not { } entry)

@@ -83,13 +83,16 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private static readonly (string Title, string[] Categories)[] NavigationGroups =
         [
             ("SYSTEM", ["System", "Displays", "Sound"]),
-            ("CONNECTIONS", ["Network", "Ethernet", "Bluetooth"]),
+            ("CONNECTIONS", ["Network", "Ethernet", "Bluetooth", "Continuity"]),
             ("PERSONALIZATION", ["Appearance", "Notifications", "Apps"]),
             ("MANAGEMENT", ["Storage", "Accessibility", "Input", "DateTime", "About"])
         ];
 
         private static readonly SettingsSearchEntry[] SearchIndex =
         [
+            new("Continuity", "CONTINUITY", "Device pairing", "Pair trusted DaisyOS devices on the local network", "continuity pair device laptop desktop lan"),
+            new("Continuity", "CONTINUITY", "Text clipboard", "Share copied text with a trusted device", "continuity clipboard copy paste"),
+            new("Continuity", "CONTINUITY", "File sharing", "Send files to a paired DaisyOS device", "continuity file transfer send receive"),
             new("System", "POWER", "Power mode", "Battery saver, performance mode, energy", "power battery energy performance saver"),
             new("System", "DESKTOP", "System bar date", "Show the date beside the clock", "clock date taskbar system bar"),
             new("Displays", "DISPLAY", "Resolution", "Choose display resolution", "resolution display screen size monitor 1080p 1440p 4k"),
@@ -210,6 +213,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             };
             DetachedFromVisualTree += (_, _) =>
             {
+                _continuityPage?.Cancel();
                 _heicPreviewTimer.Stop();
                 _connectionsRefreshTimer.Stop();
                 StopAutomaticBluetoothDiscovery();
@@ -496,6 +500,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 "Network" => Loc.Get("Wi-Fi"),
                 "Ethernet" => Loc.Get("Ethernet"),
                 "Bluetooth" => Loc.Get("Bluetooth"),
+                "Continuity" => Loc.Get("Continuity"),
                 "Notifications" => Loc.Get("Notifications"),
                 "Apps" => Loc.Get("Apps"),
                 "InstalledApps" => Loc.Get("Installed apps"),
@@ -560,6 +565,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 "Network" => Loc.Get("Manage Wi-Fi and wireless networks."),
                 "Ethernet" => Loc.Get("Manage your wired connection."),
                 "Bluetooth" => Loc.Get("Connect and manage nearby accessories."),
+                "Continuity" => Loc.Get("Share clipboard text and files with trusted DaisyOS devices on your local network."),
                 "Notifications" => Loc.Get("Control when the desktop may interrupt you."),
                 "Apps" => Loc.Get("Manage installed applications and choose which apps open common content."),
                 "InstalledApps" => Loc.Get("Find, repair, or remove applications installed on this computer."),
@@ -580,6 +586,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 case "Network": BuildNetwork(buildVersion); break;
                 case "Ethernet": BuildEthernet(buildVersion); break;
                 case "Bluetooth": BuildBluetooth(buildVersion); break;
+                case "Continuity": BuildContinuity(buildVersion); break;
                 case "Notifications": BuildNotifications(); break;
                 case "Apps": BuildApps(buildVersion); break;
                 case "InstalledApps": BuildInstalledApplicationsSection(buildVersion); break;

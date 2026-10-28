@@ -2,8 +2,8 @@ syntax = "proto3";
 package daisyos.continuity.v1;
 option csharp_namespace = "DaisyOS.Continuity.Protocol.V1";
 
-// Experimental contract. No production network endpoint or generated binding
-// consumes it yet. Pairing is deliberately absent pending reviewed design.
+// Versioned Continuity contract. Bootstrap carries only a public certificate
+// before TLS; every Envelope is carried inside mutually authenticated TLS.
 message Envelope {
   uint32 protocol_major = 1;
   uint32 protocol_minor = 2;
@@ -12,6 +12,7 @@ message Envelope {
     Hello hello = 10;
     Ping ping = 11;
     Pong pong = 12;
+    PairConsent pair_consent = 13;
     ClipboardOffer clipboard_offer = 20;
     ClipboardGet clipboard_get = 21;
     ClipboardData clipboard_data = 22;
@@ -22,7 +23,7 @@ message Envelope {
     FileCancel file_cancel = 34;
     Error error = 40;
   }
-  reserved 4 to 9, 13 to 19, 23 to 29, 35 to 39;
+  reserved 4 to 9, 14 to 19, 23 to 29, 35 to 39;
 }
 enum Capability {
   CAPABILITY_UNSPECIFIED = 0;
@@ -74,3 +75,8 @@ message Error {
   Code code = 1;
   string safe_description = 2;
 }
+
+// Public bootstrap only; never grants trust. Certificates are validated by the
+// platform TLS chain engine and full fingerprints must be verified locally.
+message Bootstrap { uint32 major = 1; bytes certificate = 2; string name = 3; bool pairing = 4; uint32 port = 5; }
+message PairConsent { bool approved = 1; }

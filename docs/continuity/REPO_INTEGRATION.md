@@ -46,21 +46,29 @@ Keep the existing LocalSend UX and protocol working independently.
 
 ## Implementation decision
 
-Use C# for shared policy models and thin Settings/Files adapters. Keep these in
-`src/DaisyOS.Core/Continuity` with no platform dependencies or activation hooks.
-No existing general-purpose authenticated peer daemon was found. The proposed
-Rust Tokio/Quinn daemon remains a suitable separate networking process, with
-Avahi system D-Bus and session D-Bus UI integration. Do not add Rust to the shell
-render process. Select/pin the complete Rust dependency graph and generated
-bindings together when the daemon is implemented; this foundation introduces no
-new packages and makes no assertion that pairing has been cryptographically
-reviewed. A reviewed pairing design is a release blocker, not an invitation to
-invent a TLS verifier or comparison algorithm.
+The implementation now uses `src/DaisyOS.Continuity` as a separate .NET 10
+executable, referencing the existing System/Core layers. It uses platform TLS 1.3
+with certificate pinning/full-fingerprint pairing, versioned generated Protobuf,
+Avahi's system D-Bus EntryGroup API plus the long-lived Avahi browser adapter, and
+session D-Bus IPC. Settings/Files remain in the existing Avalonia design system.
 
-Proposed (not existing) IPC: `org.daisyos.Continuity1`, object path
-`/org/daisyos/Continuity1`. IPC caller authentication, prompt correlation and
-session ownership need implementation before it may change trust. Discovery
-records are candidates only; protocol Hello never establishes trust.
+This adapts the proposed Rust/QUIC stack: there is no existing Rust workspace,
+libmsquic is absent, and reusing the existing C# runtime avoids a parallel daemon
+stack. Network transport is TCP 47621 / `_daisycont._tcp.local.`, not UDP. Separate
+bounded connections carry operations. See PROTOCOL.md for explicit framing and
+security design. It is not wire-compatible with an imagined UDP implementation.
+
+Actual IPC: `org.daisyos.Continuity1`, `/org/daisyos/Continuity1`, Execute(s)->s.
+`src/DaisyOS.System/Continuity/ContinuityClient.cs` is the UI adapter;
+`ContinuitySessionBridge.cs` supplies shell lifetime/lock grants.
+`SettingsView.Continuity.cs` implements the Settings page; Files adds a separate
+send action. Quick Settings exposes a pause/resume button only when enabled.
+Identity/private state and consent enforcement belong to the daemon, not Settings.
+
+Generated bindings live in `src/DaisyOS.Continuity/Generated`; the package runtime
+and code generator are pinned and reproducible. There is no accept-all TLS callback.
+Pairing verifies both complete certificate fingerprints on both physical devices;
+it is implemented but still needs independent review and real-device acceptance.
 
 ## Host tooling and constraints
 
@@ -81,11 +89,16 @@ Run `dotnet build DaisyOS.sln --no-restore`,
 `scripts/run-kwin-prototype.sh` are the documented nested-session workflow.
 See [TEST_MATRIX.md](TEST_MATRIX.md) for actual results and manual checks.
 
-This change establishes milestone 0 policy/contracts and preserves the master
-plan. Daemon, IPC, secure pairing, discovery, clipboard and file transfer are
-not implemented by these documents or the isolated core policy. Universal Input,
-handoff and streaming remain later milestones. No service is installed or
-network port opened. Do not expose UI toggles that suggest these features work.
+The MVP code paths now exist: independent daemon, IPC, identity/trust, discovery,
+manual address connection, pairing approvals, text clipboard adapter, consented
+resumable file transfer, Settings/Files/Quick Settings, notifications and packaging.
+The per-user service stays disabled for data sharing until explicit opt-in and
+valid native-session authorization. No actual user service was installed or enabled
+during implementation checks. Universal Input, handoff and streaming remain absent.
+
+This is implementation progress, not completed release acceptance. Real-device
+clipboard/network/fault/UI tests and independent protocol review are outstanding.
+See TEST_MATRIX.md for exact evidence and remaining limitations.
 
 Next integration risks: two sessions sharing one user bus; asynchronous revocation
 races; lock signals arriving after data dispatch; clipboard selection lifetimes;

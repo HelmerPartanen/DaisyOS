@@ -1,74 +1,100 @@
-# Continuity security and release gates
+# Continuity security status
 
-Status: requirements and isolated policy tests, not a security-reviewed service.
-All real network feature exchange remains unavailable in this foundation.
+The MVP has implemented security boundaries and local automated coverage. It is
+**not independently security-reviewed or accepted on two real devices**. Input,
+handoff and display capture are unavailable. Preserve those release gates.
 
-Trust must originate in reviewed verified pairing with explicit local approval
-on both devices. Hostname, address, TXT ID, self-signed certificates, Hello claims
-and matching display names cannot establish trust. Neither LocalSend's permissive
-certificate validation nor DaisyOS's debug/mock password bypass is a Continuity
-authentication primitive. Debug builds must enforce the same peer checks as release.
+## Identity, TLS and pairing
 
-Use reviewed identity, certificate binding, authenticated pairing and TLS peer
-verification libraries. Selecting an actual reviewed pairing construction and
-verification implementation is outstanding and blocks real peer data. Do not
-implement a home-grown SAS hash, PIN exchange, key agreement or accept-all TLS
-callback to get an end-to-end demo. Pairing sessions need finite lifetimes,
-role/transcript binding, replay resistance, quotas and local prompt correlation.
+An independent ECDSA P-256 identity is generated with platform cryptography for
+each user installation. Its self-signed client/server certificate binds identity
+to TLS; device ID is the full certificate's SHA-256 fingerprint. Private material
+lives in a protected state directory, not discovery, telemetry or UI payloads.
+TLS 1.3 supplies fresh ephemeral transport keys. The identity certificate lasts
+five years; replacing/renewing it changes the pin and requires new pairing.
 
-Per-peer permissions default off. Receiver checks current trust, authenticated
-connection, enabled capability and active unlocked graphical session before
-dispatch. File writes also need unexpired consent scoped to peer, transfer ID,
-manifest and chosen destination. A generic consent boolean cannot substitute
-for those bindings; the isolated policy accepts only already-validated inputs.
-Pause, disable, lock, user switch, logout, owner loss, disconnect and revocation
-must cancel sensitive in-flight operations and invalidate session grants. Recheck
-before clipboard publication or atomic file commit to close asynchronous races.
+Unknown roots are candidate identities only. The platform X509 verifier validates
+possession/chain/usage/expiry, and actual peer certificate bytes must match the
+bootstrap. Existing peer connections must match remembered identity before any
+feature dispatch. There is no accept-all certificate callback, global shared key,
+bare PIN encryption, custom key exchange or truncated SAS construction.
 
-## Storage and file safety
+Pairing uses conventional full certificate-fingerprint verification on both physical
+devices, followed by explicit local approvals over that mutually key-authenticated
+channel. The user compares both complete fingerprints in both directions. This
+requires careful human verification; it is less compact than a reviewed PAKE/SAS
+flow and must not be described as audited. A name/IP/discovery record is never proof.
+Unknown candidates receive no capability data. Consent expires, is correlated with
+a live request, and cannot survive revoke/owner loss. Fresh pairing after revoke
+requires new approval; a trust epoch prevents stale approvals restoring authority. Persisted
+file consent and completion receipts also bind to the current permission-grant ID,
+so a later re-pair or disabled permission cannot revive an old receive approval.
 
-Proposed paths: `$XDG_STATE_HOME/daisyos/continuity` for private identity/trust/
-resume records, `$XDG_CONFIG_HOME/daisyos/continuity` for nonsecret preferences.
-Apply XDG fallbacks under the user's home when unset. Directories 0700, files
-0600; refuse unsafe ownership, symlinks and unexpected record versions. Secret
-Service may be used if available; no existing first-party secret adapter exists.
-Separate identity material from ordinary settings backups; restoring/cloning
-an installation must not silently clone identities. Persist no clipboard history.
+## Receiving-side policy
 
-Files must land in receiver-selected storage using safe basenames and symlink-safe
-operations anchored to a directory handle. Reject absolute paths, traversal,
-separators, NUL/control characters, device files and directory offers. Reserve
-space, limit sizes/counts/concurrency, stream hashes, stage without overwriting
-existing files, verify digest, atomically publish. Cancellation/disk-full/crash
-must leave no apparently completed corrupt file; quarantine resumable partials.
-Peer-provided MIME and display names never authorize execution or path selection.
+Sharing requires global enable, active authorized user session, no pause/lock,
+current trust and the peer's explicit capability grant. Clipboard and files default
+off after pairing; both endpoints enable their respective permission. File writes
+also require receive consent, scoped to the exact authenticated manifest, or its
+unexpired specific resume approval. Support negotiation grants no permission.
 
-## IPC and session boundary
+Shell authorization comes from a long-lived unique D-Bus owner, not the Settings
+window. logind Active/State/LockedHint and suspend changes are monitored. Lock/pause,
+logout, user switch, bus loss, owner loss and revoke cancel operations; final file
+publication and clipboard-source setup also synchronize against cancellation.
+There is no pre-login sharing, remote unlocking or remote input. An unavailable
+session authority fails closed. A second same-user graphical session cannot own
+the same shell authority name.
 
-Versioned session D-Bus does not by itself prove that a method invocation is
-an approved local user gesture. Validate caller UID/session and response ownership,
-bind prompts to live requests, and reject stale replies after owner changes.
-Handle multiple graphical sessions per user explicitly; do not expose clipboard
-or UI prompts to the wrong session. No service should activate networking when
-there is no authorized graphical session. UI not running must not imply consent.
+D-Bus method callers must have the same UID. Session-grant methods additionally
+require the shell authority's actual unique owner. Same-user local malware remains
+outside this IPC isolation claim; a session bus is not an application sandbox.
+The internal dependency seam used by tests substitutes session presence and a
+private Downloads directory. Program never exposes that seam through a command,
+environment variable, Debug mode or user setting; real TLS checks remain enabled.
 
-Pure policy state is not cryptographic verification or an in-flight cancellation
-mechanism. There is deliberately no installed service or UI enable switch yet.
+## Storage and transfers
 
-## Required security tests before enablement
+State directories must be user-owned real directories with no group/other access;
+private files are 0600 and directories 0700. statx checks type, owner, permissions
+and symlinks before loading. New private writes use unique exclusive temporary
+files, fsync and atomic rename with parent-directory synchronization. Startup probes
+state writability; failure to persist settings disables sharing and invalidates the
+old on-disk settings where possible rather than silently retaining old enabled trust. Key bytes exported during creation are cleared afterward.
+Identity is separate from ordinary preferences and must not be cloned/backed up
+as normal settings. Unknown schemas/unsafe existing state fail startup.
 
-Impersonation, forged transport certificates, identity change, downgrade,
-replayed confirmations, duplicate pairing, unexpected requests, quotas, permission
-revocation races, lock during clipboard/file commit, daemon/IPC owner loss,
-malicious lengths and UTF-8, path traversal/symlink races, disk exhaustion,
-resume manifest tampering and unknown persistent schema versions.
+Network offers supply basenames only. Reject traversal, absolute/separator paths,
+controls, oversized names, lengths and offsets, special source files and concurrent
+manifest collisions. Staging and final private directories reject symlinks; outputs
+use exclusive temporary names and no-overwrite publication. Partial files are never
+presented as completed files. Hash mismatch removes staging/approval. File opening
+is only through the local user's notification action, never a network command.
 
-Input remains disabled until compositor/portal capture AND injection are supported
-with local target consent and a compositor-reserved emergency shortcut. Never
-use /dev/uinput or remote lock-screen control. Keep optional streaming separate.
+Bounds include 8 incoming sockets, 2 incoming files, 2 outgoing files, separate
+clipboard slots, 16 prompts, 64 peers, 1 MiB text, 64 KiB chunks, 100 GiB/file,
+finite consent/handshake/inactivity deadlines and a bounded expiring clipboard ID
+cache. File buffers do not grow with file size. No root, /dev/uinput, HTTP control,
+WAN routes, subnet scanning, firewall disablement or debug authentication bypass.
 
-Discovery leaks device presence on shared LANs even with encrypted data. Provide
-visibility controls and advertise no private payloads. Log only stable safe event
-codes and operational metadata; no contents, private keys, pairing secrets or
-authentication tokens. Same-user local malware is outside the daemon's isolation
-claim. Do not open WAN routes, disable firewalls or introduce an HTTP control API.
+Clipboard is potentially sensitive. No payload logs/history/state; source ownership
+is dropped on lock/pause/revoke, and local contents are not exported while disabled.
+Explicit text selection only; MIME/digest/UTF-8 are checked. Clipboard-adapter hints
+about sensitive content are not reliable secret detection. Managed temporary strings
+and third-party selection processes prevent claiming complete memory zeroization.
+
+## Outstanding release evidence
+
+Negative local tests cover changed pins, default-disabled storage, unsafe state,
+malicious filenames/public addresses, denied file permission, digest corruption,
+real TLS1.3 mutual authentication, specific-manifest resume, and Core lock/revoke/
+late-callback rules. The service smoke test uses an isolated user bus with sharing
+disabled and verifies clean SIGTERM. These do not establish complete MITM/pairing UI,
+real clipboard ownership, disk exhaustion, symlink races under local compromise,
+roaming/suspend/crash recovery or production accessibility acceptance.
+
+Before enabling in a release, obtain independent pairing/protocol review and run
+TEST_MATRIX.md on two real DaisyOS devices, including full fingerprint rejection,
+replay/downgrade, revoke/lock races, disk-full, crash-resume and malformed frames.
+Never claim these unperformed checks passed. Logs use stable safe codes and omit
+private keys, clipboard/file payloads and authentication material.

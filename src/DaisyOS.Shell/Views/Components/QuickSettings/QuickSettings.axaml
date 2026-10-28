@@ -230,6 +230,9 @@
             </Grid>
           </Border>
 
+          <Button x:Name="ContinuityPauseButton" IsVisible="False" Classes="ShellButton"
+                  HorizontalAlignment="Stretch" Click="OnContinuityPauseClicked" />
+
           <StackPanel x:Name="AirPodsControls" IsVisible="False" Spacing="8">
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">
               <StackPanel Grid.Column="0" Spacing="4">

@@ -108,6 +108,35 @@ public partial class QuickSettings : UserControl
         SetQuickSettingsPage(QuickSettingsPage.Main);
         RefreshStatus();
         WarmConnectionLists();
+        _ = RefreshContinuityQuickControlAsync();
+    }
+
+    private async Task RefreshContinuityQuickControlAsync()
+    {
+        var button = this.FindControl<Button>("ContinuityPauseButton");
+        if (button is null) return;
+        try
+        {
+            var state = await new DaisyOS.System.Continuity.ContinuityClient().ExecuteAsync(new("status"));
+            button.IsVisible = state.Enabled;
+            button.Content = state.Paused ? Loc.Get("Resume Continuity") : Loc.Get("Pause Continuity");
+        }
+        catch { button.IsVisible = false; }
+    }
+
+    private async void OnContinuityPauseClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is not Button button) return;
+        button.IsEnabled = false;
+        try
+        {
+            var client = new DaisyOS.System.Continuity.ContinuityClient();
+            var state = await client.ExecuteAsync(new("status"));
+            await client.ExecuteAsync(new("pause", Allowed: !state.Paused));
+            await RefreshContinuityQuickControlAsync();
+        }
+        catch { (Application.Current as App)?.Feedback.Show(Loc.Get("Continuity service is unavailable.")); }
+        finally { button.IsEnabled = true; }
     }
 
     private void WarmConnectionLists()

@@ -10,6 +10,8 @@ internal static class Program
         app => { app.UseDesktopSettings(); return new SettingsWindow(); },
         (window, activation) =>
         {
+            if (activation.FirstOrDefault(arg => arg.StartsWith("--continuity-send=", StringComparison.Ordinal)) is { } send)
+                ((SettingsWindow)window).PrepareContinuitySend(send["--continuity-send=".Length..]);
             if (activation.FirstOrDefault(arg => arg.StartsWith("--category=", StringComparison.Ordinal)) is { } category)
                 ((SettingsWindow)window).SelectCategory(category["--category=".Length..]);
         });

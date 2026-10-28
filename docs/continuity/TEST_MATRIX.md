@@ -150,3 +150,69 @@ Second-increment results: focused Core tests exited 0, **34 passed, 0 failed,
 0 errors** (2m03.26s). `git diff --check` passed. The existing full graphical
 suite was not rerun; its previously recorded failures remain unresolved.
 Logs: `artifacts/continuity/peer-session-tests.log` and `peer-session-build.log`.
+
+## MVP implementation increment (2026-10-28)
+
+Current implementation includes the real per-user daemon, private identity/trust,
+platform mutual TLS 1.3, full-fingerprint pairing approvals, generated Protobuf,
+Avahi/manual address connectivity, authorized Wayland clipboard bridge, consented
+resumable verified file transfer, native Settings/Files/Quick Settings, actionable
+notifications, user installer and release packaging. Transport adaptation is TCP
+47621 (`_daisycont._tcp`), documented in PROTOCOL.md. There is no QUIC implementation.
+
+Local evidence:
+
+- `dotnet test tests/DaisyOS.Continuity.Tests/DaisyOS.Continuity.Tests.csproj --no-restore -v minimal`:
+  **32 passed, 0 failed**. Real TLS1.3 mutual authentication/Hello, changed identity
+  rejection, persistent private identity/default-off preferences, unsafe state,
+  unknown schema, hostile basenames/public addresses, approved partial resume,
+  corrupt payload rejection, default-off file permission, lock before publication,
+  lost-ACK completion receipt, stale pre-revocation grant requiring new consent,
+  persisted pause/current-state diagnostic consistency, and real-TLS pairing
+  requiring both local approvals (including rejection and
+  default-off feature permissions after successful pairing).
+- `dotnet test tests/DaisyOS.Core.Tests/DaisyOS.Core.Tests.csproj --no-restore -v minimal`:
+  **34 passed, 0 failed**.
+- `dotnet build DaisyOS.sln --no-restore -v quiet`: **0 errors**. An initial full
+  implementation build reported 59 warnings; a subsequent incremental build had
+  0 warnings. Final build timing/output is retained in local artifacts.
+- `dbus-run-session -- python3 scripts/test-continuity-daemon.py`: **passed**;
+  real D-Bus status, sharing disabled, private temporary state, clean SIGTERM.
+- `scripts/build-continuity.sh`: framework-dependent Release publish **passed**.
+- Installer run into an owned temporary prefix containing spaces, generated unit
+  verified with systemd-analyze, and published launcher exercised by the isolated
+  daemon smoke script: **passed**. No actual user service was installed/enabled.
+- Selected headless Settings/Quick Settings/lock-screen layout suite: **23 passed**
+  before final copy/resource updates; the final rerun is recorded below.
+- Generated protocol syntax/bindings, new resource keys/satellite coverage, shell
+  script syntax and `git diff --check`: checked locally.
+
+The full localization verifier is blocked by an **unchanged baseline** literal
+`Widget Gallery` in `Views/Components/Widgets/WidgetLibraryOverlay.axaml` (confirmed
+in HEAD). The new Continuity resources were checked separately; new Finnish entries
+use explicit English fallbacks pending translation review. The previously recorded
+full-suite failures remain unresolved. The full production native/ISO publication
+pipeline was not run; only the daemon publish and staged installation were exercised.
+
+Transfer integration tests inject an active-session authority and private test
+Downloads directory through an internal composition seam, while retaining real TLS.
+Program exposes no environment/Debug authentication bypass. These tests validate
+transfer/policy boundaries; they do not pretend to prove physical session locking,
+pairing UI, compositor authorization or Wi-Fi/Ethernet behavior.
+
+The next gate is [TWO_DEVICE_TEST.md](TWO_DEVICE_TEST.md), after the user pushes and
+pulls the same revision onto the desktop. No hardware throughput/latency, real
+Wayland clipboard, two-device pairing or full fault acceptance is claimed. Universal
+Input, handoff and display streaming remain deferred as specified for later releases.
+
+
+Final added coverage includes trusted manual reconnect without resetting permissions
+(IPv4 and IPv4-mapped IPv6), delayed/repeated clipboard echo suppression, expiry
+with a controlled clock, and the injection-tag memory bound.
+
+Known clipboard limitation: the wl-clipboard fallback identifies injected selections
+by a bounded five-minute digest cache. A genuine local re-copy of text recently
+injected by a peer can be conservatively suppressed. This avoids echo loops but
+is not complete origin-aware clipboard semantics. A native origin-aware adapter
+and real compositor tests remain required before production acceptance. Include
+re-copying an earlier remote value after an intervening local copy in hardware tests.

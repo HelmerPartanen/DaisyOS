@@ -680,6 +680,7 @@
                             <MenuItem Header="{DynamicResource Loc_B35D349F0433}" Click="OnShareEntryContextClicked">
                               <MenuItem.Icon><controls:DaisyIcon Icon="LocalSend" Classes="MenuIcon"/></MenuItem.Icon>
                             </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_2E862E602434}" Click="OnContinuitySendClicked" />
                             <MenuItem Header="{DynamicResource Loc_033FC0445B90}" Click="OnCompressEntryContextClicked">
                               <MenuItem.Icon><controls:DaisyIcon Icon="file-zip" Classes="MenuIcon"/></MenuItem.Icon>
                             </MenuItem>
@@ -861,6 +862,7 @@
                           <MenuItem Header="{DynamicResource Loc_B35D349F0433}" Click="OnShareEntryContextClicked">
                             <MenuItem.Icon><controls:DaisyIcon Icon="LocalSend" Classes="MenuIcon"/></MenuItem.Icon>
                           </MenuItem>
+                          <MenuItem Header="{DynamicResource Loc_2E862E602434}" Click="OnContinuitySendClicked" />
                           <MenuItem Header="{DynamicResource Loc_033FC0445B90}" Click="OnCompressEntryContextClicked">
                             <MenuItem.Icon><controls:DaisyIcon Icon="file-zip" Classes="MenuIcon"/></MenuItem.Icon>
                           </MenuItem>

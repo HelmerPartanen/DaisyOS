@@ -75,7 +75,7 @@ fi
 
 rm -rf "$output_dir"
 rm -f "$output_mode_file"
-for application in Files Notes Settings DiskManager; do
+for application in Files Notes Settings DiskManager Continuity; do
   dotnet restore "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --runtime linux-x64 "${publish_properties[@]}"
 done
@@ -102,11 +102,13 @@ cp -a "$repo_root/artifacts/cursors/"DaisyOS-* "$output_dir/cursor-themes/"
 
 # Publish into its own directory so composite ReadyToRun ownership cannot
 # overwrite the desktop’s runtime assemblies.
-for application in Files Notes Settings DiskManager; do
+for application in Files Notes Settings DiskManager Continuity; do
   dotnet publish "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --configuration Release --runtime linux-x64 --self-contained true \
     --no-restore --output "$output_dir/apps/$application" "${publish_properties[@]}"
 done
+
+install -m644 "$repo_root/packaging/continuity/daisyos-continuity.service" "$output_dir/daisyos-continuity.service"
 
 if [[ "$fast" == true ]]; then
   printf 'fast\n' > "$output_mode_file"
