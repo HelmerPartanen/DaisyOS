@@ -9,7 +9,7 @@ if [[ ! -x "$payload/DaisyOS.Continuity" ]]; then
   exit 1
 fi
 install -d "$prefix/lib/daisyos/continuity" "$prefix/bin" "$prefix/share/systemd/user"
-cp -a "$payload/." "$prefix/lib/daisyos/continuity/"
+cp -af "$payload/." "$prefix/lib/daisyos/continuity/"
 python3 - "$prefix" "$repo_root/packaging/continuity/daisyos-continuity.service" <<'PY'
 import pathlib, shlex, sys
 prefix = pathlib.Path(sys.argv[1]).resolve()

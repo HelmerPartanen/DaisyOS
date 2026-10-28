@@ -1,4 +1,4 @@
-# DaisyOS resource audit and remediation plan — 2026-10-22
+  # DaisyOS resource audit and remediation plan — 2026-10-22
 
 ## Conclusion
 

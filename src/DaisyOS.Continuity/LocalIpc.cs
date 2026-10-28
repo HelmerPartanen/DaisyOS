@@ -72,11 +72,12 @@ public sealed partial class ContinuityDaemon
                 long revision;
                 lock (_gate) revision = ++_sessionRevision;
                 if (await ShellOwnerAsync() != sender) throw new UnauthorizedAccessException();
-                var valid = command.Allowed && await SessionUnlockedAsync(command.Value);
+                var sessionId = string.IsNullOrEmpty(command.Value) ? await ResolveSeatSessionIdAsync() : command.Value;
+                var valid = command.Allowed && await SessionUnlockedAsync(sessionId);
                 lock (_gate)
                 {
                     if (revision != _sessionRevision) throw new UnauthorizedAccessException();
-                    _shellOwner = sender; _sessionId = command.Value; _sessionGranted = command.Allowed; _sessionReady = valid;
+                    _shellOwner = sender; _sessionId = sessionId; _sessionGranted = command.Allowed; _sessionReady = valid;
                     if (!valid) StopSharing();
                     else { UpdateClipboardState(); _ = RefreshVisibilityAsync(); }
                 }
@@ -186,6 +187,24 @@ public sealed partial class ContinuityDaemon
                 return;
             default: throw new InvalidDataException();
         }
+    }
+    private static async Task<string> ResolveSeatSessionIdAsync()
+    {
+        try
+        {
+            var uid = GetUid().ToString();
+            var runner = new DaisyOS.System.Processes.SafeCommandRunner();
+            var list = await runner.RunAsync("loginctl", ["list-sessions", "--no-legend"], TimeSpan.FromSeconds(2));
+            if (!list.Succeeded) return "";
+            foreach (var line in list.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length >= 4 && parts[1] == uid && parts[3] != "-" && await SessionUnlockedAsync(parts[0]))
+                    return parts[0];
+            }
+        }
+        catch { }
+        return "";
     }
     private static async Task<bool> SessionUnlockedAsync(string id)
     {

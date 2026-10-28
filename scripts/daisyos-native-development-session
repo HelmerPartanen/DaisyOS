@@ -108,6 +108,7 @@ start_memory_protected_session() {
     --property="MemoryMin=${memory_core_min_mib}M" \
     --property="ManagedOOMPreference=avoid" \
     --setenv=DAISYOS_MEMORY_POLICY_ACTIVE=1 \
+    --setenv=XDG_SESSION_ID="${XDG_SESSION_ID:-}" \
     --setenv=DAISYOS_MEMORY_TOTAL_MIB="$memory_total_mib" \
     --setenv=DAISYOS_MEMORY_RESERVE_MIB="$memory_reserve_mib" \
     --setenv=DAISYOS_MEMORY_CORE_MIN_MIB="$memory_core_min_mib" \

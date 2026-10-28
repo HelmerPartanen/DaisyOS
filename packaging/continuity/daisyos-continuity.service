@@ -1,0 +1,16 @@
+[Unit]
+Description=DaisyOS Continuity Service
+PartOf=graphical-session.target
+After=graphical-session.target
+
+[Service]
+Type=dbus
+BusName=org.daisyos.Continuity1
+ExecStart=/usr/lib/daisyos/apps/Continuity/DaisyOS.Continuity
+Restart=on-failure
+RestartSec=2
+TimeoutStopSec=5
+
+[Install]
+WantedBy=graphical-session.target
+
