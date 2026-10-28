@@ -31,7 +31,7 @@ public sealed partial class ContinuityDaemon
             Require(peerId, kind);
             if (control) Require(peerId, "input");
             if (!Guid.TryParseExact(id, "N", out _) || _live.Count >= 4 || _live.ContainsKey(id) ||
-                _live.Values.Any(l => l.Info.Kind == kind && (kind == "audio" || l.Info.PeerId == peerId) && l.Info.Outgoing == outgoing))
+                _live.Values.Any(l => l.Info.Kind == kind && (kind == "audio" || l.Info.PeerId == peerId && l.Info.Outgoing == outgoing)))
                 throw new InvalidDataException("Live session limit.");
             var life = PeerLifetime(peerId, parent);
             var live = new Live(new(id, peerId, _state.Settings.Peers[peerId].Name, kind, outgoing, control), life);

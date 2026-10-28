@@ -47,4 +47,5 @@ Exact source/documentation files changed in this extension:
 - `src/native/daisy_continuity_media/main.c`
 - `tests/DaisyOS.Continuity.Tests/AudioRouteTests.cs`
 - `tests/DaisyOS.Continuity.Tests/LiveFeatureTests.cs`
+- `tests/DaisyOS.ShellDemo.Tests/ContinuityHandoffTests.cs`
 - `tests/DaisyOS.Tests/ContinuityAudioDeviceTests.cs`

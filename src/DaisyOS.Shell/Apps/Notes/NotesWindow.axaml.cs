@@ -39,16 +39,23 @@ public partial class NotesWindow : Window
                 new global::System.IO.FileInfo(path).Length > 400_000 || new global::System.IO.FileInfo(path).LinkTarget is not null) return;
             var activity = global::System.Text.Json.JsonSerializer.Deserialize(global::System.IO.File.ReadAllBytes(path),
                 DaisyOS.Core.Serialization.DaisyCoreJsonContext.Default.ContinuityActivity) ?? throw new global::System.IO.InvalidDataException();
-            activity.Validate();
-            if (DataContext is not NotesViewModel model) return;
-            model.AddNote();
-            if (model.SelectedNote is not { } note) return;
-            note.Package = new Documents.NotePackage { Document = Documents.NoteDocument.FromPlainText(activity.Text) };
-            note.Package.Document.Title = activity.Title;
-            note.IsDirty = true;
-            if (model.SaveAll()) global::System.IO.File.Delete(path);
+            if (RestoreContinuityActivity(activity)) global::System.IO.File.Delete(path);
         }
         catch { (Avalonia.Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t restore the handed-off note.")); }
+    }
+
+    internal bool RestoreContinuityActivity(DaisyOS.Core.Continuity.ContinuityActivity activity)
+    {
+        activity.Validate();
+        if (DataContext is not NotesViewModel model) return false;
+        var package = new Documents.NotePackage { Document = Documents.NoteDocument.FromPlainText(activity.Text) };
+        package.Document.Title = activity.Title;
+        var note = new NoteItem { Package = package, IsDirty = true, Icon = "file-text" };
+        model.Notes.Add(note);
+        model.SearchQuery = string.Empty;
+        // Select only after the package is complete so the editor loads the snapshot.
+        model.SelectedNote = note;
+        return model.SaveAll();
     }
 
     protected override void OnClosed(EventArgs e)

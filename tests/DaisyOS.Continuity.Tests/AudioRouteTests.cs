@@ -77,6 +77,38 @@ public sealed class AudioRouteTests
         }
         finally { Directory.Delete(root, true); }
     }
+    [Fact]
+    public async Task AudioCannotBeSentAndReceivedAtTheSameTimeEvenWhileConsentIsPending()
+    {
+        var root = Path.Combine(Path.GetTempPath(), "daisy-audio-loop-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(root);
+        try
+        {
+            using var state = new SecureState(Path.Combine(root, "host"));
+            using var peer = new SecureState(Path.Combine(root, "peer"));
+            using var blocker = new TcpListener(IPAddress.Loopback, 0); blocker.Start();
+            state.Settings.Enabled = true;
+            state.Settings.Peers[peer.Id] = new(Convert.ToBase64String(peer.Identity.RawData), "Peer",
+                "127.0.0.1:" + ((IPEndPoint)blocker.LocalEndpoint).Port, Audio: true);
+            await using var daemon = new ContinuityDaemon(state, 47621, () => true, root, "unix:path=/nonexistent-loop-test");
+            using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
+            using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(15));
+            var incoming = Task.Run(async () =>
+            {
+                using var socket = await listener.AcceptTcpClientAsync(deadline.Token);
+                await using var wire = await PeerWire.OpenAsync(socket, state, true, false, peer.Id, (_, _) => true, deadline.Token);
+                await daemon.ExecuteAsync(new("live", peer.Id, "audio"), "local-ui");
+                Assert.Single(daemon.Snapshot().Sessions!);
+                await Assert.ThrowsAsync<InvalidDataException>(() => daemon.ReceiveLiveAsync(wire,
+                    new() { SessionId = Guid.NewGuid().ToString("N"), Kind = "audio" }, deadline.Token));
+                Assert.Empty(daemon.Snapshot().Prompts);
+            });
+            using var client = new TcpClient(); await client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
+            await using var remote = await PeerWire.OpenAsync(client, peer, false, false, state.Id, (_, _) => true, deadline.Token);
+            await incoming;
+        }
+        finally { Directory.Delete(root, true); }
+    }
     private static string CreateAudioTools(string directory)
     {
         Directory.CreateDirectory(directory);

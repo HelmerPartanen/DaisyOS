@@ -223,14 +223,17 @@ The user reports real desktop/laptop device connection and text clipboard sharin
 working. New input/media/handoff hardware acceptance remains pending.
 
 - Full `DaisyOS.sln` Debug build: passed (existing warnings remain).
-- Continuity backend: **58 passed**, including real TLS PCM delivery with isolated
+- Continuity backend: **59 passed**, including real TLS PCM delivery with isolated
   audio tools, consent rejection, default-off grants, input/JPEG bounds, audio
-  revocation cleanup, and persisted audio-route crash recovery. Existing pairing,
+  revocation cleanup, persisted audio-route crash recovery and reciprocal-route
+  rejection before consent. Existing pairing,
   clipboard and file-transfer tests are included.
 - Continuity audio-device integration: **4 passed**, covering eligible peers/icon,
   route selection, local-output stop and microphone isolation.
 - Existing Continuity core filter: **31 passed**.
 - NotesEditor/SettingsLayout/QuickSettings headless UI filters: **48 passed**.
+- Dedicated handoff-editor regression: **1 passed**, verifying imported content
+  is visible immediately and saved as an independent local note.
 - Native helper compiles with warnings as errors. Private-bus mock portal denial
   tests: **5 passed**, with no emitted screen data and session cleanup.
 - Release daemon/native publish, staged installation in a path with spaces, user

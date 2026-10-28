@@ -42,8 +42,14 @@ public sealed class ContinuityViewer : Window
         {
             AddHandler(KeyDownEvent, OnKeyDown, global::Avalonia.Interactivity.RoutingStrategies.Tunnel);
             AddHandler(KeyUpEvent, OnKeyUp, global::Avalonia.Interactivity.RoutingStrategies.Tunnel);
-            _image.PointerPressed += (_, e) => { _image.Focus(); SendButton(e, true); e.Handled = true; };
-            _image.PointerReleased += (_, e) => { SendButton(e, false); e.Handled = true; };
+            _image.PointerPressed += (_, e) => { _image.Focus(); e.Pointer.Capture(_image); SendButton(e, true); e.Handled = true; };
+            _image.PointerReleased += (_, e) =>
+            {
+                SendButton(e, false);
+                var buttons = e.GetCurrentPoint(_image).Properties;
+                if (!buttons.IsLeftButtonPressed && !buttons.IsRightButtonPressed && !buttons.IsMiddleButtonPressed) e.Pointer.Capture(null);
+                e.Handled = true;
+            };
             _image.PointerMoved += (_, e) =>
             {
                 var p = e.GetPosition(_image); var bounds = _image.Bounds;
