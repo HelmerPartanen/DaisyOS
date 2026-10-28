@@ -23,5 +23,11 @@ launcher = prefix / 'bin/daisyos-continuity'
 launcher.write_text('#!/bin/sh\nexec ' + shlex.quote(str(prefix / 'lib/daisyos/continuity/DaisyOS.Continuity')) + ' "$@"\n')
 launcher.chmod(0o755)
 PY
+if systemctl is-active --quiet firewalld 2>/dev/null && ! grep -q '47621' /etc/firewalld/zones/*.xml 2>/dev/null; then
+  if sudo -n true 2>/dev/null; then
+    sudo -n firewall-cmd --permanent --add-port=47621/tcp --add-port=47621/udp --add-service=mdns >/dev/null && \
+      sudo -n firewall-cmd --add-port=47621/tcp --add-port=47621/udp --add-service=mdns >/dev/null || true
+  fi
+fi
 printf 'Installed under %s. Install dependencies: .NET 10 ASP.NET runtime, avahi, wl-clipboard.\n' "$prefix"
 printf 'Reload user units with systemctl --user daemon-reload, then start daisyos-continuity.service. Sharing stays off until enabled in Settings.\n'

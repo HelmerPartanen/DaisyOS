@@ -42,11 +42,6 @@ public partial class SettingsView
             var rename = ContinuityButton("Save name", () => new("name", Value: name.Text ?? "DaisyOS"));
             AddSection(Loc.Get("THIS DEVICE"), null, PreferenceRow(Loc.Get("Device name"), null, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { name, rename } }),
                 InfoRow(Loc.Get("Public identity fingerprint"), state.DeviceId));
-            var address = new TextBox { Watermark = Loc.Get("hostname:47621 or [IPv6]:47621"), MinWidth = 220 };
-            AddSection(Loc.Get("CONNECT BY ADDRESS"), Loc.Get("Pairing requires approval on both devices. Compare both full fingerprints before approving."),
-                PreferenceRow(Loc.Get("Address"), null, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8,
-                    Children = { address, ContinuityButton("Connect", () => new("connect", Value: address.Text ?? "")),
-                        ContinuityButton("Pair", () => new("pair", Value: address.Text ?? "")) } }));
             if (_continuitySendPath is { } selected) AddSection(Loc.Get("SEND FILE"), null, InfoRow(Loc.Get("Selected file"), Path.GetFileName(selected)));
             _continuityStructure = null; _continuityTransferControls.Clear();
             _continuityLive = new StackPanel { Spacing = 12 };
@@ -82,6 +77,7 @@ public partial class SettingsView
         {
             // Turning sharing off must succeed independently of startup-unit state.
             if (!enabled) UpdateContinuityLive(await _continuity.ExecuteAsync(new("enable", Allowed: false)));
+            if (enabled) await EnsureContinuityFirewallAllowedAsync();
             var result = await new DaisyOS.System.Processes.SafeCommandRunner().RunAsync("systemctl",
                 ["--user", enabled ? "enable" : "disable", "daisyos-continuity.service"], TimeSpan.FromSeconds(5));
             if (!result.Succeeded) throw new IOException();
@@ -92,6 +88,23 @@ public partial class SettingsView
             (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t update Continuity startup. Check that the user service is installed."));
             if (_activeCategory == "Continuity") SelectCategory("Continuity");
         }
+    }
+    private static async Task EnsureContinuityFirewallAllowedAsync()
+    {
+        try
+        {
+            if (!Directory.Exists("/etc/firewalld/zones")) return;
+            var configured = Directory.EnumerateFiles("/etc/firewalld/zones", "*.xml")
+                .Any(path => File.ReadAllText(path).Contains("47621", StringComparison.Ordinal));
+            if (configured) return;
+            var runner = new DaisyOS.System.Processes.SafeCommandRunner();
+            var active = await runner.RunAsync("systemctl", ["is-active", "--quiet", "firewalld"], TimeSpan.FromSeconds(2));
+            if (!active.Succeeded) return;
+            await runner.RunAsync("pkexec",
+                ["sh", "-c", "firewall-cmd --permanent --add-port=47621/tcp --add-port=47621/udp --add-service=mdns && firewall-cmd --add-port=47621/tcp --add-port=47621/udp --add-service=mdns"],
+                TimeSpan.FromSeconds(60));
+        }
+        catch { }
     }
     private Button ContinuityButton(string label, Func<ContinuityCommand> command)
     {

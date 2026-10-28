@@ -88,7 +88,7 @@ public sealed partial class ContinuityDaemon
             case "name":
                 lock (_gate)
                 {
-                    if (command.Action == "enable") _state.Settings.Enabled = command.Allowed;
+                    if (command.Action == "enable") { _state.Settings.Enabled = command.Allowed; if (command.Allowed) _state.Settings.Visible = true; }
                     if (command.Action == "visible") _state.Settings.Visible = command.Allowed;
                     if (command.Action == "pause") _state.Settings.Paused = command.Allowed;
                     if (command.Action == "name") _state.Settings.Name = SecureState.SafeName(command.Value);

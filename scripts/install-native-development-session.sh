@@ -84,13 +84,19 @@ configure_localsend_firewall() {
   zone="${zone:-$(firewall-cmd --get-default-zone)}"
   if ! firewall-cmd --permanent --zone="$zone" --add-port=53317/tcp >/dev/null \
     || ! firewall-cmd --permanent --zone="$zone" --add-port=53317/udp >/dev/null \
+    || ! firewall-cmd --permanent --zone="$zone" --add-port=47621/tcp >/dev/null \
+    || ! firewall-cmd --permanent --zone="$zone" --add-port=47621/udp >/dev/null \
+    || ! firewall-cmd --permanent --zone="$zone" --add-service=mdns >/dev/null \
     || ! firewall-cmd --zone="$zone" --add-port=53317/tcp >/dev/null \
-    || ! firewall-cmd --zone="$zone" --add-port=53317/udp >/dev/null; then
-    echo "Warning: could not open TCP/UDP port 53317 in firewalld for LocalSend. Incoming LocalSend transfers may be blocked." >&2
+    || ! firewall-cmd --zone="$zone" --add-port=53317/udp >/dev/null \
+    || ! firewall-cmd --zone="$zone" --add-port=47621/tcp >/dev/null \
+    || ! firewall-cmd --zone="$zone" --add-port=47621/udp >/dev/null \
+    || ! firewall-cmd --zone="$zone" --add-service=mdns >/dev/null; then
+    echo "Warning: could not open LAN discovery/transfer ports in firewalld. Incoming LocalSend/Continuity transfers may be blocked." >&2
     return 0
   fi
 
-  echo "Opened firewalld TCP/UDP port 53317 for LocalSend on the $zone zone."
+  echo "Opened firewalld TCP/UDP ports 53317 (LocalSend), 47621 (Continuity), and mdns on the $zone zone."
 }
 
 install_file_atomically() {

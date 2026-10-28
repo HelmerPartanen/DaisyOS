@@ -10,11 +10,13 @@ namespace DaisyOS.Continuity;
 public sealed class AvahiDiscovery : IAsyncDisposable
 {
     private readonly DBusConnection _bus = new(DBusAddress.System ?? "unix:path=/run/dbus/system_bus_socket");
-    private readonly List<string> _groups = [];
     private readonly Dictionary<string, (string Id, string Name, string Address)> _resolved = new();
     private readonly SemaphoreSlim _publish = new(1, 1);
     private global::System.Diagnostics.Process? _browser;
+    private global::System.Diagnostics.Process? _publisher;
+    private UdpClient? _udp4;
     private IDisposable? _ownerWatch;
+    private CancellationTokenSource? _beaconStop;
     private sealed record Advertisement(string Id, string Name, int Port, bool Visible);
     private Advertisement _advertisement = new("", "", 0, false);
     private readonly Action<string, string, string, bool> _found;
@@ -47,6 +49,135 @@ public sealed class AvahiDiscovery : IAsyncDisposable
         _ = _browser.StandardError.ReadToEndAsync(token);
         Diagnostic = "Discovery active.";
         _ = ReadAsync(_browser, token);
+        StartUdpDiscovery(token);
+    }
+    private void StartUdpDiscovery(CancellationToken token)
+    {
+        try
+        {
+            var udp = new UdpClient(AddressFamily.InterNetwork);
+            udp.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+            udp.EnableBroadcast = true;
+            udp.Client.Bind(new IPEndPoint(IPAddress.Any, 47621));
+            _udp4 = udp;
+            _beaconStop = CancellationTokenSource.CreateLinkedTokenSource(token);
+            _ = ReadUdpAsync(udp, _beaconStop.Token);
+            _ = BroadcastLoopAsync(_beaconStop.Token);
+        }
+        catch { }
+    }
+    private async Task ReadUdpAsync(UdpClient udp, CancellationToken token)
+    {
+        try
+        {
+            while (!token.IsCancellationRequested)
+            {
+                var packet = await udp.ReceiveAsync(token);
+                if (!IsLan(packet.RemoteEndPoint.Address) || packet.Buffer.Length > 512) continue;
+                var text = global::System.Text.Encoding.UTF8.GetString(packet.Buffer);
+                if (text == "DAISYCONT1|DISCOVER")
+                {
+                    var current = _advertisement;
+                    if (current.Visible && current.Port > 0 && current.Id.Length == 64)
+                        await SendBeaconToAsync(udp, new IPEndPoint(packet.RemoteEndPoint.Address, 47621), current);
+                    continue;
+                }
+                var parts = text.Split('|', 4);
+                if (parts.Length == 4 && parts[0] == "DAISYCONT1" && parts[1].Length == 64 && parts[1].All(c => c is >= '0' and <= '9' or >= 'a' and <= 'f') &&
+                    int.TryParse(parts[2], out var port) && port is >= 1 and <= 65535)
+                {
+                    if (parts[1] == _advertisement.Id) continue;
+                    var cleanName = SecureState.SafeName(parts[3]);
+                    var address = $"{packet.RemoteEndPoint.Address}:{port}";
+                    lock (_resolved)
+                    {
+                        _resolved["udp:" + parts[1]] = (parts[1], cleanName, address);
+                        Report(parts[1], cleanName);
+                    }
+                }
+            }
+        }
+        catch { }
+    }
+    private async Task BroadcastLoopAsync(CancellationToken token)
+    {
+        try
+        {
+            await BroadcastProbeAsync(sweepSubnet: true);
+            var tick = 0;
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(3));
+            while (await timer.WaitForNextTickAsync(token))
+            {
+                tick++;
+                var current = _advertisement;
+                if (current.Visible && current.Port > 0 && current.Id.Length == 64)
+                    await BroadcastAdvertisementAsync(current, sweepSubnet: tick % 4 == 1);
+            }
+        }
+        catch { }
+    }
+    private async Task BroadcastProbeAsync(bool sweepSubnet = false)
+    {
+        if (_udp4 is not { } udp) return;
+        var payload = global::System.Text.Encoding.UTF8.GetBytes("DAISYCONT1|DISCOVER");
+        foreach (var target in GetDiscoveryTargetAddresses(sweepSubnet))
+        {
+            try { await udp.SendAsync(payload, new IPEndPoint(target, 47621)); } catch { }
+        }
+    }
+    private async Task BroadcastAdvertisementAsync(Advertisement current, bool sweepSubnet = false)
+    {
+        if (_udp4 is not { } udp || !current.Visible || current.Port <= 0 || current.Id.Length != 64) return;
+        foreach (var target in GetDiscoveryTargetAddresses(sweepSubnet))
+        {
+            await SendBeaconToAsync(udp, new IPEndPoint(target, 47621), current);
+        }
+    }
+    private static async Task SendBeaconToAsync(UdpClient udp, IPEndPoint endpoint, Advertisement current)
+    {
+        try
+        {
+            var displayName = current.Name.Length > 9 && current.Name[^9] == '-' && current.Name[^8..] == current.Id[..8]
+                ? current.Name[..^9]
+                : current.Name;
+            var bytes = global::System.Text.Encoding.UTF8.GetBytes($"DAISYCONT1|{current.Id}|{current.Port}|{displayName}");
+            await udp.SendAsync(bytes, endpoint);
+        }
+        catch { }
+    }
+    private static IEnumerable<IPAddress> GetDiscoveryTargetAddresses(bool sweepSubnet)
+    {
+        var list = new List<IPAddress> { IPAddress.Broadcast };
+        var seen = new HashSet<IPAddress> { IPAddress.Broadcast };
+        try
+        {
+            foreach (var nic in NetworkInterface.GetAllNetworkInterfaces().Where(n => n.OperationalStatus == OperationalStatus.Up && n.NetworkInterfaceType != NetworkInterfaceType.Loopback))
+            {
+                foreach (var ua in nic.GetIPProperties().UnicastAddresses.Where(a => a.Address.AddressFamily == AddressFamily.InterNetwork && IsLan(a.Address) && !IPAddress.IsLoopback(a.Address)))
+                {
+                    var ip = ua.Address.GetAddressBytes();
+                    var mask = ua.IPv4Mask.GetAddressBytes();
+                    if (ip.Length == 4 && mask.Length == 4)
+                    {
+                        var bcast = new byte[4];
+                        for (var i = 0; i < 4; i++) bcast[i] = (byte)(ip[i] | ~mask[i]);
+                        var bcastIp = new IPAddress(bcast);
+                        if (seen.Add(bcastIp)) list.Add(bcastIp);
+                        if (sweepSubnet && mask[0] == 255 && mask[1] == 255 && mask[2] == 255)
+                        {
+                            for (var host = 1; host < 255; host++)
+                            {
+                                if (host == ip[3]) continue;
+                                var candidate = new IPAddress(new byte[] { ip[0], ip[1], ip[2], (byte)host });
+                                if (seen.Add(candidate)) list.Add(candidate);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        catch { }
+        return list;
     }
     private async Task ReadAsync(global::System.Diagnostics.Process browser, CancellationToken token)
     {
@@ -60,7 +191,10 @@ public sealed class AvahiDiscovery : IAsyncDisposable
                 var key = parts[1] + ":" + parts[2] + ":" + parts[3];
                 if (parts[0] == "-")
                 {
-                    if (_resolved.Remove(key, out var removed)) Report(removed.Id, removed.Name);
+                    lock (_resolved)
+                    {
+                        if (_resolved.Remove(key, out var removed)) Report(removed.Id, removed.Name);
+                    }
                     continue;
                 }
                 if (parts.Length < 10 || !IPAddress.TryParse(parts[7], out var ip) || !IsLan(ip)) continue;
@@ -74,9 +208,15 @@ public sealed class AvahiDiscovery : IAsyncDisposable
                     ip.ScopeId = nic.GetIPProperties().GetIPv6Properties().Index;
                 }
                 var address = ip.AddressFamily == AddressFamily.InterNetworkV6 ? $"[{ip}]:{port}" : $"{ip}:{port}";
-                if (_resolved.Count >= 256 && !_resolved.ContainsKey(key)) continue;
-                _resolved[key] = (id, DecodeName(parts[3]), address);
-                Report(id, DecodeName(parts[3]));
+                var decodedName = DecodeName(parts[3]);
+                if (decodedName.Length > 9 && decodedName[^9] == '-' && decodedName[^8..] == id[..8])
+                    decodedName = decodedName[..^9];
+                lock (_resolved)
+                {
+                    if (_resolved.Count >= 256 && !_resolved.ContainsKey(key)) continue;
+                    _resolved[key] = (id, decodedName, address);
+                    Report(id, decodedName);
+                }
             }
             Diagnostic = "Avahi stopped. Connect by address is still available.";
         }
@@ -100,6 +240,11 @@ public sealed class AvahiDiscovery : IAsyncDisposable
     public Task PublishAsync(string id, string name, int port, bool visible)
     {
         _advertisement = new(id, name, port, visible);
+        if (visible && port > 0 && id.Length == 64)
+        {
+            _ = BroadcastAdvertisementAsync(_advertisement, sweepSubnet: true);
+            _ = BroadcastProbeAsync(sweepSubnet: true);
+        }
         return PublishCurrentAsync();
     }
     private async Task RepublishAsync()
@@ -117,50 +262,33 @@ public sealed class AvahiDiscovery : IAsyncDisposable
         }
         finally { _publish.Release(); }
     }
-    private async Task PublishCoreAsync(string id, string name, int port, bool visible)
+    private Task PublishCoreAsync(string id, string name, int port, bool visible)
     {
-        foreach (var group in _groups.ToArray())
+        if (_publisher is { } old)
         {
-            try { await CallAsync(group, "org.freedesktop.Avahi.EntryGroup", "Free", "", (ref MessageWriter writer) => { }); } catch { }
+            try { if (!old.HasExited) old.Kill(true); } catch { }
+            old.Dispose();
+            _publisher = null;
         }
-        _groups.Clear();
-        if (!visible) return;
-        foreach (var nic in NetworkInterface.GetAllNetworkInterfaces().Where(n => n.OperationalStatus == OperationalStatus.Up && n.SupportsMulticast && n.NetworkInterfaceType != NetworkInterfaceType.Loopback))
+        if (!visible || port <= 0 || id.Length != 64) return Task.CompletedTask;
+        var start = new global::System.Diagnostics.ProcessStartInfo("avahi-publish-service")
         {
-            var properties = nic.GetIPProperties();
-            if (!properties.UnicastAddresses.Any(a => IsLan(a.Address) && !IPAddress.IsLoopback(a.Address))) continue;
-            var index = properties.GetIPv4Properties()?.Index ?? properties.GetIPv6Properties().Index;
-            var group = await _bus.CallMethodAsync(CreateCall("/", "org.freedesktop.Avahi.Server", "EntryGroupNew", "", (ref MessageWriter writer) => { }),
-                (message, _) => message.GetBodyReader().ReadObjectPath().ToString());
-            _groups.Add(group);
-            await CallAsync(group, "org.freedesktop.Avahi.EntryGroup", "AddService", "iiussssqaay", (ref MessageWriter writer) =>
-            {
-                writer.WriteInt32(index); writer.WriteInt32(-1); writer.WriteUInt32(0);
-                writer.WriteString(name); writer.WriteString("_daisycont._tcp"); writer.WriteString(""); writer.WriteString(""); writer.WriteUInt16((ushort)port);
-                // aay encoded explicitly to avoid reflection-based D-Bus serialization.
-                var array = writer.WriteArrayStart(DBusType.Array);
-                foreach (var txt in new[] { "pv=1", "id=" + id, "cap=clipboard,files" }) writer.WriteArray(global::System.Text.Encoding.UTF8.GetBytes(txt));
-                writer.WriteArrayEnd(array);
-            });
-            await CallAsync(group, "org.freedesktop.Avahi.EntryGroup", "Commit", "", (ref MessageWriter writer) => { });
-        }
+            RedirectStandardOutput = true,
+            RedirectStandardError = true
+        };
+        foreach (var arg in new[] { "--no-fail", name, "_daisycont._tcp", port.ToString(), "pv=1", "id=" + id, "cap=clipboard,files" })
+            start.ArgumentList.Add(arg);
+        _publisher = global::System.Diagnostics.Process.Start(start);
+        return Task.CompletedTask;
     }
-    private delegate void WriteValue(ref MessageWriter writer);
-    private MessageBuffer CreateCall(string path, string iface, string method, string signature, WriteValue write)
-    {
-        var writer = _bus.GetMessageWriter();
-        try
-        {
-        writer.WriteMethodCallHeader(destination: "org.freedesktop.Avahi", path: path, @interface: iface, member: method, signature: signature);
-        write(ref writer); return writer.CreateMessage();
-        } finally { writer.Dispose(); }
-    }
-    private Task CallAsync(string path, string iface, string method, string signature, WriteValue write) =>
-        _bus.CallMethodAsync(CreateCall(path, iface, method, signature, write));
     public async ValueTask DisposeAsync()
     {
         _ownerWatch?.Dispose();
+        _beaconStop?.Cancel();
+        _udp4?.Dispose();
         try { await PublishAsync("", "", 0, false); } catch { }
+        if (_publisher is { HasExited: false }) try { _publisher.Kill(true); } catch { }
+        _publisher?.Dispose();
         if (_browser is { HasExited: false }) _browser.Kill(true);
         _browser?.Dispose(); _bus.Dispose();
     }
