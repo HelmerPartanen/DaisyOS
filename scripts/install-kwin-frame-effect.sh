@@ -19,6 +19,26 @@ plugin_root="$HOME/.local/lib/qt6/plugins"
 plugin_dir="$plugin_root/kwin/effects/plugins"
 shader_dir="$HOME/.local/share/kwin/shaders"
 
+# KWin effects use private compositor APIs. File existence alone cannot tell
+# whether a previous build matches this checkout or the installed compositor.
+stamp_path="$HOME/.local/share/daisyos/kwin-frame-effect.version"
+kwin_version="$(kwin_wayland --version 2>/dev/null || true)"
+expected_version="$(
+  { printf '%s\n' "$effect_commit" "$ecm_commit" "$vulkan_headers_commit" "$kwin_version";
+    sha256sum "$repo_root/scripts/install-kwin-frame-effect.sh" "$repo_root/src/native/kwin_frame_effect/daisyos-layer-surfaces.patch" | cut -d ' ' -f 1;
+  } | sha256sum | cut -d ' ' -f 1
+)"
+if [[ "${1:-}" == --check ]]; then
+  [[ $# == 1 && -n "$kwin_version" && -s "$plugin_dir/kwin4_effect_shapecorners.so" \
+     && -s "$shader_dir/shapecorners.frag" && -s "$shader_dir/shapecorners_core.frag" \
+     && -f "$stamp_path" && "$(cat "$stamp_path")" == "$expected_version" ]]
+  exit "$?"
+fi
+if (($#)); then
+  echo "Usage: scripts/install-kwin-frame-effect.sh [--check]" >&2
+  exit 2
+fi
+
 for command in cmake git kwriteconfig6 python3; do
   command -v "$command" >/dev/null 2>&1 || {
     echo "$command is required to install the DaisyOS KWin frame effect." >&2
@@ -115,5 +135,8 @@ kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineFullScreen
 if command -v qdbus6 >/dev/null 2>&1; then
   timeout 3 qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
 fi
+
+mkdir -p "$(dirname "$stamp_path")"
+printf '%s\n' "$expected_version" > "$stamp_path"
 
 echo "Installed the DaisyOS rounded-window compositor effect. Restart the DaisyOS session once so KWin discovers the plugin."

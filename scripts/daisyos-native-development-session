@@ -694,9 +694,7 @@ start_compositor_and_shell() {
   # KWin scans native effects only while starting. Provision the pinned frame
   # effect before launching it so every account receives window framing on its
   # first DaisyOS session without a manual post-install command.
-  if [[ ! -s "$HOME/.local/lib/qt6/plugins/kwin/effects/plugins/kwin4_effect_shapecorners.so" \
-     || ! -s "$HOME/.local/share/kwin/shaders/shapecorners.frag" \
-     || ! -s "$HOME/.local/share/kwin/shaders/shapecorners_core.frag" ]]; then
+  if ! "$source_root/scripts/install-kwin-frame-effect.sh" --check; then
     "$source_root/scripts/install-kwin-frame-effect.sh" >> "$session_log" 2>&1 \
       || log_message "DaisyOS KWin frame effect could not be installed for this user."
   fi
