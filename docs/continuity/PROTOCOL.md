@@ -126,3 +126,19 @@ explicit operational handling, not automatic trust migration.
 
 The earlier Core peer-session/mock interfaces remain isolated reusable prototypes;
 no raw C# runtime object is transmitted over the network by this daemon.
+
+## Media/handoff extension (minor revision 1)
+
+Hello now advertises `INPUT`, `HANDOFF`, `SCREEN`, and `AUDIO`. New initiators
+require the corresponding peer capability before requesting a feature. Separate
+TLS connections carry `LiveStart` (session ID/kind/control), `LiveDecision` and
+strictly sequenced `LivePacket` messages. Audio uses exactly 3840 bytes per packet
+(48 kHz stereo s16le, 20 ms); reverse empty packets provide liveness. Screen
+packets hold at most 512 KiB and validate JPEG SOF dimensions to 1280 × 720 before
+decoding; empty packets keep static screens alive. Reverse packets contain at
+most 128 bytes of validated numeric input, with empty liveness packets. Input
+uses evdev codes, normalized selected-monitor coordinates and bounded queues.
+`ActivityOffer` carries an allowlisted app/kind/schema/title/text snapshot and
+`ActivityResult` returns the target's decision. No network fields select an
+executable, command, destination path, GStreamer pipeline or PulseAudio module.
+See [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md) for permissions and lifecycle.

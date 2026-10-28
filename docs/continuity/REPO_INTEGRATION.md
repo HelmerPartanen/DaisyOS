@@ -94,7 +94,7 @@ manual address connection, pairing approvals, text clipboard adapter, consented
 resumable file transfer, Settings/Files/Quick Settings, notifications and packaging.
 The per-user service stays disabled for data sharing until explicit opt-in and
 valid native-session authorization. No actual user service was installed or enabled
-during implementation checks. Universal Input, handoff and streaming remain absent.
+during implementation checks. The subsequent media/handoff extension adds focused viewer control, Notes text activities, screen preview and audio routing; see [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md). Seamless screen-edge switching and virtual display extension remain unimplemented.
 
 This is implementation progress, not completed release acceptance. Real-device
 clipboard/network/fault/UI tests and independent protocol review are outstanding.

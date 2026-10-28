@@ -4,7 +4,7 @@ The MVP implementation is opt-in and disabled by default. It provides a separate
 unprivileged C#/.NET 10 daemon, native Settings/Files integration, Avahi discovery,
 mutual TLS 1.3 pairing/connections, text clipboard and resumable single-file sends.
 It has not passed the required two-machine/real-Wayland release acceptance matrix.
-Keyboard/mouse control, app handoff and streaming are not implemented or advertised.
+The subsequent input, Notes handoff, screen preview and audio routing extension is described in [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md), including its additional build dependencies and limits.
 
 ## Build and install
 

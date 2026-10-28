@@ -98,3 +98,16 @@ TEST_MATRIX.md on two real DaisyOS devices, including full fingerprint rejection
 replay/downgrade, revoke/lock races, disk-full, crash-resume and malformed frames.
 Never claim these unperformed checks passed. Logs use stable safe codes and omit
 private keys, clipboard/file payloads and authentication material.
+
+## Input/media/handoff extension
+
+Input, handoff, screen and audio grants are independent and default off, including
+when loading older trust records. Target session consent is required for each
+request; input and screen additionally use the public desktop portals and their
+visible local stop indicators. Focused viewer input is forwarded through libei,
+never root/uinput or global interception by an ordinary Wayland client. Session
+lock, pause, revocation and transport loss cancel live sessions and drop input
+emulation. JPEG dimensions, audio packet lengths, input ranges/sequences and
+activity schema/content sizes are bounded. A private marker enables recovery of
+the daemon-created audio sink after a crash. These paths require real-device
+acceptance testing; see [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md).

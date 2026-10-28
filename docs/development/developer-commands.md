@@ -59,3 +59,13 @@ systemctl --user start daisyos-continuity.service
 # docs/continuity/OPERATIONS.md
 # Isolated smoke test; does not install/enable a real user service:
 dbus-run-session -- python3 scripts/test-continuity-daemon.py
+
+Continuity media helper and isolated denial checks (no real display/audio access):
+
+```bash
+scripts/build-continuity-media.sh
+dbus-run-session -- python3 scripts/test-continuity-media.py artifacts/continuity/native/daisyos-continuity-media
+dotnet test tests/DaisyOS.Tests --filter FullyQualifiedName~ContinuityAudioDeviceTests
+```
+
+Screen/control, Notes handoff and remote-audio setup and acceptance: [Continuity media guide](../continuity/MEDIA_AND_HANDOFF.md). `scripts/build-continuity.sh` now includes the native media helper.

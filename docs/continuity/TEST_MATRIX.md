@@ -216,3 +216,30 @@ injected by a peer can be conservatively suppressed. This avoids echo loops but
 is not complete origin-aware clipboard semantics. A native origin-aware adapter
 and real compositor tests remain required before production acceptance. Include
 re-copying an earlier remote value after an intervening local copy in hardware tests.
+
+## Input/media/handoff extension validation (2026-10-28)
+
+The user reports real desktop/laptop device connection and text clipboard sharing
+working. New input/media/handoff hardware acceptance remains pending.
+
+- Full `DaisyOS.sln` Debug build: passed (existing warnings remain).
+- Continuity backend: **58 passed**, including real TLS PCM delivery with isolated
+  audio tools, consent rejection, default-off grants, input/JPEG bounds, audio
+  revocation cleanup, and persisted audio-route crash recovery. Existing pairing,
+  clipboard and file-transfer tests are included.
+- Continuity audio-device integration: **4 passed**, covering eligible peers/icon,
+  route selection, local-output stop and microphone isolation.
+- Existing Continuity core filter: **31 passed**.
+- NotesEditor/SettingsLayout/QuickSettings headless UI filters: **48 passed**.
+- Native helper compiles with warnings as errors. Private-bus mock portal denial
+  tests: **5 passed**, with no emitted screen data and session cleanup.
+- Release daemon/native publish, staged installation in a path with spaces, user
+  service-unit verification and isolated real daemon startup/status/SIGTERM: passed.
+- Generated Protobuf binding reproducibility, resource key parity, shell/Python
+  syntax and whitespace checks: passed.
+
+This validates automated policy/transport/lifecycle behavior. It does not certify
+actual KWin/libei behavior, screen performance or audio quality. Follow
+[MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md) for the two-device checklist and
+current limits (focused viewer input, Notes text snapshots, screen mirroring,
+single-direction PCM audio). Logs are in ignored `artifacts/continuity/validation/`.

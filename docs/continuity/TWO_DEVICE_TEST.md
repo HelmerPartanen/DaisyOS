@@ -116,3 +116,7 @@ reachability. File/clipboard permissions are required independently on both devi
 First successful local transport/integrity tests do not prove all of this matrix.
 Record actual pass/fail results before calling the MVP production-ready. Independent
 pairing/protocol review and the complete fault/accessibility matrix remain release gates.
+
+## Input, handoff, screen viewing and remote audio
+
+Connection and text clipboard sharing have now been verified by the user on the two physical computers. For the next revision, follow [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md) for dependencies, installation, scope and the new acceptance checklist. Both machines need this revision; the four additional permissions default off.
