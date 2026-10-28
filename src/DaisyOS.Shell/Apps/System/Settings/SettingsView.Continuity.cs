@@ -241,16 +241,21 @@ public partial class SettingsView
                 Spacing = 8,
                 Children =
                 {
-                    ContinuityButton(prompt.Kind == "pair" ? "Approve pairing" : "Accept file", () => new("decide", Id: prompt.Id, Allowed: true), true),
+                    ContinuityButton(prompt.Kind == "pair" ? "Approve pairing" : prompt.Kind == "file" ? "Accept file" : "Allow this session", () => new("decide", Id: prompt.Id, Allowed: true), true),
                     ContinuityButton("Decline", () => new("decide", Id: prompt.Id, Allowed: false))
                 }
             };
             _continuityLive.Children.Add(CreateSection(
-                prompt.Kind == "pair" ? Loc.Get("PAIRING REQUEST") : Loc.Get("INCOMING FILE"),
+                prompt.Kind == "pair" ? Loc.Get("PAIRING REQUEST") : Loc.Get("CONTINUITY REQUEST"),
                 prompt.Detail,
-                PreferenceRow(prompt.Name, prompt.Kind == "pair" ? Loc.Get("Confirm that the fingerprint shown on both devices matches.") : Loc.Get("Choose whether to receive this file."), actions,
+                PreferenceRow(prompt.Name, prompt.Kind == "pair" ? Loc.Get("Confirm that the fingerprint shown on both devices matches.") : Loc.Get("Review the requested access before allowing it."), actions,
                     prompt.Kind == "pair" ? "continuity" : "file-download")));
         }
+
+        foreach (var session in state.Sessions ?? [])
+            _continuityLive.Children.Add(CreateSection(Loc.Get("ACTIVE SESSION"), null,
+                PreferenceRow(session.Name, Loc.Get(session.Kind == "audio" ? "Audio playback" : session.Control ? "Remote control" : "Screen viewing"),
+                    ContinuityButton("Stop sharing", () => new("live-stop", session.Id)), "continuity")));
 
         var paired = state.Devices.Where(device => device.Trusted).ToArray();
         if (paired.Length > 0)
@@ -295,6 +300,18 @@ public partial class SettingsView
             actions.Children.Add(ContinuityButton("Connect", () => new("connect", peer.Id, peer.Address), true));
         if (_continuitySendPath is { } path)
             actions.Children.Add(ContinuityButton("Send file", () => new("send", peer.Id, path), true));
+        if (peer.Screen)
+        {
+            var view = new Button { Content = Loc.Get("View screen"), Classes = { "Subtle", "Small" } };
+            view.Click += async (_, _) => await OpenContinuityViewerAsync(peer, false);
+            actions.Children.Add(view);
+            if (peer.Input)
+            {
+                var control = new Button { Content = Loc.Get("Control computer"), Classes = { "Subtle", "Small" } };
+                control.Click += async (_, _) => await OpenContinuityViewerAsync(peer, true);
+                actions.Children.Add(control);
+            }
+        }
         actions.Children.Add(ContinuityButton("Forget", () => new("forget", peer.Id)));
 
         var title = new StackPanel { Spacing = 3 };
@@ -312,10 +329,33 @@ public partial class SettingsView
         permissions.Children.Add(ContinuityPermissionRow("File sharing", "Send files from the Files app.", peer.Files,
             allowed => _ = ContinuityActionAsync(new("permission", peer.Id, "files", allowed))));
 
+        foreach (var permission in new[] {
+            ("Keyboard and mouse", "Control this computer after local approval.", "input", peer.Input),
+            ("App handoff", "Continue a Notes text activity on this computer.", "handoff", peer.Handoff),
+            ("Screen viewing", "Share a selected screen after local approval.", "screen", peer.Screen),
+            ("Audio playback", "Play the other computer’s audio on this computer.", "audio", peer.Audio) })
+        {
+            permissions.Children.Add(new Border { Height = 1, Background = TryBrush("StrokeDefaultBrush") });
+            permissions.Children.Add(ContinuityPermissionRow(permission.Item1, permission.Item2, permission.Item4,
+                allowed => _ = ContinuityActionAsync(new("permission", peer.Id, permission.Item3, allowed))));
+        }
         var content = new StackPanel { Spacing = 14, Children = { title, permissions, actions } };
         var row = new Border { Child = content, Tag = peer.Name };
         row.Classes.Add("SettingsGroupRow");
         return row;
+    }
+
+    private async Task OpenContinuityViewerAsync(ContinuityDevice peer, bool control)
+    {
+        try
+        {
+            var status = await _continuity.ExecuteAsync(new("live", peer.Id, "screen", control));
+            var session = status.Sessions?.LastOrDefault(s => s.PeerId == peer.Id && s.Kind == "screen" && s.Outgoing);
+            if (session is null) throw new IOException();
+            new DaisyOS.Shell.Views.Continuity.ContinuityViewer(session).Show();
+            UpdateContinuityLive(status);
+        }
+        catch { (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t start screen viewing. Check the device permissions.")); }
     }
 
     private Control ContinuityPermissionRow(string label, string description, bool enabled, Action<bool> changed)

@@ -26,6 +26,31 @@ public partial class NotesWindow : Window
             NotesContent.FindControl<Grid>("MainPaneLayout")!, normalRowDefinitions: "Auto,*");
     }
 
+    public void ImportContinuityActivity(string path)
+    {
+        try
+        {
+            var state = Environment.GetEnvironmentVariable("XDG_STATE_HOME");
+            if (string.IsNullOrEmpty(state) || !global::System.IO.Path.IsPathFullyQualified(state))
+                state = global::System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "state");
+            var root = global::System.IO.Path.GetFullPath(global::System.IO.Path.Combine(state, "daisyos", "continuity", "activities"));
+            path = global::System.IO.Path.GetFullPath(path);
+            if (global::System.IO.Path.GetDirectoryName(path) != root || !Guid.TryParseExact(global::System.IO.Path.GetFileNameWithoutExtension(path), "N", out _) ||
+                new global::System.IO.FileInfo(path).Length > 400_000 || new global::System.IO.FileInfo(path).LinkTarget is not null) return;
+            var activity = global::System.Text.Json.JsonSerializer.Deserialize(global::System.IO.File.ReadAllBytes(path),
+                DaisyOS.Core.Serialization.DaisyCoreJsonContext.Default.ContinuityActivity) ?? throw new global::System.IO.InvalidDataException();
+            activity.Validate();
+            if (DataContext is not NotesViewModel model) return;
+            model.AddNote();
+            if (model.SelectedNote is not { } note) return;
+            note.Package = new Documents.NotePackage { Document = Documents.NoteDocument.FromPlainText(activity.Text) };
+            note.Package.Document.Title = activity.Title;
+            note.IsDirty = true;
+            if (model.SaveAll()) global::System.IO.File.Delete(path);
+        }
+        catch { (Avalonia.Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t restore the handed-off note.")); }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _fullscreenController.Dispose();

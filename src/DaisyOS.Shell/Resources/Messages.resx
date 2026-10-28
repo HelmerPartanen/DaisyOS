@@ -6693,4 +6693,239 @@ Used by: src/DaisyOS.Shell/Views/Components/Launcher/LauncherHint.axaml</comment
     <comment>Source: Share clipboard text and files with trusted DaisyOS devices on your local network.
   Continuity; English fallback pending translation review.</comment>
   </data>
+  <data name="Loc_234553C5B934" xml:space="preserve">
+    <value>ACTIVE SESSION</value>
+    <comment>Source: ACTIVE SESSION
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_40BBD3B9072E" xml:space="preserve">
+    <value>AVAILABILITY</value>
+    <comment>Source: AVAILABILITY
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_2AE80F6A24F8" xml:space="preserve">
+    <value>Allow this session</value>
+    <comment>Source: Allow this session
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_3472C77179F4" xml:space="preserve">
+    <value>App handoff</value>
+    <comment>Source: App handoff
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_8C08339401B7" xml:space="preserve">
+    <value>Audio playback</value>
+    <comment>Source: Audio playback
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_90DF488B2902" xml:space="preserve">
+    <value>CONTINUITY REQUEST</value>
+    <comment>Source: CONTINUITY REQUEST
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_4D01859A39BE" xml:space="preserve">
+    <value>Changes save automatically.</value>
+    <comment>Source: Changes save automatically.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_69EB52334AF5" xml:space="preserve">
+    <value>Confirm that the fingerprint shown on both devices matches.</value>
+    <comment>Source: Confirm that the fingerprint shown on both devices matches.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_FD568FA01130" xml:space="preserve">
+    <value>Continue a Notes text activity on this computer.</value>
+    <comment>Source: Continue a Notes text activity on this computer.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_6464F682697C" xml:space="preserve">
+    <value>Continue on another computer…</value>
+    <comment>Source: Continue on another computer…
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_4D782B17D295" xml:space="preserve">
+    <value>Continue on this computer</value>
+    <comment>Source: Continue on this computer
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_97090714B534" xml:space="preserve">
+    <value>Continuity couldn’t complete the request. Make sure both devices are awake and on the same local network.</value>
+    <comment>Source: Continuity couldn’t complete the request. Make sure both devices are awake and on the same local network.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_F3D987BB7A1C" xml:space="preserve">
+    <value>Continuity isn’t available yet. Check that the Continuity service is installed.</value>
+    <comment>Source: Continuity isn’t available yet. Check that the Continuity service is installed.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_BB838716756F" xml:space="preserve">
+    <value>Control computer</value>
+    <comment>Source: Control computer
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_7EF14048D8DB" xml:space="preserve">
+    <value>Control this computer after local approval.</value>
+    <comment>Source: Control this computer after local approval.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_9C9DE2D05BA3" xml:space="preserve">
+    <value>Couldn’t hand off this note. Check the device and note size.</value>
+    <comment>Source: Couldn’t hand off this note. Check the device and note size.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_75EDE8965927" xml:space="preserve">
+    <value>Couldn’t rename this device.</value>
+    <comment>Source: Couldn’t rename this device.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_333E3CBB7678" xml:space="preserve">
+    <value>Couldn’t restore the handed-off note.</value>
+    <comment>Source: Couldn’t restore the handed-off note.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_A5B2B05B6C37" xml:space="preserve">
+    <value>Couldn’t start screen viewing. Check the device permissions.</value>
+    <comment>Source: Couldn’t start screen viewing. Check the device permissions.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_EA117839293B" xml:space="preserve">
+    <value>Couldn’t update Continuity. Check that the Continuity service is installed.</value>
+    <comment>Source: Couldn’t update Continuity. Check that the Continuity service is installed.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_491DD0C955CF" xml:space="preserve">
+    <value>Ctrl+Alt+Escape stops remote control. Leaving this window stops control.</value>
+    <comment>Source: Ctrl+Alt+Escape stops remote control. Leaving this window stops control.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_600493EA7B29" xml:space="preserve">
+    <value>Devices appear automatically when they are on the same local network.</value>
+    <comment>Source: Devices appear automatically when they are on the same local network.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_100268A10A64" xml:space="preserve">
+    <value>Enable app handoff for a paired computer in Continuity settings.</value>
+    <comment>Source: Enable app handoff for a paired computer in Continuity settings.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_882603A7217B" xml:space="preserve">
+    <value>FILE TRANSFERS</value>
+    <comment>Source: FILE TRANSFERS
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_0F60CCCCF613" xml:space="preserve">
+    <value>GET STARTED</value>
+    <comment>Source: GET STARTED
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_FA91ABE52FA7" xml:space="preserve">
+    <value>Handoff sent. Approve it on the other computer.</value>
+    <comment>Source: Handoff sent. Approve it on the other computer.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_7BAE98DB6CD0" xml:space="preserve">
+    <value>Keep Continuity open on the other DaisyOS device.</value>
+    <comment>Source: Keep Continuity open on the other DaisyOS device.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_91F8FD1B4C33" xml:space="preserve">
+    <value>Keyboard and mouse</value>
+    <comment>Source: Keyboard and mouse
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_2D756DBC6118" xml:space="preserve">
+    <value>Looking for devices…</value>
+    <comment>Source: Looking for devices…
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_01530F00BD35" xml:space="preserve">
+    <value>MY DEVICES</value>
+    <comment>Source: MY DEVICES
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_A11A6381CA5C" xml:space="preserve">
+    <value>NEARBY DEVICES</value>
+    <comment>Source: NEARBY DEVICES
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_3B3F29AEB77B" xml:space="preserve">
+    <value>Nearby trusted devices connect automatically on your local network.</value>
+    <comment>Source: Nearby trusted devices connect automatically on your local network.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_A77953397C54" xml:space="preserve">
+    <value>PAIRING REQUEST</value>
+    <comment>Source: PAIRING REQUEST
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_0EB27C3A780A" xml:space="preserve">
+    <value>Play the other computer’s audio on this computer.</value>
+    <comment>Source: Play the other computer’s audio on this computer.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_7FB5D22A1670" xml:space="preserve">
+    <value>Remote control</value>
+    <comment>Source: Remote control
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_369195A9A354" xml:space="preserve">
+    <value>Review the requested access before allowing it.</value>
+    <comment>Source: Review the requested access before allowing it.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_8CC15F2A7A80" xml:space="preserve">
+    <value>Screen viewing</value>
+    <comment>Source: Screen viewing
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_947F4493853D" xml:space="preserve">
+    <value>Sends a text snapshot. The original note stays here.</value>
+    <comment>Source: Sends a text snapshot. The original note stays here.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_19CBA052AEE8" xml:space="preserve">
+    <value>Share a selected screen after local approval.</value>
+    <comment>Source: Share a selected screen after local approval.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_FA35EBF4946A" xml:space="preserve">
+    <value>Sharing paused</value>
+    <comment>Source: Sharing paused
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_B6D4948EF93A" xml:space="preserve">
+    <value>This is the name shown to nearby DaisyOS devices.</value>
+    <comment>Source: This is the name shown to nearby DaisyOS devices.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_7783916D7143" xml:space="preserve">
+    <value>Trusted devices reconnect automatically when they are nearby.</value>
+    <comment>Source: Trusted devices reconnect automatically when they are nearby.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_063FB1B01D3B" xml:space="preserve">
+    <value>Turn on Continuity</value>
+    <comment>Source: Turn on Continuity
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_89A33FF2657E" xml:space="preserve">
+    <value>Turn on Continuity to find and pair with nearby DaisyOS devices.</value>
+    <comment>Source: Turn on Continuity to find and pair with nearby DaisyOS devices.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_BD7B9ABB3158" xml:space="preserve">
+    <value>Unlock this DaisyOS session to resume Continuity.</value>
+    <comment>Source: Unlock this DaisyOS session to resume Continuity.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_7787329ECD5B" xml:space="preserve">
+    <value>Uses your local Wi-Fi or Ethernet connection. No account or internet connection is required.</value>
+    <comment>Source: Uses your local Wi-Fi or Ethernet connection. No account or internet connection is required.
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
+  <data name="Loc_56DEA3B5D30E" xml:space="preserve">
+    <value>View screen</value>
+    <comment>Source: View screen
+  Continuity media and handoff; translation review pending.</comment>
+  </data>
 </root>

@@ -10,10 +10,12 @@ public sealed partial class LinuxAudioService : IAudioService
 {
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(3);
     private readonly ICommandRunner _commandRunner;
+    private readonly DaisyOS.Core.Continuity.IContinuityClient _continuity;
 
-    public LinuxAudioService(ICommandRunner commandRunner)
+    public LinuxAudioService(ICommandRunner commandRunner, DaisyOS.Core.Continuity.IContinuityClient? continuity = null)
     {
         _commandRunner = commandRunner;
+        _continuity = continuity ?? new Continuity.ContinuityClient();
     }
 
     public async Task<double?> GetVolumeAsync(CancellationToken cancellationToken = default)
@@ -230,7 +232,7 @@ public sealed partial class LinuxAudioService : IAudioService
 
                         // Stream-channel records (for example output_FL) are not output devices.
                         if (!string.IsNullOrWhiteSpace(name) &&
-                            !name.StartsWith("output_", StringComparison.OrdinalIgnoreCase))
+                            !name.StartsWith("output_", StringComparison.OrdinalIgnoreCase) && name != "Continuity")
                         {
                             var isBt = name.Contains("Bluetooth", StringComparison.OrdinalIgnoreCase) || IsHeadphones(name);
                             var icon = IsHeadphones(name) ? "headphones" : "speaker";
@@ -249,6 +251,19 @@ public sealed partial class LinuxAudioService : IAudioService
             list.Add(new AudioDeviceInfo("bt", "Wireless Headphones", "headphones", false, true));
         }
 
+        try
+        {
+            var status = await _continuity.ExecuteAsync(new("status"), cancellationToken);
+            if (status.Enabled && status.SessionReady && !status.Paused)
+            {
+                var route = status.Sessions?.FirstOrDefault(s => s.Kind == "audio" && s.Outgoing);
+                if (route is not null) for (var i = 0; i < list.Count; i++) list[i] = list[i] with { IsDefault = false };
+                foreach (var peer in status.Devices.Where(p => p.Trusted && p.Audio && (route?.PeerId == p.Id || !p.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase))))
+                    list.Add(new AudioDeviceInfo("continuity:" + peer.Id, peer.Name, "continuity", route?.PeerId == peer.Id));
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch { /* The local audio device list works while Continuity is stopped. */ }
         return list;
     }
 
@@ -422,10 +437,28 @@ public sealed partial class LinuxAudioService : IAudioService
 
     public async Task<bool> SetDefaultAudioDeviceAsync(string deviceId, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(deviceId) || !int.TryParse(deviceId, out _))
+        try
         {
-            return false;
+            var continuity = _continuity;
+            if (deviceId.StartsWith("continuity:", StringComparison.Ordinal))
+            {
+                var state = await continuity.ExecuteAsync(new("status"), cancellationToken);
+                if (state.Sessions?.Any(s => s.Kind == "audio" && s.Outgoing && s.PeerId == deviceId[11..]) == true) return true;
+                await StopContinuityAudioAsync(state, cancellationToken);
+                await continuity.ExecuteAsync(new("live", deviceId[11..], "audio"), cancellationToken);
+                return true;
+            }
+            if (!int.TryParse(deviceId, out _)) return false;
+            try
+            {
+                var state = await continuity.ExecuteAsync(new("status"), cancellationToken);
+                await StopContinuityAudioAsync(state, cancellationToken);
+            }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+            catch { }
         }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch { return false; }
 
         var result = await _commandRunner.RunAsync(
             "wpctl",
@@ -433,6 +466,22 @@ public sealed partial class LinuxAudioService : IAudioService
             CommandTimeout,
             cancellationToken);
         return result.Succeeded;
+    }
+
+    private async Task StopContinuityAudioAsync(DaisyOS.Core.Continuity.ContinuityStatus state, CancellationToken token)
+    {
+        var sessions = (state.Sessions ?? []).Where(s => s.Kind == "audio" && s.Outgoing).ToArray();
+        foreach (var session in sessions) await _continuity.ExecuteAsync(new("live-stop", session.Id), token);
+        if (sessions.Length == 0) return;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(6));
+        // Cleanup restores/moves the old streams before a new output is selected.
+        while (true)
+        {
+            state = await _continuity.ExecuteAsync(new("status"), timeout.Token);
+            if (state.Sessions?.Any(s => sessions.Any(old => old.Id == s.Id)) != true) return;
+            await Task.Delay(50, timeout.Token);
+        }
     }
 
     [GeneratedRegex(@"Volume:\s+(?<volume>[0-9]+(?:\.[0-9]+)?)", RegexOptions.IgnoreCase)]

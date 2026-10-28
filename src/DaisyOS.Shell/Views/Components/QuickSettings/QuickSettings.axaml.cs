@@ -565,7 +565,7 @@ public partial class QuickSettings : UserControl
         var content = new Grid { ColumnDefinitions = new ColumnDefinitions("20,*,20") };
         var outputIcon = new DaisyIcon
         {
-            Icon = device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)
+            Icon = device.IconGlyph == "continuity" ? "continuity" : device.Name.Contains("AirPods", StringComparison.OrdinalIgnoreCase)
                 || string.Equals(device.Name, (Application.Current as App)?.AirPods?.Status.Name, StringComparison.OrdinalIgnoreCase)
                 ? "AirPods" : MapAudioIcon(device.IconGlyph),
             Size = 18,
@@ -1235,6 +1235,7 @@ public partial class QuickSettings : UserControl
     {
         "volume_up" or "volume_down" or "volume_mute" => "speaker-high",
         "headphones" => "headphones",
+        "continuity" => "continuity",
         "mic" => "microphone",
         _ => "speaker-high"
     };
