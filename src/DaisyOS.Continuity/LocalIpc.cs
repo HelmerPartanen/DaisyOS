@@ -145,6 +145,7 @@ public sealed partial class ContinuityDaemon
                     lock (_gate)
                     {
                         Require(wire.PeerId, null);
+                        _diagnostic = "";
                         var peer = _state.Settings.Peers[wire.PeerId];
                         _state.Settings.Peers[wire.PeerId] = peer with { Address = command.Value };
                         _nearby[wire.PeerId] = new(wire.PeerId, peer.Name, command.Value, "Trusted · verified", true, peer.Clipboard, peer.Files);

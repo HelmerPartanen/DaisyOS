@@ -43,6 +43,7 @@ public sealed partial class ContinuityDaemon
                     if (request.ClipboardGet?.UpdateId != update || request.ClipboardGet.MimeType != "text/plain;charset=utf-8") throw new InvalidDataException();
                     Require(id, "clipboard");
                     await wire.SendAsync(new() { ClipboardData = new ClipboardData { UpdateId = update, MimeType = "text/plain;charset=utf-8", Data = UnsafeByteOperations.UnsafeWrap(copy) } }, lifetime.Token);
+                    lock (_gate) _diagnostic = "";
                 }
                 finally { CryptographicOperations.ZeroMemory(copy); if (lifetime is not null) EndPeer(id, lifetime); _clipboardSlots.Release(); }
             });

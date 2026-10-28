@@ -69,6 +69,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 if (!found) { _nearby.Remove(id); return; }
                 if (_nearby.Count >= 128 && !_nearby.ContainsKey(id)) return;
                 var peer = _state.Settings.Peers.GetValueOrDefault(id);
+                if (peer is not null) _diagnostic = "";
                 _nearby[id] = new(id, SecureState.SafeName(name), address, peer is null ? "Discovered" : "Trusted · discovered", peer is not null, peer?.Clipboard ?? false, peer?.Files ?? false);
             }
         });
@@ -131,6 +132,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 var code = ex switch
                 {
                     AuthenticationException => "peer_authentication_failed",
+                    EndOfStreamException => "peer_closed_or_locked",
                     InvalidDataException or InvalidProtocolBufferException or DecoderFallbackException => "invalid_or_incompatible_protocol",
                     SocketException => "peer_unreachable",
                     TimeoutException => "operation_timeout",
@@ -141,6 +143,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 lock (_gate) _diagnostic = code switch
                 {
                     "peer_authentication_failed" => "Peer identity authentication failed. Verify identities on both devices before pairing again.",
+                    "peer_closed_or_locked" => "Peer closed the connection. Ensure the other device is unlocked and Continuity is enabled.",
                     "invalid_or_incompatible_protocol" => "Peer protocol is invalid or incompatible. Check both devices run the same revision.",
                     "peer_unreachable" => "Device unreachable. Check LAN reachability, the TCP firewall, hostname and guest Wi-Fi isolation.",
                     "operation_timeout" => "Continuity timed out. Check the peer is awake and reachable.",
@@ -289,6 +292,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             if (!Ready || token.IsCancellationRequested || _trustEpoch.GetValueOrDefault(wire.PeerId) != epoch || (_state.Settings.Peers.Count >= 64 && !_state.Settings.Peers.ContainsKey(wire.PeerId))) return;
             _revoked.Remove(wire.PeerId);
             _clipboard.ClearPeer(wire.PeerId);
+            _diagnostic = "";
             _state.Settings.Peers[wire.PeerId] = new(Convert.ToBase64String(wire.Remote.Certificate.ToByteArray()),
                 SecureState.SafeName(wire.Remote.Name), address, GrantId: Guid.NewGuid().ToString("N"));
             SaveSettings();
