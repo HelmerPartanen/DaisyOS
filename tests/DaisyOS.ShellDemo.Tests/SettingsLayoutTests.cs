@@ -46,7 +46,7 @@ public sealed class SettingsLayoutTests
             Assert.Contains(content.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Office Desktop");
             Assert.Contains(content.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Living Room PC");
             Assert.Contains(content.GetVisualDescendants().OfType<Button>(), button => button.Content as string == "Pair" && button.Classes.Contains("Primary"));
-            Assert.True(content.GetVisualDescendants().OfType<Border>().Count(border => border.Classes.Contains("SettingsGroupCard")) >= 4);
+            Assert.True(content.GetVisualDescendants().OfType<Border>().Count(border => border.Classes.Contains("SettingsGroupCard")) >= 3);
             Assert.All(content.GetVisualDescendants().OfType<Border>().Where(border => border.Classes.Contains("SettingsGroupRow")), row =>
             {
                 var point = row.TranslatePoint(default, content);

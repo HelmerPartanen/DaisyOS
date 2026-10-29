@@ -21,17 +21,22 @@ public sealed class ContinuityFlowTests
         try
         {
             var buttons = row.GetVisualDescendants().OfType<Button>().ToArray();
-            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Link keyboard and mouse")) && b.IsEnabled);
-            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Use as audio output")));
-            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("View screen")));
+            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Link")) && b.IsEnabled);
+            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Use as output")));
+            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("View")));
             Assert.DoesNotContain(buttons, b => Equals(b.Content, Loc.Get("Connect")));
-            Assert.Empty(row.GetVisualDescendants().OfType<Expander>());
-            var access = Assert.Single(buttons, b => Avalonia.Automation.AutomationProperties.GetName(b) == Loc.Get("Access to this computer"));
-            Assert.Contains("SettingsGroupAction", access.Classes);
-            Assert.DoesNotContain(row.GetVisualDescendants().OfType<ToggleSwitch>(), t => t.IsEffectivelyVisible);
+            Assert.Empty(row.GetVisualDescendants().OfType<ToggleSwitch>().Where(t => Avalonia.Automation.AutomationProperties.GetName(t) == Loc.Get("Text clipboard")));
+            var access = Assert.Single(buttons, b => b.Classes.Contains("SettingsGroupAction"));
             access.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            Assert.Equal(6, row.GetVisualDescendants().OfType<ToggleSwitch>().Count(t => t.IsEffectivelyVisible));
-            Assert.True(row.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("SettingsGroupRow")) >= 6);
+            Assert.Equal(6, row.GetVisualDescendants().OfType<ToggleSwitch>().Count(t => Avalonia.Automation.AutomationProperties.GetName(t) is not null));
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var back = Assert.Single(row.GetVisualDescendants().OfType<Button>(), b =>
+                Avalonia.Automation.AutomationProperties.GetName(b) == Loc.Format("Back to {0}", "Desktop"));
+            back.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Assert.Contains(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Link")));
+
         }
         finally { window.Close(); }
     }
@@ -83,7 +88,7 @@ public sealed class ContinuityFlowTests
         Assert.Equal(64, indicator.Height);
         indicator.Close();
     }
-    private static (SettingsWindow Window, Border Row) Render(bool linked, int width = 1100)
+    private static (SettingsWindow Window, StackPanel Row) Render(bool linked, int width = 1100)
     {
         var window = new SettingsWindow { Width = width, Height = 1100 }; window.Show(); window.SelectCategory("Continuity");
         var view = window.FindControl<SettingsView>("SettingsContent")!;
@@ -94,7 +99,16 @@ public sealed class ContinuityFlowTests
             linked ? [new("link", "peer", "Desktop", "input", true, false, "Ready")] : []);
         typeof(SettingsView).GetMethod("BuildContinuityPage", flags)!.Invoke(view, [state]);
         window.UpdateLayout(); Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-        var row = view.GetVisualDescendants().OfType<Border>().Single(b => Equals(b.Tag, "Desktop") && b.GetVisualDescendants().OfType<ComboBox>().Any());
+        var row = view.FindControl<StackPanel>("CategoryContent")!;
+        Assert.DoesNotContain(row.GetVisualDescendants().OfType<ComboBox>(), b => Avalonia.Automation.AutomationProperties.GetName(b) == Loc.Get("Screen position"));
+        var name = Assert.Single(row.GetVisualDescendants().OfType<DaisyOS.Shell.Controls.SearchBar>(),
+            field => field.PlaceholderText == Loc.Get("Device name"));
+        Assert.Equal("Laptop", name.Text);
+        Assert.False(name.ShowSearchIcon);
+        Assert.False(name.ShowClearButton);
+        var details = Assert.Single(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Details")));
+        details.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+        window.UpdateLayout(); Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
         return (window, row);
     }
 }

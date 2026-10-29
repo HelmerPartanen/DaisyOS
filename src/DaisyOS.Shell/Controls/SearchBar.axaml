@@ -42,7 +42,7 @@
               CornerRadius="{Binding CornerRadius, RelativeSource={RelativeSource AncestorType=controls:SearchBar}}"
               Padding="11,0,7,0">
       <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="9">
-        <controls:DaisyIcon Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}"
+        <controls:DaisyIcon IsVisible="{Binding ShowSearchIcon, RelativeSource={RelativeSource AncestorType=controls:SearchBar}}" Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}"
                             Foreground="{DynamicResource ContentSecondaryBrush}"
                             VerticalAlignment="Center" />
         <TextBox x:Name="SearchInput" Classes="SearchInput" Grid.Column="1" MinWidth="0" Height="{DynamicResource ControlHeightStandard}" Padding="0"

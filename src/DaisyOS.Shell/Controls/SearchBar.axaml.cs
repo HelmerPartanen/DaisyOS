@@ -10,6 +10,14 @@ public partial class SearchBar : UserControl
     public static new readonly StyledProperty<CornerRadius> CornerRadiusProperty =
         AvaloniaProperty.Register<SearchBar, CornerRadius>(nameof(CornerRadius), new CornerRadius(999));
 
+    public static readonly StyledProperty<bool> ShowSearchIconProperty =
+        AvaloniaProperty.Register<SearchBar, bool>(nameof(ShowSearchIcon), true);
+    public static readonly StyledProperty<bool> ShowClearButtonProperty =
+        AvaloniaProperty.Register<SearchBar, bool>(nameof(ShowClearButton), true);
+
+    public bool ShowSearchIcon { get => GetValue(ShowSearchIconProperty); set => SetValue(ShowSearchIconProperty, value); }
+    public bool ShowClearButton { get => GetValue(ShowClearButtonProperty); set => SetValue(ShowClearButtonProperty, value); }
+
     public static readonly StyledProperty<string> PlaceholderTextProperty =
         AvaloniaProperty.Register<SearchBar, string>(nameof(PlaceholderText), "Search");
 
@@ -37,6 +45,7 @@ public partial class SearchBar : UserControl
     static SearchBar()
     {
         TextProperty.Changed.AddClassHandler<SearchBar>((bar, _) => bar.UpdateClearVisibility());
+        ShowClearButtonProperty.Changed.AddClassHandler<SearchBar>((bar, _) => bar.UpdateClearVisibility());
     }
 
     public SearchBar()
@@ -74,7 +83,7 @@ public partial class SearchBar : UserControl
     private void UpdateClearVisibility()
     {
         if (this.FindControl<Button>("ClearButton") is { } clear)
-            clear.IsVisible = !string.IsNullOrEmpty(Text);
+            clear.IsVisible = ShowClearButton && !string.IsNullOrEmpty(Text);
     }
 
     private void InitializeComponent()

@@ -16,10 +16,13 @@ public partial class SettingsView
     private readonly ContinuityClient _continuity = new();
     private CancellationTokenSource? _continuityPage;
     private StackPanel? _continuityLive;
+    private StackPanel? _continuityPreferences;
     private string? _continuityStructure;
     private readonly Dictionary<string, (TextBlock Label, ProgressBar Progress)> _continuityTransferControls = new();
     private string? _continuitySendPath;
-    private readonly HashSet<string> _continuityExpandedAccess = new();
+    private string? _continuitySelectedPeer;
+    private bool _continuityShowingAccess;
+    private ContinuityStatus? _continuityLastState;
 
     public void PrepareContinuitySend(string path)
     {
@@ -62,59 +65,75 @@ public partial class SettingsView
         while (CategoryContent.Children.Count > 1)
             CategoryContent.Children.RemoveAt(CategoryContent.Children.Count - 1);
 
-        AddSection(Loc.Get("CONTINUITY"), Loc.Get("Nearby trusted devices connect automatically on your local network."),
-            Toggle("Continuity", "continuity.enabled", state.Enabled, value => _ = SetContinuityEnabledAsync(value)));
-
-        if (state.Enabled)
+        var preferences = new List<Control>
         {
-            var name = new TextBox
-            {
-                Text = state.Name,
-                PlaceholderText = Loc.Get("Device name"),
-                MinWidth = 200,
-                MaxWidth = 320,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-            var savedName = state.Name;
-            async Task SaveNameAsync()
-            {
-                var requested = name.Text?.Trim();
-                if (string.IsNullOrWhiteSpace(requested) || requested == savedName)
-                {
-                    name.Text = savedName;
-                    return;
-                }
-                name.IsEnabled = false;
-                try
-                {
-                    var refreshed = await _continuity.ExecuteAsync(new("name", Value: requested));
-                    savedName = refreshed.Name;
-                    name.Text = savedName;
-                    UpdateContinuityLive(refreshed);
-                }
-                catch
-                {
-                    name.Text = savedName;
-                    (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t rename this device."));
-                }
-                finally { name.IsEnabled = true; }
-            }
-            name.LostFocus += async (_, _) => await SaveNameAsync();
-            name.KeyDown += async (_, args) =>
-            {
-                if (args.Key != Key.Enter) return;
-                args.Handled = true;
-                await SaveNameAsync();
-            };
-            AddSection(Loc.Get("THIS DEVICE"), Loc.Get("This is the name shown to nearby DaisyOS devices."),
-                PreferenceRow(Loc.Get("Device name"), Loc.Get("Changes save automatically."), name, "computer-settings"));
-        }
+            Toggle("Continuity", "continuity.enabled", state.Enabled, value => _ = SetContinuityEnabledAsync(value))
+        };
+        if (state.Enabled)
+            preferences.Add(CreateContinuityNameRow(state.Name));
+        _continuityPreferences = CreateSection(Loc.Get("CONTINUITY"), Loc.Get("Connect and share with nearby DaisyOS devices."), preferences.ToArray());
+        CategoryContent.Children.Add(_continuityPreferences);
 
         _continuityStructure = null;
         _continuityTransferControls.Clear();
         _continuityLive = new StackPanel { Spacing = 24 };
         CategoryContent.Children.Add(_continuityLive);
         UpdateContinuityLive(state);
+    }
+
+    private async Task AddContinuityNameToAboutAsync(int version)
+    {
+        ContinuityStatus state;
+        try { state = await _continuity.ExecuteAsync(new("status")); }
+        catch { return; }
+        if (version != _categoryBuildVersion || _activeCategory != "About") return;
+
+        AddSection(Loc.Get("DEVICE IDENTITY"), Loc.Get("The name nearby devices see in Continuity."),
+            CreateContinuityNameRow(state.Name));
+    }
+
+    private Border CreateContinuityNameRow(string deviceName)
+    {
+        var name = new SearchBar
+        {
+            Text = deviceName, PlaceholderText = Loc.Get("Device name"),
+            ShowSearchIcon = false, ShowClearButton = false,
+            MinWidth = 200, MaxWidth = 320, HorizontalAlignment = HorizontalAlignment.Right
+        };
+        var savedName = deviceName;
+        var saving = false;
+        async Task SaveAsync()
+        {
+            if (saving) return;
+            var requested = name.Text?.Trim();
+            if (string.IsNullOrWhiteSpace(requested) || requested == savedName)
+            {
+                name.Text = savedName;
+                return;
+            }
+            saving = true;
+            name.IsEnabled = false;
+            try
+            {
+                var updated = await _continuity.ExecuteAsync(new("name", Value: requested));
+                savedName = updated.Name;
+                name.Text = savedName;
+            }
+            catch
+            {
+                name.Text = savedName;
+                (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the Continuity name."));
+            }
+            finally { name.IsEnabled = true; saving = false; }
+        }
+        name.LostFocus += async (_, _) => await SaveAsync();
+        name.KeyDown += async (_, args) =>
+        {
+            if (args.Key != Key.Enter) return;
+            args.Handled = true;
+            await SaveAsync();
+        };
+        return PreferenceRow(Loc.Get("Device name"), Loc.Get("Shown to nearby devices. Changes save automatically."), name, "continuity");
     }
 
     private void BuildContinuityUnavailable()
@@ -215,6 +234,7 @@ public partial class SettingsView
     private void UpdateContinuityLive(ContinuityStatus state)
     {
         if (_activeCategory != "Continuity" || _continuityLive is null) return;
+        _continuityLastState = state;
         var structure = global::System.Text.Json.JsonSerializer.Serialize(
             state with { Transfers = state.Transfers.Select(transfer => transfer with { Completed = 0 }).ToArray() },
             DaisyOS.Core.Serialization.DaisyCoreJsonContext.Default.ContinuityStatus);
@@ -232,7 +252,12 @@ public partial class SettingsView
         _continuityStructure = structure;
         _continuityTransferControls.Clear();
         _continuityLive.Children.Clear();
-        if (!state.Enabled) return;
+        if (!state.Enabled)
+        {
+            if (_continuityPreferences is not null) _continuityPreferences.IsVisible = true;
+            UpdateContinuityHeader(null);
+            return;
+        }
 
         foreach (var prompt in state.Prompts)
         {
@@ -262,11 +287,24 @@ public partial class SettingsView
                     session.State is "Failed" or "Declined" ? new TextBlock() : ContinuityButton("Disconnect", () => new("live-stop", session.Id)), "continuity")));
         }
 
+        if (_continuitySelectedPeer is { } selectedId &&
+            state.Devices.FirstOrDefault(device => device.Trusted && device.Id == selectedId) is { } selectedPeer)
+        {
+            if (_continuityPreferences is not null) _continuityPreferences.IsVisible = false;
+            UpdateContinuityHeader(selectedPeer);
+            BuildContinuityPeerDetails(selectedPeer, state.Sessions ?? []);
+            return;
+        }
+        if (_continuityPreferences is not null) _continuityPreferences.IsVisible = true;
+        _continuitySelectedPeer = null;
+        _continuityShowingAccess = false;
+        UpdateContinuityHeader(null);
+
         var paired = state.Devices.Where(device => device.Trusted).ToArray();
         if (paired.Length > 0)
         {
             _continuityLive.Children.Add(CreateSection(Loc.Get("MY DEVICES"), Loc.Get("Trusted devices reconnect automatically when they are nearby."),
-                paired.Select(peer => CreateTrustedDeviceRow(peer, state.Sessions ?? [])).ToArray()));
+                paired.Select(peer => CreateTrustedDeviceRow(peer, state)).ToArray()));
         }
 
         var nearby = state.Devices.Where(device => !device.Trusted).ToArray();
@@ -292,23 +330,99 @@ public partial class SettingsView
         PreferenceRow(peer.Name, Loc.Get("Ready to pair"),
             ContinuityButton("Pair", () => new("pair", peer.Id, peer.Address), true), "continuity");
 
-    private Border CreateTrustedDeviceRow(ContinuityDevice peer, ContinuityLiveSession[] sessions)
+    private void ShowContinuityPeer(string? peerId, bool access = false)
     {
-        var rows = new StackPanel { Spacing = 0 };
-        void AddRow(Control control)
+        _continuitySelectedPeer = peerId;
+        _continuityShowingAccess = access;
+        _continuityStructure = null;
+        if (_continuityLastState is { } state) UpdateContinuityLive(state);
+    }
+
+    private Border CreateTrustedDeviceRow(ContinuityDevice peer, ContinuityStatus state)
+    {
+        var nearby = !peer.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase);
+        var details = new Button { Content = Loc.Get("Details"), Classes = { "Subtle", "Small" } };
+        details.Click += (_, _) =>
         {
-            if (rows.Children.Count > 0)
-                rows.Children.Add(new Border { Height = 1, Margin = new Thickness(20, 0), Background = TryBrush("StrokeDefaultBrush") });
-            rows.Children.Add(control);
+            _continuitySelectedPeer = peer.Id;
+            _continuityShowingAccess = false;
+            _continuityStructure = null;
+            UpdateContinuityLive(state);
+        };
+        var row = PreferenceRow(peer.Name, Loc.Get(nearby ? "Available" : "Not nearby"), details, "continuity");
+        row.Tag = peer.Id;
+        return row;
+    }
+
+    private void UpdateContinuityHeader(ContinuityDevice? peer)
+    {
+        if (CategoryContent.Children.FirstOrDefault() is not StackPanel header) return;
+        header.Children.Clear();
+        if (peer is null)
+        {
+            header.Children.Add(new TextBlock { Text = Loc.Get("Continuity"), Classes = { "SettingsPageTitle" } });
+            header.Children.Add(Secondary(Loc.Get("Use your keyboard, mouse and speakers across nearby DaisyOS computers.")));
+            return;
         }
 
+        Button Crumb(string title, string accessibleName, Action action)
+        {
+            var text = new TextBlock { Text = title, Classes = { "SettingsPageTitle" } };
+            text.Bind(TextBlock.ForegroundProperty, this.GetResourceObservable("ContentSecondaryBrush"));
+            var button = new Button { Content = text, Classes = { "BreadcrumbItem" } };
+            Avalonia.Automation.AutomationProperties.SetName(button, accessibleName);
+            button.Click += (_, _) => action();
+            return button;
+        }
+        DaisyIcon Separator()
+        {
+            var icon = new DaisyIcon { Icon = "caret-right", Size = 18, VerticalAlignment = VerticalAlignment.Center };
+            icon.Bind(DaisyIcon.ForegroundProperty, this.GetResourceObservable("ContentTertiaryBrush"));
+            return icon;
+        }
+        var breadcrumbs = new WrapPanel { Orientation = Orientation.Horizontal, VerticalAlignment = VerticalAlignment.Center };
+        breadcrumbs.Children.Add(Crumb(Loc.Get("Continuity"), Loc.Get("Back to Continuity"), () => ShowContinuityPeer(null)));
+        breadcrumbs.Children.Add(Separator());
+        if (_continuityShowingAccess)
+        {
+            breadcrumbs.Children.Add(Crumb(peer.Name, Loc.Format("Back to {0}", peer.Name), () => ShowContinuityPeer(peer.Id)));
+            breadcrumbs.Children.Add(Separator());
+            breadcrumbs.Children.Add(new TextBlock { Text = Loc.Get("Access"), Classes = { "SettingsPageTitle" }, VerticalAlignment = VerticalAlignment.Center });
+        }
+        else
+            breadcrumbs.Children.Add(new TextBlock { Text = peer.Name, Classes = { "SettingsPageTitle" }, VerticalAlignment = VerticalAlignment.Center });
+        header.Children.Add(breadcrumbs);
+        header.Children.Add(Secondary(_continuityShowingAccess
+            ? Loc.Format("Choose what {0} can do on this computer.", peer.Name)
+            : Loc.Get("Use Continuity with this computer.")));
+    }
+
+    private void BuildContinuityPeerDetails(ContinuityDevice peer, ContinuityLiveSession[] sessions)
+    {
         var nearby = !peer.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase);
-        AddRow(PreferenceRow(peer.Name,
-            nearby ? Loc.Get("Available") : Loc.Get("Not nearby. Keep both computers awake and on the same local network."),
-            null, "continuity"));
-        if (_continuitySendPath is { } path)
-            AddRow(PreferenceRow(Loc.Get("File sharing"), Path.GetFileName(path),
-                ContinuityButton("Send file", () => new("send", peer.Id, path), true), "file-download"));
+        var status = nearby ? Loc.Get("Available") : Loc.Get("Not nearby");
+        _continuityLive!.Children.Add(CreateSection(Loc.Get("CONNECTION"), null,
+            PreferenceRow(peer.Name, status, null, "continuity")));
+
+        if (_continuityShowingAccess)
+        {
+            var permissions = new List<Control>();
+            void AddPermission(string label, string description, string feature, bool enabled) =>
+                permissions.Add(ContinuityPermissionRow(label, description, enabled,
+                    allowed => _ = ContinuityActionAsync(new("permission", peer.Id, feature, allowed))));
+            AddPermission("Text clipboard", "Copy on one device and paste on the other.", "clipboard", peer.Clipboard);
+            AddPermission("File sharing", "Receive files from this computer.", "files", peer.Files);
+            AddPermission("Keyboard and mouse", "Allow control after system approval.", "input", peer.Input);
+            AddPermission("App handoff", "Continue a Notes activity here.", "handoff", peer.Handoff);
+            AddPermission("Screen viewing", "Share a screen after system approval.", "screen", peer.Screen);
+            AddPermission("Audio playback", "Play this computer’s audio here.", "audio", peer.Audio);
+            _continuityLive.Children.Add(CreateSection(Loc.Get("ACCESS TO THIS COMPUTER"),
+                Loc.Format("Choose what {0} can do on this computer.", peer.Name), permissions.ToArray()));
+            _continuityLive.Children.Add(CreateSection(Loc.Get("REMOVE DEVICE"), null,
+                PreferenceRow(Loc.Get("Forget device"), Loc.Get("Pair again to use Continuity with this computer."),
+                    ContinuityButton("Forget", () => new("forget", peer.Id)), "continuity")));
+            return;
+        }
 
         var linked = sessions.Any(s => s.PeerId == peer.Id && s.Kind == "input" && s.Outgoing && s.State is not ("Failed" or "Declined"));
         var edgeSide = new ComboBox
@@ -318,8 +432,7 @@ public partial class SettingsView
             MinWidth = 140, IsEnabled = !linked
         };
         Avalonia.Automation.AutomationProperties.SetName(edgeSide, Loc.Get("Screen position"));
-        AddRow(PreferenceRow(Loc.Get("Screen position"), Loc.Get("Where is this computer relative to yours?"), edgeSide, "monitor"));
-        var link = new Button { Content = Loc.Get(linked ? "Linked" : "Link keyboard and mouse"), IsEnabled = !linked, Classes = { "Subtle", "Small" } };
+        var link = new Button { Content = Loc.Get(linked ? "Linked" : "Link"), IsEnabled = !linked, Classes = { "Subtle", "Small" } };
         link.Click += async (_, _) =>
         {
             var sides = new[] { "left", "right", "top", "bottom" };
@@ -327,46 +440,24 @@ public partial class SettingsView
             try { await ContinuityActionAsync(new("edge", peer.Id, sides[Math.Clamp(edgeSide.SelectedIndex, 0, 3)])); }
             finally { link.IsEnabled = !linked; }
         };
-        AddRow(PreferenceRow(Loc.Get("Keyboard and mouse"),
-            Loc.Get("Move the pointer across the selected screen edge."), link, "keyboard"));
-        AddRow(PreferenceRow(Loc.Get("Audio playback"), Loc.Format("Use {0} as speakers for this device.", peer.Name),
-            ContinuityButton("Use as audio output", () => new("live", peer.Id, "audio")), "speaker-high"));
-        var view = new Button { Content = Loc.Get("View screen"), Classes = { "Subtle", "Small" } };
+        var controls = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { edgeSide, link } };
+        var actions = new List<Control>
+        {
+            PreferenceRow(Loc.Get("Keyboard and mouse"), Loc.Get("Move your pointer between screens."), controls, "keyboard"),
+            PreferenceRow(Loc.Get("Audio playback"), Loc.Get("Play audio through this computer."),
+                ContinuityButton("Use as output", () => new("live", peer.Id, "audio")), "speaker-high")
+        };
+        var view = new Button { Content = Loc.Get("View"), Classes = { "Subtle", "Small" } };
         view.Click += async (_, _) => await OpenContinuityViewerAsync(peer, false);
-        AddRow(PreferenceRow(Loc.Get("Screen viewing"), Loc.Get("See the other computer’s screen in a window."), view, "monitor"));
-
-        var permissions = new StackPanel { Spacing = 0, IsVisible = _continuityExpandedAccess.Contains(peer.Id) };
-        void AddPermission(string label, string description, string feature, bool enabled)
-        {
-            permissions.Children.Add(new Border { Height = 1, Margin = new Thickness(20, 0), Background = TryBrush("StrokeDefaultBrush") });
-            permissions.Children.Add(ContinuityPermissionRow(label, description, enabled,
-                allowed => _ = ContinuityActionAsync(new("permission", peer.Id, feature, allowed))));
-        }
-        AddPermission("Text clipboard", "Copy on one device and paste on the other.", "clipboard", peer.Clipboard);
-        AddPermission("File sharing", "Send files from the Files app.", "files", peer.Files);
-        AddPermission("Keyboard and mouse", "Control this computer after local approval.", "input", peer.Input);
-        AddPermission("App handoff", "Continue a Notes text activity on this computer.", "handoff", peer.Handoff);
-        AddPermission("Screen viewing", "Share a selected screen after local approval.", "screen", peer.Screen);
-        AddPermission("Audio playback", "Play the other computer’s audio on this computer.", "audio", peer.Audio);
-        permissions.Children.Add(PreferenceRow(Loc.Get("Forget device"), Loc.Get("Pair again to use Continuity with this computer."),
-            ContinuityButton("Forget", () => new("forget", peer.Id)), "continuity"));
-
-        Button? access = null;
-        access = SettingsAction("Access to this computer", "Choose what this paired computer can share with you.", "shield-check", () =>
-        {
-            permissions.IsVisible = !permissions.IsVisible;
-            if (permissions.IsVisible) _continuityExpandedAccess.Add(peer.Id);
-            else _continuityExpandedAccess.Remove(peer.Id);
-            Avalonia.Automation.AutomationProperties.SetHelpText(access!, Loc.Get(permissions.IsVisible ? "Expanded" : "Collapsed"));
-            if (access!.Content is Grid grid && grid.Children.OfType<DaisyIcon>().LastOrDefault() is { } arrow)
-                arrow.Icon = permissions.IsVisible ? "caret-down" : "caret-right";
-        });
-        Avalonia.Automation.AutomationProperties.SetName(access, Loc.Get("Access to this computer"));
-        if (permissions.IsVisible && access.Content is Grid accessGrid)
-            accessGrid.Children.OfType<DaisyIcon>().Last().Icon = "caret-down";
-        AddRow(access);
-        rows.Children.Add(permissions);
-        return new Border { Child = rows, Tag = peer.Name };
+        actions.Add(PreferenceRow(Loc.Get("Screen"), Loc.Get("View this computer’s screen."), view, "monitor"));
+        if (_continuitySendPath is { } path)
+            actions.Add(PreferenceRow(Loc.Get("Send file"), Path.GetFileName(path),
+                ContinuityButton("Send", () => new("send", peer.Id, path), true), "file-download"));
+        _continuityLive.Children.Add(CreateSection(Loc.Get("USE WITH THIS COMPUTER"),
+            Loc.Get("Choose where the other screen is before linking your keyboard and mouse."), actions.ToArray()));
+        var access = SettingsAction("Access to this computer", "Choose what this device can do here.", "shield-check",
+            () => ShowContinuityPeer(peer.Id, true));
+        _continuityLive.Children.Add(CreateSection(Loc.Get("PERMISSIONS"), null, access));
     }
 
     private async Task OpenContinuityViewerAsync(ContinuityDevice peer, bool control)

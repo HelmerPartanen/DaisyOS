@@ -2647,6 +2647,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private void BuildAbout(int buildVersion)
         {
+            _ = AddContinuityNameToAboutAsync(buildVersion);
             AddSection(Loc.Get("DAISYOS"), Loc.Get("Software and hardware information for this computer."),
                 InfoRow(Loc.Get("Version"), Loc.Get("0.1.0-alpha")));
 
