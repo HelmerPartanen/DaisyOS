@@ -565,7 +565,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 "Network" => Loc.Get("Manage Wi-Fi and wireless networks."),
                 "Ethernet" => Loc.Get("Manage your wired connection."),
                 "Bluetooth" => Loc.Get("Connect and manage nearby accessories."),
-                "Continuity" => Loc.Get("Share clipboard text and files with trusted DaisyOS devices on your local network."),
+                "Continuity" => Loc.Get("Use your keyboard, mouse and speakers across nearby DaisyOS computers."),
                 "Notifications" => Loc.Get("Control when the desktop may interrupt you."),
                 "Apps" => Loc.Get("Manage installed applications and choose which apps open common content."),
                 "InstalledApps" => Loc.Get("Find, repair, or remove applications installed on this computer."),

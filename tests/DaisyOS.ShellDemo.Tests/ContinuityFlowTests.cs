@@ -1,6 +1,8 @@
+using Avalonia;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
+using Avalonia.Headless;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DaisyOS.Core.Continuity;
@@ -23,7 +25,13 @@ public sealed class ContinuityFlowTests
             Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Use as audio output")));
             Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("View screen")));
             Assert.DoesNotContain(buttons, b => Equals(b.Content, Loc.Get("Connect")));
-            Assert.False(Assert.Single(row.GetVisualDescendants().OfType<Expander>()).IsExpanded);
+            Assert.Empty(row.GetVisualDescendants().OfType<Expander>());
+            var access = Assert.Single(buttons, b => Avalonia.Automation.AutomationProperties.GetName(b) == Loc.Get("Access to this computer"));
+            Assert.Contains("SettingsGroupAction", access.Classes);
+            Assert.DoesNotContain(row.GetVisualDescendants().OfType<ToggleSwitch>(), t => t.IsEffectivelyVisible);
+            access.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(6, row.GetVisualDescendants().OfType<ToggleSwitch>().Count(t => t.IsEffectivelyVisible));
+            Assert.True(row.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("SettingsGroupRow")) >= 6);
         }
         finally { window.Close(); }
     }
@@ -41,6 +49,31 @@ public sealed class ContinuityFlowTests
         }
         finally { window.Close(); }
     }
+    [AvaloniaTheory]
+    [InlineData(780)]
+    [InlineData(1100)]
+    public void DeviceRowsFitNarrowAndWideSettingsWindows(int width)
+    {
+        var (window, row) = Render(false, width);
+        window.RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
+        window.UpdateLayout();
+        try
+        {
+            foreach (var button in row.GetVisualDescendants().OfType<Button>().Where(b => b.IsEffectivelyVisible))
+            {
+                var origin = button.TranslatePoint(default, row)!.Value;
+                Assert.True(origin.X >= 0 && origin.X + button.Bounds.Width <= row.Bounds.Width + 1);
+            }
+            var artifacts = Environment.GetEnvironmentVariable("DAISYOS_UX_ARTIFACTS");
+            if (!string.IsNullOrEmpty(artifacts))
+            {
+                Directory.CreateDirectory(artifacts);
+                using var frame = window.CaptureRenderedFrame();
+                frame!.Save(Path.Combine(artifacts, $"continuity-dark-{width}.png"));
+            }
+        }
+        finally { window.Close(); }
+    }
     [AvaloniaFact]
     public void SharingIndicatorDoesNotStealKeyboardFocusOrAppearAsAnotherApp()
     {
@@ -50,9 +83,9 @@ public sealed class ContinuityFlowTests
         Assert.Equal(64, indicator.Height);
         indicator.Close();
     }
-    private static (SettingsWindow Window, Border Row) Render(bool linked)
+    private static (SettingsWindow Window, Border Row) Render(bool linked, int width = 1100)
     {
-        var window = new SettingsWindow { Width = 1100, Height = 900 }; window.Show(); window.SelectCategory("Continuity");
+        var window = new SettingsWindow { Width = width, Height = 1100 }; window.Show(); window.SelectCategory("Continuity");
         var view = window.FindControl<SettingsView>("SettingsContent")!;
         var flags = BindingFlags.Instance | BindingFlags.NonPublic;
         ((CancellationTokenSource?)typeof(SettingsView).GetField("_continuityPage", flags)!.GetValue(view))?.Cancel();

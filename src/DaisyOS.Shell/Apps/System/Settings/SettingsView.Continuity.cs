@@ -19,6 +19,7 @@ public partial class SettingsView
     private string? _continuityStructure;
     private readonly Dictionary<string, (TextBlock Label, ProgressBar Progress)> _continuityTransferControls = new();
     private string? _continuitySendPath;
+    private readonly HashSet<string> _continuityExpandedAccess = new();
 
     public void PrepareContinuitySend(string path)
     {
@@ -293,70 +294,79 @@ public partial class SettingsView
 
     private Border CreateTrustedDeviceRow(ContinuityDevice peer, ContinuityLiveSession[] sessions)
     {
-        var actions = new WrapPanel
+        var rows = new StackPanel { Spacing = 0 };
+        void AddRow(Control control)
         {
-            Orientation = Orientation.Horizontal,
-            ItemSpacing = 8,
-            LineSpacing = 8,
-            HorizontalAlignment = HorizontalAlignment.Left
-        };
+            if (rows.Children.Count > 0)
+                rows.Children.Add(new Border { Height = 1, Margin = new Thickness(20, 0), Background = TryBrush("StrokeDefaultBrush") });
+            rows.Children.Add(control);
+        }
+
+        var nearby = !peer.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase);
+        AddRow(PreferenceRow(peer.Name,
+            nearby ? Loc.Get("Available") : Loc.Get("Not nearby. Keep both computers awake and on the same local network."),
+            null, "continuity"));
         if (_continuitySendPath is { } path)
-            actions.Children.Add(ContinuityButton("Send file", () => new("send", peer.Id, path), true));
+            AddRow(PreferenceRow(Loc.Get("File sharing"), Path.GetFileName(path),
+                ContinuityButton("Send file", () => new("send", peer.Id, path), true), "file-download"));
+
         var linked = sessions.Any(s => s.PeerId == peer.Id && s.Kind == "input" && s.Outgoing && s.State is not ("Failed" or "Declined"));
         var edgeSide = new ComboBox
         {
             ItemsSource = new[] { Loc.Get("On my left"), Loc.Get("On my right"), Loc.Get("Above me"), Loc.Get("Below me") },
-            SelectedIndex = Math.Max(0, Array.IndexOf(new[] { "left", "right", "top", "bottom" }, peer.InputEdge)), MinWidth = 140, IsEnabled = !linked
+            SelectedIndex = Math.Max(0, Array.IndexOf(new[] { "left", "right", "top", "bottom" }, peer.InputEdge)),
+            MinWidth = 140, IsEnabled = !linked
         };
-        var link = new Button { Content = Loc.Get(linked ? "Linked" : "Link keyboard and mouse"), IsEnabled = !linked, Classes = { "Primary", "Small" } };
+        Avalonia.Automation.AutomationProperties.SetName(edgeSide, Loc.Get("Screen position"));
+        AddRow(PreferenceRow(Loc.Get("Screen position"), Loc.Get("Where is this computer relative to yours?"), edgeSide, "monitor"));
+        var link = new Button { Content = Loc.Get(linked ? "Linked" : "Link keyboard and mouse"), IsEnabled = !linked, Classes = { "Subtle", "Small" } };
         link.Click += async (_, _) =>
         {
             var sides = new[] { "left", "right", "top", "bottom" };
             link.IsEnabled = false;
             try { await ContinuityActionAsync(new("edge", peer.Id, sides[Math.Clamp(edgeSide.SelectedIndex, 0, 3)])); }
-            finally { link.IsEnabled = true; }
+            finally { link.IsEnabled = !linked; }
         };
-        actions.Children.Add(edgeSide); actions.Children.Add(link);
-        actions.Children.Add(ContinuityButton("Use as audio output", () => new("live", peer.Id, "audio")));
-        {
-            var view = new Button { Content = Loc.Get("View screen"), Classes = { "Subtle", "Small" } };
-            view.Click += async (_, _) => await OpenContinuityViewerAsync(peer, false);
-            actions.Children.Add(view);
-        }
+        AddRow(PreferenceRow(Loc.Get("Keyboard and mouse"),
+            Loc.Get("Move the pointer across the selected screen edge."), link, "keyboard"));
+        AddRow(PreferenceRow(Loc.Get("Audio playback"), Loc.Format("Use {0} as speakers for this device.", peer.Name),
+            ContinuityButton("Use as audio output", () => new("live", peer.Id, "audio")), "speaker-high"));
+        var view = new Button { Content = Loc.Get("View screen"), Classes = { "Subtle", "Small" } };
+        view.Click += async (_, _) => await OpenContinuityViewerAsync(peer, false);
+        AddRow(PreferenceRow(Loc.Get("Screen viewing"), Loc.Get("See the other computer’s screen in a window."), view, "monitor"));
 
-        var title = new StackPanel { Spacing = 3 };
-        title.Children.Add(new TextBlock { Text = peer.Name, Classes = { "SettingsLabel" } });
-        title.Children.Add(new TextBlock
+        var permissions = new StackPanel { Spacing = 0, IsVisible = _continuityExpandedAccess.Contains(peer.Id) };
+        void AddPermission(string label, string description, string feature, bool enabled)
         {
-            Text = Loc.Get(peer.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase) ? "Not nearby" : "Available"),
-            Classes = { "SettingsDescription" }
+            permissions.Children.Add(new Border { Height = 1, Margin = new Thickness(20, 0), Background = TryBrush("StrokeDefaultBrush") });
+            permissions.Children.Add(ContinuityPermissionRow(label, description, enabled,
+                allowed => _ = ContinuityActionAsync(new("permission", peer.Id, feature, allowed))));
+        }
+        AddPermission("Text clipboard", "Copy on one device and paste on the other.", "clipboard", peer.Clipboard);
+        AddPermission("File sharing", "Send files from the Files app.", "files", peer.Files);
+        AddPermission("Keyboard and mouse", "Control this computer after local approval.", "input", peer.Input);
+        AddPermission("App handoff", "Continue a Notes text activity on this computer.", "handoff", peer.Handoff);
+        AddPermission("Screen viewing", "Share a selected screen after local approval.", "screen", peer.Screen);
+        AddPermission("Audio playback", "Play the other computer’s audio on this computer.", "audio", peer.Audio);
+        permissions.Children.Add(PreferenceRow(Loc.Get("Forget device"), Loc.Get("Pair again to use Continuity with this computer."),
+            ContinuityButton("Forget", () => new("forget", peer.Id)), "continuity"));
+
+        Button? access = null;
+        access = SettingsAction("Access to this computer", "Choose what this paired computer can share with you.", "shield-check", () =>
+        {
+            permissions.IsVisible = !permissions.IsVisible;
+            if (permissions.IsVisible) _continuityExpandedAccess.Add(peer.Id);
+            else _continuityExpandedAccess.Remove(peer.Id);
+            Avalonia.Automation.AutomationProperties.SetHelpText(access!, Loc.Get(permissions.IsVisible ? "Expanded" : "Collapsed"));
+            if (access!.Content is Grid grid && grid.Children.OfType<DaisyIcon>().LastOrDefault() is { } arrow)
+                arrow.Icon = permissions.IsVisible ? "caret-down" : "caret-right";
         });
-
-        var permissions = new StackPanel { Spacing = 0 };
-        permissions.Children.Add(ContinuityPermissionRow("Text clipboard", "Copy on one device and paste on the other.", peer.Clipboard,
-            allowed => _ = ContinuityActionAsync(new("permission", peer.Id, "clipboard", allowed))));
-        permissions.Children.Add(new Border { Height = 1, Background = TryBrush("StrokeDefaultBrush") });
-        permissions.Children.Add(ContinuityPermissionRow("File sharing", "Send files from the Files app.", peer.Files,
-            allowed => _ = ContinuityActionAsync(new("permission", peer.Id, "files", allowed))));
-
-        foreach (var permission in new[] {
-            ("Keyboard and mouse", "Control this computer after local approval.", "input", peer.Input),
-            ("App handoff", "Continue a Notes text activity on this computer.", "handoff", peer.Handoff),
-            ("Screen viewing", "Share a selected screen after local approval.", "screen", peer.Screen),
-            ("Audio playback", "Play the other computer’s audio on this computer.", "audio", peer.Audio) })
-        {
-            permissions.Children.Add(new Border { Height = 1, Background = TryBrush("StrokeDefaultBrush") });
-            permissions.Children.Add(ContinuityPermissionRow(permission.Item1, permission.Item2, permission.Item4,
-                allowed => _ = ContinuityActionAsync(new("permission", peer.Id, permission.Item3, allowed))));
-        }
-        permissions.Children.Add(ContinuityButton("Forget", () => new("forget", peer.Id)));
-        var access = new Expander { Header = Loc.Get("Access to this computer"), Content = permissions, IsExpanded = false };
-        var help = new TextBlock { Text = Loc.Get("Choose where this computer sits, then link. Move the pointer across that edge to switch computers."),
-            TextWrapping = TextWrapping.Wrap, Classes = { "SettingsDescription" } };
-        var content = new StackPanel { Spacing = 14, Children = { title, help, actions, access } };
-        var row = new Border { Child = content, Tag = peer.Name };
-        row.Classes.Add("SettingsGroupRow");
-        return row;
+        Avalonia.Automation.AutomationProperties.SetName(access, Loc.Get("Access to this computer"));
+        if (permissions.IsVisible && access.Content is Grid accessGrid)
+            accessGrid.Children.OfType<DaisyIcon>().Last().Icon = "caret-down";
+        AddRow(access);
+        rows.Children.Add(permissions);
+        return new Border { Child = rows, Tag = peer.Name };
     }
 
     private async Task OpenContinuityViewerAsync(ContinuityDevice peer, bool control)
@@ -382,25 +392,8 @@ public partial class SettingsView
             VerticalAlignment = VerticalAlignment.Center
         };
         toggle.Click += (_, _) => changed(toggle.IsChecked == true);
-        var copy = new StackPanel
-        {
-            Spacing = 2,
-            VerticalAlignment = VerticalAlignment.Center,
-            Children =
-            {
-                new TextBlock { Text = Loc.Get(label), Classes = { "SettingsLabel" } },
-                new TextBlock { Text = Loc.Get(description), Classes = { "SettingsDescription" } }
-            }
-        };
-        var row = new Grid
-        {
-            ColumnDefinitions = new ColumnDefinitions("*,Auto"),
-            ColumnSpacing = 16,
-            MinHeight = 52,
-            Children = { copy, toggle }
-        };
-        Grid.SetColumn(toggle, 1);
-        return row;
+        Avalonia.Automation.AutomationProperties.SetName(toggle, Loc.Get(label));
+        return PreferenceRow(Loc.Get(label), Loc.Get(description), toggle);
     }
 
     private Border CreateTransferRow(ContinuityTransfer transfer)
