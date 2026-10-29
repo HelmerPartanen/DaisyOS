@@ -149,23 +149,28 @@ public partial class NotesView : UserControl
         {
             var client = new DaisyOS.System.Continuity.ContinuityClient();
             var status = await client.ExecuteAsync(new("status"));
-            var peers = status.Devices.Where(p => p.Trusted && p.Handoff).ToArray();
+            var peers = status.Devices.Where(p => p.Trusted).ToArray();
             if (!status.Enabled || status.Paused || !status.SessionReady || peers.Length == 0)
-            { (Avalonia.Application.Current as App)?.Feedback.Show(Loc.Get("Enable app handoff for a paired computer in Continuity settings.")); return; }
-            var choice = new ComboBox { ItemsSource = peers.Select(p => p.Name).ToArray(), SelectedIndex = 0, MinWidth = 280 };
-            var send = new Button { Content = Loc.Get("Continue on this computer"), Classes = { "Primary" } };
-            var dialog = new Window { Title = Loc.Get("App handoff"), Width = 400, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-            dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 16, Children = { choice,
-                new TextBlock { Text = Loc.Get("Sends a text snapshot. The original note stays here."), TextWrapping = Avalonia.Media.TextWrapping.Wrap }, send } };
-            send.Click += (_, _) => dialog.Close(choice.SelectedIndex);
-            var selected = await dialog.ShowDialog<int?>(owner);
-            if (selected is not { } index || index < 0 || index >= peers.Length) return;
+            { (Avalonia.Application.Current as App)?.Feedback.Show(Loc.Get("Pair another computer in Continuity settings.")); return; }
+            var index = 0;
+            if (peers.Length > 1)
+            {
+                var choice = new ComboBox { ItemsSource = peers.Select(p => p.Name).ToArray(), SelectedIndex = 0, MinWidth = 280 };
+                var send = new Button { Content = Loc.Get("Continue on this computer"), Classes = { "Primary" } };
+                var dialog = new Window { Title = Loc.Get("App handoff"), Width = 400, SizeToContent = SizeToContent.Height, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                dialog.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 16, Children = { choice,
+                    new TextBlock { Text = Loc.Get("Sends a text snapshot. The original note stays here."), TextWrapping = Avalonia.Media.TextWrapping.Wrap }, send } };
+                send.Click += (_, _) => dialog.Close(choice.SelectedIndex);
+                var selected = await dialog.ShowDialog<int?>(owner);
+                if (selected is not { } chosen || chosen < 0 || chosen >= peers.Length) return;
+                index = chosen;
+            }
             var text = note.IsRichNote ? note.Package?.Document.ToPlainText() ?? note.Content : note.Content;
             var activity = new DaisyOS.Core.Continuity.ContinuityActivity("org.daisyos.notes", "note.text", 1, note.Title, text);
             activity.Validate();
             await client.ExecuteAsync(new("handoff", peers[index].Id,
                 global::System.Text.Json.JsonSerializer.Serialize(activity, DaisyOS.Core.Serialization.DaisyCoreJsonContext.Default.ContinuityActivity)));
-            (Avalonia.Application.Current as App)?.Feedback.Show(Loc.Get("Handoff sent. Approve it on the other computer."));
+            (Avalonia.Application.Current as App)?.Feedback.Show(Loc.Format("Continuing on {0}…", peers[index].Name));
         }
         catch { (Avalonia.Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t hand off this note. Check the device and note size.")); }
     }

@@ -22,6 +22,9 @@ public sealed class ContinuityViewer : Window
     private readonly Image _image = new() { Stretch = Stretch.Uniform, Focusable = true };
     private readonly Channel<string> _input = Channel.CreateBounded<string>(64);
     private Bitmap? _bitmap;
+    private byte[]? _lastFrame;
+    private readonly TextBlock _connectionState = new() { Foreground = Brushes.White, TextWrapping = TextWrapping.Wrap,
+        HorizontalAlignment = HorizontalAlignment.Center, VerticalAlignment = VerticalAlignment.Center, MaxWidth = 460 };
     private bool _closing;
     private string? _pendingMotion;
 
@@ -37,7 +40,9 @@ public sealed class ContinuityViewer : Window
             Foreground = Brushes.White, VerticalAlignment = VerticalAlignment.Center };
         var bar = new DockPanel { Margin = new Thickness(12), LastChildFill = true };
         DockPanel.SetDock(stop, Dock.Right); bar.Children.Add(stop); bar.Children.Add(tip);
-        var layout = new DockPanel(); DockPanel.SetDock(bar, Dock.Top); layout.Children.Add(bar); layout.Children.Add(_image); Content = layout;
+        _connectionState.Text = Loc.Format("Choose a screen to share on {0}.", session.Name);
+        var stage = new Grid { Children = { _image, _connectionState } };
+        var layout = new DockPanel(); DockPanel.SetDock(bar, Dock.Top); layout.Children.Add(bar); layout.Children.Add(stage); Content = layout;
         if (session.Control)
         {
             AddHandler(KeyDownEvent, OnKeyDown, global::Avalonia.Interactivity.RoutingStrategies.Tunnel);
@@ -153,11 +158,17 @@ public sealed class ContinuityViewer : Window
                     if (++misses % 20 == 0)
                     {
                         var state = await _client.ExecuteAsync(new("status"), _stop.Token);
-                        if (state.Sessions?.Any(s => s.Id == _session.Id) != true) Close();
+                        var session = state.Sessions?.FirstOrDefault(s => s.Id == _session.Id);
+                        if (session is null) { Close(); return; }
+                        _connectionState.Text = session.State is "Failed" or "Declined" ? Loc.Get(session.Detail) : Loc.Format("Choose a screen to share on {0}.", _session.Name);
+                        _connectionState.IsVisible = true;
                     }
                     continue;
                 }
                 misses = 0;
+                _connectionState.IsVisible = false;
+                if (_lastFrame is not null && bytes.AsSpan().SequenceEqual(_lastFrame)) continue;
+                _lastFrame = bytes;
                 using var stream = new MemoryStream(bytes, false);
                 var next = new Bitmap(stream);
                 var previous = _bitmap; _bitmap = next; _image.Source = next; previous?.Dispose();

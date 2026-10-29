@@ -22,7 +22,7 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
     }
     private readonly Dictionary<string, Session> _sessions = [];
     private sealed record Source(string Id, string Label, bool Window, int X = 0, int Y = 0, int Width = 0, int Height = 0);
-    private static string Helper => global::System.IO.Path.Combine(AppContext.BaseDirectory, "daisyos-portal-capture");
+    private static string Helper => PortalCaptureHelper.Path;
 
     public async Task<(uint Code, Dictionary<string, VariantValue> Results)> HandleAsync(string portal, string method, List<string> args, Dictionary<string, VariantValue> options, CancellationToken stop)
     {
@@ -48,7 +48,7 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
             return (0, []);
         }
         if (method != "Start" || (!session.Selected && !session.Remote)) return (2, []);
-        if (session.Remote)
+        if (session.Remote && !session.Selected)
         {
             var consent = PortalDialog.Create(() => new PortalDialog("Allow remote control?", $"{DisplayApp(session.App)} wants to control your computer. Requested access: {Devices(session.Devices)}. Only allow applications you trust.", "Allow remote control", "Deny"));
             using var cancelConsent = stop.Register(() => Dispatcher.UIThread.Post(consent.Close));
@@ -65,7 +65,10 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
         var sources = await SourcesAsync(session.Types, token);
         token.ThrowIfCancellationRequested();
         if (sources.Count == 0) return (2, []);
-        var dialog = PortalDialog.Create(() => new PortalDialog("Share your screen", $"{DisplayApp(session.App)} wants to view your screen. Choose what to share. Everything visible in the selected screen or window can be recorded.", "Share"));
+        var dialog = PortalDialog.Create(() => new PortalDialog(session.Remote ? "Share screen and control" : "Share your screen",
+            session.Remote ? $"{DisplayApp(session.App)} wants to view your screen and control {Devices(session.Devices)}. Choose what to share."
+                : $"{DisplayApp(session.App)} wants to view your screen. Choose what to share. Everything visible in the selected screen or window can be recorded.",
+            session.Remote ? "Share and allow control" : "Share"));
         var choices = new List<(Source Source, CheckBox Check)>();
         foreach (var source in sources)
         {
@@ -78,7 +81,8 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
             };
             choices.Add((source, check)); dialog.Fields.Children.Add(check);
         }
-        dialog.Confirm.IsEnabled = false;
+        if (choices.Count == 1) choices[0].Check.IsChecked = true;
+        dialog.Confirm.IsEnabled = choices.Any(item => item.Check.IsChecked == true);
         using var cancelDialog = token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
         if (!await dialog.Present() || token.IsCancellationRequested) return (1, []);
         var streams = new Tmds.DBus.Protocol.Array<Struct<uint, Dict<string, VariantValue>>>();
@@ -113,11 +117,8 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
     private static string Devices(uint value) => string.Join(", ", new[] { (1u, "keyboard"), (2u, "pointer"), (4u, "touch input") }.Where(item => (value & item.Item1) != 0).Select(item => item.Item2));
     private void ShowIndicator(string path, Session session)
     {
-        var indicator = PortalDialog.Create(() => new Window { Title = session.Remote ? "Remote control" : "Screen sharing", Width = 360, SizeToContent = SizeToContent.Height, CanResize = false, CanMaximize = false, CanMinimize = false });
-        indicator.Bind(Window.BackgroundProperty, indicator.GetResourceObservable("SurfaceBaseSolidBrush"));
-        var end = new Button { Content = Loc.Get("Stop sharing"), Classes = { "Primary" } };
-        end.Click += (_, _) => Close(path, true);
-        indicator.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 12, Children = { new TextBlock { Text = $"{(session.Remote ? "Remote control" : "Sharing")} with {DisplayApp(session.App)}", TextWrapping = Avalonia.Media.TextWrapping.Wrap }, end } };
+        var indicator = PortalSharingIndicator.Create(session.Remote ? "Remote control" : "Screen sharing",
+            $"Sharing with {DisplayApp(session.App)}", () => Close(path, true));
         indicator.Closed += (_, _) => Close(path, true);
         session.Indicator = indicator; indicator.Show();
     }

@@ -81,11 +81,11 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             "EAoIc2VxdWVuY2UYASABKAQSDAoEZGF0YRgCIAEoDCJiCg1BY3Rpdml0eU9m",
             "ZmVyEg4KBmFwcF9pZBgBIAEoCRIMCgRraW5kGAIgASgJEhYKDnNjaGVtYV92",
             "ZXJzaW9uGAMgASgNEg0KBXRpdGxlGAQgASgJEgwKBHRleHQYBSABKAkiIgoO",
-            "QWN0aXZpdHlSZXN1bHQSEAoIYWNjZXB0ZWQYASABKAgqdgoKQ2FwYWJpbGl0",
-            "eRIaChZDQVBBQklMSVRZX1VOU1BFQ0lGSUVEEAASEgoOVEVYVF9DTElQQk9B",
-            "UkQQARIJCgVGSUxFUxACEgkKBUlOUFVUEAMSCwoHSEFORE9GRhAEEgoKBlND",
-            "UkVFThAFEgkKBUFVRElPEAZCIaoCHkRhaXN5T1MuQ29udGludWl0eS5Qcm90",
-            "b2NvbC5WMWIGcHJvdG8z"));
+            "QWN0aXZpdHlSZXN1bHQSEAoIYWNjZXB0ZWQYASABKAgqhgEKCkNhcGFiaWxp",
+            "dHkSGgoWQ0FQQUJJTElUWV9VTlNQRUNJRklFRBAAEhIKDlRFWFRfQ0xJUEJP",
+            "QVJEEAESCQoFRklMRVMQAhIJCgVJTlBVVBADEgsKB0hBTkRPRkYQBBIKCgZT",
+            "Q1JFRU4QBRIJCgVBVURJTxAGEg4KCkVER0VfSU5QVVQQB0IhqgIeRGFpc3lP",
+            "Uy5Db250aW51aXR5LlByb3RvY29sLlYxYgZwcm90bzM="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::DaisyOS.Continuity.Protocol.V1.Capability), }, null, new pbr::GeneratedClrTypeInfo[] {
@@ -123,6 +123,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [pbr::OriginalName("HANDOFF")] Handoff = 4,
     [pbr::OriginalName("SCREEN")] Screen = 5,
     [pbr::OriginalName("AUDIO")] Audio = 6,
+    [pbr::OriginalName("EDGE_INPUT")] EdgeInput = 7,
   }
 
   #endregion

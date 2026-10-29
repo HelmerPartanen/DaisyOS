@@ -56,7 +56,7 @@ public sealed class PeerWire : IAsyncDisposable
             var wire = new PeerWire(client, ssl, remote);
             await wire.SendAsync(new Envelope { Hello = new Hello { DeviceId = ByteString.CopyFrom(Convert.FromHexString(state.Id)),
                 Nonce = ByteString.CopyFrom(global::System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)),
-                Capabilities = { Capability.TextClipboard, Capability.Files, Capability.Input, Capability.Handoff, Capability.Screen, Capability.Audio } } }, ct);
+                Capabilities = { Capability.TextClipboard, Capability.Files, Capability.Input, Capability.Handoff, Capability.Screen, Capability.Audio, Capability.EdgeInput } } }, ct);
             var hello = await wire.ReceiveAsync(ct);
             if (hello.Hello is null || hello.Hello.DeviceId != ByteString.CopyFrom(Convert.FromHexString(id)) || hello.Hello.Nonce.Length != 32)
                 throw new InvalidDataException("Invalid Hello identity.");

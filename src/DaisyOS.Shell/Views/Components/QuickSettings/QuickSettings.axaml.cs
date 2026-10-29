@@ -46,6 +46,9 @@ public partial class QuickSettings : UserControl
     private QuickSettingsPage _currentPage;
     private CancellationTokenSource? _quickBluetoothDiscoveryLifetime;
     private Task? _automaticWifiRefresh;
+    private Task? _automaticOutputRefresh;
+    private AudioDeviceInfo[] _lastAudioOutputs = [];
+    private int _outputDevicesGeneration;
     private Task? _automaticBluetoothRefresh;
     private readonly Dictionary<string, WirelessNetworkInfo> _wifiNetworkCache = new(StringComparer.Ordinal);
     private readonly Dictionary<string, BluetoothDevice> _bluetoothDeviceCache = new(StringComparer.OrdinalIgnoreCase);
@@ -516,7 +519,7 @@ public partial class QuickSettings : UserControl
     private void OnBluetoothDevicesBackClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
         SetQuickSettingsPage(QuickSettingsPage.Main);
 
-    private async Task LoadOutputDevicesAsync()
+    private async Task LoadOutputDevicesAsync(bool refresh = false)
     {
         var host = this.FindControl<StackPanel>("OutputDevicesHost");
         if (host is null)
@@ -524,6 +527,9 @@ public partial class QuickSettings : UserControl
             return;
         }
 
+        var generation = ++_outputDevicesGeneration;
+        if (!refresh)
+        {
         host.Children.Clear();
         host.Children.Add(Loc.Bind(new TextBlock
         {
@@ -531,6 +537,7 @@ public partial class QuickSettings : UserControl
             Foreground = this.FindResource("ContentSecondaryBrush") as IBrush,
             Margin = new Avalonia.Thickness(10, 8)
         }, TextBlock.TextProperty, "Loading devices…"));
+        }
 
         IReadOnlyList<AudioDeviceInfo> devices;
         try
@@ -542,6 +549,9 @@ public partial class QuickSettings : UserControl
             devices = Array.Empty<AudioDeviceInfo>();
         }
 
+        if (generation != _outputDevicesGeneration) return;
+        if (refresh && _lastAudioOutputs.SequenceEqual(devices)) return;
+        _lastAudioOutputs = devices.ToArray();
         host.Children.Clear();
         if (devices.Count == 0)
         {
@@ -575,7 +585,7 @@ public partial class QuickSettings : UserControl
         content.Children.Add(outputIcon);
         var name = DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
         {
-            Text = FormatOutputDeviceName(device.Name),
+            Text = FormatOutputDeviceName(device.Name) + (device.Status is { } status ? " · " + Loc.Get(status) : ""),
             FontSize = 13,
             Margin = new Avalonia.Thickness(12, 0, 12, 0),
             VerticalAlignment = VerticalAlignment.Center,
@@ -621,7 +631,8 @@ public partial class QuickSettings : UserControl
     private void SetQuickSettingsPage(QuickSettingsPage page)
     {
         _currentPage = page;
-        if (page is QuickSettingsPage.WifiNetworks or QuickSettingsPage.BluetoothDevices)
+        _connectionListTimer.Interval = TimeSpan.FromSeconds(page == QuickSettingsPage.OutputDevices ? 2 : 8);
+        if (page is QuickSettingsPage.WifiNetworks or QuickSettingsPage.BluetoothDevices or QuickSettingsPage.OutputDevices)
             _connectionListTimer.Start();
         else
             _connectionListTimer.Stop();
@@ -660,7 +671,11 @@ public partial class QuickSettings : UserControl
 
     private void RefreshVisibleConnectionList()
     {
-        if (_currentPage == QuickSettingsPage.WifiNetworks)
+        if (_currentPage == QuickSettingsPage.OutputDevices)
+        {
+            if (_automaticOutputRefresh is not { IsCompleted: false }) _automaticOutputRefresh = LoadOutputDevicesAsync(refresh: true);
+        }
+        else if (_currentPage == QuickSettingsPage.WifiNetworks)
         {
             if (_automaticWifiRefresh is not { IsCompleted: false })
                 _automaticWifiRefresh = LoadWifiNetworksAsync();

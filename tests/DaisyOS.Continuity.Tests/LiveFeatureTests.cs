@@ -52,21 +52,20 @@ public sealed class LiveFeatureTests
     [InlineData("screen", false)]
     [InlineData("screen", true)]
     [InlineData("audio", false)]
-    public async Task NewFeaturesAreDeniedByDefault(string kind, bool control)
+    public async Task OutgoingRequestsNeedPairingAndAnUnlockedSession(string kind, bool control)
     {
         using var fixture = new StateFixture();
         await using var daemon = fixture.Host();
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => daemon.ExecuteAsync(new("live", fixture.Peer.Id, kind, control), "local-ui"));
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => daemon.ExecuteAsync(new("live", "unknown-peer", kind, control), "local-ui"));
         Assert.Empty(daemon.Snapshot().Sessions!);
         Assert.Empty(daemon.Snapshot().Prompts);
     }
     [Theory]
-    [InlineData("screen")]
     [InlineData("audio")]
-    public async Task EnabledFeaturesStillRequireTargetSessionConsent(string kind)
+    public async Task InitialAudioRequestsRequireTargetConsent(string kind)
     {
         using var fixture = new StateFixture();
-        fixture.HostState.Settings.Peers[fixture.Peer.Id] = fixture.HostState.Settings.Peers[fixture.Peer.Id] with { Screen = true, Audio = true };
+        fixture.HostState.Settings.Peers[fixture.Peer.Id] = fixture.HostState.Settings.Peers[fixture.Peer.Id] with { Screen = true, Audio = false };
         await using var daemon = fixture.Host();
         using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
         using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();

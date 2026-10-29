@@ -44,11 +44,7 @@ internal sealed class InputCapturePortal(DBusConnection bus) : IDisposable
                 return (1, []);
             }
             await WatchAsync(args[1], session);
-            var indicator = PortalDialog.Create(() => new Window { Title = "Input sharing", Width = 380, SizeToContent = SizeToContent.Height, CanResize = false });
-            indicator.Bind(Window.BackgroundProperty, indicator.GetResourceObservable("SurfaceBaseSolidBrush"));
-            var end = new Button { Content = Loc.Get("Stop sharing"), Classes = { "Primary" } };
-            end.Click += (_, _) => Close(args[1], true);
-            indicator.Content = new StackPanel { Margin = new Avalonia.Thickness(20), Spacing = 12, Children = { new TextBlock { Text = "Input sharing allowed for " + args[2], TextWrapping = Avalonia.Media.TextWrapping.Wrap }, end } };
+            var indicator = PortalSharingIndicator.Create("Keyboard and mouse", "Input sharing allowed for " + args[2], () => Close(args[1], true));
             indicator.Closed += (_, _) => Close(args[1], true); session.Indicator = indicator; indicator.Show();
             return (0, new() { ["capabilities"] = capabilities });
             }
@@ -61,7 +57,7 @@ internal sealed class InputCapturePortal(DBusConnection bus) : IDisposable
         var token = linkedStop.Token;
         if (method == "GetZones")
         {
-            var start = new ProcessStartInfo(global::System.IO.Path.Combine(AppContext.BaseDirectory, "daisyos-portal-capture")) { ArgumentList = { "--list" }, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
+            var start = new ProcessStartInfo(PortalCaptureHelper.Path) { ArgumentList = { "--list" }, RedirectStandardOutput = true, RedirectStandardError = true, UseShellExecute = false };
             using var process = Process.Start(start) ?? throw new IOException("Output information unavailable.");
             var output = await process.StandardOutput.ReadToEndAsync(token); await process.WaitForExitAsync(token);
             current.Zones.Clear();

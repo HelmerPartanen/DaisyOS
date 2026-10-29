@@ -42,6 +42,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     private IDisposable? _ownerWatch;
     private IDisposable? _notificationWatch;
     private readonly HashSet<uint> _fileNotifications = new();
+    private readonly Dictionary<uint, string> _promptNotifications = [];
     private bool _disposing;
     private bool _sessionReady;
     private string _diagnostic = "";
@@ -91,8 +92,18 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             (message, _) => { var reader = message.GetBodyReader(); return (reader.ReadUInt32(), reader.ReadString()); },
             result =>
             {
-                if (!result.HasValue || result.Value.Action != "open-folder") return;
-                lock (_gate) if (!_sessionIsActive() || !_fileNotifications.Remove(result.Value.Id)) return;
+                if (!result.HasValue) return;
+                lock (_gate)
+                {
+                    if (!Ready) return;
+                    if (_promptNotifications.TryGetValue(result.Value.Id, out var promptId))
+                    {
+                        if (result.Value.Action is not ("allow" or "decline")) return;
+                        if (_prompts.TryGetValue(promptId, out var prompt)) prompt.Decision.TrySetResult(result.Value.Action == "allow");
+                        _promptNotifications.Remove(result.Value.Id); return;
+                    }
+                    if (result.Value.Action != "open-folder" || !_fileNotifications.Remove(result.Value.Id)) return;
+                }
                 new DaisyOS.System.Processes.SafeProcessLauncher().Launch("xdg-open", [global::System.IO.Path.Combine(_downloadsDirectory, "Continuity")]);
             }, emitOnCapturedContext: false);
         _bus.AddMethodHandler(this);
@@ -261,10 +272,18 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             if (!Ready || _prompts.Count >= 16) return false;
             _prompts.Add(request, (new(request, kind, id, SecureState.SafeName(name), detail), decision));
         }
-        _ = NotifyAsync(kind == "pair" ? "Continuity pairing request" : "Continuity " + kind + " request", "Open Settings → Continuity to review.");
+        _ = NotifyAsync(kind == "pair" ? "Continuity pairing request" : SecureState.SafeName(name),
+            kind == "pair" ? "Open Settings → Continuity to compare fingerprints." : detail, requestId: kind == "pair" ? null : request);
         try { return await decision.Task.WaitAsync(TimeSpan.FromMinutes(2), token); }
         catch (TimeoutException) { return false; }
-        finally { lock (_gate) _prompts.Remove(request); }
+        finally
+        {
+            lock (_gate)
+            {
+                _prompts.Remove(request);
+                foreach (var notificationId in _promptNotifications.Where(p => p.Value == request).Select(p => p.Key).ToArray()) _promptNotifications.Remove(notificationId);
+            }
+        }
     }
     internal async Task PairAsync(PeerWire wire, string address, CancellationToken token)
     {
@@ -313,13 +332,13 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             {
                 var nearby = _nearby.GetValueOrDefault(pair.Key);
                 return new ContinuityDevice(pair.Key, pair.Value.Name, nearby?.Address ?? pair.Value.Address,
-                    nearby?.Status ?? "Trusted · unreachable", true, pair.Value.Clipboard, pair.Value.Files, pair.Value.Input, pair.Value.Handoff, pair.Value.Screen, pair.Value.Audio);
+                    nearby?.Status ?? "Trusted · unreachable", true, pair.Value.Clipboard, pair.Value.Files, pair.Value.Input, pair.Value.Handoff, pair.Value.Screen, pair.Value.Audio, pair.Value.InputEdge);
             }).Concat(_nearby.Values.Where(d => !_state.Settings.Peers.ContainsKey(d.Id))).ToArray();
             var summary = !_state.Settings.Enabled ? "Continuity is off." : _state.Settings.Paused ? "Continuity is paused." :
                 !_sessionIsActive() ? "Sharing is unavailable outside an active unlocked DaisyOS session." : "Continuity is enabled for trusted devices.";
             if (_diagnostic.Length > 0) summary += " " + _diagnostic;
             return new(_state.Settings.Enabled, _state.Settings.Visible, _state.Settings.Paused, _sessionIsActive(), _state.Settings.Name,
-                _state.Id, _clipboard.Status, summary, devices, _prompts.Values.Select(p => p.Prompt).ToArray(), _transfers.Values.ToArray(), _live.Values.Select(l => l.Info).ToArray());
+                _state.Id, _clipboard.Status, summary, devices, _prompts.Values.Select(p => p.Prompt).ToArray(), _transfers.Values.ToArray(), _live.Values.Select(l => l.Info).Concat(_recentLive.Where(l => l.Expires > DateTimeOffset.UtcNow).Select(l => l.Info)).ToArray());
         }
     }
     private void SaveSettings()
@@ -358,7 +377,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         }
         catch { lock (_gate) _diagnostic = "Discovery unavailable. Check Avahi or connect by address."; }
     }
-    private async Task NotifyAsync(string title, string body, bool openFolder = false)
+    private async Task NotifyAsync(string title, string body, bool openFolder = false, string? requestId = null)
     {
         try
         {
@@ -368,10 +387,11 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 writer.WriteMethodCallHeader(destination: "org.freedesktop.Notifications", path: "/org/freedesktop/Notifications",
                     @interface: "org.freedesktop.Notifications", member: "Notify", signature: "susssasa{sv}i");
                 writer.WriteString("DaisyOS Continuity"); writer.WriteUInt32(0); writer.WriteString("network-workgroup");
-                writer.WriteString(title); writer.WriteString(global::System.Security.SecurityElement.Escape(body) ?? ""); writer.WriteArray(openFolder ? new[] { "open-folder", "Open containing folder" } : Array.Empty<string>());
-                writer.WriteDictionary(new Dictionary<string, VariantValue>()); writer.WriteInt32(8000); call = writer.CreateMessage();
+                writer.WriteString(title); writer.WriteString(global::System.Security.SecurityElement.Escape(body) ?? ""); writer.WriteArray(requestId is not null ? new[] { "allow", "Allow", "decline", "Decline" } : openFolder ? new[] { "open-folder", "Open containing folder" } : Array.Empty<string>());
+                writer.WriteDictionary(new Dictionary<string, VariantValue>()); writer.WriteInt32(requestId is not null ? 120000 : 8000); call = writer.CreateMessage();
             }
             var id = await _bus.CallMethodAsync(call, (reply, _) => reply.GetBodyReader().ReadUInt32()).WaitAsync(TimeSpan.FromSeconds(3));
+            if (requestId is not null) lock (_gate) if (_prompts.ContainsKey(requestId)) _promptNotifications[id] = requestId;
             if (openFolder) lock (_gate) { if (_fileNotifications.Count >= 64) _fileNotifications.Clear(); _fileNotifications.Add(id); }
         }
         catch { }

@@ -11,7 +11,7 @@ namespace DaisyOS.Shell.Services.Diagnostics;
 /// <summary>Catalog items retain decoded icons while hidden. Four workers share an image cache.</summary>
 internal sealed class LauncherIconLoader : IDisposable
 {
-    private static readonly SemaphoreSlim Workers = new(4);
+    private static readonly SemaphoreSlim Workers = new(Math.Clamp(Environment.ProcessorCount, 4, 8));
     // Byte budget covers cache ownership; catalog leases are counted separately.
     private readonly ThumbnailCache _cache = new(896, 16L * 1024 * 1024);
     private readonly Dictionary<LauncherItemViewModel, Request> _requests = [];
@@ -40,11 +40,16 @@ internal sealed class LauncherIconLoader : IDisposable
     public Task WhenReady => Task.WhenAll(_requests.Values.Select(request => request.Completion));
     public void Preload(IEnumerable<LauncherItemViewModel> items, double scaling)
     {
-        var catalog = items.ToHashSet();
+        var ordered = new List<LauncherItemViewModel>();
+        var catalog = new HashSet<LauncherItemViewModel>();
+        foreach (var item in items)
+        {
+            if (catalog.Add(item)) ordered.Add(item);
+        }
         foreach (var item in _requests.Keys.Where(item => !catalog.Contains(item)).ToArray()) Unregister(item);
-        foreach (var item in catalog)
+        foreach (var item in ordered)
             if (_requests.TryGetValue(item, out var request) && request.IconName != item.IconName) Unregister(item);
-        foreach (var item in catalog) Register(item, scaling);
+        foreach (var item in ordered) Register(item, scaling);
     }
     private async Task LoadAsync(LauncherItemViewModel item, Request request, double scaling)
     {
@@ -104,14 +109,31 @@ internal sealed class LauncherIconLoader : IDisposable
         if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0) return null;
         if ((long)codec.Info.Width * codec.Info.Height > 4 * 1024 * 1024) return null;
         var scale = Math.Min(1.0, 128.0 / Math.Max(codec.Info.Width, codec.Info.Height));
-        var info = new SkiaSharp.SKImageInfo(Math.Max(1, (int)(codec.Info.Width * scale)), Math.Max(1, (int)(codec.Info.Height * scale)));
-        using var source = SkiaSharp.SKBitmap.Decode(codec);
+        var targetWidth = Math.Max(1, (int)Math.Round(codec.Info.Width * scale));
+        var targetHeight = Math.Max(1, (int)Math.Round(codec.Info.Height * scale));
+        var sourceInfo = new SkiaSharp.SKImageInfo(codec.Info.Width, codec.Info.Height, SkiaSharp.SKColorType.Bgra8888, SkiaSharp.SKAlphaType.Premul);
+        using var source = SkiaSharp.SKBitmap.Decode(codec, sourceInfo);
         if (source is null) return null;
-        using var pixels = source.Resize(info, new SkiaSharp.SKSamplingOptions(SkiaSharp.SKCubicResampler.Mitchell));
+        if (source.Width == targetWidth && source.Height == targetHeight)
+        {
+            return new Bitmap(
+                PixelFormat.Bgra8888,
+                AlphaFormat.Premul,
+                source.GetPixels(),
+                new Avalonia.PixelSize(source.Width, source.Height),
+                new Avalonia.Vector(96, 96),
+                source.RowBytes);
+        }
+        var targetInfo = new SkiaSharp.SKImageInfo(targetWidth, targetHeight, SkiaSharp.SKColorType.Bgra8888, SkiaSharp.SKAlphaType.Premul);
+        using var pixels = source.Resize(targetInfo, new SkiaSharp.SKSamplingOptions(SkiaSharp.SKCubicResampler.Mitchell));
         if (pixels is null) return null;
-        using var encoded = new MemoryStream();
-        pixels.Encode(encoded, SkiaSharp.SKEncodedImageFormat.Png, 100); encoded.Position = 0;
-        return new Bitmap(encoded);
+        return new Bitmap(
+            PixelFormat.Bgra8888,
+            AlphaFormat.Premul,
+            pixels.GetPixels(),
+            new Avalonia.PixelSize(pixels.Width, pixels.Height),
+            new Avalonia.Vector(96, 96),
+            pixels.RowBytes);
     }
     public void Unregister(LauncherItemViewModel item)
     {

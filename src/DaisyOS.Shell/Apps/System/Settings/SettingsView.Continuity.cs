@@ -253,15 +253,19 @@ public partial class SettingsView
         }
 
         foreach (var session in state.Sessions ?? [])
-            _continuityLive.Children.Add(CreateSection(Loc.Get("ACTIVE SESSION"), null,
-                PreferenceRow(session.Name, Loc.Get(session.Kind == "audio" ? "Audio playback" : session.Control ? "Remote control" : "Screen viewing"),
-                    ContinuityButton("Stop sharing", () => new("live-stop", session.Id)), "continuity")));
+        {
+            var description = Loc.Get(session.Kind == "audio" ? "Audio playback" : session.Kind == "input" ? "Keyboard and mouse" : session.Control ? "Remote control" : "Screen viewing") + " · " + Loc.Get(session.State);
+            if (session.Detail.Length > 0) description += "\n" + Loc.Get(session.Detail);
+            _continuityLive.Children.Add(CreateSection(Loc.Get("CONTINUITY"), null,
+                PreferenceRow(session.Name, description,
+                    session.State is "Failed" or "Declined" ? new TextBlock() : ContinuityButton("Disconnect", () => new("live-stop", session.Id)), "continuity")));
+        }
 
         var paired = state.Devices.Where(device => device.Trusted).ToArray();
         if (paired.Length > 0)
         {
             _continuityLive.Children.Add(CreateSection(Loc.Get("MY DEVICES"), Loc.Get("Trusted devices reconnect automatically when they are nearby."),
-                paired.Select(CreateTrustedDeviceRow).ToArray()));
+                paired.Select(peer => CreateTrustedDeviceRow(peer, state.Sessions ?? [])).ToArray()));
         }
 
         var nearby = state.Devices.Where(device => !device.Trusted).ToArray();
@@ -287,7 +291,7 @@ public partial class SettingsView
         PreferenceRow(peer.Name, Loc.Get("Ready to pair"),
             ContinuityButton("Pair", () => new("pair", peer.Id, peer.Address), true), "continuity");
 
-    private Border CreateTrustedDeviceRow(ContinuityDevice peer)
+    private Border CreateTrustedDeviceRow(ContinuityDevice peer, ContinuityLiveSession[] sessions)
     {
         var actions = new WrapPanel
         {
@@ -296,29 +300,35 @@ public partial class SettingsView
             LineSpacing = 8,
             HorizontalAlignment = HorizontalAlignment.Left
         };
-        if (!string.Equals(peer.Status, "Connected", StringComparison.OrdinalIgnoreCase))
-            actions.Children.Add(ContinuityButton("Connect", () => new("connect", peer.Id, peer.Address), true));
         if (_continuitySendPath is { } path)
             actions.Children.Add(ContinuityButton("Send file", () => new("send", peer.Id, path), true));
-        if (peer.Screen)
+        var linked = sessions.Any(s => s.PeerId == peer.Id && s.Kind == "input" && s.Outgoing && s.State is not ("Failed" or "Declined"));
+        var edgeSide = new ComboBox
+        {
+            ItemsSource = new[] { Loc.Get("On my left"), Loc.Get("On my right"), Loc.Get("Above me"), Loc.Get("Below me") },
+            SelectedIndex = Math.Max(0, Array.IndexOf(new[] { "left", "right", "top", "bottom" }, peer.InputEdge)), MinWidth = 140, IsEnabled = !linked
+        };
+        var link = new Button { Content = Loc.Get(linked ? "Linked" : "Link keyboard and mouse"), IsEnabled = !linked, Classes = { "Primary", "Small" } };
+        link.Click += async (_, _) =>
+        {
+            var sides = new[] { "left", "right", "top", "bottom" };
+            link.IsEnabled = false;
+            try { await ContinuityActionAsync(new("edge", peer.Id, sides[Math.Clamp(edgeSide.SelectedIndex, 0, 3)])); }
+            finally { link.IsEnabled = true; }
+        };
+        actions.Children.Add(edgeSide); actions.Children.Add(link);
+        actions.Children.Add(ContinuityButton("Use as audio output", () => new("live", peer.Id, "audio")));
         {
             var view = new Button { Content = Loc.Get("View screen"), Classes = { "Subtle", "Small" } };
             view.Click += async (_, _) => await OpenContinuityViewerAsync(peer, false);
             actions.Children.Add(view);
-            if (peer.Input)
-            {
-                var control = new Button { Content = Loc.Get("Control computer"), Classes = { "Subtle", "Small" } };
-                control.Click += async (_, _) => await OpenContinuityViewerAsync(peer, true);
-                actions.Children.Add(control);
-            }
         }
-        actions.Children.Add(ContinuityButton("Forget", () => new("forget", peer.Id)));
 
         var title = new StackPanel { Spacing = 3 };
         title.Children.Add(new TextBlock { Text = peer.Name, Classes = { "SettingsLabel" } });
         title.Children.Add(new TextBlock
         {
-            Text = Loc.Get(peer.Status),
+            Text = Loc.Get(peer.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase) ? "Not nearby" : "Available"),
             Classes = { "SettingsDescription" }
         });
 
@@ -339,7 +349,11 @@ public partial class SettingsView
             permissions.Children.Add(ContinuityPermissionRow(permission.Item1, permission.Item2, permission.Item4,
                 allowed => _ = ContinuityActionAsync(new("permission", peer.Id, permission.Item3, allowed))));
         }
-        var content = new StackPanel { Spacing = 14, Children = { title, permissions, actions } };
+        permissions.Children.Add(ContinuityButton("Forget", () => new("forget", peer.Id)));
+        var access = new Expander { Header = Loc.Get("Access to this computer"), Content = permissions, IsExpanded = false };
+        var help = new TextBlock { Text = Loc.Get("Choose where this computer sits, then link. Move the pointer across that edge to switch computers."),
+            TextWrapping = TextWrapping.Wrap, Classes = { "SettingsDescription" } };
+        var content = new StackPanel { Spacing = 14, Children = { title, help, actions, access } };
         var row = new Border { Child = content, Tag = peer.Name };
         row.Classes.Add("SettingsGroupRow");
         return row;

@@ -158,4 +158,55 @@ public sealed class BottomChromeTests
         Assert.True(shell.SystemBar.IsVisible);
         Assert.True(shell.MediaWidget.IsVisible);
     }
+
+    [AvaloniaFact]
+    public void ClosingLauncherAutoHidesTaskbarAndSystemBarWhenEnabled()
+    {
+        var shell = new ShellView();
+        shell.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
+        shell.Resources["MotionDurationShellExit"] = TimeSpan.Zero;
+        shell.Launcher.Resources["MotionDurationEnter"] = TimeSpan.FromMilliseconds(200);
+        shell.Launcher.Resources["MotionDurationExit"] = TimeSpan.FromMilliseconds(200);
+
+        shell.SetBottomBarAutoHide(true, true, true);
+        Assert.False(shell.Taskbar.IsVisible);
+        Assert.False(shell.SystemBar.IsVisible);
+        Assert.True(shell.IsBottomPanelInputPassthrough);
+
+        // Open Launcher: both bars reveal while Launcher is open.
+        shell.ShowLauncher();
+        shell.SetLauncherOpen(true);
+        Assert.True(shell.IsLauncherVisible);
+        Assert.True(shell.Taskbar.IsVisible);
+        Assert.True(shell.SystemBar.IsVisible);
+
+        // Close Launcher with animated exit (exact App.HideLauncher order):
+        // HideLauncher runs first so IsLauncherVisible is already false when
+        // SetLauncherOpen(false) evaluates auto-hide state.
+        shell.HideLauncher(immediate: false);
+        Assert.False(shell.IsLauncherVisible);
+        shell.SetLauncherOpen(false);
+
+        Assert.False(shell.Taskbar.IsVisible);
+        Assert.False(shell.SystemBar.IsVisible);
+        Assert.True(shell.IsBottomPanelInputPassthrough);
+
+        // Selective auto-hide: only the auto-hidden bar hides on Launcher close.
+        shell.HideLauncher(immediate: true);
+        shell.SetBottomBarAutoHide(taskbarAutoHide: true, systemBarAutoHide: false);
+        Assert.False(shell.Taskbar.IsVisible);
+        Assert.True(shell.SystemBar.IsVisible);
+
+        shell.ShowLauncher();
+        shell.SetLauncherOpen(true);
+        Assert.True(shell.Taskbar.IsVisible);
+        Assert.True(shell.SystemBar.IsVisible);
+
+        shell.HideLauncher(immediate: false);
+        shell.SetLauncherOpen(false);
+        Assert.False(shell.Taskbar.IsVisible);
+        Assert.True(shell.SystemBar.IsVisible);
+
+        shell.HideLauncher(immediate: true);
+    }
 }

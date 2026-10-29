@@ -142,3 +142,23 @@ uses evdev codes, normalized selected-monitor coordinates and bounded queues.
 `ActivityResult` returns the target's decision. No network fields select an
 executable, command, destination path, GStreamer pipeline or PulseAudio module.
 See [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md) for permissions and lifecycle.
+
+## Screen-edge input links
+
+The separate `EDGE_INPUT` capability advertises live kind `input`. It uses an
+InputCapture/libei receiver on the source and a RemoteDesktop/libei sender on
+the destination, without a video stream. LivePacket payloads are bounded to
+128 bytes and strictly sequenced in both directions; empty packets are liveness
+messages. Numeric input kinds 1–4 retain their evdev/relative-motion meaning.
+Kind 6 carries an entry side (0 left, 1 right, 2 top, 3 bottom) and a normalized
+entry fraction. Kind 7 releases emulation and carries the proportional return
+fraction. The source releases its compositor capture at that position. Native
+helpers release emulation/capture on EOF, portal revocation or process loss.
+Receive liveness deadlines are four seconds; active grants are not persisted or
+automatically restored across disconnects. Explicitly revoked receiving grants
+are distinguished from never-requested capabilities by a private blocked mask.
+
+Idle audio outputs may send empty forward packets to preserve liveness before
+a player starts; data packets remain exactly 3840 bytes of the fixed PCM format.
+Audio and handoff grants approved locally can be remembered for the paired
+identity, while screen/input sessions still require the system portal consent.

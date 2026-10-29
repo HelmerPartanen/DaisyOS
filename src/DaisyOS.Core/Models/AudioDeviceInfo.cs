@@ -5,4 +5,7 @@ public sealed record AudioDeviceInfo(
     string Name,
     string IconGlyph,
     bool IsDefault,
-    bool IsBluetooth = false);
+    bool IsBluetooth = false)
+{
+    public string? Status { get; init; }
+}

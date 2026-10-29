@@ -566,7 +566,12 @@ public static class DesktopItemLoader
         var bounds = picture.CullRect;
         if (bounds.Width <= 0 || bounds.Height <= 0) return null;
         var scale = Math.Min((float)pixelSize / bounds.Width, (float)pixelSize / bounds.Height);
-        using var pixels = new SkiaSharp.SKBitmap(Math.Max(1, (int)Math.Ceiling(bounds.Width * scale)), Math.Max(1, (int)Math.Ceiling(bounds.Height * scale)));
+        var info = new SkiaSharp.SKImageInfo(
+            Math.Max(1, (int)Math.Ceiling(bounds.Width * scale)),
+            Math.Max(1, (int)Math.Ceiling(bounds.Height * scale)),
+            SkiaSharp.SKColorType.Bgra8888,
+            SkiaSharp.SKAlphaType.Premul);
+        using var pixels = new SkiaSharp.SKBitmap(info);
         using (var canvas = new SkiaSharp.SKCanvas(pixels))
         {
             canvas.Clear(SkiaSharp.SKColors.Transparent);
@@ -574,10 +579,13 @@ public static class DesktopItemLoader
             canvas.Translate(-bounds.Left, -bounds.Top);
             canvas.DrawPicture(picture);
         }
-        using var encoded = new MemoryStream();
-        pixels.Encode(encoded, SkiaSharp.SKEncodedImageFormat.Png, 100);
-        encoded.Position = 0;
-        return new Bitmap(encoded);
+        return new Bitmap(
+            Avalonia.Platform.PixelFormat.Bgra8888,
+            Avalonia.Platform.AlphaFormat.Premul,
+            pixels.GetPixels(),
+            new Avalonia.PixelSize(pixels.Width, pixels.Height),
+            new Avalonia.Vector(96, 96),
+            pixels.RowBytes);
     }
 
     public static (string name, string iconPath) ParseDesktopFile(string filePath) =>

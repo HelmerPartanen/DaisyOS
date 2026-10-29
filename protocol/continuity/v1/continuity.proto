@@ -38,6 +38,7 @@ enum Capability {
   HANDOFF = 4;
   SCREEN = 5;
   AUDIO = 6;
+  EDGE_INPUT = 7;
 }
 message Hello {
   bytes device_id = 1; // 32 bytes; must match verified transport identity

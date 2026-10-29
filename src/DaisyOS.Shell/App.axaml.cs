@@ -705,7 +705,16 @@ public partial class App : Application
             launcherSurface,
             () => shell.IsLauncherVisible,
             source => shell.Launcher.IsWithinInteractiveSurface(source),
-            () => HideLauncher());
+            () =>
+            {
+                if (shell.Launcher.IsPowerMenuVisible || shell.Launcher.IsAppContextMenuVisible)
+                {
+                    shell.Launcher.ClosePowerMenu();
+                    shell.Launcher.CloseAppContextMenu();
+                    return;
+                }
+                HideLauncher();
+            });
         var desktopMenus = _nativeDesktopMenus = new DesktopContextMenuOverlay(shell.Desktop, systemFlyoutContent, visible =>
         {
             shell.Desktop.IsNativeContextMenuOpen = visible;
@@ -1294,7 +1303,7 @@ public partial class App : Application
 
         var decision = _launcherGesture.Decide(
             source,
-            _shellView.IsLauncherVisible || _shellView.Launcher.IsVisible,
+            _shellView.IsLauncherVisible,
             IsFullscreenAppActive(),
             DateTime.UtcNow);
 
@@ -1352,17 +1361,18 @@ public partial class App : Application
 
         _shellView.HideLauncher(immediate, () =>
         {
-            // Release the native keyboard grab before restoring the previous
-            // client; otherwise KWin would hand focus back to the closing
-            // layer surface instead of the game or application.
-            LauncherVisibilityChanged?.Invoke(this, false);
-            if (immediate && _nativeLauncherSurface is not null)
-            {
-                SetNativeSurfaceVisible(_nativeLauncherSurface, false, captureKeyboard: true);
-            }
             _launcherBlur?.RefreshImmediately();
-            RestoreLauncherFocus(returnWindowId);
         });
+
+        // Begin exit first so Launcher.IsOpen becomes false synchronously; then
+        // release the native keyboard grab, pointer capture, and bottom-bar
+        // launcher hold immediately without waiting for the fade to finish.
+        LauncherVisibilityChanged?.Invoke(this, false);
+        if (_nativeLauncherSurface is not null)
+        {
+            SetNativeSurfaceVisible(_nativeLauncherSurface, false, captureKeyboard: true);
+        }
+        RestoreLauncherFocus(returnWindowId);
     }
 
     private void ShowLauncher()

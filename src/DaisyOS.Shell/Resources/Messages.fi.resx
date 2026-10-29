@@ -6848,4 +6848,104 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
     <comment>Source: View screen
   Continuity media and handoff; translation review pending.</comment>
   </data>
+  <data name="Loc_0095DB33E7D8" xml:space="preserve">
+    <value>Link keyboard and mouse</value>
+    <comment>Source: Link keyboard and mouse
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_CF802319C316" xml:space="preserve">
+    <value>On my left</value>
+    <comment>Source: On my left
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_4B72D2B4FB5A" xml:space="preserve">
+    <value>On my right</value>
+    <comment>Source: On my right
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_EE34DBB27AF6" xml:space="preserve">
+    <value>Above me</value>
+    <comment>Source: Above me
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_D9A1C64EEF23" xml:space="preserve">
+    <value>Below me</value>
+    <comment>Source: Below me
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_5E4BC668AC6D" xml:space="preserve">
+    <value>Access to this computer</value>
+    <comment>Source: Access to this computer
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_87D88F97138A" xml:space="preserve">
+    <value>Choose where this computer sits, then link. Move the pointer across that edge to switch computers.</value>
+    <comment>Source: Choose where this computer sits, then link. Move the pointer across that edge to switch computers.
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_9654B40820A5" xml:space="preserve">
+    <value>Use as audio output</value>
+    <comment>Source: Use as audio output
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_D403C686F6A1" xml:space="preserve">
+    <value>Connecting</value>
+    <comment>Source: Connecting
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_10C5739B95BD" xml:space="preserve">
+    <value>Waiting for approval</value>
+    <comment>Source: Waiting for approval
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_5FA7AAC5375C" xml:space="preserve">
+    <value>Ready</value>
+    <comment>Source: Ready
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_62AE5B23795C" xml:space="preserve">
+    <value>Allow input capture</value>
+    <comment>Source: Allow input capture
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_031A8F0F659D" xml:space="preserve">
+    <value>Failed</value>
+    <comment>Source: Failed
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_DCE083A2C47F" xml:space="preserve">
+    <value>Declined</value>
+    <comment>Source: Declined
+  Continuity screen-edge control and audio; translation review pending.</comment>
+  </data>
+  <data name="Loc_BFDA026E6C59" xml:space="preserve">
+    <value>Linked</value>
+    <comment>Source: Linked
+  Continuity flow; translation review pending.</comment>
+  </data>
+  <data name="Loc_9099F9183320" xml:space="preserve">
+    <value>Not nearby</value>
+    <comment>Source: Not nearby
+  Continuity flow; translation review pending.</comment>
+  </data>
+  <data name="Loc_096C85276057" xml:space="preserve">
+    <value>Pair another computer in Continuity settings.</value>
+    <comment>Source: Pair another computer in Continuity settings.
+  Continuity flow; translation review pending.</comment>
+  </data>
+  <data name="Loc_509BB4986EDC" xml:space="preserve">
+    <value>Continuing on {0}…</value>
+    <comment>Source: Continuing on {0}…
+  Continuity flow; translation review pending.</comment>
+  </data>
+  <data name="Loc_79C23D8A0322" xml:space="preserve">
+    <value>Choose a screen to share on {0}.</value>
+    <comment>Source: Choose a screen to share on {0}.
+  Continuity flow; translation review pending.</comment>
+  </data>
+  <data name="Loc_74DC20E1C6C9" xml:space="preserve">
+    <value>Screen sharing</value>
+    <comment>Source: Screen sharing
+  Continuity flow; translation review pending.</comment>
+  </data>
 </root>

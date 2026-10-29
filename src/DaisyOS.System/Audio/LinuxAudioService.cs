@@ -256,10 +256,10 @@ public sealed partial class LinuxAudioService : IAudioService
             var status = await _continuity.ExecuteAsync(new("status"), cancellationToken);
             if (status.Enabled && status.SessionReady && !status.Paused)
             {
-                var route = status.Sessions?.FirstOrDefault(s => s.Kind == "audio" && s.Outgoing);
-                if (route is not null) for (var i = 0; i < list.Count; i++) list[i] = list[i] with { IsDefault = false };
-                foreach (var peer in status.Devices.Where(p => p.Trusted && p.Audio && (route?.PeerId == p.Id || !p.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase))))
-                    list.Add(new AudioDeviceInfo("continuity:" + peer.Id, peer.Name, "continuity", route?.PeerId == peer.Id));
+                var route = status.Sessions?.FirstOrDefault(s => s.Kind == "audio" && s.Outgoing && s.State is not ("Failed" or "Declined"));
+                if (route?.State == "Connected") for (var i = 0; i < list.Count; i++) list[i] = list[i] with { IsDefault = false };
+                foreach (var peer in status.Devices.Where(p => p.Trusted && (route?.PeerId == p.Id || !p.Status.Contains("unreachable", StringComparison.OrdinalIgnoreCase))))
+                    list.Add(new AudioDeviceInfo("continuity:" + peer.Id, peer.Name, "continuity", route?.PeerId == peer.Id && route.State == "Connected") { Status = route?.PeerId == peer.Id ? route.State : null });
             }
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
@@ -470,7 +470,7 @@ public sealed partial class LinuxAudioService : IAudioService
 
     private async Task StopContinuityAudioAsync(DaisyOS.Core.Continuity.ContinuityStatus state, CancellationToken token)
     {
-        var sessions = (state.Sessions ?? []).Where(s => s.Kind == "audio" && s.Outgoing).ToArray();
+        var sessions = (state.Sessions ?? []).Where(s => s.Kind == "audio" && s.Outgoing && s.State is not ("Failed" or "Declined")).ToArray();
         foreach (var session in sessions) await _continuity.ExecuteAsync(new("live-stop", session.Id), token);
         if (sessions.Length == 0) return;
         using var timeout = CancellationTokenSource.CreateLinkedTokenSource(token);

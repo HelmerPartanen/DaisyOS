@@ -21,31 +21,71 @@
 
   <UserControl.Resources>
     <DataTemplate x:Key="LauncherTileTemplate" DataType="vm:LauncherItemViewModel">
-      <Button Classes="LauncherTile" Loaded="OnTileLoaded" Unloaded="OnTileUnloaded" DataContextChanged="OnTileDataContextChanged"
+      <Button Classes="LauncherTile"
+              Loaded="OnTileLoaded"
+              Unloaded="OnTileUnloaded"
+              DataContextChanged="OnTileDataContextChanged"
               Classes.SearchSelected="{Binding IsTopSearchResult}"
+              Classes.KeyboardSelected="{Binding IsKeyboardSelected}"
               PointerPressed="OnTilePointerPressed"
               Click="OnAppItemClick"
               ToolTip.Tip="{Binding Description}">
-        <StackPanel Spacing="10" HorizontalAlignment="Center">
-          <Panel Width="60" Height="60" HorizontalAlignment="Center">
-            <controls:CalendarAppIcon Width="60" Height="60" IsVisible="{Binding IsCalendarIcon}" />
-            <!-- App Icon with rounded squircle shape -->
-            <Border CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True">
+        <Grid RowDefinitions="Auto,*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+          <Panel Grid.Row="0" Width="68" Height="62" HorizontalAlignment="Center">
+            <Panel Classes="LauncherTileIconHost" Width="58" Height="58"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   RenderTransformOrigin="50%,50%">
+              <controls:CalendarAppIcon Width="58" Height="58" IsVisible="{Binding IsCalendarIcon}" />
               <Image Source="{Binding IconBitmap}" IsVisible="{Binding IsBitmapIconVisible}"
-                     RenderOptions.BitmapInterpolationMode="HighQuality" Width="60" Height="60" Stretch="Uniform"/>
-            </Border>
-            <!-- Fallback initial letter tile with squircle background -->
-            <Border IsVisible="{Binding IsFallbackIconVisible}"
-                    Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RoundedLG}" Width="60" Height="60">
-              <TextBlock Text="{Binding Name[0]}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold"
-                         Foreground="{DynamicResource ContentPrimaryBrush}"
-                         HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                     RenderOptions.BitmapInterpolationMode="HighQuality"
+                     Width="58" Height="58" Stretch="Uniform" />
+              <Border IsVisible="{Binding IsFallbackIconVisible}"
+                      Background="{DynamicResource SurfaceRaisedBrush}"
+                      BorderBrush="{DynamicResource StrokeDefaultBrush}"
+                      BorderThickness="{DynamicResource BorderThicknessDefault}"
+                      CornerRadius="{DynamicResource RoundedLG}"
+                      Width="58" Height="58">
+                <TextBlock Text="{Binding Initial}"
+                           FontSize="{DynamicResource TypeSizeTitle}"
+                           FontWeight="SemiBold"
+                           Foreground="{DynamicResource ContentPrimaryBrush}"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center" />
+              </Border>
+            </Panel>
+
+            <Border IsVisible="{Binding IsTopSearchResult}"
+                    Background="{DynamicResource ActionPrimaryBrush}"
+                    CornerRadius="{DynamicResource RadiusPill}"
+                    Padding="5,1"
+                    HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    Margin="0,-1,-4,0"
+                    IsHitTestVisible="False">
+              <TextBlock Text="↵"
+                         FontSize="{DynamicResource TypeSizeMicro}"
+                         FontWeight="Bold"
+                         Foreground="{DynamicResource ContentOnPrimaryActionBrush}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center" />
             </Border>
           </Panel>
-          <TextBlock Text="{Binding Name}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" TextAlignment="Center"
+
+          <TextBlock Grid.Row="1"
+                     Text="{Binding Name}"
+                     FontSize="{DynamicResource TypeSizeCaption}"
+                     LineHeight="{DynamicResource TypeLineCaption}"
+                     FontWeight="Medium"
+                     TextAlignment="Center"
                      Foreground="{DynamicResource ContentPrimaryBrush}"
-                     TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" MaxWidth="100" HorizontalAlignment="Center"/>
-        </StackPanel>
+                     TextTrimming="CharacterEllipsis"
+                     TextWrapping="Wrap"
+                     MaxLines="2"
+                     MaxWidth="106"
+                     HorizontalAlignment="Center"
+                     VerticalAlignment="Top"
+                     Margin="0,6,0,0" />
+        </Grid>
       </Button>
     </DataTemplate>
   </UserControl.Resources>
@@ -55,153 +95,253 @@
     <Grid x:Name="LauncherContentGrid">
 
       <!-- Keep the bottom 82px clear for the bars while the backdrop fills the output. -->
-      <!-- One centred column keeps the app grid, search field, and footer on
+      <!-- One centred column keeps the search bar, app grid, and utility bar on
            the same optical axis at every output size. The column is also the
            launcher's interactive boundary: clicking the surrounding backdrop
            dismisses it, while every control inside stays live. -->
       <Grid x:Name="LauncherInteractiveContent"
-            MaxWidth="1088" Margin="48,56,48,106" RowDefinitions="*,Auto,Auto,Auto"
+            MaxWidth="1120" Margin="48,44,48,96"
             Background="Transparent"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.Styles>
           <Style Selector="Button.LauncherUtility">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
-            <Setter Property="Padding" Value="8"/>
-            <Setter Property="RenderTransform" Value="none"/>
+            <Setter Property="Background" Value="{DynamicResource LauncherUtilitySurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource ShellSurfaceInnerBorderBrush}" />
+            <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="RenderTransform" Value="none" />
             <Setter Property="Transitions">
               <Transitions>
-                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
+                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}" />
               </Transitions>
             </Setter>
           </Style>
           <Style Selector="Button.LauncherUtility:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource LauncherTileHoverBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
           </Style>
           <Style Selector="Button.LauncherUtility:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.92)"/>
+            <Setter Property="RenderTransform" Value="scale(0.92)" />
           </Style>
 
-          <!-- One tile style keeps browsing and search results on the same spacing. -->
+          <!-- Prominent command-search treatment on the top focal axis. -->
+          <Style Selector="controls|SearchBar#LauncherSearchBar Border#SearchFrame">
+            <Setter Property="Background" Value="{DynamicResource LauncherSearchSurfaceBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LauncherSearchBorderBrush}" />
+          </Style>
+          <Style Selector="controls|SearchBar#LauncherSearchBar TextBox#SearchInput">
+            <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodyMedium}" />
+            <Setter Property="Height" Value="{DynamicResource ButtonHeightMedium}" />
+          </Style>
+          <Style Selector="controls|SearchBar#LauncherSearchBar > Grid > Border#SearchFrame > Border">
+            <Setter Property="Padding" Value="16,0,10,0" />
+          </Style>
+
+          <!-- Outer slot stays 136x128 (120+16 by 116+12) while giving icons and 2-line titles generous room. -->
           <Style Selector="Button.LauncherTile">
-            <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}"/>
-            <Setter Property="Width" Value="104"/>
-            <Setter Property="Height" Value="104"/>
-            <Setter Property="Padding" Value="4,6"/>
-            <Setter Property="Margin" Value="16,12"/>
-            <Setter Property="HorizontalContentAlignment" Value="Center"/>
-            <Setter Property="RenderTransform" Value="none"/>
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+            <Setter Property="Width" Value="120" />
+            <Setter Property="Height" Value="116" />
+            <Setter Property="Padding" Value="6,8,6,6" />
+            <Setter Property="Margin" Value="8,6" />
+            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+            <Setter Property="VerticalContentAlignment" Value="Stretch" />
+            <Setter Property="RenderTransform" Value="none" />
             <Setter Property="Transitions">
               <Transitions>
-                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}"/>
+                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}" />
+              </Transitions>
+            </Setter>
+          </Style>
+          <Style Selector="Button.LauncherTile Panel.LauncherTileIconHost">
+            <Setter Property="RenderTransform" Value="none" />
+            <Setter Property="Transitions">
+              <Transitions>
+                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}" />
               </Transitions>
             </Setter>
           </Style>
           <Style Selector="Button.LauncherTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource LauncherTileHoverBrush}" />
+          </Style>
+          <Style Selector="Button.LauncherTile:pointerover Panel.LauncherTileIconHost">
+            <Setter Property="RenderTransform" Value="translateY(-2px) scale(1.04)" />
           </Style>
           <Style Selector="Button.LauncherTile:pressed">
-            <Setter Property="RenderTransform" Value="scale(0.96)"/>
+            <Setter Property="RenderTransform" Value="scale(0.95)" />
           </Style>
           <Style Selector="Button.LauncherTile:pressed /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+          </Style>
+          <Style Selector="Button.LauncherTile.KeyboardSelected /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource LauncherTileSelectedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LauncherTileSelectedBorderBrush}" />
           </Style>
           <Style Selector="Button.LauncherTile.SearchSelected /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource LauncherTileSelectedBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource LauncherTileSelectedBorderBrush}" />
           </Style>
           <Style Selector="Button.LauncherTile.ContextMenuActive /template/ ContentPresenter#PART_ContentPresenter">
-            <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource LauncherTileHoverBrush}" />
+          </Style>
+
+          <Style Selector="Button.LauncherPageDotButton">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessNone}" />
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+          </Style>
+          <Style Selector="Button.LauncherPageDotButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+            <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
           </Style>
         </Grid.Styles>
 
-        <Grid Grid.Row="0" RowDefinitions="Auto,*" ClipToBounds="True">
-          <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Width="{Binding PageGridWidth}" HorizontalAlignment="Center" Margin="0,0,0,20">
-            <TextBlock Text="{DynamicResource Loc_9CB965E5630E}" IsVisible="{Binding !HasSearchQuery}"
-                       FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" />
-            <TextBlock Text="{DynamicResource Loc_E978B00DE465}" IsVisible="{Binding HasSearchQuery}"
-                       FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold" Foreground="{DynamicResource ContentSecondaryBrush}" />
-            <TextBlock Grid.Column="1" Text="{Binding AllAppsCountText}" IsVisible="{Binding !HasSearchQuery}"
-                       FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" />
-          </Grid>
-          <Grid x:Name="LauncherPageViewport" Grid.Row="1" SizeChanged="OnPageViewportSizeChanged" ClipToBounds="True">
-            <ItemsControl x:Name="OutgoingPageGrid" IsVisible="False" IsHitTestVisible="False"
-                          Width="{Binding PageGridWidth}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                          ItemTemplate="{StaticResource LauncherTileTemplate}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-            </ItemsControl>
-            <ItemsControl x:Name="ApplicationGrid" ItemsSource="{Binding PageApps}"
-                          Width="{Binding PageGridWidth}" HorizontalAlignment="Center" VerticalAlignment="Center"
-                          ItemTemplate="{StaticResource LauncherTileTemplate}">
-              <ItemsControl.ItemsPanel>
-                <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
-              </ItemsControl.ItemsPanel>
-            </ItemsControl>
-            <StackPanel Classes="EmptyState" IsVisible="{Binding ShowNoResults}">
-              <controls:DaisyIcon Icon="magnifying-glass-minus" />
-              <TextBlock Text="{DynamicResource Loc_68940BCF6E81}" HorizontalAlignment="Center" />
-            </StackPanel>
-          </Grid>
-        </Grid>
-        <StackPanel x:Name="LauncherPageIndicators" Grid.Row="1" Orientation="Horizontal"
-                    HorizontalAlignment="Center" Spacing="4" Margin="0,16,0,0" />
-
-      <!-- Search belongs below the app grid, directly above the footer. -->
-      <Border Grid.Row="2" Padding="0,18,0,10">
-        <controls:SearchBar x:Name="LauncherSearchBar"
-                            Height="{DynamicResource SearchHeightStandard}"
-                            CornerRadius="{DynamicResource RadiusPill}"
-                            Text="{Binding SearchText, Mode=TwoWay}"
-                            PlaceholderText="{DynamicResource Loc_49C266BAAAA7}"
-                            KeyDown="OnSearchKeyDown"
-                            Width="420"
-                            HorizontalAlignment="Center" />
-      </Border>
-
-      <!-- Footer: identity on the left, dismissal hint in the centre, power on
-           the right. The three anchors keep the bar balanced at any width. -->
-      <Border Grid.Row="3" Padding="0,6,0,0">
-        <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Stretch">
-          <Border Grid.Column="0" HorizontalAlignment="Left" Padding="6,6,14,6"
-                  Background="{DynamicResource SurfaceBaseBrush}"
-                  BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                  BorderThickness="1"
+        <Grid x:Name="LauncherStage" RowDefinitions="Auto,*,Auto" RenderTransformOrigin="50%,50%">
+          <!-- Primary top focal axis: search and top results sit immediately adjacent. -->
+          <Border Grid.Row="0"
                   CornerRadius="{DynamicResource RadiusPill}"
-                  VerticalAlignment="Center">
-            <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
-              <Border Width="30" Height="30" CornerRadius="15"
-                      Background="{DynamicResource SurfaceRaisedSubtleBrush}">
-                <Grid>
-                  <TextBlock Text="{Binding UserInitial}" IsVisible="{DynamicResource ProfilePictureMissing}"
-                             FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold" Foreground="{DynamicResource ActionPrimaryBrush}"
-                             HorizontalAlignment="Center" VerticalAlignment="Center" />
-                  <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
-                </Grid>
-              </Border>
-              <TextBlock Text="{Binding UserName}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Medium"
-                         Foreground="{DynamicResource ContentPrimaryBrush}"
-                         VerticalAlignment="Center"/>
-            </StackPanel>
+                  BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
+                  HorizontalAlignment="Center"
+                  Margin="0,0,0,22">
+            <controls:SearchBar x:Name="LauncherSearchBar"
+                                Width="480"
+                                Height="{DynamicResource SearchHeightLauncher}"
+                                CornerRadius="{DynamicResource RadiusPill}"
+                                Text="{Binding SearchText, Mode=TwoWay}"
+                                PlaceholderText="{DynamicResource Loc_49C266BAAAA7}"
+                                KeyDown="OnSearchKeyDown" />
           </Border>
 
-          <TextBlock Grid.Column="1" Text="{DynamicResource Loc_961B2A04403E}"
-                     FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}"
-                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          <!-- Application stage -->
+          <Grid Grid.Row="1" RowDefinitions="Auto,*" ClipToBounds="True">
+            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Width="{Binding PageGridWidth}" HorizontalAlignment="Center" Margin="0,0,0,10">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="10,0,0,0">
+                <TextBlock Text="{DynamicResource Loc_9CB965E5630E}" IsVisible="{Binding !HasSearchQuery}"
+                           FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+                <TextBlock Text="{DynamicResource Loc_E978B00DE465}" IsVisible="{Binding HasSearchQuery}"
+                           FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold"
+                           Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+              </StackPanel>
 
-          <!-- Right: Power Menu Button. Its menu is detached to the native
-               system overlay so KWin can blur the launcher below it. -->
-          <Button x:Name="PowerButton" Grid.Column="2" Classes="LauncherUtility" HorizontalAlignment="Right" Width="40" Height="40" Padding="0"
-                  ToolTip.Tip="{DynamicResource Loc_E40690533ABD}" Click="OnPowerButtonClicked">
-            <controls:DaisyIcon Icon="power" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}"
-                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
-          </Button>
+              <Border Grid.Column="1"
+                      Background="{DynamicResource LauncherKeycapBackgroundBrush}"
+                      CornerRadius="{DynamicResource RadiusPill}"
+                      Padding="10,3"
+                      Margin="0,0,10,0"
+                      VerticalAlignment="Center">
+                <Panel>
+                  <TextBlock Text="{Binding AllAppsCountText}" IsVisible="{Binding !HasSearchQuery}"
+                             FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium"
+                             Foreground="{DynamicResource ContentSecondaryBrush}" />
+                  <TextBlock Text="{Binding SearchResultsCountText}" IsVisible="{Binding HasSearchQuery}"
+                             FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium"
+                             Foreground="{DynamicResource ContentSecondaryBrush}" />
+                </Panel>
+              </Border>
+            </Grid>
+
+            <Grid x:Name="LauncherPageViewport" Grid.Row="1" SizeChanged="OnPageViewportSizeChanged" ClipToBounds="True">
+              <ItemsControl x:Name="OutgoingPageGrid" IsVisible="False" IsHitTestVisible="False"
+                            Width="{Binding PageGridWidth}" Height="{Binding PageGridHeight}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            ItemTemplate="{StaticResource LauncherTileTemplate}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+
+              <ItemsControl x:Name="ApplicationGrid" ItemsSource="{Binding PageApps}"
+                            Width="{Binding PageGridWidth}" Height="{Binding PageGridHeight}"
+                            HorizontalAlignment="Center" VerticalAlignment="Center"
+                            ItemTemplate="{StaticResource LauncherTileTemplate}">
+                <ItemsControl.ItemsPanel>
+                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+              </ItemsControl>
+
+              <StackPanel Classes="EmptyState" IsVisible="{Binding ShowNoResults}"
+                          HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
+                <controls:DaisyIcon Icon="magnifying-glass-minus"
+                                    Size="{DynamicResource IconSizeHero}"
+                                    Foreground="{DynamicResource ContentTertiaryBrush}"
+                                    HorizontalAlignment="Center" />
+                <TextBlock Text="{DynamicResource Loc_68940BCF6E81}"
+                           FontSize="{DynamicResource TypeSizeBodyMedium}"
+                           FontWeight="Medium"
+                           Foreground="{DynamicResource ContentSecondaryBrush}"
+                           HorizontalAlignment="Center" />
+              </StackPanel>
+            </Grid>
+          </Grid>
+
+          <!-- Unified utility bar: identity on the left, page capsules & hint in the centre, power on the right. -->
+          <Border Grid.Row="2" Padding="0,12,0,0">
+            <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Stretch">
+              <Border Grid.Column="0" HorizontalAlignment="Left" Padding="5,5,14,5"
+                      Background="{DynamicResource LauncherUtilitySurfaceBrush}"
+                      BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
+                      BorderThickness="{DynamicResource BorderThicknessDefault}"
+                      CornerRadius="{DynamicResource RadiusPill}"
+                      VerticalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
+                  <Border Width="28" Height="28" CornerRadius="{DynamicResource RadiusCircle}"
+                          Background="{DynamicResource SurfaceRaisedSubtleBrush}">
+                    <Grid>
+                      <TextBlock Text="{Binding UserInitial}" IsVisible="{DynamicResource ProfilePictureMissing}"
+                                 FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold"
+                                 Foreground="{DynamicResource ActionPrimaryBrush}"
+                                 HorizontalAlignment="Center" VerticalAlignment="Center" />
+                      <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
+                    </Grid>
+                  </Border>
+                  <TextBlock Text="{Binding UserName}"
+                             FontSize="{DynamicResource TypeSizeBodySmall}"
+                             FontWeight="Medium"
+                             Foreground="{DynamicResource ContentPrimaryBrush}"
+                             VerticalAlignment="Center" />
+                </StackPanel>
+              </Border>
+
+              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
+                          HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel x:Name="LauncherPageIndicators"
+                            Orientation="Horizontal"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Spacing="2" />
+                <Border Background="{DynamicResource LauncherKeycapBackgroundBrush}"
+                        CornerRadius="{DynamicResource RadiusPill}"
+                        Padding="10,4"
+                        VerticalAlignment="Center">
+                  <TextBlock Text="{DynamicResource Loc_961B2A04403E}"
+                             FontSize="{DynamicResource TypeSizeCaption}"
+                             Foreground="{DynamicResource ContentSecondaryBrush}"
+                             HorizontalAlignment="Center"
+                             VerticalAlignment="Center" />
+                </Border>
+              </StackPanel>
+
+              <!-- Right: Power Menu Button. Its menu is detached to the native
+                   system overlay so KWin can blur the launcher below it. -->
+              <Button x:Name="PowerButton" Grid.Column="2" Classes="LauncherUtility"
+                      HorizontalAlignment="Right" VerticalAlignment="Center"
+                      Width="40" Height="40"
+                      ToolTip.Tip="{DynamicResource Loc_E40690533ABD}"
+                      Click="OnPowerButtonClicked">
+                <controls:DaisyIcon Icon="power"
+                                    Size="{DynamicResource IconSizeMedium}"
+                                    Foreground="{DynamicResource ContentPrimaryBrush}"
+                                    HorizontalAlignment="Center"
+                                    VerticalAlignment="Center" />
+              </Button>
+            </Grid>
+          </Border>
         </Grid>
-      </Border>
-    </Grid>
+      </Grid>
 
       <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
               HorizontalAlignment="Left" VerticalAlignment="Top"

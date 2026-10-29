@@ -120,3 +120,5 @@ pairing/protocol review and the complete fault/accessibility matrix remain relea
 ## Input, handoff, screen viewing and remote audio
 
 Connection and text clipboard sharing have now been verified by the user on the two physical computers. For the next revision, follow [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md) for dependencies, installation, scope and the new acceptance checklist. Both machines need this revision; the four additional permissions default off.
+
+For the newer screen-edge input link and direct audio selection, use [SEAMLESS_CONTROL.md](SEAMLESS_CONTROL.md). Actual desktop/laptop movement, physical speakers, suspend and latency are still pending while the desktop is unavailable.

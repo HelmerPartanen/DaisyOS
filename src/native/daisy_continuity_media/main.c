@@ -110,7 +110,10 @@ static gboolean write_frame(const void *data, size_t size) {
     uint32_t header = GUINT32_TO_BE((uint32_t)size);
     return fwrite(&header, 1, 4, stdout) == 4 && (!size || fwrite(data, 1, size, stdout) == size) && !fflush(stdout);
 }
+#include "edge.c"
+
 int main(int argc, char **argv) {
+    if (argc >= 2 && (!strcmp(argv[1], "--capture") || !strcmp(argv[1], "--input"))) return edge_main(argc, argv);
     if (argc != 2 || (strcmp(argv[1], "--view") && strcmp(argv[1], "--control"))) return 2;
     gboolean control = !strcmp(argv[1], "--control");
     gst_init(NULL, NULL);

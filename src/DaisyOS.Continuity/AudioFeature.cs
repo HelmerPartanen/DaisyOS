@@ -50,16 +50,23 @@ public sealed partial class ContinuityDaemon
         {
             await PulseAsync("set-default-sink", sink);
             await MovePlaybackAsync(sink);
+            SetLiveState(live, "Connected", "Playing on " + live.Info.Name);
             using var record = StartPipe("pacat", ["--record", "--device=" + sink + ".monitor", "--raw", "--format=s16le", "--rate=48000", "--channels=2", "--latency-msec=40", "--client-name=DaisyOS Continuity"]);
             using var kill = live.Stop.Token.Register(() => Kill(record));
             var receive = MonitorAudioPeerAsync(wire, live);
             try
             {
-                ulong sequence = 0; var bytes = new byte[AudioBytes];
+                ulong sequence = 0; var bytes = new byte[AudioBytes]; Task? pending = null;
                 while (true)
                 {
-                    await record.StandardOutput.BaseStream.ReadExactlyAsync(bytes, live.Stop.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(5), live.Stop.Token);
-                    await wire.SendAsync(new() { LivePacket = new() { Sequence = ++sequence, Data = ByteString.CopyFrom(bytes) } }, live.Stop.Token);
+                    pending ??= record.StandardOutput.BaseStream.ReadExactlyAsync(bytes, live.Stop.Token).AsTask();
+                    var tick = Task.Delay(TimeSpan.FromSeconds(2), live.Stop.Token);
+                    var ready = await Task.WhenAny(pending, tick);
+                    live.Stop.Token.ThrowIfCancellationRequested();
+                    var data = ByteString.Empty;
+                    if (ready == pending) { await pending; pending = null; data = ByteString.CopyFrom(bytes); }
+                    else if (record.HasExited) throw new IOException("Audio capture stopped.");
+                    await wire.SendAsync(new() { LivePacket = new() { Sequence = ++sequence, Data = data } }, live.Stop.Token);
                 }
             }
             finally { Kill(record); await live.Stop.CancelAsync(); try { await receive; } catch (OperationCanceledException) { } }
@@ -100,6 +107,7 @@ public sealed partial class ContinuityDaemon
         if (output.StartsWith("daisy_continuity_", StringComparison.Ordinal)) throw new IOException("Choose local speakers before receiving audio.");
         using var playback = StartPipe("pacat", ["--playback", "--device=" + output, "--raw", "--format=s16le", "--rate=48000", "--channels=2", "--latency-msec=60", "--client-name=DaisyOS Continuity"]);
         using var kill = live.Stop.Token.Register(() => Kill(playback));
+        SetLiveState(live, "Connected", "Playing through this computer’s speakers");
         await wire.SendAsync(new() { LiveDecision = new() { Accepted = true } }, live.Stop.Token);
         var heartbeat = Task.Run(async () =>
         {
@@ -113,7 +121,8 @@ public sealed partial class ContinuityDaemon
             {
                 Require(wire.PeerId, "audio");
                 var packet = (await wire.ReceiveAsync(live.Stop.Token).WaitAsync(TimeSpan.FromSeconds(5), live.Stop.Token)).LivePacket ?? throw new InvalidDataException();
-                if (packet.Sequence != expected++ || packet.Data.Length != AudioBytes) throw new InvalidDataException();
+                if (packet.Sequence != expected++ || packet.Data.Length != 0 && packet.Data.Length != AudioBytes) throw new InvalidDataException();
+                if (packet.Data.Length == 0) continue; // An idle output must stay selectable before music starts.
                 await playback.StandardInput.BaseStream.WriteAsync(packet.Data.Memory, live.Stop.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(3), live.Stop.Token);
             }
         }
@@ -125,7 +134,7 @@ public sealed partial class ContinuityDaemon
         foreach (var line in streams.Split('\n'))
         {
             var id = line.Split('\t')[0];
-            if (uint.TryParse(id, out _)) await PulseAsync("move-sink-input", id, sink);
+            if (uint.TryParse(id, out _)) try { await PulseAsync("move-sink-input", id, sink); } catch (IOException) { /* A player can close while routing. */ }
         }
     }
     private async Task RestorePlaybackAsync(string sink, string previous)

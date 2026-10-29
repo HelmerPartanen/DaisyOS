@@ -14,13 +14,32 @@ public sealed partial class ContinuityDaemon
 {
     private sealed class Live(ContinuityLiveSession info, CancellationTokenSource stop)
     {
-        public ContinuityLiveSession Info { get; } = info;
+        public ContinuityLiveSession Info { get; set; } = info;
         public CancellationTokenSource Stop { get; } = stop;
         public byte[] Frame = [];
+        public string Edge = "right";
+        public long EdgeSequence;
         public Channel<byte[]> Input { get; } = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(64)
         { SingleReader = true, FullMode = BoundedChannelFullMode.Wait });
     }
     private readonly Dictionary<string, Live> _live = new();
+    private readonly List<(ContinuityLiveSession Info, DateTimeOffset Expires)> _recentLive = [];
+    private static int FeatureBit(string feature) => feature switch { "input" => 1, "audio" => 2, "screen" => 4, "handoff" => 8, _ => 0 };
+    private void RequireRequestAllowed(string id, string feature)
+    { lock (_gate) { Require(id, null); if ((_state.Settings.Peers[id].BlockedFeatures & FeatureBit(feature)) != 0) throw new UnauthorizedAccessException(); } }
+    private void RememberFeature(string id, string feature, CancellationToken token)
+    {
+        lock (_gate)
+        {
+            token.ThrowIfCancellationRequested(); RequireRequestAllowed(id, feature);
+            var peer = _state.Settings.Peers[id];
+            _state.Settings.Peers[id] = feature switch { "audio" => peer with { Audio = true }, "input" => peer with { Input = true }, "screen" => peer with { Screen = true }, "handoff" => peer with { Handoff = true }, _ => throw new InvalidDataException() };
+            SaveSettings();
+        }
+    }
+    private void SetLiveState(Live live, string state, string detail = "")
+    { lock (_gate) live.Info = live.Info with { State = state, Detail = detail }; }
+
     private const int AudioBytes = 3840; // 20 ms, 48 kHz, stereo signed 16-bit LE
     private const int MaxJpeg = 512 * 1024;
 
@@ -28,8 +47,9 @@ public sealed partial class ContinuityDaemon
     {
         lock (_gate)
         {
-            Require(peerId, kind);
-            if (control) Require(peerId, "input");
+            if (outgoing) Require(peerId, null);
+            else if (kind is "audio" or "input" or "screen") RequireRequestAllowed(peerId, kind);
+            else { Require(peerId, kind); if (control) Require(peerId, "input"); }
             if (!Guid.TryParseExact(id, "N", out _) || _live.Count >= 4 || _live.ContainsKey(id) ||
                 _live.Values.Any(l => l.Info.Kind == kind && (kind == "audio" || l.Info.PeerId == peerId && l.Info.Outgoing == outgoing)))
                 throw new InvalidDataException("Live session limit.");
@@ -41,7 +61,12 @@ public sealed partial class ContinuityDaemon
     }
     private void RemoveLive(Live live)
     {
-        lock (_gate) { _live.Remove(live.Info.Id); live.Frame = []; }
+        lock (_gate)
+        {
+            _live.Remove(live.Info.Id); live.Frame = [];
+            if (live.Info.State is "Failed" or "Declined")
+            { if (_recentLive.Count >= 8) _recentLive.RemoveAt(0); _recentLive.Add((live.Info, DateTimeOffset.UtcNow.AddSeconds(30))); }
+        }
         _ = live.Stop.CancelAsync();
         EndPeer(live.Info.PeerId, live.Stop);
     }
@@ -49,40 +74,56 @@ public sealed partial class ContinuityDaemon
     {
         lock (_gate) return _nearby.GetValueOrDefault(id)?.Address ?? _state.Settings.Peers[id].Address;
     }
-    private void StartLive(string peer, string kind, bool control)
+    private void StartLive(string peer, string kind, bool control, string edge = "right")
     {
-        if (kind is not ("screen" or "audio") || kind == "audio" && control) throw new InvalidDataException();
+        if (kind is not ("screen" or "audio" or "input") || kind == "audio" && control) throw new InvalidDataException();
+        if (edge is not ("left" or "right" or "top" or "bottom")) throw new InvalidDataException();
         var live = AddLive(Guid.NewGuid().ToString("N"), peer, kind, true, control, _stop.Token);
+        live.Edge = edge;
         Track(async () =>
         {
             try
             {
                 await using var wire = await DialAsync(PeerAddress(peer), peer, false, live.Stop.Token);
-                if (!wire.Supports(kind == "audio" ? Capability.Audio : Capability.Screen) || control && !wire.Supports(Capability.Input))
+                if (!wire.Supports(kind == "audio" ? Capability.Audio : kind == "input" ? Capability.EdgeInput : Capability.Screen) || control && !wire.Supports(Capability.Input))
                     throw new InvalidDataException("Peer must be updated for this feature.");
                 await wire.SendAsync(new() { LiveStart = new() { SessionId = live.Info.Id, Kind = kind, Control = control } }, live.Stop.Token);
+                SetLiveState(live, "Waiting for approval", "Approve on " + live.Info.Name);
                 var decision = await wire.ReceiveAsync(live.Stop.Token).WaitAsync(TimeSpan.FromMinutes(3), live.Stop.Token);
-                if (decision.LiveDecision?.Accepted != true) return;
+                if (decision.LiveDecision?.Accepted != true) { SetLiveState(live, "Declined", "The other computer declined the request."); return; }
                 if (kind == "audio") await SendAudioAsync(wire, live);
-                else await ViewScreenAsync(wire, live);
+                else if (kind == "input") await SendEdgeInputAsync(wire, live);
+                else { SetLiveState(live, "Connected"); await ViewScreenAsync(wire, live); }
+            }
+            catch (Exception ex) when (ex is IOException or TimeoutException or UnauthorizedAccessException or OperationCanceledException or global::System.Net.Sockets.SocketException or global::System.Security.Authentication.AuthenticationException)
+            {
+                if (!live.Stop.IsCancellationRequested)
+                {
+                    SetLiveState(live, "Failed", "Couldn’t connect. Unlock the other computer and check that Continuity is up to date.");
+                    _ = NotifyAsync("Continuity", "Couldn’t connect to " + live.Info.Name + ". Unlock the other computer and try again.");
+                }
+                throw;
             }
             finally { RemoveLive(live); }
         });
     }
     internal async Task ReceiveLiveAsync(PeerWire wire, LiveStart start, CancellationToken token)
     {
-        if (start.Kind is not ("audio" or "screen") || start.Kind == "audio" && start.Control) throw new InvalidDataException();
+        if (start.Kind is not ("audio" or "screen" or "input") || start.Kind == "audio" && start.Control) throw new InvalidDataException();
         var live = AddLive(start.SessionId, wire.PeerId, start.Kind, false, start.Control, token);
         try
         {
             var detail = start.Kind == "audio" ? "Play this computer’s audio on your speakers?" :
                 start.Control ? "Allow this computer to view your screen and control your keyboard and mouse?" : "Allow this computer to view your screen?";
-            if (!await PromptAsync(start.Kind, wire.PeerId, wire.Remote.Name, detail, live.Stop.Token))
+            if (start.Kind == "input") { await ReceiveEdgeInputAsync(wire, live); return; }
+            if (start.Kind == "screen") { await ShareScreenAsync(wire, live); return; }
+            bool allowed;
+            lock (_gate) allowed = start.Kind == "audio" && _state.Settings.Peers[wire.PeerId].Audio;
+            if (!allowed && !await PromptAsync(start.Kind, wire.PeerId, wire.Remote.Name,
+                start.Kind == "audio" ? "Allow audio from " + wire.Remote.Name + "? This paired computer can play through your speakers until you turn off its Audio playback permission." : detail, live.Stop.Token))
             { await wire.SendAsync(new() { LiveDecision = new() { Accepted = false } }, live.Stop.Token); return; }
-            Require(wire.PeerId, start.Kind);
-            if (start.Control) Require(wire.PeerId, "input");
-            if (start.Kind == "audio") await ReceiveAudioAsync(wire, live);
-            else await ShareScreenAsync(wire, live);
+            if (start.Kind == "audio") { RememberFeature(wire.PeerId, "audio", live.Stop.Token); await ReceiveAudioAsync(wire, live); }
+            else { Require(wire.PeerId, start.Kind); if (start.Control) Require(wire.PeerId, "input"); await ShareScreenAsync(wire, live); }
         }
         finally { RemoveLive(live); }
     }
@@ -101,7 +142,7 @@ public sealed partial class ContinuityDaemon
     private static async Task DrainAsync(Stream stream)
     { try { var bytes = new byte[1024]; while (await stream.ReadAsync(bytes) > 0) { } } catch (IOException) { } }
     private static void Kill(Process process)
-    { try { if (!process.HasExited) process.Kill(true); } catch (InvalidOperationException) { } }
+    { try { if (!process.HasExited) process.Kill(true); } catch (Exception ex) when (ex is InvalidOperationException or global::System.ComponentModel.Win32Exception) { } }
     private async Task ShareScreenAsync(PeerWire wire, Live live)
     {
         var path = global::System.IO.Path.Combine(_mediaExecutableDirectory ?? AppContext.BaseDirectory, "daisyos-continuity-media");
@@ -113,7 +154,9 @@ public sealed partial class ContinuityDaemon
             var header = new byte[4];
             await helper.StandardOutput.BaseStream.ReadExactlyAsync(header, live.Stop.Token).AsTask().WaitAsync(TimeSpan.FromMinutes(3), live.Stop.Token);
             if (BinaryPrimitives.ReadUInt32BigEndian(header) != 0) throw new InvalidDataException();
-            Require(wire.PeerId, "screen"); if (live.Info.Control) Require(wire.PeerId, "input");
+            RememberFeature(wire.PeerId, "screen", live.Stop.Token);
+            if (live.Info.Control) RememberFeature(wire.PeerId, "input", live.Stop.Token);
+            SetLiveState(live, "Connected");
             await wire.SendAsync(new() { LiveDecision = new() { Accepted = true } }, live.Stop.Token);
             // Both directions are independent: frames never queue behind input.
             var read = ReceiveInputAsync(wire, live, helper);

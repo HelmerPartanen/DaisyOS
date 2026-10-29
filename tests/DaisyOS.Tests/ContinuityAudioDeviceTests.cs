@@ -13,7 +13,8 @@ public sealed class ContinuityAudioDeviceTests
         var state = new Client();
         var service = new LinuxAudioService(new ScriptedCommandRunner(new CommandResult(0, "Audio\n Sinks:\n * 12. Local speakers [vol: 1.00]\n Sources:\n", "", false)), state);
         var devices = await service.GetAudioDevicesAsync();
-        var remote = Assert.Single(devices, d => d.Id.StartsWith("continuity:"));
+        var remote = Assert.Single(devices, d => d.Id == "continuity:peer");
+        Assert.Contains(devices, d => d.Id == "continuity:disabled");
         Assert.Equal("continuity", remote.IconGlyph);
         Assert.Equal("Laptop", remote.Name);
         Assert.False(remote.IsDefault);

@@ -1,12 +1,15 @@
 using System;
-using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
+using Avalonia.Animation;
+using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
+using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DaisyOS.Shell.ViewModels;
@@ -19,11 +22,15 @@ namespace DaisyOS.Shell.Views.Components.Launcher;
 
 public partial class LauncherView : UserControl
 {
+    private static readonly Easing StageEnterEasing = new SplineEasing(0.16, 1.0, 0.3, 1.0);
+    private static readonly Easing StageExitEasing = new CubicEaseIn();
+
     private Task<string>? _activationToken;
     private string? _activationApp;
     private readonly InstalledApplicationService _installedApplications = new();
     private readonly DaisyOS.Shell.Services.Diagnostics.LauncherIconLoader _icons = new();
     private CancellationTokenSource? _animationCts;
+    private CancellationTokenSource? _stageAnimationCts;
     private Border? _powerMenu;
     private Border? _appContextMenu;
     private readonly MenuItem? _appContextUninstallItem;
@@ -71,6 +78,96 @@ public partial class LauncherView : UserControl
         ReferenceEquals(source, target) ||
         source.GetVisualAncestors().Any(ancestor => ReferenceEquals(ancestor, target));
 
+    private TimeSpan ResolveLauncherDuration(bool entering)
+    {
+        if (Application.Current is App { ReduceMotionEnabled: true })
+            return TimeSpan.Zero;
+        var key = entering ? "MotionDurationEnter" : "MotionDurationExit";
+        if (Resources.TryGetResource(key, ActualThemeVariant, out var localOverride) && localOverride is TimeSpan overridden)
+            return overridden;
+        return TimeSpan.FromMilliseconds(entering ? 190 : 115);
+    }
+
+    private void AnimateStage(bool entering, TimeSpan duration, bool immediate = false)
+    {
+        var stage = this.FindControl<Grid>("LauncherStage");
+        if (stage is null) return;
+
+        var startScale = entering ? 0.972 : 1.0;
+        var startY = entering ? 14.0 : 0.0;
+        if (_stageAnimationCts is not null && stage.RenderTransform is { } existing)
+        {
+            startScale = existing.Value.M11;
+            startY = existing.Value.M32;
+        }
+
+        _stageAnimationCts?.Cancel();
+        _stageAnimationCts?.Dispose();
+        _stageAnimationCts = null;
+
+        if (immediate || duration <= TimeSpan.Zero || TopLevel.GetTopLevel(this) is not { } host)
+        {
+            stage.RenderTransform = null;
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        _stageAnimationCts = cts;
+        var targetScale = entering ? 1.0 : 0.985;
+        var targetY = entering ? 0.0 : 8.0;
+        var easing = entering ? StageEnterEasing : StageExitEasing;
+        TimeSpan? lastFrame = null;
+        var elapsedSeconds = 0d;
+        var totalSeconds = duration.TotalSeconds;
+
+        ApplyStageTransform(stage, startScale, startY);
+
+        void Frame(TimeSpan timestamp)
+        {
+            if (cts.IsCancellationRequested || !ReferenceEquals(_stageAnimationCts, cts)) return;
+            var dt = lastFrame is { } prev ? Math.Max(0, (timestamp - prev).TotalSeconds) : 0;
+            lastFrame = timestamp;
+            elapsedSeconds += dt;
+            if (elapsedSeconds >= totalSeconds)
+            {
+                _stageAnimationCts = null;
+                cts.Dispose();
+                stage.RenderTransform = entering ? null : CreateStageTransform(targetScale, targetY);
+                return;
+            }
+
+            var t = easing.Ease(Math.Clamp(elapsedSeconds / totalSeconds, 0, 1));
+            var s = startScale + (targetScale - startScale) * t;
+            var y = startY + (targetY - startY) * t;
+            ApplyStageTransform(stage, s, y);
+            host.RequestAnimationFrame(Frame);
+        }
+
+        host.RequestAnimationFrame(Frame);
+    }
+
+    private static TransformGroup CreateStageTransform(double scale, double translateY)
+    {
+        var group = new TransformGroup();
+        group.Children.Add(new ScaleTransform(scale, scale));
+        group.Children.Add(new TranslateTransform(0, translateY));
+        return group;
+    }
+
+    private static void ApplyStageTransform(Control stage, double scale, double translateY)
+    {
+        if (stage.RenderTransform is TransformGroup { Children.Count: 2 } group &&
+            group.Children[0] is ScaleTransform scaleTransform &&
+            group.Children[1] is TranslateTransform translateTransform)
+        {
+            scaleTransform.ScaleX = scale;
+            scaleTransform.ScaleY = scale;
+            translateTransform.Y = translateY;
+            return;
+        }
+        stage.RenderTransform = CreateStageTransform(scale, translateY);
+    }
+
     public async void AnimateIn()
     {
         _animationCts?.Cancel();
@@ -93,15 +190,25 @@ public partial class LauncherView : UserControl
                          .Where(frame => frame.IsEffectivelyVisible))
                 frame.PrepareFrame();
         }
+
+        var duration = ResolveLauncherDuration(entering: true);
         if (content is not null)
         {
             _ = GuiMotion.SetScaleVisibleAsync(
                 this,
                 content,
                 true,
-                closedScale: 1.0);
+                closedScale: 1.0,
+                durationOverride: duration,
+                easingOverride: StageEnterEasing);
         }
-        ViewModel.GoToPage(0);
+        AnimateStage(entering: true, duration);
+
+        if (ViewModel.PageIndex != 0)
+        {
+            ViewModel.GoToPage(0);
+        }
+        ViewModel.ResetSelection();
         Opacity = 1;
         OpenStateChanged?.Invoke(this, true);
 
@@ -127,6 +234,7 @@ public partial class LauncherView : UserControl
         _animationCts?.Cancel();
         _animationCts?.Dispose();
         _animationCts = null;
+        AnimateStage(entering: false, TimeSpan.Zero, immediate: true);
 
         var content = this.FindControl<Border>("LauncherRootBorder");
         if (content is not null)
@@ -167,7 +275,9 @@ public partial class LauncherView : UserControl
         var cts = new CancellationTokenSource();
         _animationCts = cts;
 
+        var duration = ResolveLauncherDuration(entering: false);
         var content = this.FindControl<Border>("LauncherRootBorder");
+        AnimateStage(entering: false, duration);
 
         if (content is not null)
         {
@@ -175,12 +285,15 @@ public partial class LauncherView : UserControl
                 this,
                 content,
                 false,
-                closedScale: 1.0);
+                closedScale: 1.0,
+                durationOverride: duration,
+                easingOverride: StageExitEasing);
         }
         if (!cts.IsCancellationRequested && ReferenceEquals(_animationCts, cts))
         {
             _animationCts = null;
             cts.Dispose();
+            AnimateStage(entering: false, TimeSpan.Zero, immediate: true);
             onCompleted();
             OpenStateChanged?.Invoke(this, false);
         }
@@ -191,6 +304,7 @@ public partial class LauncherView : UserControl
         base.Render(context);
         DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.Complete("launcher", "launcher.render.pass");
     }
+
     private void OnTileLoaded(object? sender, RoutedEventArgs e) { if (sender is Button button) RegisterTile(button); }
     private void OnTileUnloaded(object? sender, RoutedEventArgs e)
     {
@@ -200,6 +314,7 @@ public partial class LauncherView : UserControl
     {
         if (sender is Button button && button.IsLoaded) RegisterTile(button);
     }
+
     /// <summary>Full reload: purge cache and re-decode everything (theme change).</summary>
     private void ReloadRealizedIcons()
     {
@@ -215,12 +330,14 @@ public partial class LauncherView : UserControl
             RegisterTile(button);
         }
     }
+
     /// <summary>Soft reload: only register tiles that don't have icons yet (visibility restore).</summary>
     private void EnsureRealizedIcons()
     {
         foreach (var button in this.GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("LauncherTile") && button.IsLoaded))
             RegisterTile(button);
     }
+
     private void RegisterTile(Button button)
     {
         if (_iconsReclaimed && !IsOpen) return;
@@ -229,11 +346,13 @@ public partial class LauncherView : UserControl
         if (button.DataContext is LauncherItemViewModel item)
             _icons.Register(item, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
     }
+
     private void PreloadCatalogIcons()
     {
         if (_iconsReclaimed && !IsOpen) return;
         _iconsReclaimed = false;
-        _icons.Preload(ViewModel.AllApps, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
+        // Queue currently visible page tiles ahead of off-screen pages for instant first-frame icons.
+        _icons.Preload(ViewModel.PageApps.Concat(ViewModel.AllApps), TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
     }
 
     internal void ReclaimHiddenIcons()
@@ -279,10 +398,10 @@ public partial class LauncherView : UserControl
             return;
         }
         var now = Environment.TickCount64;
-        if (now - _lastPageWheelTime > 180) _pageWheelDelta = 0;
+        if (now - _lastPageWheelTime > 160) _pageWheelDelta = 0;
         _lastPageWheelTime = now;
         e.Handled = true;
-        if (now - _lastPageChangeTime < 300) return;
+        if (now - _lastPageChangeTime < 220) return;
         var delta = Math.Abs(e.Delta.X) > Math.Abs(e.Delta.Y) ? e.Delta.X : e.Delta.Y;
         _pageWheelDelta += delta;
         if (Math.Abs(_pageWheelDelta) < 1) return;
@@ -291,7 +410,7 @@ public partial class LauncherView : UserControl
         _lastPageChangeTime = now;
     }
 
-    private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(160) };
+    private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(140) };
     private bool _pageDragging;
     private bool _committingDrag;
     private double _pageDragOffset;
@@ -338,8 +457,8 @@ public partial class LauncherView : UserControl
         // Resist pulling beyond the first or last page.
         var visibleOffset = valid ? offset : offset * 0.2;
         current.Opacity = neighbour.Opacity = 1;
-        current.RenderTransform = new Avalonia.Media.TranslateTransform(visibleOffset, 0);
-        neighbour.RenderTransform = new Avalonia.Media.TranslateTransform(visibleOffset + direction * PageStride, 0);
+        current.RenderTransform = new TranslateTransform(visibleOffset, 0);
+        neighbour.RenderTransform = new TranslateTransform(visibleOffset + direction * PageStride, 0);
     }
 
     private void SettlePageDrag()
@@ -363,7 +482,7 @@ public partial class LauncherView : UserControl
             ViewModel.GoToPage(commit ? targetPage : ViewModel.PageIndex);
             _committingDrag = false;
         }
-        if (GuiMotion.Duration(this, true) == TimeSpan.Zero || TopLevel.GetTopLevel(this) is not { } host)
+        if (ResolveLauncherDuration(entering: true) == TimeSpan.Zero || TopLevel.GetTopLevel(this) is not { } host)
         {
             Finish();
             return;
@@ -372,7 +491,7 @@ public partial class LauncherView : UserControl
         {
             if (generation != _dragGeneration) return;
             start ??= time;
-            var t = Math.Clamp((time - start.Value).TotalMilliseconds / 200, 0, 1);
+            var t = Math.Clamp((time - start.Value).TotalMilliseconds / 180, 0, 1);
             _pageDragOffset = from + (to - from) * (1 - Math.Pow(1 - t, 3));
             RenderPageDrag(_pageDragOffset);
             if (t >= 1) Finish();
@@ -413,7 +532,7 @@ public partial class LauncherView : UserControl
         outgoing.ItemsSource = null;
         UpdatePageIndicators();
         if (_committingDrag || direction == 0 || previous.Length == 0 || !IsEffectivelyVisible ||
-            TopLevel.GetTopLevel(this) is null || GuiMotion.Duration(this, true) == TimeSpan.Zero)
+            TopLevel.GetTopLevel(this) is null || ResolveLauncherDuration(entering: true) == TimeSpan.Zero)
             return;
 
         CloseAppContextMenu();
@@ -422,7 +541,7 @@ public partial class LauncherView : UserControl
         outgoing.Opacity = 1;
         outgoing.RenderTransform = null;
         // Move only the tiles: the material, search, dots, and footer stay still.
-        var duration = TimeSpan.FromMilliseconds(240);
+        var duration = TimeSpan.FromMilliseconds(190);
         await Task.WhenAll(
             GuiMotion.SlideOutAsync(outgoing, new Point(-direction * PageStride, 0), duration),
             GuiMotion.SlideInAsync(incoming, new Point(direction * PageStride, 0), duration));
@@ -431,37 +550,70 @@ public partial class LauncherView : UserControl
         outgoing.ItemsSource = null;
     }
 
+    private IBrush ResolveIndicatorBrush(bool active)
+    {
+        var key = active ? "LauncherDotActiveBrush" : "LauncherDotInactiveBrush";
+        if (this.TryFindResource(key, ActualThemeVariant, out var resource) && resource is IBrush brush)
+            return brush;
+        if (this.TryFindResource("ContentPrimaryBrush", ActualThemeVariant, out var fallback) && fallback is IBrush contentBrush)
+            return contentBrush;
+        return Brushes.Gray;
+    }
+
     private void UpdatePageIndicators()
     {
         var host = this.FindControl<StackPanel>("LauncherPageIndicators");
         if (host is null) return;
+
+        var multiPage = ViewModel.PageCount > 1;
+        host.Opacity = multiPage ? 1 : 0;
+        host.IsHitTestVisible = multiPage;
+        host.Width = multiPage ? double.NaN : 0;
+
+        var activeBrush = ResolveIndicatorBrush(active: true);
+        var inactiveBrush = ResolveIndicatorBrush(active: false);
+
         if (host.Children.Count == ViewModel.PageCount)
         {
             for (var i = 0; i < host.Children.Count; i++)
-                if (host.Children[i] is Button { Content: Avalonia.Controls.Shapes.Ellipse dot })
-                    dot.Opacity = i == ViewModel.PageIndex ? 0.95 : 0.3;
+            {
+                if (host.Children[i] is Button { Content: Border pill })
+                {
+                    var isCurrent = i == ViewModel.PageIndex;
+                    pill.Width = isCurrent ? 20 : 7;
+                    pill.Background = isCurrent ? activeBrush : inactiveBrush;
+                    pill.Opacity = isCurrent ? 0.95 : 0.75;
+                }
+            }
             return;
         }
+
         host.Children.Clear();
+        var transitionDuration = ResolveLauncherDuration(entering: true) == TimeSpan.Zero
+            ? TimeSpan.Zero
+            : TimeSpan.FromMilliseconds(150);
+
         for (var index = 0; index < ViewModel.PageCount; index++)
         {
             var page = index;
+            var isCurrent = index == ViewModel.PageIndex;
             var button = new Button
             {
-                Width = 28, Height = 28, Padding = new Thickness(10),
-                Background = Avalonia.Media.Brushes.Transparent,
-                BorderThickness = new Thickness(0),
-                Content = new Avalonia.Controls.Shapes.Ellipse
+                Classes = { "LauncherPageDotButton" },
+                Height = 24,
+                Padding = new Thickness(5, 8),
+                Content = new Border
                 {
-                    Width = 8, Height = 8, Fill = Avalonia.Media.Brushes.White,
-                    Opacity = index == ViewModel.PageIndex ? 0.95 : 0.3,
+                    Width = isCurrent ? 20 : 7,
+                    Height = 7,
+                    CornerRadius = new CornerRadius(999),
+                    Background = isCurrent ? activeBrush : inactiveBrush,
+                    Opacity = isCurrent ? 0.95 : 0.75,
                     IsHitTestVisible = false,
-                    Transitions = new Avalonia.Animation.Transitions
+                    Transitions = new Transitions
                     {
-                        new Avalonia.Animation.DoubleTransition
-                        {
-                            Property = OpacityProperty, Duration = GuiMotion.Duration(this, true)
-                        }
+                        new DoubleTransition { Property = WidthProperty, Duration = transitionDuration, Easing = StageEnterEasing },
+                        new DoubleTransition { Property = OpacityProperty, Duration = transitionDuration, Easing = StageEnterEasing }
                     }
                 }
             };
@@ -480,7 +632,11 @@ public partial class LauncherView : UserControl
         // This menu is later reparented to a separate native layer surface.
         // Retain named children while the Launcher name scope is still intact.
         _appContextUninstallItem = this.FindControl<MenuItem>("LauncherUninstallMenuItem");
-        ActualThemeVariantChanged += (_, _) => ReloadRealizedIcons();
+        ActualThemeVariantChanged += (_, _) =>
+        {
+            ReloadRealizedIcons();
+            UpdatePageIndicators();
+        };
         _ = new DaisyOS.Shell.Services.Diagnostics.VisualActivityGate(this, visible =>
         {
             if (visible) EnsureRealizedIcons();
@@ -517,18 +673,10 @@ public partial class LauncherView : UserControl
                 }
             }
         }, RoutingStrategies.Tunnel);
-        AddHandler(InputElement.KeyDownEvent, (_, e) =>
-        {
-            if (e.Key is Key.Enter or Key.Space && e.Source is Visual visual)
-            {
-                var button = visual.GetSelfAndVisualAncestors().OfType<Button>().FirstOrDefault(b => b.DataContext is LauncherItemViewModel);
-                if (button?.DataContext is LauncherItemViewModel target)
-                {
-                    _activationApp = target.App.Id;
-                    _activationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, target.App.Id.Replace(".desktop", ""));
-                }
-            }
-        }, RoutingStrategies.Tunnel);
+
+        AddHandler(InputElement.KeyDownEvent, OnLauncherTunnelKeyDown, RoutingStrategies.Tunnel);
+        AddHandler(InputElement.TextInputEvent, OnLauncherTunnelTextInput, RoutingStrategies.Tunnel);
+
         ViewModel = viewModel ?? new LauncherViewModel((Application.Current as App)?.SessionState);
         Loc.RefreshOnChange(this, () => { foreach (var item in ViewModel.AllApps) item.UpdateApp(item.App); _ = ViewModel.ReloadApplicationsAsync(); });
         ViewModel.AllApps.CollectionChanged += (_, _) => PreloadCatalogIcons();
@@ -537,9 +685,164 @@ public partial class LauncherView : UserControl
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(LauncherViewModel.PageIndex)) OnPageChanged();
+            else if (e.PropertyName == nameof(LauncherViewModel.PageCount)) UpdatePageIndicators();
         };
         AddHandler(InputElement.PointerWheelChangedEvent, OnPageWheel, RoutingStrategies.Tunnel);
         OnPageChanged();
+    }
+
+    private TextBox? GetSearchInput() =>
+        this.FindControl<Controls.SearchBar>("LauncherSearchBar")?.FindControl<TextBox>("SearchInput");
+
+    private void FocusSearchAtEnd()
+    {
+        if (GetSearchInput() is not { } input) return;
+        input.Focus();
+        var len = input.Text?.Length ?? 0;
+        input.SelectionStart = len;
+        input.SelectionEnd = len;
+    }
+
+    private static LauncherItemViewModel? GetFocusedTileItem(Visual? source) =>
+        source?.GetSelfAndVisualAncestors().OfType<Button>().FirstOrDefault(b => b.DataContext is LauncherItemViewModel)?.DataContext as LauncherItemViewModel;
+
+    private async void OnLauncherTunnelKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (IsWithinFlyout(e.Source as Visual)) return;
+
+        // Space activates an explicitly focused tile button without interfering with typing spaces in Search.
+        if (e.Key == Key.Space && e.Source is Visual spaceVisual && GetSearchInput()?.IsFocused != true)
+        {
+            if (GetFocusedTileItem(spaceVisual) is { } tileTarget)
+            {
+                _activationApp = tileTarget.App.Id;
+                _activationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, tileTarget.App.Id.Replace(".desktop", ""));
+            }
+            return;
+        }
+
+        // Alt+1..9 or Ctrl+1..9 launches visible page tiles directly.
+        if ((e.KeyModifiers.HasFlag(KeyModifiers.Alt) || e.KeyModifiers.HasFlag(KeyModifiers.Control)) &&
+            e.Key >= Key.D1 && e.Key <= Key.D9)
+        {
+            var quickIndex = (int)(e.Key - Key.D1);
+            if (quickIndex >= 0 && quickIndex < ViewModel.PageApps.Count)
+            {
+                var quickTarget = ViewModel.PageApps[quickIndex];
+                e.Handled = true;
+                _activationApp = quickTarget.App.Id;
+                _activationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, quickTarget.App.Id.Replace(".desktop", ""));
+                await LaunchItemAsync(quickTarget);
+                return;
+            }
+        }
+
+        if (e.KeyModifiers.HasFlag(KeyModifiers.Control) && e.Key == Key.U)
+        {
+            if (!string.IsNullOrEmpty(ViewModel.SearchText))
+            {
+                ViewModel.SearchText = string.Empty;
+                FocusSearchAtEnd();
+                e.Handled = true;
+            }
+            return;
+        }
+
+        switch (e.Key)
+        {
+            case Key.Enter:
+            {
+                var target = ViewModel.HasSearchQuery
+                    ? ViewModel.ResolveSearchResult()
+                    : (GetFocusedTileItem(e.Source as Visual) ?? ViewModel.SelectedItem);
+                if (target is null) return;
+
+                e.Handled = true;
+                _activationApp = target.App.Id;
+                _activationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, target.App.Id.Replace(".desktop", ""));
+                await LaunchItemAsync(target);
+                return;
+            }
+
+            case Key.Down:
+            case Key.Up:
+                if (ViewModel.MoveSelection(0, e.Key == Key.Down ? 1 : -1))
+                {
+                    e.Handled = true;
+                }
+                return;
+
+            case Key.Tab:
+            {
+                var step = e.KeyModifiers.HasFlag(KeyModifiers.Shift) ? -1 : 1;
+                if (ViewModel.MoveSelection(step, 0))
+                {
+                    FocusSearchAtEnd();
+                    e.Handled = true;
+                }
+                return;
+            }
+
+            case Key.Left:
+            case Key.Right:
+            {
+                if (e.KeyModifiers != KeyModifiers.None) return;
+                var delta = e.Key == Key.Right ? 1 : -1;
+                if (!ViewModel.HasSearchQuery)
+                {
+                    if (ViewModel.MoveSelection(delta, 0)) e.Handled = true;
+                    return;
+                }
+
+                var input = GetSearchInput();
+                var searchFocused = input?.IsFocused == true;
+                var navigatedBeyondFirst = ViewModel.SelectedItem is not null &&
+                    !ReferenceEquals(ViewModel.SelectedItem, ViewModel.FilteredApps.FirstOrDefault());
+                var caretAtEnd = input is not null &&
+                    input.SelectionStart == (input.Text?.Length ?? 0) &&
+                    input.SelectionEnd == (input.Text?.Length ?? 0);
+
+                if (!searchFocused || navigatedBeyondFirst || (e.Key == Key.Right && caretAtEnd))
+                {
+                    if (ViewModel.MoveSelection(delta, 0)) e.Handled = true;
+                }
+                return;
+            }
+
+            case Key.PageDown:
+            case Key.PageUp:
+                if (ViewModel.PageCount > 1)
+                {
+                    ViewModel.GoToPage(ViewModel.PageIndex + (e.Key == Key.PageDown ? 1 : -1));
+                    ViewModel.ResetSelection();
+                    e.Handled = true;
+                }
+                return;
+
+            case Key.Back:
+            {
+                var input = GetSearchInput();
+                if (input is not null && !input.IsFocused && !string.IsNullOrEmpty(ViewModel.SearchText))
+                {
+                    ViewModel.SearchText = ViewModel.SearchText[..^1];
+                    FocusSearchAtEnd();
+                    e.Handled = true;
+                }
+                return;
+            }
+        }
+    }
+
+    private void OnLauncherTunnelTextInput(object? sender, TextInputEventArgs e)
+    {
+        if (IsWithinFlyout(e.Source as Visual)) return;
+        if (string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0])) return;
+        var input = GetSearchInput();
+        if (input is null || input.IsFocused) return;
+
+        ViewModel.SearchText += e.Text;
+        FocusSearchAtEnd();
+        e.Handled = true;
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
@@ -777,10 +1080,8 @@ public partial class LauncherView : UserControl
 
     private async void OnSearchKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key != Key.Enter || ViewModel.TopSearchResult is not { } item)
-        {
-            return;
-        }
+        if (e.Handled || e.Key != Key.Enter) return;
+        if (ViewModel.ResolveSearchResult() is not { } item) return;
 
         e.Handled = true;
         _activationApp = item.App.Id;
@@ -791,6 +1092,7 @@ public partial class LauncherView : UserControl
     private async Task LaunchItemAsync(LauncherItemViewModel item)
     {
         ClosePowerMenu();
+        CloseAppContextMenu();
         // Launcher activation dismisses immediately, matching established desktop launchers.
         AppLaunchRequested?.Invoke(this, EventArgs.Empty);
         var tokenTask = _activationApp == item.App.Id ? _activationToken : null;
@@ -834,9 +1136,8 @@ public partial class LauncherView : UserControl
             return;
         }
 
-        // A click on launcher canvas is a deliberate exit from search editing.
-        // Move focus to the launcher itself so the TextBox reliably receives LostFocus.
-        Focus();
+        // Keep search immediately ready for typing while clearing any stale tile focus.
+        FocusSearchAtEnd();
     }
 
     private static bool IsInteractive(Visual source) =>

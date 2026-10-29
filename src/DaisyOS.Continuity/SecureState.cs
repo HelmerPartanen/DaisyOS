@@ -5,7 +5,7 @@ using global::System.Text.Json;
 
 namespace DaisyOS.Continuity;
 
-public sealed record TrustedPeer(string Certificate, string Name, string Address, bool Clipboard = false, bool Files = false, string GrantId = "", bool Input = false, bool Handoff = false, bool Screen = false, bool Audio = false);
+public sealed record TrustedPeer(string Certificate, string Name, string Address, bool Clipboard = false, bool Files = false, string GrantId = "", bool Input = false, bool Handoff = false, bool Screen = false, bool Audio = false, int BlockedFeatures = 0, string InputEdge = "right");
 public sealed class ContinuitySettings
 {
     public int Version { get; set; } = 1;

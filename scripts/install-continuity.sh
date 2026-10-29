@@ -8,8 +8,33 @@ if [[ ! -x "$payload/DaisyOS.Continuity" ]]; then
   printf 'Build the payload first: scripts/build-continuity.sh\n' >&2
   exit 1
 fi
-install -d "$prefix/lib/daisyos/continuity" "$prefix/bin" "$prefix/share/systemd/user"
-cp -af "$payload/." "$prefix/lib/daisyos/continuity/"
+if [[ ! -x "$payload/daisyos-continuity-media" || ! -x "$payload/daisyos-portal-capture" ]]; then
+  echo "A native helper is missing. Run scripts/build-continuity.sh before installing." >&2
+  exit 1
+fi
+was_active=false
+if [[ "$(realpath -m "$prefix")" == "$(realpath -m "$HOME/.local")" ]] && systemctl --user is-active --quiet daisyos-continuity.service; then
+  was_active=true
+  systemctl --user stop daisyos-continuity.service
+fi
+# Never overwrite mapped .NET assemblies. Publish a complete immutable release,
+# then switch the directory link while the managed service is stopped.
+python3 - "$prefix" "$payload" <<'PYINSTALL'
+import os, pathlib, shutil, sys, uuid
+prefix, payload = pathlib.Path(sys.argv[1]).resolve(), pathlib.Path(sys.argv[2]).resolve()
+base = prefix/'lib/daisyos'
+releases = base/'continuity-releases'
+releases.mkdir(parents=True, exist_ok=True)
+release = releases/uuid.uuid4().hex
+shutil.copytree(payload, release)
+current = base/'continuity'
+if current.exists() and not current.is_symlink(): current.rename(releases/('legacy-'+uuid.uuid4().hex))
+link = base/('continuity-next-'+uuid.uuid4().hex)
+link.symlink_to(release, target_is_directory=True)
+os.replace(link, current)
+(prefix/'bin').mkdir(parents=True, exist_ok=True)
+(prefix/'share/systemd/user').mkdir(parents=True, exist_ok=True)
+PYINSTALL
 python3 - "$prefix" "$repo_root/packaging/continuity/daisyos-continuity.service" <<'PY'
 import pathlib, shlex, sys
 prefix = pathlib.Path(sys.argv[1]).resolve()
@@ -23,13 +48,9 @@ launcher = prefix / 'bin/daisyos-continuity'
 launcher.write_text('#!/bin/sh\nexec ' + shlex.quote(str(prefix / 'lib/daisyos/continuity/DaisyOS.Continuity')) + ' "$@"\n')
 launcher.chmod(0o755)
 PY
-if systemctl is-active --quiet firewalld 2>/dev/null && ! grep -q '47621' /etc/firewalld/zones/*.xml 2>/dev/null; then
-  if [[ -t 0 && -z "${ANTIGRAVITY_AGENT:-}" ]]; then
-    printf 'Opening Continuity LAN discovery and transfer ports (47621/tcp, 47621/udp, mdns) in firewalld...\n'
-    sudo firewall-cmd --permanent --add-port=47621/tcp --add-port=47621/udp >/dev/null && \
-      sudo firewall-cmd --permanent --add-service=mdns >/dev/null && \
-      sudo firewall-cmd --reload >/dev/null || true
-  fi
+if [[ "$was_active" == true ]]; then
+  systemctl --user daemon-reload
+  systemctl --user start daisyos-continuity.service
 fi
 printf 'Installed under %s. Install dependencies: .NET 10 ASP.NET runtime, avahi, wl-clipboard; media also needs libei, GStreamer/PipeWire plugins and libpulse (pactl/pacat).\n' "$prefix"
 printf 'Reload user units with systemctl --user daemon-reload, then start daisyos-continuity.service. Sharing stays off until enabled in Settings.\n'

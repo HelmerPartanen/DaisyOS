@@ -21,7 +21,7 @@ public sealed class AudioRouteTests
             var address = "127.0.0.1:" + ((IPEndPoint)listener.LocalEndpoint).Port;
             source.Settings.Enabled = target.Settings.Enabled = true;
             source.Settings.Peers[target.Id] = new(Convert.ToBase64String(target.Identity.RawData), "Target", address, Audio: true);
-            target.Settings.Peers[source.Id] = new(Convert.ToBase64String(source.Identity.RawData), "Source", "127.0.0.1:1", Audio: true);
+            target.Settings.Peers[source.Id] = new(Convert.ToBase64String(source.Identity.RawData), "Source", "127.0.0.1:1", Audio: false);
             await using var sender = new ContinuityDaemon(source, 47621, () => true, root, "unix:path=/nonexistent-audio-test", sourceTools);
             await using var receiver = new ContinuityDaemon(target, 47621, () => true, root, "unix:path=/nonexistent-audio-test", targetTools);
             using var deadline = new CancellationTokenSource(TimeSpan.FromSeconds(25));

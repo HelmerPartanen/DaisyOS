@@ -117,6 +117,33 @@ public sealed class ShellSessionState
         }
     }
 
+    /// <summary>Returns launch count and last-used timestamp for ranking search results.</summary>
+    public (int LaunchCount, DateTimeOffset LastLaunchedUtc) GetApplicationUsage(string applicationId)
+    {
+        if (string.IsNullOrWhiteSpace(applicationId))
+        {
+            return (0, DateTimeOffset.MinValue);
+        }
+
+        lock (_sync)
+        {
+            if (_state.ApplicationUsage.TryGetValue(applicationId, out var direct))
+            {
+                return (direct.LaunchCount, direct.LastLaunchedUtc);
+            }
+
+            var alternate = applicationId.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)
+                ? applicationId[..^8]
+                : applicationId + ".desktop";
+            if (_state.ApplicationUsage.TryGetValue(alternate, out var fallback))
+            {
+                return (fallback.LaunchCount, fallback.LastLaunchedUtc);
+            }
+
+            return (0, DateTimeOffset.MinValue);
+        }
+    }
+
     /// <summary>Records a launch only after the system launcher accepted it.</summary>
     public void RecordApplicationLaunch(string applicationId)
     {

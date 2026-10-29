@@ -1,5 +1,7 @@
 # Continuity input, handoff, screen viewing and audio
 
+> Current screen-edge control and streamlined audio/handoff flows: see [SEAMLESS_CONTROL.md](SEAMLESS_CONTROL.md). The original viewer-only implementation described below is historical where it conflicts with that guide.
+
 The user verified device connection and text clipboard sharing on their desktop/laptop before this extension. The following features require updating **both** computers and new acceptance testing.
 
 ## What this revision implements

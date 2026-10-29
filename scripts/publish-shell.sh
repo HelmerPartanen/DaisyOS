@@ -109,6 +109,7 @@ for application in Files Notes Settings DiskManager Continuity; do
 done
 
 "$repo_root/scripts/build-continuity-media.sh" "$output_dir/apps/Continuity"
+install -m755 "$repo_root/src/native/daisy_portal_capture/build/daisyos-portal-capture" "$output_dir/apps/Continuity/daisyos-portal-capture"
 
 install -m644 "$repo_root/packaging/continuity/daisyos-continuity.service" "$output_dir/daisyos-continuity.service"
 

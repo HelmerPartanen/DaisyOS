@@ -271,12 +271,38 @@ namespace DaisyOS.Shell.Views
                 _taskbarAutoHideTimer.Stop();
                 _systemBarAutoHideTimer.Stop();
                 ApplyBottomBarVisibility();
+                return;
+            }
+
+            if (_taskbarAutoHide &&
+                !TaskbarContent.IsPointerOver &&
+                !TaskbarContent.IsContextMenuVisible &&
+                !DaisyOS.Shell.Services.Compositor.TaskbarPreviewState.IsShowing)
+            {
+                _taskbarRevealed = false;
+                _taskbarAutoHideTimer.Stop();
             }
             else
             {
                 ScheduleTaskbarAutoHide();
+            }
+
+            if (_systemBarAutoHide &&
+                !SystemBarContent.IsPointerOver &&
+                !SystemBar.IsQuickSettingsVisible &&
+                !SystemBar.IsNotificationPanelVisible &&
+                !SystemBar.IsCalendarPanelVisible &&
+                !SystemBar.IsAppTrayVisible)
+            {
+                _systemBarRevealed = false;
+                _systemBarAutoHideTimer.Stop();
+            }
+            else
+            {
                 ScheduleSystemBarAutoHide();
             }
+
+            ApplyBottomBarVisibility();
         }
 
         private void RevealTaskbarTemporarily()

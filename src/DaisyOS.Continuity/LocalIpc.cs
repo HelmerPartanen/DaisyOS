@@ -120,6 +120,9 @@ public sealed partial class ContinuityDaemon
                     { "clipboard" => peer with { Clipboard = command.Allowed }, "files" => peer with { Files = command.Allowed },
                       "input" => peer with { Input = command.Allowed }, "handoff" => peer with { Handoff = command.Allowed },
                       "screen" => peer with { Screen = command.Allowed }, "audio" => peer with { Audio = command.Allowed }, _ => throw new InvalidDataException() };
+                    var featureBit = FeatureBit(command.Value);
+                    if (featureBit != 0) _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with
+                    { BlockedFeatures = command.Allowed ? peer.BlockedFeatures & ~featureBit : peer.BlockedFeatures | featureBit };
                     if (!command.Allowed)
                     {
                         _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with { GrantId = Guid.NewGuid().ToString("N") };
@@ -197,6 +200,16 @@ public sealed partial class ContinuityDaemon
                     if (_transferCancellation.TryGetValue(command.Id, out var cancellation)) _ = cancellation.CancelAsync();
                     if (_transferResumeRecords.TryGetValue(command.Id, out var record)) File.Delete(record);
                 }
+                return;
+            case "edge":
+                if (command.Value is not ("left" or "right" or "top" or "bottom")) throw new InvalidDataException();
+                lock (_gate)
+                {
+                    Require(command.Id, null);
+                    _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with { InputEdge = command.Value };
+                    SaveSettings();
+                }
+                StartLive(command.Id, "input", false, command.Value);
                 return;
             case "live":
                 StartLive(command.Id, command.Value, command.Allowed);

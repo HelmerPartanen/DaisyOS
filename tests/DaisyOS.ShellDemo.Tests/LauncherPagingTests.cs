@@ -157,4 +157,77 @@ public sealed class LauncherPagingTests
         finally { window.Close(); }
     }
 
+    [AvaloniaFact]
+    public void SmartSearchRanksPrefixesAcronymsAndRecentUsageAboveDescriptionMatches()
+    {
+        var tempDir = Directory.CreateTempSubdirectory("daisy-launcher-rank-");
+        try
+        {
+            var session = new DaisyOS.Shell.Services.ShellSessionState(Path.Combine(tempDir.FullName, "state.json"));
+            session.RecordApplicationLaunch("firefox");
+            session.RecordApplicationLaunch("firefox");
+
+            var apps = new[]
+            {
+                new AppEntry("asset-helper", "Asset Helper", "Manage system settings and presets", "", false),
+                new AppEntry("settings", "Settings", "System preferences", "", false),
+                new AppEntry("files", "Files", "File manager", "", false),
+                new AppEntry("firefox", "Firefox", "Web browser", "", false),
+                new AppEntry("dsh", "DeepSeek Harness", "AI coding harness", "", false),
+                new AppEntry("sysmon", "System Monitor", "Processes and resources", "", false)
+            };
+
+            var model = new LauncherViewModel(session, apps);
+
+            // Name prefix ("Settings") outranks description match ("Asset Helper").
+            model.SearchText = "set";
+            Assert.Equal("settings", model.ResolveSearchResult()?.App.Id);
+
+            //Acronym & camel-case initials ("sm" -> System Monitor, "dsh" -> DeepSeek Harness).
+            model.SearchText = "sm";
+            Assert.Equal("sysmon", model.ResolveSearchResult()?.App.Id);
+
+            model.SearchText = "dsh";
+            Assert.Equal("dsh", model.ResolveSearchResult()?.App.Id);
+
+            // Frequent/recent launches boost "Firefox" ahead of "Files" on shared prefix "fi".
+            model.SearchText = "fi";
+            Assert.Equal("firefox", model.ResolveSearchResult()?.App.Id);
+        }
+        finally
+        {
+            tempDir.Delete(true);
+        }
+    }
+
+    [AvaloniaFact]
+    public void KeyboardSelectionNavigatesGridPagesAndUpdatesSearchTarget()
+    {
+        var apps = Enumerable.Range(0, 10)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray();
+        var model = new LauncherViewModel(null, apps);
+        model.SetPageLayout(3, 2); // 6 per page -> 2 pages
+
+        Assert.Null(model.SelectedItem);
+        Assert.True(model.MoveSelection(1, 0));
+        Assert.Equal("app-0", model.SelectedItem?.App.Id);
+
+        Assert.True(model.MoveSelection(0, 1));
+        Assert.Equal("app-3", model.SelectedItem?.App.Id);
+
+        // Step across page boundary onto page 1.
+        model.MoveSelection(1, 0); // app-4
+        model.MoveSelection(1, 0); // app-5
+        model.MoveSelection(1, 0); // app-6 (page 1)
+        Assert.Equal(1, model.PageIndex);
+        Assert.Equal("app-6", model.SelectedItem?.App.Id);
+
+        // In search mode, stepping right moves the Enter target to the second result.
+        model.SearchText = "App 0";
+        Assert.Equal("app-0", model.ResolveSearchResult()?.App.Id);
+        model.MoveSelection(1, 0);
+        Assert.Equal("app-1", model.ResolveSearchResult()?.App.Id);
+        Assert.True(model.SelectedItem!.IsTopSearchResult);
+    }
+
 }

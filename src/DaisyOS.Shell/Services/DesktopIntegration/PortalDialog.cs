@@ -50,7 +50,7 @@ internal sealed class PortalDialog : Window
         var window = ClientSideDecorationsWindow.Create(factory);
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
             WaylandWindow.SetAppId(window, "org.daisyos.DesktopServices");
-        window.Opened += (_, _) => _ = FocusAsync(window);
+        window.Opened += (_, _) => { if (window.ShowActivated) _ = FocusAsync(window); };
         return window;
     }
 
