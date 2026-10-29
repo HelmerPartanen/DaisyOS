@@ -41,6 +41,7 @@ TestCase {
     }
 
     function test_reconcileDeferral() {
+        verify(Transition.shouldDeferReconcile("gesture"))
         verify(Transition.shouldDeferReconcile("preparing"))
         verify(Transition.shouldDeferReconcile("entering"))
         verify(Transition.shouldDeferReconcile("exiting"))

@@ -1346,6 +1346,8 @@ public partial class App : Application
             return;
         }
 
+        _launcherPinchOpening = null;
+        _launcherPinchTimeout?.Stop();
         HideLauncherHint();
         _launcherGesture.Reset();
 
@@ -1375,7 +1377,7 @@ public partial class App : Application
         RestoreLauncherFocus(returnWindowId);
     }
 
-    private void ShowLauncher()
+    private void ShowLauncher(bool interactive = false)
     {
         if (_shellView is null)
         {
@@ -1392,8 +1394,53 @@ public partial class App : Application
             .FirstOrDefault(window => window.IsActive)?.Id;
         _launcherLaunchedApp = false;
         _shellView.Launcher.SetSolidBackdrop(SessionState.GamingMode || HasFullscreenWindow());
-        _shellView.ShowLauncher();
+        _shellView.ShowLauncher(interactive);
         LauncherVisibilityChanged?.Invoke(this, true);
+    }
+
+    private bool? _launcherPinchOpening;
+    private DispatcherTimer? _launcherPinchTimeout;
+
+    private void HandleLauncherPinch(LauncherPinchUpdate update)
+    {
+        if (_shellView is null || IsLockScreenActive) return;
+        var launcher = _shellView.Launcher;
+        if (_launcherPinchOpening is null)
+        {
+            if (update.Finished || update.Progress <= 0 || update.Opening == _shellView.IsLauncherVisible) return;
+            _launcherPinchOpening = update.Opening;
+            if (update.Opening) ShowLauncher(interactive: true);
+            launcher.BeginInteractiveReveal(update.Opening);
+        }
+        if (_launcherPinchOpening != update.Opening) return;
+        launcher.UpdateInteractiveReveal(update.Opening ? update.Progress : 1 - update.Progress);
+        _launcherPinchTimeout ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        _launcherPinchTimeout.Stop();
+        // Recover if the compositor effect disappears or the bus fails mid-gesture.
+        _launcherPinchTimeout.Tick -= OnLauncherPinchTimeout;
+        _launcherPinchTimeout.Tick += OnLauncherPinchTimeout;
+        if (!update.Finished)
+        {
+            _launcherPinchTimeout.Start();
+            return;
+        }
+        FinishLauncherPinch(update.Commit ? update.Opening : !update.Opening);
+    }
+
+    private void OnLauncherPinchTimeout(object? sender, EventArgs e)
+    {
+        if (_launcherPinchOpening is { } opening) FinishLauncherPinch(!opening);
+    }
+
+    private void FinishLauncherPinch(bool visible)
+    {
+        _launcherPinchTimeout?.Stop();
+        _launcherPinchOpening = null;
+        _shellView?.Launcher.EndInteractiveReveal(visible, () =>
+        {
+            if (visible) _shellView?.Launcher.FocusSearch();
+            else HideLauncher(immediate: true);
+        });
     }
 
     private void RestoreLauncherFocus(string? windowId)
@@ -1527,6 +1574,7 @@ public partial class App : Application
         _ = Task.Run(() => GetExternalAppLookup(_sharedLauncherService.Value));
         kwinBridge.ScreenshotRequested += (_, action) => Dispatcher.UIThread.Post(() => _ = HandleScreenshotRequestAsync(action));
         kwinBridge.LockRequested += (_, _) => Dispatcher.UIThread.Post(() => LockSession());
+        kwinBridge.LauncherPinchChanged += (_, update) => Dispatcher.UIThread.Post(() => HandleLauncherPinch(update));
         kwinBridge.OverviewRequested += (_, _) => Dispatcher.UIThread.Post(() => ToggleOverview());
         kwinBridge.MediaActionRequested += (_, action) => Dispatcher.UIThread.Post(() => _ = HandleMediaActionAsync(action));
         kwinBridge.ShellActionRequested += (_, action) => Dispatcher.UIThread.Post(() => HandleShellAction(action));

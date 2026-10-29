@@ -61,5 +61,5 @@ function stableMergeIds(existingIds, candidateIds) {
 }
 
 function shouldDeferReconcile(phase) {
-    return phase === "preparing" || phase === "entering" || phase === "exiting";
+    return phase === "gesture" || phase === "preparing" || phase === "entering" || phase === "exiting";
 }

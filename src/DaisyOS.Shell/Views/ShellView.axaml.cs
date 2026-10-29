@@ -837,11 +837,11 @@ namespace DaisyOS.Shell.Views
             }
         }
 
-        public void ShowLauncher()
+        public void ShowLauncher(bool interactive = false)
         {
             DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.Begin("launcher");
-            LauncherContent.AnimateIn();
-            LauncherContent.FocusSearch();
+            LauncherContent.AnimateIn(interactive);
+            if (!interactive) LauncherContent.FocusSearch();
         }
 
         public void HideLauncher(bool immediate = false, Action? completed = null)

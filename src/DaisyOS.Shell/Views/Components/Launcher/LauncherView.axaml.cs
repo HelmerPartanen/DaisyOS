@@ -168,8 +168,9 @@ public partial class LauncherView : UserControl
         stage.RenderTransform = CreateStageTransform(scale, translateY);
     }
 
-    public async void AnimateIn()
+    public async void AnimateIn(bool interactive = false)
     {
+        CancelInteractiveReveal();
         _animationCts?.Cancel();
         _animationCts?.Dispose();
         var cts = new CancellationTokenSource();
@@ -191,7 +192,7 @@ public partial class LauncherView : UserControl
                 frame.PrepareFrame();
         }
 
-        var duration = ResolveLauncherDuration(entering: true);
+        var duration = interactive ? TimeSpan.Zero : ResolveLauncherDuration(entering: true);
         if (content is not null)
         {
             _ = GuiMotion.SetScaleVisibleAsync(
@@ -200,6 +201,7 @@ public partial class LauncherView : UserControl
                 true,
                 closedScale: 1.0,
                 durationOverride: duration,
+                immediate: interactive,
                 easingOverride: StageEnterEasing);
         }
         AnimateStage(entering: true, duration);
@@ -229,6 +231,7 @@ public partial class LauncherView : UserControl
 
     public void CloseImmediate()
     {
+        CancelInteractiveReveal();
         IsOpen = false;
         CancelPageDrag();
         _animationCts?.Cancel();
@@ -256,6 +259,7 @@ public partial class LauncherView : UserControl
 
     public async void AnimateOut(Action onCompleted)
     {
+        CancelInteractiveReveal();
         if (!IsOpen)
         {
             if (_animationCts != null)
@@ -412,7 +416,13 @@ public partial class LauncherView : UserControl
         _lastPageChangeTime = now;
     }
 
-    private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(140) };
+    private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(180) };
+    private Vector _pageAxisTravel;
+    private bool? _pageHorizontal;
+    private double _pageVelocity;
+    private long _pageMotionTime;
+    private readonly TranslateTransform _pageCurrentTransform = new();
+    private readonly TranslateTransform _pageNeighbourTransform = new();
     private bool _pageDragging;
     private bool _committingDrag;
     private double _pageDragOffset;
@@ -423,8 +433,24 @@ public partial class LauncherView : UserControl
     private void DragPage(Vector delta)
     {
         if (ViewModel.PageCount <= 1) return;
-        var movement = Math.Abs(delta.X) > Math.Abs(delta.Y) ? delta.X : delta.Y;
+        if (!double.IsFinite(delta.X) || !double.IsFinite(delta.Y)) return;
+        var now = Environment.TickCount64;
+        _pageDragIdle.Stop();
+        _pageDragIdle.Start();
+        _pageAxisTravel += delta;
+        if (_pageHorizontal is null)
+        {
+            // Ignore initial sensor noise, then keep one axis for the entire swipe.
+            if (Math.Max(Math.Abs(_pageAxisTravel.X), Math.Abs(_pageAxisTravel.Y)) < 4) return;
+            _pageHorizontal = Math.Abs(_pageAxisTravel.X) >= Math.Abs(_pageAxisTravel.Y);
+            delta = _pageAxisTravel;
+        }
+        var movement = _pageHorizontal.Value ? delta.X : delta.Y;
         if (movement == 0) return;
+        var elapsed = now - _pageMotionTime;
+        _pageVelocity = elapsed is > 0 and < 100
+            ? _pageVelocity * 0.55 + movement / Math.Max(8, elapsed) * 0.45 : 0;
+        _pageMotionTime = now;
         if (!_pageDragging)
         {
             ++_pageTransitionGeneration;
@@ -457,21 +483,29 @@ public partial class LauncherView : UserControl
         }
         neighbour.IsVisible = valid;
         // Resist pulling beyond the first or last page.
-        var visibleOffset = valid ? offset : offset * 0.2;
+        var visibleOffset = valid ? offset : 80 * offset / (Math.Abs(offset) + 80);
         current.Opacity = neighbour.Opacity = 1;
-        current.RenderTransform = new TranslateTransform(visibleOffset, 0);
-        neighbour.RenderTransform = new TranslateTransform(visibleOffset + direction * PageStride, 0);
+        _pageCurrentTransform.X = visibleOffset;
+        _pageNeighbourTransform.X = visibleOffset + direction * PageStride;
+        current.RenderTransform = _pageCurrentTransform;
+        neighbour.RenderTransform = _pageNeighbourTransform;
     }
 
     private void SettlePageDrag()
     {
         _pageDragIdle.Stop();
-        if (!_pageDragging) return;
+        if (!_pageDragging)
+        {
+            _pageAxisTravel = default;
+            _pageHorizontal = null;
+            return;
+        }
         var generation = ++_dragGeneration;
         var from = _pageDragOffset;
         var direction = from < 0 ? 1 : -1;
         var targetPage = ViewModel.PageIndex + direction;
-        var commit = Math.Abs(from) >= Math.Min(60, PageStride * 0.10) &&
+        var velocity = Environment.TickCount64 - _pageMotionTime <= 80 ? _pageVelocity : 0;
+        var commit = LauncherSwipePhysics.ShouldCommit(from, velocity, PageStride) &&
             targetPage >= 0 && targetPage < ViewModel.PageCount;
         var to = commit ? -direction * PageStride : 0;
         TimeSpan? start = null;
@@ -481,7 +515,8 @@ public partial class LauncherView : UserControl
             _committingDrag = true;
             _pageDragging = false;
             _pageDragOffset = 0;
-            ViewModel.GoToPage(commit ? targetPage : ViewModel.PageIndex);
+            if (commit) ViewModel.GoToPage(targetPage);
+            else OnPageChanged(); // Restore transforms and hit testing even when the index stays unchanged.
             _committingDrag = false;
         }
         if (ResolveLauncherDuration(entering: true) == TimeSpan.Zero || TopLevel.GetTopLevel(this) is not { } host)
@@ -489,11 +524,12 @@ public partial class LauncherView : UserControl
             Finish();
             return;
         }
+        var settleDuration = Math.Clamp(Math.Abs(to - from) / Math.Max(2.5, Math.Abs(velocity)), 140, 280);
         void Frame(TimeSpan time)
         {
             if (generation != _dragGeneration) return;
             start ??= time;
-            var t = Math.Clamp((time - start.Value).TotalMilliseconds / 180, 0, 1);
+            var t = Math.Clamp((time - start.Value).TotalMilliseconds / settleDuration, 0, 1);
             _pageDragOffset = from + (to - from) * (1 - Math.Pow(1 - t, 3));
             RenderPageDrag(_pageDragOffset);
             if (t >= 1) Finish();
@@ -508,6 +544,10 @@ public partial class LauncherView : UserControl
         _pageDragIdle.Stop();
         _pageDragging = false;
         _pageDragOffset = 0;
+        _pageHorizontal = null;
+        _pageAxisTravel = default;
+        _pageVelocity = 0;
+        _pageMotionTime = 0;
         _dragNeighbour = -1;
         this.FindControl<ItemsControl>("ApplicationGrid")!.IsHitTestVisible = true;
     }

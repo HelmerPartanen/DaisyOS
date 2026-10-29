@@ -71,7 +71,7 @@ if [[ ! -f "$installed_overview" ]]; then
   echo "DaisyOS task overview was installed without its QML entry point: $installed_overview" >&2
   exit 1
 fi
-for overview_dependency in ScreenView.qml RoundedPreviewFrame.qml BentoLayout.js TransitionGeometry.js WindowRoles.js; do
+for overview_dependency in GlobalGestures.qml ScreenView.qml RoundedPreviewFrame.qml BentoLayout.js TransitionGeometry.js WindowRoles.js; do
   if [[ ! -r "$(dirname "$installed_overview")/$overview_dependency" ]]; then
     echo "DaisyOS task overview is missing required installed file: $overview_dependency" >&2
     exit 1

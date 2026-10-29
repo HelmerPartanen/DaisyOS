@@ -38,6 +38,7 @@ public sealed class KWinWindowBridge : ICompositorWindowService
     public event EventHandler<string>? MediaActionRequested;
     /// <summary>Raised by KWin-owned global shortcuts for common DaisyOS shell actions.</summary>
     public event EventHandler<string>? ShellActionRequested;
+    public event EventHandler<LauncherPinchUpdate>? LauncherPinchChanged;
 
     public async Task StartAsync(CancellationToken cancellationToken = default)
     {
@@ -58,7 +59,12 @@ public sealed class KWinWindowBridge : ICompositorWindowService
                 () => OverviewRequested?.Invoke(this, EventArgs.Empty),
                 action => MediaActionRequested?.Invoke(this, action),
                 action => ShellActionRequested?.Invoke(this, action),
-                () => Volatile.Read(ref _captureSnapshot));
+                () => Volatile.Read(ref _captureSnapshot),
+                payload =>
+                {
+                    if (LauncherPinchUpdate.TryParse(payload, out var update))
+                        LauncherPinchChanged?.Invoke(this, update!);
+                });
             connection.AddMethodHandler(handler);
             await connection.RequestNameAsync(BusName, RequestNameOptions.ReplaceExisting);
 
@@ -187,7 +193,8 @@ public sealed class KWinWindowBridge : ICompositorWindowService
         Action overviewRequested,
         Action<string> mediaActionRequested,
         Action<string> shellActionRequested,
-        Func<string> captureSnapshot) : IPathMethodHandler
+        Func<string> captureSnapshot,
+        Action<string> launcherPinchChanged) : IPathMethodHandler
     {
         private static readonly ReadOnlyMemory<byte> IntrospectionXml = """
             <interface name="org.daisyos.Shell.WindowBridge">
@@ -208,6 +215,9 @@ public sealed class KWinWindowBridge : ICompositorWindowService
               </method>
               <method name="RequestMediaAction">
                 <arg direction="in" type="s" name="action"/>
+              </method>
+              <method name="UpdateLauncherPinch">
+                <arg direction="in" type="s" name="update"/>
               </method>
               <method name="RequestShellAction">
                 <arg direction="in" type="s" name="action"/>
@@ -276,6 +286,14 @@ public sealed class KWinWindowBridge : ICompositorWindowService
                      && request.SignatureAsString == "s")
             {
                 mediaActionRequested(request.GetBodyReader().ReadString());
+                using var writer = context.CreateReplyWriter("");
+                context.Reply(writer.CreateMessage());
+            }
+            else if (request.InterfaceAsString == InterfaceName
+                     && request.MemberAsString == "UpdateLauncherPinch"
+                     && request.SignatureAsString == "s")
+            {
+                launcherPinchChanged(request.GetBodyReader().ReadString());
                 using var writer = context.CreateReplyWriter("");
                 context.Reply(writer.CreateMessage());
             }

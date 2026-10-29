@@ -13,13 +13,22 @@ KWinComponents.SceneEffect {
     readonly property string phasePreparing: "preparing"
     readonly property string phaseEntering: "entering"
     readonly property string phaseActive: "active"
+    readonly property string phaseGesture: "gesture"
+    property bool gestureTracking: false
+    property bool gestureOpening: true
+    property real gestureProgress: 0
+    property real gestureStartProgress: 0
+    property int settleDuration: animationDuration
+    property int gestureTarget: -1
     readonly property string phaseExiting: "exiting"
     property string phase: phaseIdle
-    readonly property bool activated: phase === phaseEntering || phase === phaseActive
+    readonly property bool activated: phase === phaseEntering || phase === phaseActive || phase === phaseGesture
     readonly property bool reduceMotion: Boolean(configuration.ReduceMotion)
     property real transitionProgress: 0
     property QtObject pendingActivation: null
     readonly property int animationDuration: Math.max(1, Number(configuration.AnimationDuration || 280))
+
+    GlobalGestures { overview: effect }
 
     delegate: ScreenView {
         onSessionReady: view => effect.handleSessionReady(view)
@@ -29,7 +38,7 @@ KWinComponents.SceneEffect {
         enabled: !effect.reduceMotion && (effect.phase === effect.phaseEntering || effect.phase === effect.phaseExiting)
         NumberAnimation {
             id: transitionAnimation
-            duration: effect.animationDuration
+            duration: effect.settleDuration
             easing.type: effect.phase === effect.phaseExiting ? Easing.InCubic : Easing.OutCubic
             onRunningChanged: {
                 if (!running) effect.finishTransition();
@@ -63,9 +72,56 @@ KWinComponents.SceneEffect {
         }
     }
 
+    function beginGesture(opening) {
+        if (gestureTracking) return false;
+        if (opening ? phase !== phaseIdle && phase !== phaseExiting
+                    : phase !== phaseActive && phase !== phaseEntering) return false;
+        gestureOpening = opening;
+        gestureStartProgress = transitionProgress;
+        gestureProgress = 0;
+        gestureTarget = -1;
+        gestureTracking = true;
+        if (phase === phaseIdle) {
+            activate();
+        } else {
+            // Stop autonomous motion at its displayed position before tracking.
+            var displayed = transitionProgress;
+            phase = phaseGesture;
+            transitionAnimation.stop();
+            transitionProgress = displayed;
+            var view = activeRoot();
+            if (view) view.reverseTransition(opening);
+        }
+        return true;
+    }
+
+    function updateGesture(progress) {
+        if (!gestureTracking) return;
+        gestureProgress = Math.max(0, Math.min(1, progress));
+        if (phase === phaseGesture)
+            transitionProgress = gestureStartProgress + ((gestureOpening ? 1 : 0) - gestureStartProgress) * gestureProgress;
+    }
+
+    function endGesture(commit) {
+        if (!gestureTracking) return;
+        gestureTracking = false;
+        var target = commit ? (gestureOpening ? 1 : 0) : (gestureOpening ? 0 : 1);
+        if (phase === phasePreparing) {
+            gestureTarget = target;
+            return;
+        }
+        phase = target ? phaseEntering : phaseExiting;
+        var view = activeRoot();
+        if (view && !target) view.beginExit();
+        animateTo(target);
+        if (transitionProgress === target && !transitionAnimation.running) finishTransition();
+    }
+
     function animateTo(targetProgress) {
+        var unchanged = transitionProgress === targetProgress;
+        settleDuration = Math.max(80, Math.round(animationDuration * Math.abs(targetProgress - transitionProgress)));
         transitionProgress = targetProgress;
-        if (reduceMotion) finishTransition();
+        if (reduceMotion || unchanged) finishTransition();
     }
 
     function activeRoot() {
@@ -76,9 +132,20 @@ KWinComponents.SceneEffect {
         if (phase !== phasePreparing || view !== activeRoot()) {
             return;
         }
-        phase = phaseEntering;
         view.beginEntry();
-        animateTo(1);
+        if (gestureTracking) {
+            phase = phaseGesture;
+            transitionProgress = gestureStartProgress + ((gestureOpening ? 1 : 0) - gestureStartProgress) * gestureProgress;
+        } else if (gestureTarget >= 0) {
+            var target = gestureTarget;
+            gestureTarget = -1;
+            phase = target ? phaseEntering : phaseExiting;
+            if (!target) view.beginExit();
+            animateTo(target);
+        } else {
+            phase = phaseEntering;
+            animateTo(1);
+        }
     }
 
     function finishTransition() {
@@ -103,6 +170,7 @@ KWinComponents.SceneEffect {
     }
 
     function toggle() {
+        if (gestureTracking) { endGesture(false); return; }
         if (phase === phaseActive || phase === phaseEntering) {
             deactivate();
         } else if (phase === phaseExiting) {
@@ -134,6 +202,8 @@ KWinComponents.SceneEffect {
     }
 
     function deactivate() {
+        gestureTracking = false;
+        gestureTarget = -1;
         if (phase === phaseIdle || phase === phaseExiting) {
             return;
         }

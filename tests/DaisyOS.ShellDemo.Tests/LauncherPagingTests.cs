@@ -140,19 +140,89 @@ public sealed class LauncherPagingTests
             Assert.Equal(0, model.PageIndex);
             Assert.Null(current.RenderTransform);
             Assert.False(neighbour.IsVisible);
-            Scroll(-70);
+            Scroll(-220);
             Scroll(0, true);
             Assert.Equal(1, model.PageIndex);
             Assert.Null(current.RenderTransform);
             Assert.True(current.IsHitTestVisible);
-            Scroll(70);
+            Scroll(220);
             Scroll(0, true);
             Assert.Equal(0, model.PageIndex);
             Scroll(160); // Resist dragging past the first page.
-            Assert.Equal(32, current.RenderTransform!.Value.M31);
+            Assert.Equal(80d * 160 / 240, current.RenderTransform!.Value.M31, 5);
             Assert.False(neighbour.IsVisible);
             Scroll(0, true);
             Assert.Equal(0, model.PageIndex);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void PinchProgressTracksContinuouslyAndCancelledCloseRestoresInteraction()
+    {
+        var model = new LauncherViewModel(null, [new AppEntry("app", "App", "", "", false)]);
+        var launcher = new LauncherView(model);
+        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        var window = new Window { Width = 1280, Height = 900, Content = launcher };
+        window.Show();
+        try
+        {
+            launcher.AnimateIn(interactive: true);
+            launcher.BeginInteractiveReveal(true);
+            var material = launcher.FindControl<Border>("LauncherRootBorder")!;
+            var stage = launcher.FindControl<Grid>("LauncherStage")!;
+            Assert.Equal(0, material.Opacity);
+            launcher.UpdateInteractiveReveal(0.4);
+            Assert.Equal(0.4, material.Opacity);
+            Assert.Equal(0.928, stage.RenderTransform!.Value.M11, 5);
+            launcher.UpdateInteractiveReveal(0.2); // Reverse without restarting animation.
+            Assert.Equal(0.2, material.Opacity);
+            Assert.False(launcher.IsHitTestVisible);
+            var completed = false;
+            launcher.EndInteractiveReveal(true, () => completed = true);
+            Assert.True(completed);
+            Assert.Equal(1, material.Opacity);
+            Assert.True(launcher.IsHitTestVisible);
+            launcher.BeginInteractiveReveal(false);
+            launcher.UpdateInteractiveReveal(0.6);
+            launcher.EndInteractiveReveal(true, () => { });
+            Assert.Equal(1, material.Opacity);
+            Assert.True(launcher.IsHitTestVisible);
+            launcher.CloseImmediate();
+            launcher.UpdateInteractiveReveal(0.8); // Stale compositor sample cannot resurrect it.
+            Assert.False(launcher.IsVisible);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void PreciseSwipeKeepsItsInitialAxisDespiteDiagonalNoise()
+    {
+        var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
+        var launcher = new LauncherView(model);
+        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        var window = new Window { Width = 1280, Height = 900, Content = launcher };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            var viewport = launcher.FindControl<Grid>("LauncherPageViewport")!;
+            var current = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
+            using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
+            void Scroll(Vector delta, bool end = false) => viewport.RaiseEvent(new PointerWheelEventArgs(
+                viewport, pointer, window, new Point(100, 100), 0, new PointerPointProperties(),
+                KeyModifiers.None, delta) { IsPrecise = true, IsScrollEnd = end });
+            Scroll(new Vector(-30, -2));
+            Scroll(new Vector(-5, 50));
+            Assert.Equal(-35, current.RenderTransform!.Value.M31);
+            Scroll(default, true);
+            Assert.Equal(0, model.PageIndex);
+            Assert.Null(current.RenderTransform);
+            Assert.True(current.IsHitTestVisible);
+            Scroll(new Vector(0, -220)); // A new swipe may select the other axis.
+            Scroll(default, true);
+            Assert.Equal(1, model.PageIndex);
         }
         finally { window.Close(); }
     }
