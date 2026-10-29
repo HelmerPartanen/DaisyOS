@@ -101,7 +101,7 @@ public sealed class BatteryStatusViewTests
             var body = icon.FindControl<DaisyIcon>("BatteryBody")!;
             Assert.Equal("battery", body.Icon);
             Assert.Equal(icon.BaseBrush, body.Foreground);
-            Assert.Equal(0.62, body.Opacity, 2);
+            Assert.Equal(0.35, body.Opacity, 2);
         }
         finally { window.Close(); }
     }

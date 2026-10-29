@@ -47,7 +47,8 @@
                 <TextBlock Text="{Binding Initial}"
                            FontSize="{DynamicResource TypeSizeTitle}"
                            FontWeight="SemiBold"
-                           Foreground="{DynamicResource ContentPrimaryBrush}"
+                           Foreground="{DynamicResource DesktopItemLabelBrush}"
+                           Effect="{DynamicResource DesktopItemLabelShadow}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center" />
               </Border>
@@ -76,7 +77,8 @@
                      LineHeight="{DynamicResource TypeLineCaption}"
                      FontWeight="Medium"
                      TextAlignment="Center"
-                     Foreground="{DynamicResource ContentPrimaryBrush}"
+                     Foreground="{DynamicResource DesktopItemLabelBrush}"
+                     Effect="{DynamicResource DesktopItemLabelShadow}"
                      TextTrimming="CharacterEllipsis"
                      TextWrapping="Wrap"
                      MaxLines="2"
@@ -104,8 +106,8 @@
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.Styles>
           <Style Selector="Button.LauncherUtility">
-            <Setter Property="Background" Value="{DynamicResource LauncherUtilitySurfaceBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource ShellSurfaceInnerBorderBrush}" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
             <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
             <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
             <Setter Property="Padding" Value="0" />
@@ -118,7 +120,7 @@
           </Style>
           <Style Selector="Button.LauncherUtility:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource LauncherTileHoverBrush}" />
-            <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
           </Style>
           <Style Selector="Button.LauncherUtility:pressed">
             <Setter Property="RenderTransform" Value="scale(0.92)" />
@@ -198,29 +200,31 @@
 
           <!-- Application stage -->
           <Grid Grid.Row="1" RowDefinitions="Auto,*" ClipToBounds="True">
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Width="{Binding PageGridWidth}" HorizontalAlignment="Center" Margin="0,0,0,10">
-              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="10,0,0,0">
+            <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" Width="{Binding PageGridWidth}" HorizontalAlignment="Center" Margin="0,0,0,16">
+              <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="14,0,0,0">
                 <TextBlock Text="{DynamicResource Loc_9CB965E5630E}" IsVisible="{Binding !HasSearchQuery}"
                            FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold"
-                           Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+                           Foreground="{DynamicResource DesktopItemLabelBrush}"
+                           Effect="{DynamicResource DesktopItemLabelShadow}" VerticalAlignment="Center" />
                 <TextBlock Text="{DynamicResource Loc_E978B00DE465}" IsVisible="{Binding HasSearchQuery}"
                            FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold"
-                           Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center" />
+                           Foreground="{DynamicResource DesktopItemLabelBrush}"
+                           Effect="{DynamicResource DesktopItemLabelShadow}" VerticalAlignment="Center" />
               </StackPanel>
 
               <Border Grid.Column="1"
-                      Background="{DynamicResource LauncherKeycapBackgroundBrush}"
-                      CornerRadius="{DynamicResource RadiusPill}"
-                      Padding="10,3"
-                      Margin="0,0,10,0"
+                      Padding="0"
+                      Margin="12,0,0,0"
                       VerticalAlignment="Center">
                 <Panel>
                   <TextBlock Text="{Binding AllAppsCountText}" IsVisible="{Binding !HasSearchQuery}"
                              FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium"
-                             Foreground="{DynamicResource ContentSecondaryBrush}" />
+                             Foreground="{DynamicResource DesktopItemLabelBrush}"
+                             Effect="{DynamicResource DesktopItemLabelShadow}" />
                   <TextBlock Text="{Binding SearchResultsCountText}" IsVisible="{Binding HasSearchQuery}"
                              FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium"
-                             Foreground="{DynamicResource ContentSecondaryBrush}" />
+                             Foreground="{DynamicResource DesktopItemLabelBrush}"
+                             Effect="{DynamicResource DesktopItemLabelShadow}" />
                 </Panel>
               </Border>
             </Grid>
@@ -248,33 +252,32 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <controls:DaisyIcon Icon="magnifying-glass-minus"
                                     Size="{DynamicResource IconSizeHero}"
-                                    Foreground="{DynamicResource ContentTertiaryBrush}"
+                                    Foreground="{DynamicResource DesktopItemLabelBrush}"
+                                    Effect="{DynamicResource DesktopItemLabelShadow}"
                                     HorizontalAlignment="Center" />
                 <TextBlock Text="{DynamicResource Loc_68940BCF6E81}"
                            FontSize="{DynamicResource TypeSizeBodyMedium}"
                            FontWeight="Medium"
-                           Foreground="{DynamicResource ContentSecondaryBrush}"
+                           Foreground="{DynamicResource DesktopItemLabelBrush}"
+                           Effect="{DynamicResource DesktopItemLabelShadow}"
                            HorizontalAlignment="Center" />
               </StackPanel>
             </Grid>
           </Grid>
 
-          <!-- Unified utility bar: identity on the left, page capsules & hint in the centre, power on the right. -->
+          <!-- Utility bar: identity on the left, page indicators in the centre, power on the right. -->
           <Border Grid.Row="2" Padding="0,12,0,0">
             <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Stretch">
-              <Border Grid.Column="0" HorizontalAlignment="Left" Padding="5,5,14,5"
-                      Background="{DynamicResource LauncherUtilitySurfaceBrush}"
-                      BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                      BorderThickness="{DynamicResource BorderThicknessDefault}"
-                      CornerRadius="{DynamicResource RadiusPill}"
+              <Border Grid.Column="0" HorizontalAlignment="Left" Padding="4,5"
                       VerticalAlignment="Center">
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                   <Border Width="28" Height="28" CornerRadius="{DynamicResource RadiusCircle}"
-                          Background="{DynamicResource SurfaceRaisedSubtleBrush}">
+                          Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                          Effect="{DynamicResource DesktopItemLabelShadow}">
                     <Grid>
                       <TextBlock Text="{Binding UserInitial}" IsVisible="{DynamicResource ProfilePictureMissing}"
                                  FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold"
-                                 Foreground="{DynamicResource ActionPrimaryBrush}"
+                                 Foreground="{DynamicResource DesktopItemLabelBrush}"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
                       <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
                     </Grid>
@@ -282,29 +285,17 @@
                   <TextBlock Text="{Binding UserName}"
                              FontSize="{DynamicResource TypeSizeBodySmall}"
                              FontWeight="Medium"
-                             Foreground="{DynamicResource ContentPrimaryBrush}"
+                             Foreground="{DynamicResource DesktopItemLabelBrush}"
+                             Effect="{DynamicResource DesktopItemLabelShadow}"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Border>
 
-              <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="12"
-                          HorizontalAlignment="Center" VerticalAlignment="Center">
-                <StackPanel x:Name="LauncherPageIndicators"
+                <StackPanel x:Name="LauncherPageIndicators" Grid.Column="1"
                             Orientation="Horizontal"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="2" />
-                <Border Background="{DynamicResource LauncherKeycapBackgroundBrush}"
-                        CornerRadius="{DynamicResource RadiusPill}"
-                        Padding="10,4"
-                        VerticalAlignment="Center">
-                  <TextBlock Text="{DynamicResource Loc_961B2A04403E}"
-                             FontSize="{DynamicResource TypeSizeCaption}"
-                             Foreground="{DynamicResource ContentSecondaryBrush}"
-                             HorizontalAlignment="Center"
-                             VerticalAlignment="Center" />
-                </Border>
-              </StackPanel>
 
               <!-- Right: Power Menu Button. Its menu is detached to the native
                    system overlay so KWin can blur the launcher below it. -->
@@ -315,7 +306,8 @@
                       Click="OnPowerButtonClicked">
                 <controls:DaisyIcon Icon="power"
                                     Size="{DynamicResource IconSizeMedium}"
-                                    Foreground="{DynamicResource ContentPrimaryBrush}"
+                                    Foreground="{DynamicResource DesktopItemLabelBrush}"
+                                    Effect="{DynamicResource DesktopItemLabelShadow}"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center" />
               </Button>
