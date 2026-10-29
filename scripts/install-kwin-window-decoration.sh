@@ -75,6 +75,7 @@ for required in \
   "$app_icon_dir/Store.png" \
   "$app_icon_dir/Disk_Manager_Dark.png" \
   "$app_icon_dir/UiKit.png" \
+  "$app_icon_dir/AppInstaller.png" \
   "$application_dir/org.daisyos.settings.desktop" \
   "$application_dir/org.daisyos.notes.desktop" \
   "$application_dir/org.daisyos.calendar.desktop" \
@@ -82,6 +83,7 @@ for required in \
   "$application_dir/org.daisyos.files.desktop" \
   "$application_dir/org.daisyos.appstore.desktop" \
   "$application_dir/org.daisyos.diskmanager.desktop" \
+  "$application_dir/org.daisyos.appinstaller.desktop" \
   "$application_dir/org.daisyos.uikit.desktop"; do
   [[ -f "$required" ]] || {
     echo "DaisyOS application icon metadata is missing: $required" >&2
@@ -149,6 +151,7 @@ declare -A app_icons=(
   [files]=Files.png
   [appstore]=Store.png
   [diskmanager]=Disk_Manager_Dark.png
+  [appinstaller]=AppInstaller.png
   [uikit]=UiKit.png
 )
 for app_id in "${!app_icons[@]}"; do

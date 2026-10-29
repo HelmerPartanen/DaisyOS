@@ -62,7 +62,8 @@ internal static class FileVisualResolver
         [".7z"] = "application/x-7z-compressed",
         [".rar"] = "application/vnd.rar",
         [".tar"] = "application/x-tar",
-        [".gz"] = "application/gzip"
+        [".gz"] = "application/gzip",
+        [".appimage"] = "application/vnd.appimage"
     };
 
     private static readonly IReadOnlyDictionary<string, string[]> FallbackApplicationIdsByExtension = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
@@ -90,7 +91,8 @@ internal static class FileVisualResolver
         [".7z"] = ["org.gnome.FileRoller", "org.kde.ark"],
         [".rar"] = ["org.gnome.FileRoller", "org.kde.ark"],
         [".tar"] = ["org.gnome.FileRoller", "org.kde.ark"],
-        [".gz"] = ["org.gnome.FileRoller", "org.kde.ark"]
+        [".gz"] = ["org.gnome.FileRoller", "org.kde.ark"],
+        [".appimage"] = ["org.daisyos.appinstaller", "daisyos-appinstaller"]
     };
 
     internal static string GetMimeIconName(string extension) =>

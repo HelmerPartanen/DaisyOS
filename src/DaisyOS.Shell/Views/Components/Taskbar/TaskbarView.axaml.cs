@@ -819,7 +819,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             if (id.StartsWith("org.daisyos.", StringComparison.OrdinalIgnoreCase))
             {
                 var nativeId = id["org.daisyos.".Length..].ToLowerInvariant();
-                if (nativeId is "notes" or "files" or "settings" or "calendar" or "calculator" or "appstore" or "taskmanager" or "uikit" or "diskmanager")
+                if (nativeId is "notes" or "files" or "settings" or "calendar" or "calculator" or "appstore" or "taskmanager" or "uikit" or "diskmanager" or "appinstaller")
                     return nativeId;
             }
             return id;
@@ -1433,6 +1433,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 "appstore" => "AppIconStore",
                 "uikit" => "AppIconUiKit",
                 "diskmanager" => "AppIconDiskManager",
+                "appinstaller" => "AppIconAppInstaller",
                 "taskmanager" => "AppIconSystemMonitor",
                 "launcher" or "start" => "AppIconLauncher",
                 _ => null
@@ -1522,6 +1523,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             else if (string.Equals(appId, "calculator", StringComparison.OrdinalIgnoreCase)) displayName = "Calculator";
             else if (string.Equals(appId, "settings", StringComparison.OrdinalIgnoreCase)) displayName = "Settings";
             else if (string.Equals(appId, "files", StringComparison.OrdinalIgnoreCase)) displayName = "Files";
+            else if (string.Equals(appId, "appinstaller", StringComparison.OrdinalIgnoreCase)) displayName = "App Installer";
             else if (string.Equals(appId, "appstore", StringComparison.OrdinalIgnoreCase)) displayName = "App Store";
 
             var panel = new Panel

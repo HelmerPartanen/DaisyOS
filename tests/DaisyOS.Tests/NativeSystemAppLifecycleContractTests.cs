@@ -32,6 +32,21 @@ public sealed class NativeSystemAppLifecycleContractTests
         Assert.Contains("\"appstore\"", nativeIds.Substring(0, nativeIds.IndexOf(';')));
     }
 
+    [Fact]
+    public void AppInstallerIsRecognizedByCompositorDiscoveryPathsAndNativeTaskbar()
+    {
+        var root = FindRepoRoot();
+        var persistent = File.ReadAllText(Path.Combine(root, "packaging", "kwin", "daisyos-window-bridge", "contents", "code", "main.js"));
+        var fallback = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Services", "Compositor", "KWinCommandDispatcher.cs"));
+        Assert.Contains("\"org.daisyos.appinstaller\": \"appinstaller\"", persistent);
+        Assert.Contains("'org.daisyos.appinstaller': 'appinstaller'", fallback);
+        Assert.Contains("\"app installer\": \"appinstaller\"", persistent);
+        Assert.Contains("'app installer': 'appinstaller'", fallback);
+        var app = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "App.axaml.cs"));
+        var nativeIds = app.Substring(app.IndexOf("private static readonly string[] NativeAppIds"));
+        Assert.Contains("\"appinstaller\"", nativeIds.Substring(0, nativeIds.IndexOf(';')));
+    }
+
     private static string FindRepoRoot()
     {
         var dir = Directory.GetCurrentDirectory();

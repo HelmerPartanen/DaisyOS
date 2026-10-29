@@ -140,7 +140,7 @@ PATH="$temp_dir/bin:$PATH" \
   DAISYOS_NATIVE_DEVELOPMENT_CONFIG="$temp_dir/config" \
   "$control" restart
 
-for application in Files Notes Settings DiskManager; do
+for application in Files Notes Settings DiskManager AppInstaller; do
   grep -Fxq "build $fake_checkout/src/DaisyOS.$application/DaisyOS.$application.csproj -c Release --no-restore --disable-build-servers -m:1 -v:minimal" "$temp_dir/dotnet-arguments"
 done
 grep -Fxq "build $fake_checkout/src/DaisyOS.Shell/DaisyOS.Shell.csproj -c Debug -f net10.0 --no-restore --disable-build-servers -m:1 -v:minimal" "$temp_dir/dotnet-arguments"

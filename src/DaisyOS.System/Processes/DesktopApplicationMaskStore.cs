@@ -27,6 +27,7 @@ public static class DesktopApplicationMaskStore
         ["settings"] = "org.daisyos.settings.desktop",
         ["appstore"] = "org.daisyos.appstore.desktop",
         ["diskmanager"] = "org.daisyos.diskmanager.desktop",
+        ["appinstaller"] = "org.daisyos.appinstaller.desktop",
         ["taskmanager"] = "org.daisyos.taskmanager.desktop",
         ["systemmonitor"] = "org.daisyos.taskmanager.desktop",
         ["system-monitor"] = "org.daisyos.taskmanager.desktop",

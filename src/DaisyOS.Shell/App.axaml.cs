@@ -2161,6 +2161,9 @@ public partial class App : Application
             case "diskmanager":
                 ShowDiskManager();
                 return true;
+            case "appinstaller":
+                ShowAppInstaller();
+                return true;
             case "taskmanager":
             case "systemmonitor":
             case "system-monitor":
@@ -2790,6 +2793,15 @@ public partial class App : Application
 
     public void OpenFilesWindow() => ShowFiles((string?)null);
 
+    public async void ShowAppInstaller(string? appImagePath = null)
+    {
+        HideLauncher(restoreFocus: false);
+        var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.appinstaller");
+        var result = await PackagedApplicationLauncher.LaunchAsync("AppInstaller", appImagePath is null ? [] : [appImagePath]);
+        if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
+        if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
+    }
+
     private LockScreenWindow? _lockScreenWindow;
     private readonly List<Window> _secondaryLockScreens = new();
     private PowerIdleService? _powerIdleService;
@@ -3392,6 +3404,6 @@ public partial class App : Application
                (0.0722 * Linearize(color.B));
     }
 
-    private static readonly string[] NativeAppIds = ["notes", "calendar", "calculator", "settings", "files", "uikit", "appstore", "taskmanager", "diskmanager"];
+    private static readonly string[] NativeAppIds = ["notes", "calendar", "calculator", "settings", "files", "uikit", "appstore", "taskmanager", "diskmanager", "appinstaller"];
 
 }

@@ -286,11 +286,14 @@ namespace DaisyOS.Shell.Views.Components.Desktop
                     return;
                 }
                 using var busyCursor = DaisyOS.System.Processes.BusyCursor.Begin();
+                var isAppImage = string.Equals(Path.GetExtension(item.State.Id), ".AppImage", StringComparison.OrdinalIgnoreCase);
                 var result = item.Id.Value == DesktopItemViewModel.TrashItemId
                     ? await DaisyOS.Shell.Services.PackagedApplicationLauncher.LaunchFilesAsync(new FileManagerActivationRequest([DaisyOS.Shell.Apps.Files.UserTrashPaths.Files], false))
                     : item.State.Id.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)
                         ? await new LinuxAppLauncherService().LaunchDesktopEntryFileAsync(item.State.Id)
-                        : await Task.Run(() => new SafeProcessLauncher().Launch("xdg-open", [item.State.Id]));
+                        : isAppImage
+                            ? await DaisyOS.Shell.Services.PackagedApplicationLauncher.LaunchAsync("AppInstaller", [item.State.Id])
+                            : await Task.Run(() => new SafeProcessLauncher().Launch("xdg-open", [item.State.Id]));
                 if (!result.Succeeded)
                 {
                     (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t open {0}.", item.Label));

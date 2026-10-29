@@ -169,6 +169,15 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             AppLaunchKind.Internal,
             Categories: ["System", "Utility"]),
         new(
+            "org.daisyos.appinstaller.desktop",
+            "App Installer",
+            "Install applications packaged as AppImages",
+            "org.daisyos.appinstaller",
+            IsPinned: false,
+            AppLaunchKind.Internal,
+            Categories: ["System", "PackageManager"],
+            SearchTerms: ["AppImage", "Installer", "Package"]),
+        new(
             "org.daisyos.taskmanager.desktop",
             "System Monitor",
             "Monitor system performance and manage running processes",

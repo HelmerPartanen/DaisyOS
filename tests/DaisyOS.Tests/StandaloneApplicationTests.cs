@@ -55,6 +55,7 @@ public sealed class StandaloneApplicationTests
     [InlineData("files", "Tiedostot")]
     [InlineData("notes", "Muistiinpanot")]
     [InlineData("diskmanager", "Disk Manager")]
+    [InlineData("appinstaller", "App Installer")]
     public void TaskbarResolvesStandaloneAppsByStableIdInEveryLanguage(string shortId, string name)
     {
         var entry = new DaisyOS.Core.Models.AppEntry("org.daisyos." + shortId + ".desktop", name, "", "org.daisyos." + shortId,

@@ -255,6 +255,7 @@
       <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
       <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes.png</Bitmap>
       <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Light.png</Bitmap>
+      <Bitmap x:Key="AppIconAppInstaller">avares://DaisyOS.Shell/Assets/AppIcons/AppInstaller.png</Bitmap>
       <Bitmap x:Key="AppIconSystemMonitor">avares://DaisyOS.Shell/Assets/AppIcons/System_Monitor_Light.png</Bitmap>
       <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings.png</Bitmap>
       <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store.png</Bitmap>
@@ -458,6 +459,7 @@
       <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
       <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes.png</Bitmap>
       <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Dark.png</Bitmap>
+      <Bitmap x:Key="AppIconAppInstaller">avares://DaisyOS.Shell/Assets/AppIcons/AppInstaller.png</Bitmap>
       <Bitmap x:Key="AppIconSystemMonitor">avares://DaisyOS.Shell/Assets/AppIcons/System_Monitor_Dark.png</Bitmap>
       <Bitmap x:Key="AppIconSettings">avares://DaisyOS.Shell/Assets/AppIcons/Settings.png</Bitmap>
       <Bitmap x:Key="AppIconStore">avares://DaisyOS.Shell/Assets/AppIcons/Store.png</Bitmap>

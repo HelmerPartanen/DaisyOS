@@ -64,6 +64,7 @@ public static class DesktopItemLoader
             "settings" or "settingsicon" or "settings_dark" or "settings_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Settings.png",
             "uikit" or "ui-kit" or "uikit_dark" or "uikit_light" => "avares://DaisyOS.Shell/Assets/AppIcons/UiKit.png",
             "diskmanager" or "disk manager" or "disk_manager" or "disk-manager" or "disk_manager_dark" or "disk_manager_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_{suffix}.png",
+            "appinstaller" or "app installer" or "app_installer" or "app-installer" => "avares://DaisyOS.Shell/Assets/AppIcons/AppInstaller.png",
             "taskmanager" or "task manager" or "systemmonitor" or "system-monitor" or "system monitor" or "system_monitor" or "system_monitor_dark" or "system_monitor_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/System_Monitor_{suffix}.png",
             "appstore" or "app-store" or "app_store" or "store" or "store_dark" or "store_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Store.png",
             "trash" or "trash_dark" or "trash_light" => $"avares://DaisyOS.Shell/Assets/AppIcons/Trash_{suffix}.png",

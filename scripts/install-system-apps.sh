@@ -6,7 +6,7 @@ app_configuration="${DAISYOS_APP_CONFIGURATION:-Release}"
 "$repo_root/scripts/install-files-app.sh" "${1:-$repo_root/src/DaisyOS.Files/bin/$app_configuration/net10.0/DaisyOS.Files}"
 python3 "$repo_root/scripts/install-user-gaming-integration.py"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-for application in Notes Settings DiskManager; do
+for application in Notes Settings DiskManager AppInstaller; do
   binary="$repo_root/src/DaisyOS.$application/bin/$app_configuration/net10.0/DaisyOS.$application"
   if [[ $# -gt 0 ]]; then binary="$(dirname "$1")/../$application/DaisyOS.$application"; fi
   [[ -x "$binary" ]] || { echo "Build DaisyOS.$application before installing it: $binary" >&2; exit 1; }
@@ -28,4 +28,71 @@ PY
   echo "Installed standalone $application: $binary"
 done
 python3 "$repo_root/scripts/update-system-app-shortcuts.py" "$repo_root" "$app_configuration"
+
+# Register AppImage MIME definition and associations
+mkdir -p "$data_home/mime/packages"
+cat > "$data_home/mime/packages/org.daisyos.appimage.xml" <<'XML'
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/vnd.appimage">
+    <comment>AppImage application</comment>
+    <glob pattern="*.AppImage"/>
+    <glob pattern="*.appimage"/>
+  </mime-type>
+  <mime-type type="application/x-iso9660-appimage">
+    <comment>ISO 9660 AppImage application</comment>
+    <glob pattern="*.AppImage"/>
+    <glob pattern="*.appimage"/>
+  </mime-type>
+</mime-info>
+XML
+
+command -v update-mime-database >/dev/null 2>&1 && update-mime-database "$data_home/mime" || true
 command -v update-desktop-database >/dev/null 2>&1 && update-desktop-database "$data_home/applications" || true
+
+if command -v xdg-mime >/dev/null 2>&1; then
+  xdg-mime default org.daisyos.appinstaller.desktop application/vnd.appimage 2>/dev/null || true
+  xdg-mime default org.daisyos.appinstaller.desktop application/x-iso9660-appimage 2>/dev/null || true
+fi
+
+python3 - <<'PY'
+import os
+from pathlib import Path
+
+config_home = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+data_home = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+
+for target_dir in [config_home, os.path.join(data_home, "applications")]:
+    os.makedirs(target_dir, exist_ok=True)
+    mimeapps = Path(target_dir) / "mimeapps.list"
+    lines = mimeapps.read_text().splitlines() if mimeapps.exists() else []
+    
+    sections = {}
+    current = None
+    for line in lines:
+        stripped = line.strip()
+        if stripped.startswith("[") and stripped.endswith("]"):
+            current = stripped
+            sections.setdefault(current, [])
+        elif current:
+            sections[current].append(line)
+            
+    defaults = sections.setdefault("[Default Applications]", [])
+    added = sections.setdefault("[Added Associations]", [])
+    
+    for m in ["application/vnd.appimage", "application/x-iso9660-appimage"]:
+        defaults = [l for l in defaults if not l.startswith(f"{m}=")]
+        defaults.append(f"{m}=org.daisyos.appinstaller.desktop")
+        added = [l for l in added if not l.startswith(f"{m}=")]
+        added.append(f"{m}=org.daisyos.appinstaller.desktop;")
+        
+    sections["[Default Applications]"] = defaults
+    sections["[Added Associations]"] = added
+    
+    out = []
+    for s, content in sections.items():
+        out.append(s)
+        out.extend(content)
+        out.append("")
+    mimeapps.write_text("\n".join(out).strip() + "\n")
+PY

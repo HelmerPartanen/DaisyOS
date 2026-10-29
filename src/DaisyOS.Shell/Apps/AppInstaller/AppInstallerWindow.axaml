@@ -1,0 +1,142 @@
+<Window x:Class="DaisyOS.Shell.Apps.AppInstaller.AppInstallerWindow"
+        xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        xmlns:installer="clr-namespace:DaisyOS.Shell.Apps.AppInstaller"
+        Title="{DynamicResource Loc_DF8B3ECE4036}"
+        Width="880" Height="680" MinWidth="640" MinHeight="480"
+        CanResize="True" WindowStartupLocation="CenterScreen" WindowDecorations="None"
+        Classes="SidebarAppWindow" TextOptions.TextRenderingMode="Antialias"
+        Background="{DynamicResource SurfaceBaseSolidBrush}">
+  <Window.Styles>
+    <Style Selector="Border.InstallerCard">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+    </Style>
+    <Style Selector="Border.InstallerDropZone">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+    </Style>
+    <Style Selector="TextBlock.InstallerHeading">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeTitle}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+  </Window.Styles>
+  <Grid x:Name="MainPaneLayout" RowDefinitions="Auto,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
+    <controls:AppWindowTitleBar x:Name="AppTitleBar" />
+    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+      <StackPanel MaxWidth="760" Margin="{DynamicResource SpaceInset6}" Spacing="{DynamicResource Space6}" HorizontalAlignment="Center">
+        <StackPanel Spacing="{DynamicResource Space2}">
+          <TextBlock Text="{DynamicResource Loc_234B19D5D561}" Classes="InstallerHeading" />
+          <TextBlock Text="{DynamicResource Loc_E4E5F98ED563}" Classes="Muted" TextWrapping="Wrap" />
+        </StackPanel>
+
+        <Border Classes="InstallerCard" Padding="{DynamicResource SpaceInset6}">
+          <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="{DynamicResource Space4}">
+            <StackPanel IsVisible="{Binding !HasSelection}" Spacing="{DynamicResource Space3}" HorizontalAlignment="Center">
+              <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center"
+                                  Foreground="{DynamicResource ContentSecondaryBrush}" />
+              <TextBlock Text="{DynamicResource Loc_F03472E3AF76}" Classes="InstallerHeading" HorizontalAlignment="Center" />
+              <TextBlock Text="{DynamicResource Loc_E72037CAD533}" Classes="Muted" TextAlignment="Center"
+                         TextWrapping="Wrap" MaxWidth="420" />
+              <Button Content="{DynamicResource Loc_5C6623857CC7}" Classes="Primary" Click="OnChooseFileClicked"
+                      HorizontalAlignment="Center" />
+            </StackPanel>
+
+            <Grid IsVisible="{Binding HasSelection}" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space4}">
+              <Border Width="64" Height="64" CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" VerticalAlignment="Center">
+                <Panel>
+                  <Image Source="{Binding SelectedIcon}" IsVisible="{Binding HasSelectedIcon}" Stretch="Uniform" />
+                  <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}"
+                                      IsVisible="{Binding !HasSelectedIcon}"
+                                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                                      Foreground="{DynamicResource ContentSecondaryBrush}" />
+                </Panel>
+              </Border>
+
+              <StackPanel Grid.Column="1" Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
+                <TextBlock Text="{Binding SelectedName}" Classes="InstallerHeading" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding SelectedDetails}" Classes="Muted" />
+                <TextBlock Text="{Binding SelectedComment}" IsVisible="{Binding HasSelectedComment}" Classes="Muted" TextWrapping="Wrap" />
+                <TextBlock Text="{Binding SelectedPath}" Classes="Muted" FontSize="{DynamicResource TypeSizeCaption}"
+                           TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SelectedPath}" />
+              </StackPanel>
+
+              <StackPanel Grid.Column="2" Spacing="{DynamicResource Space2}" VerticalAlignment="Center">
+                <Button Content="{DynamicResource Loc_ED077F3D8125}" Classes="Primary" Click="OnLaunchSelectedClicked"
+                        IsVisible="{Binding ShowOpenButton}" IsDefault="{Binding ShowOpenButton}" MinWidth="120" />
+                <Button Content="{DynamicResource Loc_569CA49F4AAF}" Classes="Primary" Click="OnInstallClicked"
+                        IsVisible="{Binding ShowFirstTimeInstallButton}" IsDefault="{Binding ShowFirstTimeInstallButton}"
+                        IsEnabled="{Binding !IsBusy}" MinWidth="120" />
+                <Button Content="{DynamicResource Loc_C630A782A9EB}" Classes="Secondary" Click="OnInstallClicked"
+                        IsVisible="{Binding ShowReinstallButton}" IsEnabled="{Binding !IsBusy}" MinWidth="120" />
+                <Button Content="{DynamicResource Loc_26EAC8F8C95B}" Classes="Subtle" Click="OnChooseFileClicked"
+                        IsEnabled="{Binding !IsBusy}" />
+              </StackPanel>
+            </Grid>
+
+            <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
+
+            <Border Grid.Row="2" IsVisible="{Binding HasMessage}" Padding="{DynamicResource SpaceInset4}"
+                    CornerRadius="{DynamicResource RoundedMD}"
+                    Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                    BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1">
+              <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+            </Border>
+          </Grid>
+        </Border>
+
+        <StackPanel Spacing="{DynamicResource Space3}">
+          <StackPanel Spacing="{DynamicResource Space1}">
+            <TextBlock Text="{DynamicResource Loc_83C53A714781}" Classes="InstallerHeading" />
+            <TextBlock Text="{DynamicResource Loc_794EA723C7E2}" Classes="Muted" TextWrapping="Wrap" />
+          </StackPanel>
+
+          <ItemsControl ItemsSource="{Binding Installed}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate>
+                <StackPanel Spacing="{DynamicResource Space2}" />
+              </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate DataType="installer:InstalledAppImageViewModel">
+                <Border Classes="InstallerCard" Padding="{DynamicResource SpaceInset4}">
+                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space4}">
+                    <Border Width="40" Height="40" CornerRadius="{DynamicResource RoundedSM}" ClipToBounds="True" VerticalAlignment="Center">
+                      <Panel>
+                        <Image Source="{Binding IconImage}" IsVisible="{Binding HasIcon}" Stretch="Uniform" />
+                        <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeLarge}"
+                                            IsVisible="{Binding !HasIcon}" HorizontalAlignment="Center"
+                                            VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                      </Panel>
+                    </Border>
+                    <StackPanel Grid.Column="1" Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
+                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <TextBlock Text="{Binding Details}" Classes="Muted" FontSize="{DynamicResource TypeSizeCaption}"
+                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding AppImagePath}" />
+                    </StackPanel>
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource Space2}" VerticalAlignment="Center">
+                      <Button Content="{DynamicResource Loc_ED077F3D8125}" Classes="Secondary" Click="OnLaunchClicked"
+                              AutomationProperties.Name="{Binding LaunchAccessibilityLabel}" />
+                      <Button Content="{DynamicResource Loc_C3812FC4ACB8}" Classes="Subtle" Click="OnRemoveClicked"
+                              AutomationProperties.Name="{Binding RemoveAccessibilityLabel}" />
+                    </StackPanel>
+                  </Grid>
+                </Border>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+
+          <Border IsVisible="{Binding ShowInstalledEmpty}" Classes="InstallerDropZone"
+                  Padding="{DynamicResource SpaceInset6}">
+            <TextBlock Text="{DynamicResource Loc_1D86D32D2674}" Classes="Muted" TextAlignment="Center" />
+          </Border>
+        </StackPanel>
+      </StackPanel>
+    </ScrollViewer>
+  </Grid>
+</Window>

@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Reuse the shared installer UI and DaisyOS application host while
+         keeping a separate dispatcher and single-instance lifetime. -->
+    <ProjectReference Include="../DaisyOS.Shell/DaisyOS.Shell.csproj" />
+  </ItemGroup>
+</Project>

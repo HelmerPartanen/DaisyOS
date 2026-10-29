@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=App Installer
+Name[fi]=Sovellusasentaja
+Comment=Install applications packaged as AppImages
+Comment[fi]=Asenna AppImage-muodossa pakattuja sovelluksia
+Exec=daisyos-appinstaller %U
+Icon=org.daisyos.appinstaller
+StartupWMClass=org.daisyos.appinstaller
+Categories=System;PackageManager;
+MimeType=application/vnd.appimage;application/x-iso9660-appimage;

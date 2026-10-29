@@ -13,6 +13,7 @@ public static class TaskbarAppLabel
             "taskmanager" or "task-manager" or "systemmonitor" or "system-monitor" or "diagnostics" => "System Monitor",
             "appstore" => "App Store",
             "diskmanager" => "Disk Manager",
+            "appinstaller" => "App Installer",
             "files" => "Files", "settings" => "Settings", "notes" => "Notes",
             "calendar" => "Calendar", "calculator" => "Calculator", _ => null
         };

@@ -6948,4 +6948,414 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs</comment>
     <comment>Source: Screen sharing
   Continuity flow; translation review pending.</comment>
   </data>
+  <data name="Loc_042515C08725" xml:space="preserve">
+    <value>Unohda laite</value>
+    <comment>Source: Forget device
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_050826BF790B" xml:space="preserve">
+    <value>ENERGIA JA MUISTI</value>
+    <comment>Source: ENERGY AND MEMORY
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_06B1A141046F" xml:space="preserve">
+    <value>Nimi, jonka lähellä olevat laitteet näkevät Continuity-palvelussa.</value>
+    <comment>Source: The name nearby devices see in Continuity.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_0D786B1BFD81" xml:space="preserve">
+    <value>Lähellä olevat laitteet näkyvät automaattisesti tämän sivun ollessa auki.</value>
+    <comment>Source: Nearby devices appear automatically while this page is open.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_141A321C1F60" xml:space="preserve">
+    <value>Lähellä olevia Bluetooth-laitteita ei voitu hakea.</value>
+    <comment>Source: Couldn’t search for nearby Bluetooth devices.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_1739B97FC0AB" xml:space="preserve">
+    <value>Tunnetut verkot</value>
+    <comment>Source: Known networks
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_1881A9437DB7" xml:space="preserve">
+    <value>Siirrä osoitinta näyttöjen välillä.</value>
+    <comment>Source: Move your pointer between screens.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_1D86D32D2674" xml:space="preserve">
+    <value>Ei vielä asennettuja AppImage-sovelluksia.</value>
+    <comment>Source: No AppImages installed yet.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_1DBCC48D7EC2" xml:space="preserve">
+    <value>Näytön sijainti</value>
+    <comment>Source: Screen position
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_1E3D66A50706" xml:space="preserve">
+    <value>Valitse toisen näytön sijainti ennen näppäimistön ja hiiren linkittämistä.</value>
+    <comment>Source: Choose where the other screen is before linking your keyboard and mouse.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_234B19D5D561" xml:space="preserve">
+    <value>Asenna AppImage</value>
+    <comment>Source: Install an AppImage
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_25162B71C066" xml:space="preserve">
+    <value>Valitse 24 tunnin ja 12 tunnin kellonajan välillä</value>
+    <comment>Source: Choose between 24-hour and 12-hour time
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_26EAC8F8C95B" xml:space="preserve">
+    <value>Valitse toinen tiedosto</value>
+    <comment>Source: Choose another file
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_3006EDAAA07F" xml:space="preserve">
+    <value>Näytetään lähellä oleville laitteille. Muutokset tallentuvat automaattisesti.</value>
+    <comment>Source: Shown to nearby devices. Changes save automatically.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_3306696AF3E9" xml:space="preserve">
+    <value>Tietokonetta ei voitu siirtää lepotilaan.</value>
+    <comment>Source: Couldn’t put the computer to sleep.
+Used by: src/DaisyOS.Shell/App.axaml.cs</comment>
+  </data>
+  <data name="Loc_38927BE46416" xml:space="preserve">
+    <value>Siirry lepotilaan akkuvirralla ajassa</value>
+    <comment>Source: Sleep on battery after
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_39C17AF1FCAF" xml:space="preserve">
+    <value>MUUT VERKOT</value>
+    <comment>Source: OTHER NETWORKS
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_3BFCD8476BC5" xml:space="preserve">
+    <value>Asennettuja AppImage-sovelluksia ei voitu ladata.</value>
+    <comment>Source: Installed AppImages could not be loaded.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_3F0B64698716" xml:space="preserve">
+    <value>Sammuta näyttö ajassa</value>
+    <comment>Source: Turn off the display after
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_41BB1377A131" xml:space="preserve">
+    <value>NÄYTTÖ JA LEPOTILA</value>
+    <comment>Source: SCREEN AND SLEEP
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_453E643A57D4" xml:space="preserve">
+    <value>YHTEYS</value>
+    <comment>Source: CONNECTION
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_4B9296BB6747" xml:space="preserve">
+    <value>KÄYTTÖOIKEUDET</value>
+    <comment>Source: PERMISSIONS
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_4EDA52FEBAD1" xml:space="preserve">
+    <value>Hitaampi</value>
+    <comment>Source: Slower
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_5276D85D457A" xml:space="preserve">
+    <value>Continuity-nimeä ei voitu muuttaa.</value>
+    <comment>Source: Couldn’t change the Continuity name.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_546D2FB62D1E" xml:space="preserve">
+    <value>AppImage asennettu.</value>
+    <comment>Source: AppImage installed.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_549335BE38AE" xml:space="preserve">
+    <value>Muodosta pariliitos uudelleen käyttääksesi Continuityä tämän tietokoneen kanssa.</value>
+    <comment>Source: Pair again to use Continuity with this computer.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_54CCD0560F94" xml:space="preserve">
+    <value>Poista AppImage</value>
+    <comment>Source: Remove AppImage
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_5762700037AD" xml:space="preserve">
+    <value>AppImagea ei voitu asentaa. Yritä uudelleen.</value>
+    <comment>Source: The AppImage could not be installed. Try again.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_59C4A1C2E939" xml:space="preserve">
+    <value>Vapauta työpöydän muistia pelattaessa tai lukittuna</value>
+    <comment>Source: Free desktop memory while gaming or locked
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_59C9CBCAFBCA" xml:space="preserve">
+    <value>Käytä Continuityä tämän tietokoneen kanssa.</value>
+    <comment>Source: Use Continuity with this computer.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_5C1776AF595D" xml:space="preserve">
+    <value>Tallennetut verkot yhdistetään kysymättä salasanaa uudelleen.</value>
+    <comment>Source: Saved networks connect without asking for a password again.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_5C6623857CC7" xml:space="preserve">
+    <value>Valitse tiedosto…</value>
+    <comment>Source: Choose file…
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_6A69587CEC64" xml:space="preserve">
+    <value>Kosketuslevyn vieritysnopeus tallennettiin, mutta sitä ei voitu vielä ottaa käyttöön.</value>
+    <comment>Source: Trackpad scroll speed was saved, but couldn’t be applied yet.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_730A7C50E75B" xml:space="preserve">
+    <value>Hitain</value>
+    <comment>Source: Slowest
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_74A2F5A35582" xml:space="preserve">
+    <value>Vähennä taustatyötä ja palauta käyttämätön työpöytämuisti peleille ja sovelluksille.</value>
+    <comment>Source: Reduce background work and return unused desktop memory to games and apps.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_74DC179088EC" xml:space="preserve">
+    <value>Osoittimen nopeus, vieritysnopeus, luonnollinen vieritys, napauta napsauttaaksesi</value>
+    <comment>Source: Pointer speed, scroll speed, natural scrolling, tap to click
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_794EA723C7E2" xml:space="preserve">
+    <value>Asentamasi sovellukset näkyvät täällä ja sovellusvalikossa.</value>
+    <comment>Source: Apps you install appear here and in the application launcher.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_7D9D4E1884EE" xml:space="preserve">
+    <value>Takaisin Continuityyn</value>
+    <comment>Source: Back to Continuity
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_7EF7A92E55A7" xml:space="preserve">
+    <value>Nopein</value>
+    <comment>Source: Fastest
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_80D7DCF22747" xml:space="preserve">
+    <value>Aikamuoto</value>
+    <comment>Source: Time format
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_81A9DD4ED8FE" xml:space="preserve">
+    <value>Keskeytä elävät taustakuvat akkuvirralla</value>
+    <comment>Source: Pause live wallpapers on battery
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_81B17FB28087" xml:space="preserve">
+    <value>PÄÄSY TÄHÄN TIETOKONEESEEN</value>
+    <comment>Source: ACCESS TO THIS COMPUTER
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_83C53A714781" xml:space="preserve">
+    <value>Asennetut AppImage-sovellukset</value>
+    <comment>Source: Installed AppImages
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_8B63F8A884AB" xml:space="preserve">
+    <value>AppImagea ei voitu poistaa. Yritä uudelleen.</value>
+    <comment>Source: The AppImage could not be removed. Try again.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_8D0160C0D842" xml:space="preserve">
+    <value>Nopeampi</value>
+    <comment>Source: Faster
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_8D9EE1924A96" xml:space="preserve">
+    <value>Saatavilla · {0} % signaali</value>
+    <comment>Source: Available · {0}% signal
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_8F4A8DDE4E66" xml:space="preserve">
+    <value>Lukitse näyttö lepotilaan siirryttäessä</value>
+    <comment>Source: Lock the screen when going to sleep
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_90B28DFDC74D" xml:space="preserve">
+    <value>Valitse, mitä tapahtuu kun lopetat tietokoneen käytön. Näyttö pysyy päällä ja tietokone hereillä pelitilan ollessa käytössä tai kun sovellus, kuten videosoitin, pyytää pitämään sen hereillä.</value>
+    <comment>Source: Choose what happens when you stop using the computer. The display stays on and the computer stays awake while Gaming Mode is on or an app such as a video player asks to keep it awake.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_A4CA68E3F673" xml:space="preserve">
+    <value>Toista ääni tämän tietokoneen kautta.</value>
+    <comment>Source: Play audio through this computer.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_A4D5FADED9AD" xml:space="preserve">
+    <value>Valitse tiedosto tai avaa se kaksoisnapsauttamalla.</value>
+    <comment>Source: Select a file, or double-click it to open.
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_A6A32DBC5618" xml:space="preserve">
+    <value>Linkitä</value>
+    <comment>Source: Link
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_AE06C9A19D54" xml:space="preserve">
+    <value>Sovellus poistetaan. Alkuperäistä valitsemaasi AppImage-tiedostoa ei poisteta.</value>
+    <comment>Source: The application will be removed. The original AppImage file you selected is not deleted.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_B3353D3306C5" xml:space="preserve">
+    <value>Käytä näppäimistöäsi, hiirtäsi ja kaiuttimiasi lähellä olevissa DaisyOS-tietokoneissa.</value>
+    <comment>Source: Use your keyboard, mouse and speakers across nearby DaisyOS computers.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_BACC833BFCFD" xml:space="preserve">
+    <value>Näytä tämän tietokoneen näyttö.</value>
+    <comment>Source: View this computer’s screen.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_C0BD56F3EC45" xml:space="preserve">
+    <value>Lukitse näyttö ajassa</value>
+    <comment>Source: Lock the screen after
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_C10E5D6A0628" xml:space="preserve">
+    <value>LAITTEEN IDENTITEETTI</value>
+    <comment>Source: DEVICE IDENTITY
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_C440F3499AFF" xml:space="preserve">
+    <value>Yhdistä ja jaa lähellä olevien DaisyOS-laitteiden kanssa.</value>
+    <comment>Source: Connect and share with nearby DaisyOS devices.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_C630A782A9EB" xml:space="preserve">
+    <value>Asenna uudelleen</value>
+    <comment>Source: Reinstall
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_C88CCEA5E151" xml:space="preserve">
+    <value>KÄYTÄ TÄMÄN TIETOKONEEN KANSSA</value>
+    <comment>Source: USE WITH THIS COMPUTER
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_C8F6940914BE" xml:space="preserve">
+    <value>Takaisin kohteeseen {0}</value>
+    <comment>Source: Back to {0}
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_CA15667D735F" xml:space="preserve">
+    <value>Kosketuslevyn vieritysnopeus</value>
+    <comment>Source: Trackpad scroll speed
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_CB3CDB46BC76" xml:space="preserve">
+    <value>Etsitään muita lähellä olevia Wi-Fi-verkkoja.</value>
+    <comment>Source: Looking for other Wi-Fi networks nearby.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_CB4BEF0B3B9D" xml:space="preserve">
+    <value>Lähetä tiedosto</value>
+    <comment>Source: Send file
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_D501D45FBBC6" xml:space="preserve">
+    <value>Lähellä olevat verkot päivittyvät automaattisesti.</value>
+    <comment>Source: Nearby networks refresh automatically.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_DB07D46A7CC6" xml:space="preserve">
+    <value>POISTA LAITE</value>
+    <comment>Source: REMOVE DEVICE
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_DCC839A4015C" xml:space="preserve">
+    <value>Näytä</value>
+    <comment>Source: View
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_DF8B3ECE4036" xml:space="preserve">
+    <value>Sovellusasentaja</value>
+    <comment>Source: App Installer
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_E4E5F98ED563" xml:space="preserve">
+    <value>AppImage-paketit ovat siirrettäviä sovelluksia. Valitse tiedosto asentaaksesi sen käyttäjätilillesi.</value>
+    <comment>Source: AppImages are portable application packages. Choose a file to install it for your account.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_E52D08CCECB6" xml:space="preserve">
+    <value>Aiemmin pariliitetyt laitteet pysyvät täällä, vaikka Bluetooth olisi pois päältä.</value>
+    <comment>Source: Devices you have paired before remain here, even when Bluetooth is off.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_E72037CAD533" xml:space="preserve">
+    <value>Pudota AppImage tähän tai valitse tiedosto tietokoneeltasi.</value>
+    <comment>Source: Drop an AppImage here, or choose a file from your computer.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_E9EBD6F94472" xml:space="preserve">
+    <value>Valitse AppImage</value>
+    <comment>Source: Choose an AppImage
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_EA91DC5850D7" xml:space="preserve">
+    <value>Verkot, joihin muodostat yhteyden, näkyvät täällä.</value>
+    <comment>Source: Networks you connect to will appear here.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_EBC44DF6F401" xml:space="preserve">
+    <value>Valitse, mitä {0} voi tehdä tällä tietokoneella.</value>
+    <comment>Source: Choose what {0} can do on this computer.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_EC5BA0ABB717" xml:space="preserve">
+    <value>Pääsy</value>
+    <comment>Source: Access
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_ECDF95D87106" xml:space="preserve">
+    <value>Valittua AppImagea ei voitu lukea. Yritä uudelleen.</value>
+    <comment>Source: Couldn’t read the selected AppImage. Try again.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_F03472E3AF76" xml:space="preserve">
+    <value>Valitse AppImage-tiedosto</value>
+    <comment>Source: Choose an AppImage file
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_F31991AB5A0C" xml:space="preserve">
+    <value>TUNNETUT VERKOT</value>
+    <comment>Source: KNOWN NETWORKS
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_F6572A7FE7B9" xml:space="preserve">
+    <value>Avoin verkko</value>
+    <comment>Source: Open network
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_F8CD5E975941" xml:space="preserve">
+    <value>Ei kantamalla</value>
+    <comment>Source: Not in range
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_F935BF31CAF8" xml:space="preserve">
+    <value>Unohdetaan…</value>
+    <comment>Source: Forgetting…
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_F95AE037549E" xml:space="preserve">
+    <value>Järjestelmän valvontaa ei voitu avata.</value>
+    <comment>Source: System Monitor could not be opened.
+Used by: src/DaisyOS.Shell/App.axaml.cs</comment>
+  </data>
+  <data name="Loc_FC9E44706227" xml:space="preserve">
+    <value>AppImagea ei voitu avata.</value>
+    <comment>Source: The AppImage could not be opened.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
 </root>

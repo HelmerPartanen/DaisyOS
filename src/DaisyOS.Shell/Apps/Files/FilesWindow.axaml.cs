@@ -1632,6 +1632,16 @@ public partial class FilesWindow : Window
             return;
         }
 
+        if (string.Equals(Path.GetExtension(entry.Path), ".AppImage", StringComparison.OrdinalIgnoreCase))
+        {
+            var appImageResult = DaisyOS.Shell.Services.PackagedApplicationLauncher.Launch("AppInstaller", [entry.Path]);
+            if (!appImageResult.Succeeded)
+            {
+                (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t open that file."));
+            }
+            return;
+        }
+
         var result = new SafeProcessLauncher().Launch("xdg-open", [entry.Path]);
         if (!result.Succeeded)
         {

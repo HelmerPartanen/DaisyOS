@@ -18,7 +18,8 @@ public static class DesktopActionReader
         ["calculator"] = "/usr/share/applications/daisyos-calculator.desktop",
         ["settings"] = "/usr/share/applications/daisyos-settings.desktop",
         ["files"] = "/usr/share/applications/daisyos-files.desktop",
-        ["uikit"] = "/usr/share/applications/org.daisyos.uikit.desktop"
+        ["uikit"] = "/usr/share/applications/org.daisyos.uikit.desktop",
+        ["appinstaller"] = "/usr/share/applications/org.daisyos.appinstaller.desktop"
     };
 
     private static readonly global::System.Collections.Concurrent.ConcurrentDictionary<string, string?> _resolvedDesktopPathCache = new(StringComparer.OrdinalIgnoreCase);

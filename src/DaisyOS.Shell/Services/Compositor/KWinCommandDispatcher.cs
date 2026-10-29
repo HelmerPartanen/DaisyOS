@@ -262,8 +262,8 @@ for (var index = 0; index < windows.length; ++index) {{
 var bridgeService = {JsonSerializer.Serialize(KWinWindowBridge.BusName, DaisyOS.Shell.Services.Serialization.DaisyShellJsonContext.Default.String)};
 var bridgePath = {JsonSerializer.Serialize(KWinWindowBridge.ObjectPath, DaisyOS.Shell.Services.Serialization.DaisyShellJsonContext.Default.String)};
 var bridgeInterface = {JsonSerializer.Serialize(KWinWindowBridge.InterfaceName, DaisyOS.Shell.Services.Serialization.DaisyShellJsonContext.Default.String)};
-var daisyTitles = {{ settings: 'settings', notes: 'notes', calendar: 'calendar', calculator: 'calculator', files: 'files', 'disk manager': 'diskmanager', 'app store': 'appstore', sovelluskauppa: 'appstore', 'system monitor': 'taskmanager', 'task manager': 'taskmanager' }};
-var daisyAppIds = {{ 'org.daisyos.settings': 'settings', 'org.daisyos.notes': 'notes', 'org.daisyos.calendar': 'calendar', 'org.daisyos.calculator': 'calculator', 'org.daisyos.files': 'files', 'org.daisyos.diskmanager': 'diskmanager', 'org.daisyos.appstore': 'appstore', 'org.daisyos.taskmanager': 'taskmanager' }};
+var daisyTitles = {{ settings: 'settings', notes: 'notes', calendar: 'calendar', calculator: 'calculator', files: 'files', 'disk manager': 'diskmanager', 'app store': 'appstore', sovelluskauppa: 'appstore', 'system monitor': 'taskmanager', 'task manager': 'taskmanager', 'app installer': 'appinstaller', sovellusasentaja: 'appinstaller' }};
+var daisyAppIds = {{ 'org.daisyos.settings': 'settings', 'org.daisyos.notes': 'notes', 'org.daisyos.calendar': 'calendar', 'org.daisyos.calculator': 'calculator', 'org.daisyos.files': 'files', 'org.daisyos.diskmanager': 'diskmanager', 'org.daisyos.appinstaller': 'appinstaller', 'org.daisyos.appstore': 'appstore', 'org.daisyos.taskmanager': 'taskmanager' }};
 function value(v) {{ return v === undefined || v === null ? '' : String(v); }}
 function daisyApp(w) {{
     var resource = value(w.resourceClass).toLowerCase();

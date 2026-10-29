@@ -43,6 +43,37 @@ internal static class Program
             return;
         }
 
+        if (args.Contains("--app-installer", StringComparer.Ordinal) || args.Contains("--appinstaller", StringComparer.Ordinal))
+        {
+            Services.StandaloneApplication.Run("appinstaller", args,
+                _ => new Apps.AppInstaller.AppInstallerWindow(),
+                (window, activation) =>
+                {
+                    if (window is not Apps.AppInstaller.AppInstallerWindow installer) return;
+                    var autoInstall = activation.Any(arg => string.Equals(arg, "--install", StringComparison.OrdinalIgnoreCase) || string.Equals(arg, "-i", StringComparison.OrdinalIgnoreCase));
+                    var path = activation
+                        .Where(arg => !arg.StartsWith('-'))
+                        .Select(candidate =>
+                        {
+                            if (string.IsNullOrWhiteSpace(candidate)) return null;
+                            var trimmed = candidate.Trim('"', '\'', ' ');
+                            if (Uri.TryCreate(trimmed, UriKind.Absolute, out var uri) && uri.IsFile) return uri.LocalPath;
+                            try { return global::System.IO.Path.GetFullPath(trimmed); }
+                            catch { return null; }
+                        })
+                        .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate) &&
+                            string.Equals(global::System.IO.Path.GetExtension(candidate), ".AppImage", StringComparison.OrdinalIgnoreCase));
+                    if (path is not null)
+                    {
+                        if (autoInstall)
+                            _ = installer.InstallFileAsync(path);
+                        else
+                            _ = installer.OpenFileAsync(path);
+                    }
+                });
+            return;
+        }
+
         if (args.Contains("--verify-app-resources", StringComparer.Ordinal))
         {
             VerifyApplicationResources();

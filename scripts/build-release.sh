@@ -65,7 +65,7 @@ dotnet restore
 dotnet build --configuration Release --no-restore "${properties[@]}"
 dotnet test --configuration Release --no-build "${properties[@]}"
 rm -rf "$publish_dir"
-for application in Files Notes Settings DiskManager; do
+for application in Files Notes Settings DiskManager AppInstaller; do
   dotnet restore "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --runtime linux-x64 "${properties[@]}"
 done
@@ -77,7 +77,7 @@ dotnet publish src/DaisyOS.Shell/DaisyOS.Shell.csproj \
   --output "$publish_dir" \
   "${properties[@]}"
 
-for application in Files Notes Settings DiskManager; do
+for application in Files Notes Settings DiskManager AppInstaller; do
   dotnet publish "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --configuration Release --runtime linux-x64 --self-contained true \
     --no-restore --output "$publish_dir/apps/$application" "${properties[@]}"
