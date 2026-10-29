@@ -111,6 +111,3 @@ packaging/gaming/*
 
 !packaging/librepods/
 !packaging/librepods/**
-
-!packaging/continuity/
-!packaging/continuity/**

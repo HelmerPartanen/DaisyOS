@@ -230,4 +230,33 @@ public sealed class LauncherPagingTests
         Assert.True(model.SelectedItem!.IsTopSearchResult);
     }
 
+    [AvaloniaFact]
+    public void LauncherCapsGridAtFiveRowsAndUsesStandardSearchHeight()
+    {
+        var apps = Enumerable.Range(0, 60)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray();
+        var model = new LauncherViewModel(null, apps);
+        model.SetPageLayout(8, 9);
+        Assert.Equal(5, model.PageRows);
+        Assert.Equal(40, model.PageSize);
+
+        var launcher = new LauncherView(model);
+        var window = new Window { Width = 1920, Height = 1440, Content = launcher };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            Assert.True(model.PageRows <= 5);
+            Assert.Equal(5, model.PageRows);
+
+            var searchBar = launcher.FindControl<DaisyOS.Shell.Controls.SearchBar>("LauncherSearchBar")!;
+            Assert.True(Application.Current!.Resources.TryGetResource("SearchHeightStandard", null, out var expected));
+            Assert.Equal((double)expected!, searchBar.Height);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
 }

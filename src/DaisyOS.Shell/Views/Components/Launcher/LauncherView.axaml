@@ -32,9 +32,8 @@
               ToolTip.Tip="{Binding Description}">
         <Grid RowDefinitions="Auto,*" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
           <Panel Grid.Row="0" Width="68" Height="62" HorizontalAlignment="Center">
-            <Panel Classes="LauncherTileIconHost" Width="58" Height="58"
-                   HorizontalAlignment="Center" VerticalAlignment="Center"
-                   RenderTransformOrigin="50%,50%">
+            <Panel Width="58" Height="58"
+                   HorizontalAlignment="Center" VerticalAlignment="Center">
               <controls:CalendarAppIcon Width="58" Height="58" IsVisible="{Binding IsCalendarIcon}" />
               <Image Source="{Binding IconBitmap}" IsVisible="{Binding IsBitmapIconVisible}"
                      RenderOptions.BitmapInterpolationMode="HighQuality"
@@ -125,17 +124,10 @@
             <Setter Property="RenderTransform" Value="scale(0.92)" />
           </Style>
 
-          <!-- Prominent command-search treatment on the top focal axis. -->
+          <!-- Command-search treatment on the top focal axis using standard system search height. -->
           <Style Selector="controls|SearchBar#LauncherSearchBar Border#SearchFrame">
             <Setter Property="Background" Value="{DynamicResource LauncherSearchSurfaceBrush}" />
             <Setter Property="BorderBrush" Value="{DynamicResource LauncherSearchBorderBrush}" />
-          </Style>
-          <Style Selector="controls|SearchBar#LauncherSearchBar TextBox#SearchInput">
-            <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodyMedium}" />
-            <Setter Property="Height" Value="{DynamicResource ButtonHeightMedium}" />
-          </Style>
-          <Style Selector="controls|SearchBar#LauncherSearchBar > Grid > Border#SearchFrame > Border">
-            <Setter Property="Padding" Value="16,0,10,0" />
           </Style>
 
           <!-- Outer slot stays 136x128 (120+16 by 116+12) while giving icons and 2-line titles generous room. -->
@@ -157,19 +149,8 @@
               </Transitions>
             </Setter>
           </Style>
-          <Style Selector="Button.LauncherTile Panel.LauncherTileIconHost">
-            <Setter Property="RenderTransform" Value="none" />
-            <Setter Property="Transitions">
-              <Transitions>
-                <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}" />
-              </Transitions>
-            </Setter>
-          </Style>
           <Style Selector="Button.LauncherTile:pointerover /template/ ContentPresenter#PART_ContentPresenter">
             <Setter Property="Background" Value="{DynamicResource LauncherTileHoverBrush}" />
-          </Style>
-          <Style Selector="Button.LauncherTile:pointerover Panel.LauncherTileIconHost">
-            <Setter Property="RenderTransform" Value="translateY(-2px) scale(1.04)" />
           </Style>
           <Style Selector="Button.LauncherTile:pressed">
             <Setter Property="RenderTransform" Value="scale(0.95)" />
@@ -208,7 +189,7 @@
                   Margin="0,0,0,22">
             <controls:SearchBar x:Name="LauncherSearchBar"
                                 Width="480"
-                                Height="{DynamicResource SearchHeightLauncher}"
+                                Height="{DynamicResource SearchHeightStandard}"
                                 CornerRadius="{DynamicResource RadiusPill}"
                                 Text="{Binding SearchText, Mode=TwoWay}"
                                 PlaceholderText="{DynamicResource Loc_49C266BAAAA7}"

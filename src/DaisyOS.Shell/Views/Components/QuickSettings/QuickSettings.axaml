@@ -4,6 +4,20 @@
              x:Class="DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings"
              Width="340" ClipToBounds="False">
   <UserControl.Styles>
+    <Style Selector="Button.ContinuityControl">
+      <Setter Property="Height" Value="{DynamicResource QuickSettingsControlHeight}" />
+      <Setter Property="Padding" Value="14,0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.ContinuityControl:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
+    </Style>
+    <Style Selector="Button.ContinuityControl:pressed /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource ActionSecondaryPressedBrush}" />
+    </Style>
     <Style Selector="ToggleButton.AirPodsMode">
       <Setter Property="Height" Value="{DynamicResource QuickSettingsControlHeight}" />
       <Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}" />
@@ -230,8 +244,18 @@
             </Grid>
           </Border>
 
-          <Button x:Name="ContinuityPauseButton" IsVisible="False" Classes="ShellButton"
-                  HorizontalAlignment="Stretch" Click="OnContinuityPauseClicked" />
+          <Button x:Name="ContinuityPauseButton" IsVisible="False" Classes="ShellButton ContinuityControl"
+                  HorizontalAlignment="Stretch" Click="OnContinuityPauseClicked">
+            <Grid ColumnDefinitions="20,*,20" ColumnSpacing="12" VerticalAlignment="Center">
+              <controls:DaisyIcon Icon="continuity" Size="20" VerticalAlignment="Center" />
+              <TextBlock x:Name="ContinuityPauseLabel" Grid.Column="1"
+                         FontSize="{DynamicResource TypeSizeBodySmall}" VerticalAlignment="Center"
+                         TextTrimming="CharacterEllipsis" />
+              <controls:DaisyIcon x:Name="ContinuityPauseIcon" Grid.Column="2" Icon="pause"
+                                  Size="16" VerticalAlignment="Center"
+                                  Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </Grid>
+          </Button>
 
           <StackPanel x:Name="AirPodsControls" IsVisible="False" Spacing="8">
             <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="10">

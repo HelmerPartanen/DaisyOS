@@ -16,6 +16,8 @@ namespace DaisyOS.Shell.ViewModels;
 
 public class LauncherViewModel : INotifyPropertyChanged
 {
+    public const int MaxPageRows = 5;
+
     private readonly LinuxAppLauncherService _launcherService;
     private readonly bool _externalDiscoveryEnabled;
     private readonly ShellSessionState _sessionState;
@@ -35,6 +37,7 @@ public class LauncherViewModel : INotifyPropertyChanged
     public int PageIndex => _pageIndex;
     public int PageCount => Math.Max(1, (FilteredApps.Count + _pageSize - 1) / _pageSize);
     public int PageColumns => _pageColumns;
+    public int PageRows => _pageRows;
     public int PageSize => _pageSize;
     public double PageGridWidth => _pageColumns * 136;
     public double PageGridHeight => _pageRows * 128;
@@ -42,7 +45,7 @@ public class LauncherViewModel : INotifyPropertyChanged
     public void SetPageLayout(int columns, int rows)
     {
         columns = Math.Max(1, columns);
-        rows = Math.Max(1, rows);
+        rows = Math.Clamp(rows, 1, MaxPageRows);
         var size = columns * rows;
         if (size == _pageSize && columns == _pageColumns && rows == _pageRows) return;
         _pageSize = size;

@@ -28,7 +28,7 @@
     <Color x:Key="SurfaceBaseColorSolid">#FFF2F2F2</Color>
     <!-- Fullscreen launcher glass. Heavy enough for readable labels over any
          wallpaper or application, still translucent so KWin's blur shows. -->
-    <Color x:Key="LauncherBackdropColor">#DCF3F4F6</Color>
+    <Color x:Key="LauncherBackdropColor">#C2F2F2F2</Color>
     <Color x:Key="SurfaceRaisedColor">#FFFFFFFF</Color>
     <Color x:Key="SurfaceRaisedSubtleColor">#0F000000</Color>
     <Color x:Key="SurfaceInputSubtleColor">#12FFFFFF</Color>
@@ -270,7 +270,7 @@
       <Color x:Key="SurfaceBaseColor">#330F0F0F</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <!-- Fullscreen launcher glass. See the light theme for the contract. -->
-      <Color x:Key="LauncherBackdropColor">#AD0C0D10</Color>
+      <Color x:Key="LauncherBackdropColor">#4D0F1012</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
       <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>
       <Color x:Key="SurfaceInputSubtleColor">#0FFFFFFF</Color>
@@ -638,7 +638,6 @@
   <x:Double x:Key="InputHeightStandard">40</x:Double>
   <x:Double x:Key="SearchHeightStandard">40</x:Double>
   <x:Double x:Key="SearchHeightProminent">40</x:Double>
-  <x:Double x:Key="SearchHeightLauncher">48</x:Double>
   <x:Double x:Key="IconSizeSmall">12</x:Double>
   <x:Double x:Key="IconSizeStandard">16</x:Double>
   <x:Double x:Key="IconSizeMedium">20</x:Double>

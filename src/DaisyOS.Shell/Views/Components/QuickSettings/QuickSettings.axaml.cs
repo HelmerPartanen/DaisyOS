@@ -122,7 +122,10 @@ public partial class QuickSettings : UserControl
         {
             var state = await new DaisyOS.System.Continuity.ContinuityClient().ExecuteAsync(new("status"));
             button.IsVisible = state.Enabled;
-            button.Content = state.Paused ? Loc.Get("Resume Continuity") : Loc.Get("Pause Continuity");
+            var label = state.Paused ? Loc.Get("Resume Continuity") : Loc.Get("Pause Continuity");
+            this.FindControl<TextBlock>("ContinuityPauseLabel")!.Text = label;
+            this.FindControl<DaisyOS.Shell.Controls.DaisyIcon>("ContinuityPauseIcon")!.Icon = state.Paused ? "play" : "pause";
+            Avalonia.Automation.AutomationProperties.SetName(button, label);
         }
         catch { button.IsVisible = false; }
     }

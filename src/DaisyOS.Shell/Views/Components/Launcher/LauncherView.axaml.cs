@@ -384,7 +384,9 @@ public partial class LauncherView : UserControl
     private void OnPageViewportSizeChanged(object? sender, SizeChangedEventArgs e)
     {
         if (DataContext is not LauncherViewModel model) return;
-        model.SetPageLayout((int)(e.NewSize.Width / 136), (int)(e.NewSize.Height / 128));
+        model.SetPageLayout(
+            (int)(e.NewSize.Width / 136),
+            Math.Min(LauncherViewModel.MaxPageRows, (int)(e.NewSize.Height / 128)));
     }
 
     private void OnPageWheel(object? sender, PointerWheelEventArgs e)
