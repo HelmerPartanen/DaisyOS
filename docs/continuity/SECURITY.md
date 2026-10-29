@@ -111,3 +111,17 @@ emulation. JPEG dimensions, audio packet lengths, input ranges/sequences and
 activity schema/content sizes are bounded. A private marker enables recovery of
 the daemon-created audio sink after a crash. These paths require real-device
 acceptance testing; see [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md).
+
+## Streamlined grant semantics
+
+A paired sender may request a feature without enabling that feature as an inbound
+permission on itself. Unpaired identities remain denied before feature dispatch.
+Explicitly revoked receiving features are recorded separately from features that
+have never been requested. Initial audio/handoff requests require local approval
+from the authenticated notification or Settings; that approval can be remembered
+for the paired identity while the target is unlocked. Revocation cancels existing
+operations and blocks subsequent requests until re-enabled. Screen and input
+requests use system portal consent per link session and visible stop controls.
+Input capture/injection stops on disconnect; grants are not silently reinstated.
+The input channel carries bounded evdev/relative-motion messages, not arbitrary
+commands, and does not require screen capture.

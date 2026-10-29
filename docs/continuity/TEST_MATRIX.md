@@ -246,3 +246,32 @@ actual KWin/libei behavior, screen performance or audio quality. Follow
 [MEDIA_AND_HANDOFF.md](MEDIA_AND_HANDOFF.md) for the two-device checklist and
 current limits (focused viewer input, Notes text snapshots, screen mirroring,
 single-direction PCM audio). Logs are in ignored `artifacts/continuity/validation/`.
+
+## Screen-edge control and streamlined flows (2026-10-29)
+
+- Backend suite with `DAISYOS_REAL_AUDIO_TEST=1`: **71 passed**, no skips. This
+  includes authenticated edge-input/helper-pipe round trips for four directions,
+  permission revocation, delayed local consent without losing liveness, the real
+  PipeWire/PulseAudio PCM→TLS→playback-monitor test, and handoff cancellation-slot
+  recovery. The real audio test uses temporary silent outputs and verifies the
+  user's selected output is unchanged.
+- Notes/QuickSettings/SettingsLayout/Handoff/ContinuityFlow/PortalPicker headless
+  UI filter: **55 passed**. Audio output integration filter: **4 passed**.
+- Native source capture and destination injection tested with **real libei/libeis**
+  on a private bus. Verified keys, buttons, pointer motion, held Ctrl across entry,
+  proportional return, and emulation/session release; no real user input captured.
+- Native consent-denial matrix: **5 passed**. Production edge-geometry test covers
+  all four sides, 404 proportional crossing positions, clamping and non-finite motion.
+- Actual laptop output comparison found the old integer-scale helper reporting
+  **960×540** on a **125%** display. The corrected xdg-output helper reports
+  **1536×864**, matching KWin. Checked source, published and active-backend helper copies.
+- Both native helpers compile with warnings as errors. Daemon release publish,
+  immutable upgrade/mapped-assembly preservation, staged service verification and
+  private-bus startup/shutdown passed. Actual laptop daemon install and active
+  upgrade passed: service active, session ready, no feature sessions started.
+
+The desktop is unavailable. Physical desktop/laptop crossing, real speakers, LAN
+latency, suspend and multi-monitor recovery remain acceptance work, not inferred
+from these checks. See [SEAMLESS_CONTROL.md](SEAMLESS_CONTROL.md) for current use
+and UI reload commands. The shell was not restarted during the user's concurrent
+launcher development. Logs are under ignored `artifacts/continuity/validation/`.
