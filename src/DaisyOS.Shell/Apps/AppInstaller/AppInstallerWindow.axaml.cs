@@ -30,6 +30,7 @@ public partial class AppInstallerWindow : Window
         DragDrop.SetAllowDrop(this, true);
         AddHandler(DragDrop.DragOverEvent, OnDragOver);
         AddHandler(DragDrop.DropEvent, OnDrop);
+        AddHandler(KeyDownEvent, OnKeyDown, RoutingStrategies.Tunnel);
         Opened += (_, _) => _ = viewModel.InitializeAsync();
     }
 
@@ -61,6 +62,46 @@ public partial class AppInstallerWindow : Window
     private async void OnInstallClicked(object? sender, RoutedEventArgs e)
     {
         if (ViewModel is { } viewModel) await viewModel.InstallAsync();
+    }
+
+    private void OnQuitClicked(object? sender, RoutedEventArgs e) => Close();
+
+    private async void OnBrowseDestinationClicked(object? sender, RoutedEventArgs e)
+    {
+        if (Application.Current is App app)
+        {
+            var folders = await app.PickFilesAsync(this, new DaisyFilePickerOptions(
+                Title: Loc.Get("Choose an installation folder"),
+                AllowMultiple: false,
+                AllowFolderContents: true,
+                AllowedExtensions: Array.Empty<string>(),
+                SelectDirectory: true));
+            if (folders?.FirstOrDefault() is { } folder && ViewModel is { } vm)
+            {
+                vm.CustomDestinationDirectory = folder;
+            }
+        }
+        else if (StorageProvider.CanPickFolder)
+        {
+            var folders = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions
+            {
+                Title = Loc.Get("Choose an installation folder"),
+                AllowMultiple = false
+            });
+            if (folders.Count > 0 && folders[0].TryGetLocalPath() is { } folderPath && ViewModel is { } vm)
+            {
+                vm.CustomDestinationDirectory = folderPath;
+            }
+        }
+    }
+
+    private void OnKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Escape)
+        {
+            Close();
+            e.Handled = true;
+        }
     }
 
     private void OnLaunchSelectedClicked(object? sender, RoutedEventArgs e)

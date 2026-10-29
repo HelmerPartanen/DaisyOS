@@ -23,6 +23,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     private bool _isBusy;
     private string _message = "";
     private bool _messageIsError;
+    private string? _customDestinationDirectory;
     private bool _disposed;
 
     public AppInstallerViewModel(IAppImageInstallerService? service = null, SafeProcessLauncher? launcher = null)
@@ -47,6 +48,37 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     public bool ShowFirstTimeInstallButton => HasSelection && !IsSelectedInstalled && !JustInstalled;
     public bool ShowReinstallButton => HasSelection && IsSelectedInstalled && !JustInstalled;
     public string InstallButtonText => IsSelectedInstalled ? Loc.Get("Reinstall") : Loc.Get("Install");
+
+    public string? CustomDestinationDirectory
+    {
+        get => _customDestinationDirectory;
+        set
+        {
+            if (_customDestinationDirectory != value)
+            {
+                _customDestinationDirectory = value;
+                OnPropertyChanged(nameof(CustomDestinationDirectory));
+                OnPropertyChanged(nameof(InstallDestinationPath));
+            }
+        }
+    }
+
+    public string InstallDestinationPath
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(_customDestinationDirectory))
+                return _customDestinationDirectory;
+            if (_installedMatch is not null)
+                return Path.GetDirectoryName(_installedMatch.AppImagePath) ?? "";
+            if (_selected is not null)
+            {
+                var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                return Path.Combine(home, ".local", "share", "daisyos", "appimages", _selected.DesktopId);
+            }
+            return "";
+        }
+    }
 
     public string SelectedDetails
     {
@@ -127,7 +159,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
         ClearMessage();
         try
         {
-            var installation = await _service.InstallAsync(path);
+            var installation = await _service.InstallAsync(path, _customDestinationDirectory);
             await ReloadInstalledAsync(showError: false);
             _justInstalled = true;
             _isSelectedInstalled = true;
@@ -142,6 +174,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
             OnPropertyChanged(nameof(ShowFirstTimeInstallButton));
             OnPropertyChanged(nameof(ShowReinstallButton));
             OnPropertyChanged(nameof(InstallButtonText));
+            OnPropertyChanged(nameof(InstallDestinationPath));
         }
         catch (AppImageException ex) { SetError(Loc.Get(ex.Message)); }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
@@ -169,6 +202,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     public void ClearSelection()
     {
         _selected = null;
+        _customDestinationDirectory = null;
         _selectedIcon?.Dispose();
         _selectedIcon = null;
         _isSelectedInstalled = false;
@@ -252,9 +286,14 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
                 string.Equals(item.DesktopId, _selected.DesktopId, StringComparison.OrdinalIgnoreCase)
                 || string.Equals(item.Name, _selected.Name, StringComparison.OrdinalIgnoreCase));
             _isSelectedInstalled = _installedMatch is not null;
+            if (_isSelectedInstalled && _installedMatch is not null && string.IsNullOrWhiteSpace(_customDestinationDirectory))
+            {
+                _customDestinationDirectory = Path.GetDirectoryName(_installedMatch.AppImagePath);
+            }
         }
         OnPropertyChanged(nameof(IsSelectedInstalled));
         OnPropertyChanged(nameof(InstalledMatch));
+        OnPropertyChanged(nameof(InstallDestinationPath));
         OnPropertyChanged(nameof(ShowOpenButton));
         OnPropertyChanged(nameof(ShowInstallButton));
         OnPropertyChanged(nameof(ShowFirstTimeInstallButton));
@@ -322,6 +361,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
         OnPropertyChanged(nameof(SelectedDetails));
         OnPropertyChanged(nameof(SelectedComment));
         OnPropertyChanged(nameof(HasSelectedComment));
+        OnPropertyChanged(nameof(InstallDestinationPath));
         OnPropertyChanged(nameof(ShowOpenButton));
         OnPropertyChanged(nameof(ShowInstallButton));
         OnPropertyChanged(nameof(ShowFirstTimeInstallButton));

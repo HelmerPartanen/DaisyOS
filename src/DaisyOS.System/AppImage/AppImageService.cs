@@ -69,7 +69,7 @@ public sealed class AppImageService : IAppImageInstallerService
         };
     }
 
-    public async Task<AppImageInstallation> InstallAsync(string path, CancellationToken cancellationToken = default)
+    public async Task<AppImageInstallation> InstallAsync(string path, string? destinationDirectory = null, CancellationToken cancellationToken = default)
     {
         var inspection = await InspectAsync(path, cancellationToken).ConfigureAwait(false);
         await _gate.WaitAsync(cancellationToken).ConfigureAwait(false);
@@ -77,7 +77,9 @@ public sealed class AppImageService : IAppImageInstallerService
         {
             var registry = await LoadRegistryAsync(cancellationToken).ConfigureAwait(false);
             var desktopId = await ChooseDesktopIdAsync(inspection, registry, cancellationToken).ConfigureAwait(false);
-            var appDirectory = Path.Combine(_installRoot, desktopId);
+            var appDirectory = string.IsNullOrWhiteSpace(destinationDirectory)
+                ? Path.Combine(_installRoot, desktopId)
+                : Path.GetFullPath(destinationDirectory);
             Directory.CreateDirectory(appDirectory);
 
             var appImagePath = Path.Combine(appDirectory, desktopId + ".AppImage");
@@ -405,7 +407,14 @@ public sealed class AppImageService : IAppImageInstallerService
     {
         var dirIcon = entries.FirstOrDefault(entry =>
             string.Equals(entry.Path, ".DirIcon", StringComparison.Ordinal))?.Path;
-        if (dirIcon is not null) return dirIcon;
+        if (dirIcon is not null)
+        {
+            var resolvedDir = ResolveSymlink(entries, dirIcon);
+            if (resolvedDir is not null && entries.Any(e => string.Equals(e.Path, resolvedDir, StringComparison.Ordinal)))
+            {
+                return resolvedDir;
+            }
+        }
 
         var declared = fields.GetValueOrDefault("Icon")?.Trim();
         if (!string.IsNullOrWhiteSpace(declared))
@@ -416,6 +425,25 @@ public sealed class AppImageService : IAppImageInstallerService
 
         var desktopName = Path.GetFileNameWithoutExtension(desktopPath);
         return ResolveIconReference(entries, desktopName, desktopPath);
+    }
+
+    private static int IconScore(string path)
+    {
+        if (path.StartsWith("usr/share/icons/hicolor/1024x1024/apps/", StringComparison.Ordinal)) return 1;
+        if (path.StartsWith("usr/share/icons/hicolor/512x512/apps/", StringComparison.Ordinal) ||
+            path.StartsWith("usr/share/icons/hicolor/512x512@2/apps/", StringComparison.Ordinal)) return 2;
+        if (path.StartsWith("usr/share/icons/hicolor/256x256/apps/", StringComparison.Ordinal) ||
+            path.StartsWith("usr/share/icons/hicolor/256x256@2/apps/", StringComparison.Ordinal)) return 3;
+        if (path.StartsWith("usr/share/icons/hicolor/128x128/apps/", StringComparison.Ordinal) ||
+            path.StartsWith("usr/share/icons/hicolor/128x128@2/apps/", StringComparison.Ordinal)) return 4;
+        if (path.StartsWith("usr/share/icons/hicolor/scalable/apps/", StringComparison.Ordinal)) return 5;
+        if (path.StartsWith("usr/share/icons/hicolor/64x64/apps/", StringComparison.Ordinal) ||
+            path.StartsWith("usr/share/icons/hicolor/64x64@2/apps/", StringComparison.Ordinal)) return 6;
+        if (path.StartsWith("usr/share/icons/hicolor/48x48/apps/", StringComparison.Ordinal)) return 7;
+        if (!path.Contains('/')) return 8;
+        if (path.Contains("/icons/hicolor/", StringComparison.Ordinal)) return 9;
+        if (path.Contains("/icons/", StringComparison.Ordinal)) return 10;
+        return 11;
     }
 
     private static string? ResolveIconReference(
@@ -438,7 +466,7 @@ public sealed class AppImageService : IAppImageInstallerService
         {
             var direct = ResolveRelative(Path.GetDirectoryName(desktopPath) ?? "", reference + extension);
             if (direct is not null && entries.Any(entry => entry.Path == direct))
-                candidates.Add((direct, 0));
+                candidates.Add((direct, IconScore(direct)));
         }
 
         foreach (var entry in entries)
@@ -450,27 +478,18 @@ public sealed class AppImageService : IAppImageInstallerService
             candidates.Add((entry.Path, IconScore(entry.Path)));
         }
 
-        return candidates
+        var chosen = candidates
             .OrderBy(candidate => candidate.Score)
             .ThenBy(candidate => candidate.Path.Length)
             .ThenBy(candidate => candidate.Path, StringComparer.Ordinal)
             .Select(candidate => candidate.Path)
             .FirstOrDefault();
-    }
 
-    private static int IconScore(string path)
-    {
-        if (!path.Contains('/')) return 1;
-        if (path.StartsWith("usr/share/icons/hicolor/1024x1024/apps/", StringComparison.Ordinal)) return 2;
-        if (path.StartsWith("usr/share/icons/hicolor/512x512/apps/", StringComparison.Ordinal)) return 3;
-        if (path.StartsWith("usr/share/icons/hicolor/256x256/apps/", StringComparison.Ordinal)) return 4;
-        if (path.StartsWith("usr/share/icons/hicolor/128x128/apps/", StringComparison.Ordinal)) return 5;
-        if (path.StartsWith("usr/share/icons/hicolor/64x64/apps/", StringComparison.Ordinal)) return 6;
-        if (path.StartsWith("usr/share/icons/hicolor/48x48/apps/", StringComparison.Ordinal)) return 7;
-        if (path.StartsWith("usr/share/icons/hicolor/scalable/apps/", StringComparison.Ordinal)) return 8;
-        if (path.Contains("/icons/hicolor/", StringComparison.Ordinal)) return 9;
-        if (path.Contains("/icons/", StringComparison.Ordinal)) return 10;
-        return 11;
+        if (chosen is null) return null;
+        var resolved = ResolveSymlink(entries, chosen);
+        return resolved is not null && entries.Any(e => string.Equals(e.Path, resolved, StringComparison.Ordinal))
+            ? resolved
+            : chosen;
     }
 
     private static string? ResolveSymlink(IReadOnlyList<AppImageEntry> entries, string path)
@@ -497,9 +516,9 @@ public sealed class AppImageService : IAppImageInstallerService
         try
         {
             var extraction = await RunAsync("unsquashfs",
-                ["-no-progress", "-o", offset.ToString(CultureInfo.InvariantCulture), "-d", temporary, "-f", source, imagePath],
+                ["-no-xattrs", "-no-progress", "-o", offset.ToString(CultureInfo.InvariantCulture), "-d", temporary, "-f", source, imagePath],
                 cancellationToken).ConfigureAwait(false);
-            if (!extraction.Succeeded) return null;
+            if (!extraction.Succeeded && extraction.ExitCode != 2) return null;
 
             var extracted = ResolveWithin(temporary, imagePath);
             if (extracted is null) return null;

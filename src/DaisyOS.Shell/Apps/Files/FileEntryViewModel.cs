@@ -258,6 +258,7 @@ public sealed class FileEntryViewModel : INotifyPropertyChanged
         ".zip" or ".tar" or ".gz" or ".7z" or ".rar" => ("file-zip", "#F59E0B"),
         ".pdf" => ("file-text", "#EF4444"),
         ".sh" or ".bash" => ("terminal-window", "#10B981"),
+        ".appimage" => ("package", "#38BDF8"),
         _ => ("file", "#9CA3AF")
     };
 

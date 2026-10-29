@@ -170,5 +170,51 @@ public sealed class AppImageServiceTests
             if (Directory.Exists(tempDir)) Directory.Delete(tempDir, recursive: true);
         }
     }
+
+    [Fact]
+    public void AppImageIconCacheReturnsNullForMissingOrNonAppImage()
+    {
+        Assert.Null(DaisyOS.Shell.Services.AppImageIconCache.GetOrExtractIconPath(""));
+        Assert.Null(DaisyOS.Shell.Services.AppImageIconCache.GetOrExtractIconPath("/nonexistent/file.txt"));
+        Assert.Null(DaisyOS.Shell.Services.AppImageIconCache.GetOrExtractIconPath("/nonexistent/file.AppImage"));
+    }
+
+    [Fact]
+    public async Task InspectAsyncExtractsRealIconWhenAvailable()
+    {
+        var samplePath = "/home/helmeri/Downloads/EpicGamesLauncher-x86_64.AppImage";
+        if (!File.Exists(samplePath)) return;
+
+        var service = new AppImageService();
+        var inspection = await service.InspectAsync(samplePath);
+
+        Assert.Equal("Epic Games Launcher", inspection.Name);
+        Assert.NotNull(inspection.IconData);
+        Assert.NotEmpty(inspection.IconData);
+        Assert.Equal(".png", inspection.IconExtension);
+
+        var cachedIconPath = DaisyOS.Shell.Services.AppImageIconCache.GetOrExtractIconPath(samplePath);
+        Assert.NotNull(cachedIconPath);
+        Assert.True(File.Exists(cachedIconPath));
+    }
+
+    [Fact]
+    public async Task InspectAsyncExtractsLmStudioIconWhenAvailable()
+    {
+        var samplePath = "/home/helmeri/Downloads/LM-Studio-0.4.24-1-x64.AppImage";
+        if (!File.Exists(samplePath)) return;
+
+        var service = new AppImageService();
+        var inspection = await service.InspectAsync(samplePath);
+
+        Assert.Equal("LM-Studio", inspection.Name);
+        Assert.NotNull(inspection.IconData);
+        Assert.NotEmpty(inspection.IconData);
+        Assert.Equal(".png", inspection.IconExtension);
+
+        var cachedIconPath = DaisyOS.Shell.Services.AppImageIconCache.GetOrExtractIconPath(samplePath);
+        Assert.NotNull(cachedIconPath);
+        Assert.True(File.Exists(cachedIconPath));
+    }
 }
 

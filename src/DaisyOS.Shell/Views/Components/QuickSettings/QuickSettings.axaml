@@ -247,12 +247,12 @@
           <Button x:Name="ContinuityPauseButton" IsVisible="False" Classes="ShellButton ContinuityControl"
                   HorizontalAlignment="Stretch" Click="OnContinuityPauseClicked">
             <Grid ColumnDefinitions="20,*,20" ColumnSpacing="12" VerticalAlignment="Center">
-              <controls:DaisyIcon Icon="continuity" Size="20" VerticalAlignment="Center" />
+              <controls:DaisyIcon Icon="continuity" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" />
               <TextBlock x:Name="ContinuityPauseLabel" Grid.Column="1"
                          FontSize="{DynamicResource TypeSizeBodySmall}" VerticalAlignment="Center"
                          TextTrimming="CharacterEllipsis" />
               <controls:DaisyIcon x:Name="ContinuityPauseIcon" Grid.Column="2" Icon="pause"
-                                  Size="16" VerticalAlignment="Center"
+                                  Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center"
                                   Foreground="{DynamicResource ContentSecondaryBrush}" />
             </Grid>
           </Button>

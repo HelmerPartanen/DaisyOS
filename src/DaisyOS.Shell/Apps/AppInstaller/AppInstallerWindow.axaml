@@ -3,8 +3,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
         xmlns:installer="clr-namespace:DaisyOS.Shell.Apps.AppInstaller"
-        Title="{DynamicResource Loc_DF8B3ECE4036}"
-        Width="880" Height="680" MinWidth="640" MinHeight="480"
+        Title="{DynamicResource Loc_569CA49F4AAF}"
+        Width="680" Height="480" MinWidth="540" MinHeight="400"
         CanResize="True" WindowStartupLocation="CenterScreen" WindowDecorations="None"
         Classes="SidebarAppWindow" TextOptions.TextRenderingMode="Antialias"
         Background="{DynamicResource SurfaceBaseSolidBrush}">
@@ -12,43 +12,31 @@
     <Style Selector="Border.InstallerCard">
       <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
       <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
     </Style>
-    <Style Selector="Border.InstallerDropZone">
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
-    </Style>
-    <Style Selector="TextBlock.InstallerHeading">
-      <Setter Property="FontSize" Value="{DynamicResource TypeSizeTitle}" />
-      <Setter Property="FontWeight" Value="SemiBold" />
+    <Style Selector="Button.Pill">
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusButtonSmall}" />
+      <Setter Property="Padding" Value="24,8" />
+      <Setter Property="Height" Value="36" />
     </Style>
   </Window.Styles>
   <Grid x:Name="MainPaneLayout" RowDefinitions="Auto,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
     <controls:AppWindowTitleBar x:Name="AppTitleBar" />
-    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-      <StackPanel MaxWidth="760" Margin="{DynamicResource SpaceInset6}" Spacing="{DynamicResource Space6}" HorizontalAlignment="Center">
-        <StackPanel Spacing="{DynamicResource Space2}">
-          <TextBlock Text="{DynamicResource Loc_234B19D5D561}" Classes="InstallerHeading" />
-          <TextBlock Text="{DynamicResource Loc_E4E5F98ED563}" Classes="Muted" TextWrapping="Wrap" />
-        </StackPanel>
+    <Grid Grid.Row="1" RowDefinitions="Auto,*,Auto">
+      <!-- Header: Install -->
+      <TextBlock Text="{DynamicResource Loc_569CA49F4AAF}"
+                 FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold"
+                 Margin="36,20,36,0" />
 
-        <Border Classes="InstallerCard" Padding="{DynamicResource SpaceInset6}">
-          <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="{DynamicResource Space4}">
-            <StackPanel IsVisible="{Binding !HasSelection}" Spacing="{DynamicResource Space3}" HorizontalAlignment="Center">
-              <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center"
-                                  Foreground="{DynamicResource ContentSecondaryBrush}" />
-              <TextBlock Text="{DynamicResource Loc_F03472E3AF76}" Classes="InstallerHeading" HorizontalAlignment="Center" />
-              <TextBlock Text="{DynamicResource Loc_E72037CAD533}" Classes="Muted" TextAlignment="Center"
-                         TextWrapping="Wrap" MaxWidth="420" />
-              <Button Content="{DynamicResource Loc_5C6623857CC7}" Classes="Primary" Click="OnChooseFileClicked"
-                      HorizontalAlignment="Center" />
-            </StackPanel>
-
-            <Grid IsVisible="{Binding HasSelection}" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space4}">
-              <Border Width="64" Height="64" CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" VerticalAlignment="Center">
+      <!-- Center Content -->
+      <Grid Grid.Row="1" Margin="36,12" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="520">
+        <!-- When file selected (Normal flow) -->
+        <StackPanel IsVisible="{Binding HasSelection}" Spacing="{DynamicResource Space4}">
+          <Border Classes="InstallerCard" Padding="20">
+            <Grid ColumnDefinitions="Auto,*" ColumnSpacing="16">
+              <Border Width="68" Height="68" CornerRadius="{DynamicResource RadiusControlInner}" ClipToBounds="True"
+                      Background="{DynamicResource SurfaceRaisedBrush}" VerticalAlignment="Center">
                 <Panel>
                   <Image Source="{Binding SelectedIcon}" IsVisible="{Binding HasSelectedIcon}" Stretch="Uniform" />
                   <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}"
@@ -58,85 +46,67 @@
                 </Panel>
               </Border>
 
-              <StackPanel Grid.Column="1" Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
-                <TextBlock Text="{Binding SelectedName}" Classes="InstallerHeading" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding SelectedDetails}" Classes="Muted" />
-                <TextBlock Text="{Binding SelectedComment}" IsVisible="{Binding HasSelectedComment}" Classes="Muted" TextWrapping="Wrap" />
-                <TextBlock Text="{Binding SelectedPath}" Classes="Muted" FontSize="{DynamicResource TypeSizeCaption}"
+              <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                <TextBlock Text="{Binding SelectedName}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding SelectedDetails}" Classes="Muted" FontSize="{DynamicResource TypeSizeBodySmall}" />
+                <TextBlock Text="{Binding SelectedComment}" IsVisible="{Binding HasSelectedComment}" Classes="Muted" FontSize="{DynamicResource TypeSizeBodySmall}"
+                           TextWrapping="Wrap" MaxLines="2" TextTrimming="CharacterEllipsis" />
+                <TextBlock Text="{Binding SelectedPath}" Classes="Muted" FontSize="{DynamicResource TypeSizeMicro}"
                            TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SelectedPath}" />
               </StackPanel>
-
-              <StackPanel Grid.Column="2" Spacing="{DynamicResource Space2}" VerticalAlignment="Center">
-                <Button Content="{DynamicResource Loc_ED077F3D8125}" Classes="Primary" Click="OnLaunchSelectedClicked"
-                        IsVisible="{Binding ShowOpenButton}" IsDefault="{Binding ShowOpenButton}" MinWidth="120" />
-                <Button Content="{DynamicResource Loc_569CA49F4AAF}" Classes="Primary" Click="OnInstallClicked"
-                        IsVisible="{Binding ShowFirstTimeInstallButton}" IsDefault="{Binding ShowFirstTimeInstallButton}"
-                        IsEnabled="{Binding !IsBusy}" MinWidth="120" />
-                <Button Content="{DynamicResource Loc_C630A782A9EB}" Classes="Secondary" Click="OnInstallClicked"
-                        IsVisible="{Binding ShowReinstallButton}" IsEnabled="{Binding !IsBusy}" MinWidth="120" />
-                <Button Content="{DynamicResource Loc_26EAC8F8C95B}" Classes="Subtle" Click="OnChooseFileClicked"
-                        IsEnabled="{Binding !IsBusy}" />
-              </StackPanel>
             </Grid>
+          </Border>
 
-            <ProgressBar Grid.Row="1" IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" />
+          <!-- Destination location pill -->
+          <Border Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                  BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="{DynamicResource BorderThicknessDefault}"
+                  CornerRadius="{DynamicResource RadiusPill}" Padding="16,4,6,4">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+              <TextBlock Text="{Binding InstallDestinationPath}" VerticalAlignment="Center"
+                         Classes="Muted" FontSize="{DynamicResource TypeSizeBodySmall}"
+                         TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding InstallDestinationPath}" />
+              <Button Content="{DynamicResource Loc_3227AA966625}" Classes="Primary"
+                      Click="OnBrowseDestinationClicked" CornerRadius="{DynamicResource RadiusButtonSmall}"
+                      Padding="16,4" Height="30" VerticalAlignment="Center" />
+            </Grid>
+          </Border>
 
-            <Border Grid.Row="2" IsVisible="{Binding HasMessage}" Padding="{DynamicResource SpaceInset4}"
-                    CornerRadius="{DynamicResource RoundedMD}"
-                    Background="{DynamicResource SurfaceRaisedSubtleBrush}"
-                    BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1">
-              <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
-            </Border>
-          </Grid>
-        </Border>
+          <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" Height="3" CornerRadius="{DynamicResource RadiusSmall}" />
 
-        <StackPanel Spacing="{DynamicResource Space3}">
-          <StackPanel Spacing="{DynamicResource Space1}">
-            <TextBlock Text="{DynamicResource Loc_83C53A714781}" Classes="InstallerHeading" />
-            <TextBlock Text="{DynamicResource Loc_794EA723C7E2}" Classes="Muted" TextWrapping="Wrap" />
-          </StackPanel>
-
-          <ItemsControl ItemsSource="{Binding Installed}">
-            <ItemsControl.ItemsPanel>
-              <ItemsPanelTemplate>
-                <StackPanel Spacing="{DynamicResource Space2}" />
-              </ItemsPanelTemplate>
-            </ItemsControl.ItemsPanel>
-            <ItemsControl.ItemTemplate>
-              <DataTemplate DataType="installer:InstalledAppImageViewModel">
-                <Border Classes="InstallerCard" Padding="{DynamicResource SpaceInset4}">
-                  <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space4}">
-                    <Border Width="40" Height="40" CornerRadius="{DynamicResource RoundedSM}" ClipToBounds="True" VerticalAlignment="Center">
-                      <Panel>
-                        <Image Source="{Binding IconImage}" IsVisible="{Binding HasIcon}" Stretch="Uniform" />
-                        <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeLarge}"
-                                            IsVisible="{Binding !HasIcon}" HorizontalAlignment="Center"
-                                            VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
-                      </Panel>
-                    </Border>
-                    <StackPanel Grid.Column="1" Spacing="{DynamicResource Space1}" VerticalAlignment="Center">
-                      <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                      <TextBlock Text="{Binding Details}" Classes="Muted" FontSize="{DynamicResource TypeSizeCaption}"
-                                 TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding AppImagePath}" />
-                    </StackPanel>
-                    <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="{DynamicResource Space2}" VerticalAlignment="Center">
-                      <Button Content="{DynamicResource Loc_ED077F3D8125}" Classes="Secondary" Click="OnLaunchClicked"
-                              AutomationProperties.Name="{Binding LaunchAccessibilityLabel}" />
-                      <Button Content="{DynamicResource Loc_C3812FC4ACB8}" Classes="Subtle" Click="OnRemoveClicked"
-                              AutomationProperties.Name="{Binding RemoveAccessibilityLabel}" />
-                    </StackPanel>
-                  </Grid>
-                </Border>
-              </DataTemplate>
-            </ItemsControl.ItemTemplate>
-          </ItemsControl>
-
-          <Border IsVisible="{Binding ShowInstalledEmpty}" Classes="InstallerDropZone"
-                  Padding="{DynamicResource SpaceInset6}">
-            <TextBlock Text="{DynamicResource Loc_1D86D32D2674}" Classes="Muted" TextAlignment="Center" />
+          <Border IsVisible="{Binding HasMessage}" Padding="{DynamicResource SpaceInset3}"
+                  CornerRadius="{DynamicResource RoundedMD}"
+                  Background="{DynamicResource SurfaceRaisedSubtleBrush}"
+                  BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="{DynamicResource BorderThicknessDefault}">
+            <TextBlock Text="{Binding Message}" TextWrapping="Wrap" FontSize="{DynamicResource TypeSizeCaption}" />
           </Border>
         </StackPanel>
-      </StackPanel>
-    </ScrollViewer>
+
+        <!-- Fallback if launched without an AppImage file -->
+        <StackPanel IsVisible="{Binding !HasSelection}" Spacing="{DynamicResource Space3}" HorizontalAlignment="Center">
+          <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center"
+                              Foreground="{DynamicResource ContentSecondaryBrush}" />
+          <TextBlock Text="{DynamicResource Loc_F03472E3AF76}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+          <TextBlock Text="{DynamicResource Loc_E72037CAD533}" Classes="Muted" TextAlignment="Center"
+                     TextWrapping="Wrap" MaxWidth="380" />
+          <Button Content="{DynamicResource Loc_5C6623857CC7}" Classes="Primary Pill" Click="OnChooseFileClicked"
+                  HorizontalAlignment="Center" />
+        </StackPanel>
+      </Grid>
+
+      <!-- Footer: Quit on left, Install / Open / Reinstall on right -->
+      <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto" Margin="36,0,36,28" VerticalAlignment="Bottom">
+        <Button Content="{DynamicResource Loc_B3EB37ACB66B}" Classes="Secondary Pill" Click="OnQuitClicked" />
+
+        <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="8">
+          <Button Content="{DynamicResource Loc_C630A782A9EB}" Classes="Secondary Pill" Click="OnInstallClicked"
+                  IsVisible="{Binding ShowReinstallButton}" IsEnabled="{Binding !IsBusy}" />
+          <Button Content="{DynamicResource Loc_ED077F3D8125}" Classes="Primary Pill" Click="OnLaunchSelectedClicked"
+                  IsVisible="{Binding ShowOpenButton}" IsDefault="{Binding ShowOpenButton}" MinWidth="100" />
+          <Button Content="{DynamicResource Loc_569CA49F4AAF}" Classes="Primary Pill" Click="OnInstallClicked"
+                  IsVisible="{Binding ShowFirstTimeInstallButton}" IsDefault="{Binding ShowFirstTimeInstallButton}"
+                  IsEnabled="{Binding !IsBusy}" MinWidth="100" />
+        </StackPanel>
+      </Grid>
+    </Grid>
   </Grid>
 </Window>

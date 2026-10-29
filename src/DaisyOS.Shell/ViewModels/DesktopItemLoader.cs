@@ -88,6 +88,14 @@ public static class DesktopItemLoader
     {
         var directory = Directory.Exists(path);
         var extension = Path.GetExtension(path).ToLowerInvariant();
+        if (!directory && string.Equals(extension, ".appimage", StringComparison.OrdinalIgnoreCase))
+        {
+            var appImageIcon = DaisyOS.Shell.Services.AppImageIconCache.GetOrExtractIconPath(path);
+            if (!string.IsNullOrWhiteSpace(appImageIcon))
+            {
+                return appImageIcon;
+            }
+        }
         var mimeIcon = directory ? "folder" :
             DaisyOS.Shell.Apps.Files.Services.FileVisualResolver.GetMimeIconName(extension);
         var resolved = ResolveIconPath(mimeIcon, isLight);

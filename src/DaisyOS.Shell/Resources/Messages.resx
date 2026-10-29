@@ -7439,4 +7439,19 @@ Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
     <comment>Source: The AppImage could not be opened.
 Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
   </data>
+  <data name="Loc_B3EB37ACB66B" xml:space="preserve">
+    <value>Quit</value>
+    <comment>Source: Quit
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_3227AA966625" xml:space="preserve">
+    <value>Browse</value>
+    <comment>Source: Browse
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
+  </data>
+  <data name="Loc_CB389923C263" xml:space="preserve">
+    <value>Choose an installation folder</value>
+    <comment>Source: Choose an installation folder
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml.cs</comment>
+  </data>
 </root>

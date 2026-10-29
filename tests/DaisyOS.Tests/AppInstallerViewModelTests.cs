@@ -30,9 +30,12 @@ public sealed class AppInstallerViewModelTests
             });
         }
 
-        public Task<AppImageInstallation> InstallAsync(string path, CancellationToken cancellationToken = default)
+        public Task<AppImageInstallation> InstallAsync(string path, string? destinationDirectory = null, CancellationToken cancellationToken = default)
         {
             if (FailInstall) throw new AppImageException("Install failed");
+            var targetDir = string.IsNullOrWhiteSpace(destinationDirectory)
+                ? "/home/user/.local/share/daisyos/appimages/test-app"
+                : destinationDirectory;
             var installation = new AppImageInstallation
             {
                 DesktopId = "test-app",
@@ -40,7 +43,7 @@ public sealed class AppInstallerViewModelTests
                 Comment = "Test Comment",
                 Version = "1.0.0",
                 Categories = "Utility",
-                AppImagePath = "/home/user/.local/share/daisyos/appimages/test-app/test-app.AppImage",
+                AppImagePath = Path.Combine(targetDir, "test-app.AppImage"),
                 DesktopFilePath = "/home/user/.local/share/applications/test-app.desktop",
                 IconPath = "",
                 InstalledAt = DateTimeOffset.UtcNow
@@ -182,6 +185,22 @@ public sealed class AppInstallerViewModelTests
 
         Assert.True(vm.HasSelection);
         Assert.Equal("Test App", vm.SelectedName);
+    }
+
+    [Fact]
+    public async Task InstallDestinationPathUpdatesWithCustomDirectory()
+    {
+        var service = new FakeAppImageInstallerService();
+        using var vm = new AppInstallerViewModel(service);
+
+        await vm.SelectFileAsync("/home/user/Downloads/TestApp.AppImage");
+        Assert.Contains("test-app", vm.InstallDestinationPath);
+
+        vm.CustomDestinationDirectory = "/custom/install/dir";
+        Assert.Equal("/custom/install/dir", vm.InstallDestinationPath);
+
+        await vm.InstallAsync();
+        Assert.Equal("/custom/install/dir/test-app.AppImage", service.InstalledApps[0].AppImagePath);
     }
 }
 

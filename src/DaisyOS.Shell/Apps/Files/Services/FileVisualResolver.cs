@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using DaisyOS.Shell.ViewModels;
 using DaisyOS.Shell.Apps.Files.Models;
+using DaisyOS.Shell.Services;
 
 namespace DaisyOS.Shell.Apps.Files.Services;
 
@@ -127,6 +128,14 @@ internal static class FileVisualResolver
             {
                 var (_, iconPath) = DesktopItemLoader.ParseDesktopFile(snapshot.FullPath);
                 return new FileVisual(null, DesktopItemLoader.LoadBitmapSafe(iconPath), string.Empty);
+            }
+            if (string.Equals(snapshot.Extension, ".appimage", StringComparison.OrdinalIgnoreCase))
+            {
+                var appImageIcon = AppImageIconCache.GetOrExtractIcon(snapshot.FullPath);
+                if (appImageIcon is not null)
+                {
+                    return new FileVisual(null, appImageIcon, string.Empty);
+                }
             }
             var generation = Interlocked.Read(ref _associationGeneration);
             var icon = ApplicationIcons.GetOrAdd((snapshot.Extension, generation, size), key =>
