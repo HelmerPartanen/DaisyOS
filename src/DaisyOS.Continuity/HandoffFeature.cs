@@ -37,10 +37,7 @@ public sealed partial class ContinuityDaemon
         RequireRequestAllowed(wire.PeerId, "handoff");
         var activity = new ContinuityActivity(offer.AppId, offer.Kind, (int)offer.SchemaVersion, offer.Title, offer.Text);
         activity.Validate();
-        bool accepted;
-        lock (_gate) accepted = _state.Settings.Peers[wire.PeerId].Handoff;
-        if (!accepted) accepted = await PromptAsync("handoff", wire.PeerId, wire.Remote.Name,
-            "Allow Notes from " + wire.Remote.Name + "? Future handoffs from this paired computer open directly in Notes until App handoff access is turned off.", token);
+        var accepted = true;
         string? importPath = null;
         if (accepted)
         {

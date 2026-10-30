@@ -44,6 +44,7 @@ message Hello {
   bytes device_id = 1; // 32 bytes; must match verified transport identity
   repeated Capability capabilities = 2;
   bytes nonce = 3; // 32 fresh random bytes
+  bool trusted = 4; // whether this identity is still paired locally
 }
 message Ping { uint64 sequence = 1; }
 message Pong { uint64 sequence = 1; }
@@ -87,9 +88,9 @@ message Error {
 }
 
 // Public bootstrap only; never grants trust. Certificates are validated by the
-// platform TLS chain engine and full fingerprints must be verified locally.
+// platform TLS chain engine; pairing uses SRP-6a with a one-time six-digit code bound to both identities.
 message Bootstrap { uint32 major = 1; bytes certificate = 2; string name = 3; bool pairing = 4; uint32 port = 5; }
-message PairConsent { bool approved = 1; }
+message PairConsent { bool approved = 1; bytes salt = 2; bytes public_value = 3; bytes proof = 4; }
 
 // One bounded, independently cancellable TLS connection per live session.
 message LiveStart { string session_id = 1; string kind = 2; bool control = 3; }

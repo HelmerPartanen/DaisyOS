@@ -96,7 +96,8 @@ static void capture_signal(GDBusConnection *connection,const gchar *sender,const
     g_variant_unref(options);
 }
 static gboolean create_edge_session(gboolean capture) {
-    char token[64];snprintf(token,sizeof token,"continuity_edge_%d",getpid());
+    char token[96];const char *grant=getenv("DAISY_CONTINUITY_GRANT");
+    if(grant)snprintf(token,sizeof token,"continuity_%s",grant);else snprintf(token,sizeof token,"continuity_edge_%d",getpid());
     GVariantBuilder opts;g_variant_builder_init(&opts,G_VARIANT_TYPE_VARDICT);
     g_variant_builder_add(&opts,"{sv}","handle_token",g_variant_new_string(token));
     g_variant_builder_add(&opts,"{sv}","session_handle_token",g_variant_new_string(token));

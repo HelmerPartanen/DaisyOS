@@ -38,7 +38,12 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
 
     private readonly WLayerSurfaceEventSinkProxy _eventSink;
     private ZwlrLayerSurfaceV1? _layerSurface;
+    private WaylandConnection? _pendingConnection;
+    private WaylandGlobals? _pendingGlobals;
+    private WlOutput? _selectedOutput;
+    private WlOutput? _closedOutput;
     private uint? _pendingAckSerial;
+    private uint? _latestConfigureSerial;
     private bool _configured;
     private bool _inputPassthrough;
     private int _exclusiveZone;
@@ -65,29 +70,31 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
 
     public override void OnConnected(WaylandConnection connection, WaylandGlobals globals)
     {
-        var options = _options ?? throw new InvalidOperationException(
-            "A layer surface reached the Wayland worker before its options were initialized.");
-        LayerShellDiagnostics.Write($"connecting '{options.Namespace}'");
-        base.OnConnected(connection, globals);
-        LayerShellDiagnostics.Write($"'{options.Namespace}' created wl_surface");
+        _pendingConnection = connection;
+        _pendingGlobals = globals;
+        globals.Outputs.Changed += TryConnectOutput;
+        TryConnectOutput();
+    }
+
+    private void TryConnectOutput()
+    {
+        if (_layerSurface is not null || _pendingConnection is not { } connection || _pendingGlobals is not { } globals)
+            return;
+        var options = _options;
+        var output = globals.Outputs.Outputs.FirstOrDefault(candidate =>
+            !ReferenceEquals(candidate.WlOutput, _closedOutput) &&
+            (string.IsNullOrWhiteSpace(options.OutputName) ||
+                string.Equals(candidate.XdgName ?? candidate.OutputName, options.OutputName, StringComparison.Ordinal)))?.WlOutput;
+        // KWin can withdraw every wl_output while the machine sleeps. Keep the
+        // logical window alive until the requested output is announced again.
+        if (output is null)
+            return;
         if (globals.LayerShell is null)
             throw new AvaloniaWaylandException("zwlr_layer_shell_v1 is required for a DaisyOS shell surface.");
-
-        LayerShellDiagnostics.Write($"creating '{options.Namespace}' as {options.Layer}");
-
-        // The protocol allows a null output to let the compositor choose, but
-        // the current NWayland descriptor exposes this argument as non-null.
-        // Select a concrete output instead. DaisyOS supplies an explicit name
-        // when output routing is available; the first announced output is the
-        // compositor's primary output for the single-output prototype.
-        var output = string.IsNullOrWhiteSpace(options.OutputName)
-            ? globals.Outputs.Outputs.FirstOrDefault()?.WlOutput
-            : globals.Outputs.Outputs.FirstOrDefault(candidate =>
-                string.Equals(candidate.XdgName ?? candidate.OutputName, options.OutputName, StringComparison.Ordinal))?.WlOutput;
-
-        if (output is null)
-            throw new AvaloniaWaylandException("The compositor did not announce an output for a DaisyOS shell surface.");
-
+        _selectedOutput = output;
+        _closedOutput = null;
+        base.OnConnected(connection, globals);
+        LayerShellDiagnostics.Write($"connecting '{options.Namespace}' to restored output");
         _layerSurface = globals.LayerShell.GetLayerSurface(
             WlSurface!, output, options.Layer, options.Namespace,
             new LayerListener(this), connection.Queue);
@@ -101,6 +108,7 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
 
     public void SetPendingAckSerial(uint serial)
     {
+        if (_layerSurface is null || _latestConfigureSerial != serial) return;
         LayerShellDiagnostics.Write($"'{_options.Namespace}' acknowledged configure {serial}");
         _configured = true;
         _pendingAckSerial = serial;
@@ -180,11 +188,16 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
 
     public override void OnDisconnected()
     {
+        if (_pendingGlobals is { } globals) globals.Outputs.Changed -= TryConnectOutput;
+        _pendingConnection = null;
+        _pendingGlobals = null;
+        _selectedOutput = null;
         foreach (var child in _nativeChildren) child.Dispose();
         _nativeChildren.Clear();
         _layerSurface?.Destroy();
         _layerSurface = null;
         _pendingAckSerial = null;
+        _latestConfigureSerial = null;
         _configured = false;
         base.OnDisconnected();
     }
@@ -194,6 +207,8 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
         protected override void Configure(ZwlrLayerSurfaceV1 sender, uint serial, uint width, uint height)
         {
             LayerShellDiagnostics.Write($"'{parent._options.Namespace}' configured {width}x{height} (serial {serial})");
+            if (!ReferenceEquals(sender, parent._layerSurface)) return;
+            parent._latestConfigureSerial = serial;
             var batch = new XdgConfigureBatch
             {
                 Serial = serial,
@@ -204,7 +219,22 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
             parent.Worker.WakeupRenderLoop();
         }
 
-        protected override void Closed(ZwlrLayerSurfaceV1 sender) => parent._eventSink.OnClose();
+        protected override void Closed(ZwlrLayerSurfaceV1 sender)
+        {
+            if (!ReferenceEquals(sender, parent._layerSurface)) return;
+            // A closed layer role is final, but output removal is not a request
+            // to close the Avalonia Window. Recreate its native resources when
+            // the output returns, preserving UI and lock-screen state.
+            var connection = parent._pendingConnection;
+            var globals = parent._pendingGlobals;
+            var output = parent._selectedOutput;
+            parent.OnDisconnected();
+            parent._closedOutput = output;
+            if (connection is not null && globals is not null)
+                parent.OnConnected(connection, globals);
+            parent.Worker.Compositor.Server.InvalidateAllCompositionTargets();
+            parent.Worker.WakeupRenderLoop();
+        }
     }
 
     private sealed class EmptyRegionListener : WlRegion.Listener

@@ -154,19 +154,7 @@ public sealed partial class ContinuityDaemon
                     }
                 }
             }
-            var approved = false;
-            if (File.Exists(recordPath) && File.Exists(part))
-            {
-                SecureState.Check(recordPath, false); SecureState.Check(part, false);
-                if (new FileInfo(recordPath).Length > 8192) throw new InvalidDataException();
-                var saved = JsonSerializer.Deserialize<ResumeRecord>(await File.ReadAllTextAsync(recordPath, lifetime.Token));
-                approved = saved is not null && saved.Version == 1 && saved.Peer == manifest.Peer && saved.Name == manifest.Name &&
-                    saved.Length == manifest.Length && saved.Digest == manifest.Digest && saved.GrantId == manifest.GrantId && saved.ApprovedUntil > DateTimeOffset.UtcNow;
-            }
-            if (!approved) approved = await PromptAsync("file", wire.PeerId, wire.Remote.Name,
-                $"Receive {offer.DisplayName} ({offer.Length:N0} bytes) into Downloads/Continuity?", lifetime.Token);
             Require(wire.PeerId, "files");
-            if (!approved) { await wire.SendAsync(new() { FileDecision = new FileDecision { TransferId = offer.TransferId, Accepted = false } }, lifetime.Token); return; }
             lifetime.Token.ThrowIfCancellationRequested();
             SecureState.WritePrivate(recordPath, JsonSerializer.SerializeToUtf8Bytes(manifest));
             if (File.Exists(part)) SecureState.Check(part, false);

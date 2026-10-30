@@ -14,6 +14,8 @@ public sealed class PeerWire : IAsyncDisposable
     public SslStream Stream { get; }
     public Bootstrap Remote { get; }
     public string PeerId { get; }
+    public bool IsServer { get; private init; }
+    public bool RemoteTrusted { get; private set; }
     private readonly HashSet<Capability> _capabilities = [];
     public bool Supports(Capability capability) => _capabilities.Contains(capability);
     private PeerWire(TcpClient client, SslStream stream, Bootstrap remote)
@@ -53,13 +55,15 @@ public sealed class PeerWire : IAsyncDisposable
                     EnabledSslProtocols = SslProtocols.Tls13 }, ct);
             if (ssl.RemoteCertificate is null || !ssl.RemoteCertificate.GetRawCertData().AsSpan().SequenceEqual(remote.Certificate.Span))
                 throw new AuthenticationException("Certificate pin mismatch.");
-            var wire = new PeerWire(client, ssl, remote);
+            var wire = new PeerWire(client, ssl, remote) { IsServer = server };
             await wire.SendAsync(new Envelope { Hello = new Hello { DeviceId = ByteString.CopyFrom(Convert.FromHexString(state.Id)),
+                Trusted = state.Settings.Peers.ContainsKey(id),
                 Nonce = ByteString.CopyFrom(global::System.Security.Cryptography.RandomNumberGenerator.GetBytes(32)),
                 Capabilities = { Capability.TextClipboard, Capability.Files, Capability.Input, Capability.Handoff, Capability.Screen, Capability.Audio, Capability.EdgeInput } } }, ct);
             var hello = await wire.ReceiveAsync(ct);
             if (hello.Hello is null || hello.Hello.DeviceId != ByteString.CopyFrom(Convert.FromHexString(id)) || hello.Hello.Nonce.Length != 32)
                 throw new InvalidDataException("Invalid Hello identity.");
+            wire.RemoteTrusted = hello.Hello.Trusted;
             wire._capabilities.UnionWith(hello.Hello.Capabilities);
             return wire;
         }

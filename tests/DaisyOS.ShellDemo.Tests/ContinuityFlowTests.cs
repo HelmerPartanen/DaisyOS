@@ -21,36 +21,29 @@ public sealed class ContinuityFlowTests
         try
         {
             var buttons = row.GetVisualDescendants().OfType<Button>().ToArray();
-            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Link")) && b.IsEnabled);
+            Assert.DoesNotContain(buttons, b => Equals(b.Content, Loc.Get("Link")));
+            Assert.Single(row.GetVisualDescendants().OfType<ComboBox>());
             Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Use as output")));
             Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("View")));
             Assert.DoesNotContain(buttons, b => Equals(b.Content, Loc.Get("Connect")));
             Assert.Empty(row.GetVisualDescendants().OfType<ToggleSwitch>().Where(t => Avalonia.Automation.AutomationProperties.GetName(t) == Loc.Get("Text clipboard")));
-            var access = Assert.Single(buttons, b => b.Classes.Contains("SettingsGroupAction"));
-            access.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            Assert.Equal(6, row.GetVisualDescendants().OfType<ToggleSwitch>().Count(t => Avalonia.Automation.AutomationProperties.GetName(t) is not null));
-            window.UpdateLayout();
-            Dispatcher.UIThread.RunJobs();
-            window.UpdateLayout();
-            var back = Assert.Single(row.GetVisualDescendants().OfType<Button>(), b =>
-                Avalonia.Automation.AutomationProperties.GetName(b) == Loc.Format("Back to {0}", "Desktop"));
-            back.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
-            Assert.Contains(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Link")));
+            Assert.DoesNotContain(buttons, b => b.Classes.Contains("SettingsGroupAction"));
+            Assert.Empty(row.GetVisualDescendants().OfType<ToggleSwitch>());
+            Assert.Contains(buttons, b => Equals(b.Content, Loc.Get("Forget")));
 
         }
         finally { window.Close(); }
     }
     [AvaloniaFact]
-    public void ActiveLinkKeepsItsSavedSideAndCannotBeStartedTwice()
+    public void ActiveLinkKeepsItsSavedSideAndPositionRemainsEditable()
     {
         var (window, row) = Render(true);
         try
         {
             var layout = Assert.Single(row.GetVisualDescendants().OfType<ComboBox>());
             Assert.Equal(0, layout.SelectedIndex);
-            Assert.False(layout.IsEnabled);
-            var linked = Assert.Single(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Linked")));
-            Assert.False(linked.IsEnabled);
+            Assert.True(layout.IsEnabled);
+            Assert.DoesNotContain(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Link")) || Equals(b.Content, Loc.Get("Linked")));
         }
         finally { window.Close(); }
     }
@@ -79,6 +72,36 @@ public sealed class ContinuityFlowTests
         }
         finally { window.Close(); }
     }
+    [AvaloniaTheory]
+    [InlineData("pair-code")]
+    [InlineData("pair-display")]
+    public void PairingShowsCodeEntryOrCodeWithoutAnotherApproval(string kind)
+    {
+        var (window, row) = Render(false, 780);
+        try
+        {
+            var view = window.FindControl<SettingsView>("SettingsContent")!;
+            var flags = BindingFlags.Instance | BindingFlags.NonPublic;
+            var state = new ContinuityStatus(true, true, false, true, "Laptop", "local", "", "", [],
+                [new("request", kind, "peer", "Desktop", kind == "pair-display" ? "012345" : "Enter the code")], []);
+            typeof(SettingsView).GetMethod("BuildContinuityPage", flags)!.Invoke(view, [state]);
+            window.UpdateLayout(); Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+            Assert.DoesNotContain(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Approve pairing")));
+            if (kind == "pair-code")
+            {
+                var field = Assert.Single(row.GetVisualDescendants().OfType<TextBox>(), f => f.PlaceholderText == Loc.Get("6-digit code"));
+                var pair = Assert.Single(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Pair")));
+                Assert.False(pair.IsEnabled);
+                field.Text = "012345"; Dispatcher.UIThread.RunJobs();
+                Assert.True(pair.IsEnabled);
+                field.Text = "abcdef"; Dispatcher.UIThread.RunJobs();
+                Assert.False(pair.IsEnabled);
+            }
+            else Assert.Contains(row.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "012345");
+        }
+        finally { window.Close(); }
+    }
+
     [AvaloniaFact]
     public void SharingIndicatorDoesNotStealKeyboardFocusOrAppearAsAnotherApp()
     {

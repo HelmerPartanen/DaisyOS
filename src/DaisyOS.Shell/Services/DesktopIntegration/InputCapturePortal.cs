@@ -29,24 +29,31 @@ internal sealed class InputCapturePortal(DBusConnection bus) : IDisposable
         {
             try
             {
-            var capabilities = options.TryGetValue("capabilities", out var value) ? value.GetUInt32() : 3u;
-            if (capabilities == 0 || (capabilities & ~7u) != 0 || _sessions.ContainsKey(args[1])) return (2, []);
-            var session = new Session(args[2]); _sessions.Add(args[1], session);
-            using var linked = CancellationTokenSource.CreateLinkedTokenSource(stop, session.Stop.Token);
-            var dialog = PortalDialog.Create(() => new PortalDialog("Allow input sharing?", $"{args[2]} wants to capture your input when the pointer reaches a configured screen edge. Allow only applications you trust.", "Allow", "Deny"));
-            using var cancel = linked.Token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
-            if (!await dialog.Present() || linked.IsCancellationRequested) { Close(args[1]); return (1, []); }
-            var call = Call(ManagerPath, ManagerInterface, "addInputCapture", "u", capabilities);
-            session.Native = (await bus.CallMethodAsync(call, (reply, _) => reply.GetBodyReader().ReadObjectPath().ToString(), (object?)null));
-            if (linked.IsCancellationRequested || !_sessions.ContainsKey(args[1]))
-            {
-                if (_sessions.ContainsKey(args[1])) Close(args[1]); else RemoveNative(session.Native);
-                return (1, []);
-            }
-            await WatchAsync(args[1], session);
-            var indicator = PortalSharingIndicator.Create("Keyboard and mouse", "Input sharing allowed for " + args[2], () => Close(args[1], true));
-            indicator.Closed += (_, _) => Close(args[1], true); session.Indicator = indicator; indicator.Show();
-            return (0, new() { ["capabilities"] = capabilities });
+                var capabilities = options.TryGetValue("capabilities", out var value) ? value.GetUInt32() : 3u;
+                if (capabilities == 0 || (capabilities & ~7u) != 0 || _sessions.ContainsKey(args[1])) return (2, []);
+                var session = new Session(args[2]); _sessions.Add(args[1], session);
+                using var linked = CancellationTokenSource.CreateLinkedTokenSource(stop, session.Stop.Token);
+                var continuity = await ContinuityPortalGrant.ValidateAsync(args[1], linked.Token);
+                if (!continuity)
+                {
+                    var dialog = PortalDialog.Create(() => new PortalDialog("Allow input sharing?", $"{args[2]} wants to capture your input when the pointer reaches a configured screen edge. Allow only applications you trust.", "Allow", "Deny"));
+                    using var cancel = linked.Token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
+                    if (!await dialog.Present() || linked.IsCancellationRequested) { Close(args[1]); return (1, []); }
+                }
+                var call = Call(ManagerPath, ManagerInterface, "addInputCapture", "u", capabilities);
+                session.Native = (await bus.CallMethodAsync(call, (reply, _) => reply.GetBodyReader().ReadObjectPath().ToString(), (object?)null));
+                if (linked.IsCancellationRequested || !_sessions.ContainsKey(args[1]))
+                {
+                    if (_sessions.ContainsKey(args[1])) Close(args[1]); else RemoveNative(session.Native);
+                    return (1, []);
+                }
+                await WatchAsync(args[1], session);
+                if (!continuity)
+                {
+                    var indicator = PortalSharingIndicator.Create("Keyboard and mouse", "Input sharing allowed for " + args[2], () => Close(args[1], true));
+                    indicator.Closed += (_, _) => Close(args[1], true); session.Indicator = indicator; indicator.Show();
+                }
+                return (0, new() { ["capabilities"] = capabilities });
             }
             catch { Close(args[1]); throw; }
         }

@@ -120,7 +120,8 @@ int main(int argc, char **argv) {
     bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL); if (!bus) return 1;
     guint watch = g_dbus_connection_signal_subscribe(bus, DESKTOP, NULL, NULL, NULL, NULL, G_DBUS_SIGNAL_FLAGS_NONE, signal_received, NULL, NULL);
     const char *iface = control ? "org.freedesktop.portal.RemoteDesktop" : "org.freedesktop.portal.ScreenCast";
-    char token[64]; snprintf(token, sizeof token, "continuity_%d", getpid());
+    char token[96]; const char *grant = getenv("DAISY_CONTINUITY_GRANT");
+    if (grant) snprintf(token, sizeof token, "continuity_%s", grant); else snprintf(token, sizeof token, "continuity_%d", getpid());
     GVariantBuilder opts; g_variant_builder_init(&opts, G_VARIANT_TYPE_VARDICT);
     g_variant_builder_add(&opts, "{sv}", "handle_token", g_variant_new_string(token));
     g_variant_builder_add(&opts, "{sv}", "session_handle_token", g_variant_new_string(token));

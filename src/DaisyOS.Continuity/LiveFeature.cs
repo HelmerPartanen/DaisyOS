@@ -64,7 +64,7 @@ public sealed partial class ContinuityDaemon
         lock (_gate)
         {
             _live.Remove(live.Info.Id); live.Frame = [];
-            if (live.Info.State is "Failed" or "Declined")
+            if (live.Info.Kind != "input" && live.Info.State is "Failed" or "Declined")
             { if (_recentLive.Count >= 8) _recentLive.RemoveAt(0); _recentLive.Add((live.Info, DateTimeOffset.UtcNow.AddSeconds(30))); }
         }
         _ = live.Stop.CancelAsync();
@@ -72,7 +72,8 @@ public sealed partial class ContinuityDaemon
     }
     private string PeerAddress(string id)
     {
-        lock (_gate) return _nearby.GetValueOrDefault(id)?.Address ?? _state.Settings.Peers[id].Address;
+        lock (_gate) return _nearby.GetValueOrDefault(id)?.Address ??
+            (_state.Settings.Peers.TryGetValue(id, out var peer) ? peer.Address : throw new OperationCanceledException("Device was forgotten."));
     }
     private void StartLive(string peer, string kind, bool control, string edge = "right")
     {
@@ -88,7 +89,7 @@ public sealed partial class ContinuityDaemon
                 if (!wire.Supports(kind == "audio" ? Capability.Audio : kind == "input" ? Capability.EdgeInput : Capability.Screen) || control && !wire.Supports(Capability.Input))
                     throw new InvalidDataException("Peer must be updated for this feature.");
                 await wire.SendAsync(new() { LiveStart = new() { SessionId = live.Info.Id, Kind = kind, Control = control } }, live.Stop.Token);
-                SetLiveState(live, "Waiting for approval", "Approve on " + live.Info.Name);
+                SetLiveState(live, "Connecting");
                 var decision = await wire.ReceiveAsync(live.Stop.Token).WaitAsync(TimeSpan.FromMinutes(3), live.Stop.Token);
                 if (decision.LiveDecision?.Accepted != true) { SetLiveState(live, "Declined", "The other computer declined the request."); return; }
                 if (kind == "audio") await SendAudioAsync(wire, live);
@@ -100,9 +101,9 @@ public sealed partial class ContinuityDaemon
                 if (!live.Stop.IsCancellationRequested)
                 {
                     SetLiveState(live, "Failed", "Couldn’t connect. Unlock the other computer and check that Continuity is up to date.");
-                    _ = NotifyAsync("Continuity", "Couldn’t connect to " + live.Info.Name + ". Unlock the other computer and try again.");
+                    if (kind != "input") _ = NotifyAsync("Continuity", "Couldn’t connect to " + live.Info.Name + ". Unlock the other computer and try again.");
                 }
-                throw;
+                if (kind != "input") throw;
             }
             finally { RemoveLive(live); }
         });
@@ -113,25 +114,26 @@ public sealed partial class ContinuityDaemon
         var live = AddLive(start.SessionId, wire.PeerId, start.Kind, false, start.Control, token);
         try
         {
-            var detail = start.Kind == "audio" ? "Play this computer’s audio on your speakers?" :
-                start.Control ? "Allow this computer to view your screen and control your keyboard and mouse?" : "Allow this computer to view your screen?";
             if (start.Kind == "input") { await ReceiveEdgeInputAsync(wire, live); return; }
             if (start.Kind == "screen") { await ShareScreenAsync(wire, live); return; }
-            bool allowed;
-            lock (_gate) allowed = start.Kind == "audio" && _state.Settings.Peers[wire.PeerId].Audio;
-            if (!allowed && !await PromptAsync(start.Kind, wire.PeerId, wire.Remote.Name,
-                start.Kind == "audio" ? "Allow audio from " + wire.Remote.Name + "? This paired computer can play through your speakers until you turn off its Audio playback permission." : detail, live.Stop.Token))
-            { await wire.SendAsync(new() { LiveDecision = new() { Accepted = false } }, live.Stop.Token); return; }
             if (start.Kind == "audio") { RememberFeature(wire.PeerId, "audio", live.Stop.Token); await ReceiveAudioAsync(wire, live); }
             else { Require(wire.PeerId, start.Kind); if (start.Control) Require(wire.PeerId, "input"); await ShareScreenAsync(wire, live); }
         }
         finally { RemoveLive(live); }
     }
-    private Process StartPipe(string name, IEnumerable<string> args)
+    private readonly Dictionary<string, CancellationToken> _captureGrants = new();
+    private Process StartPipe(string name, IEnumerable<string> args, CancellationToken? captureLifetime = null)
     {
         var start = new ProcessStartInfo(_mediaExecutableDirectory is not null && !global::System.IO.Path.IsPathFullyQualified(name) ? global::System.IO.Path.Combine(_mediaExecutableDirectory, name) : name) { UseShellExecute = false, RedirectStandardInput = true,
             RedirectStandardOutput = true, RedirectStandardError = true };
         foreach (var arg in args) start.ArgumentList.Add(arg);
+        if (captureLifetime is { } lifetime)
+        {
+            var grant = Convert.ToHexStringLower(global::System.Security.Cryptography.RandomNumberGenerator.GetBytes(32));
+            lock (_gate) _captureGrants[grant] = lifetime;
+            lifetime.Register(() => { lock (_gate) _captureGrants.Remove(grant); });
+            start.Environment["DAISY_CONTINUITY_GRANT"] = grant;
+        }
         Process process;
         try { process = Process.Start(start) ?? throw new IOException("Media helper unavailable."); }
         catch (global::System.ComponentModel.Win32Exception ex) { throw new IOException("Media dependency unavailable.", ex); }
@@ -147,7 +149,7 @@ public sealed partial class ContinuityDaemon
     {
         var path = global::System.IO.Path.Combine(_mediaExecutableDirectory ?? AppContext.BaseDirectory, "daisyos-continuity-media");
         if (!File.Exists(path)) throw new IOException("Install the Continuity media helper.");
-        using var helper = StartPipe(path, [live.Info.Control ? "--control" : "--view"]);
+        using var helper = StartPipe(path, [live.Info.Control ? "--control" : "--view"], live.Stop.Token);
         using var kill = live.Stop.Token.Register(() => Kill(helper));
         try
         {

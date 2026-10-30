@@ -73,6 +73,12 @@ public sealed partial class SecureState : IDisposable
                 if (Fingerprint(Convert.FromBase64String(peer.Certificate)) != id) throw new IOException("Invalid peer pin.");
         }
         else Settings = new();
+        // The simplified UI has one on/off control and no separate pause mode.
+        Settings.Paused = false;
+        if (Settings.Enabled) Settings.Visible = true;
+        // Pairing now grants the full Continuity experience, including old pairs.
+        foreach (var (id, peer) in Settings.Peers.ToArray())
+            Settings.Peers[id] = peer with { Clipboard = true, Files = true, Input = true, Handoff = true, Screen = true, Audio = true, BlockedFeatures = 0 };
     }
     public void Save()
     {

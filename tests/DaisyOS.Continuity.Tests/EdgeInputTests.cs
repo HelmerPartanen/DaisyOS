@@ -50,17 +50,19 @@ public sealed class EdgeInputTests
             });
             await sender.ExecuteAsync(new("edge", target.Id, side), "test-ui");
             while (!File.Exists(Path.Combine(sourceTools, "returned"))) await Task.Delay(10, timeout.Token);
+            var grant = File.ReadAllText(Path.Combine(sourceTools, "grant"));
+            await sender.ExecuteAsync(new("capture-grant", Value: grant), "portal-fixture");
             Assert.Contains("--capture " + side, File.ReadAllText(Path.Combine(sourceTools, "args")));
             Assert.Contains("1 30 1", File.ReadAllText(Path.Combine(targetTools, "events")));
             Assert.Contains("release 0.25", File.ReadAllText(Path.Combine(sourceTools, "returned")));
             Assert.True(target.Settings.Peers[source.Id].Input); // target portal grant, not an unrelated sender toggle
             Assert.False(source.Settings.Peers[target.Id].Input);
             Assert.Equal(side, source.Settings.Peers[target.Id].InputEdge);
-            await receiver.ExecuteAsync(new("permission", source.Id, "input", false), "test-ui");
+            await receiver.ExecuteAsync(new("forget", source.Id), "test-ui");
             await receive.WaitAsync(timeout.Token);
             while (sender.Snapshot().Sessions!.Any(s => s.State == "Ready")) await Task.Delay(10, timeout.Token);
-            Assert.False(target.Settings.Peers[source.Id].Input);
-            Assert.Equal(1, target.Settings.Peers[source.Id].BlockedFeatures & 1);
+            Assert.False(target.Settings.Peers.ContainsKey(source.Id));
+            await Assert.ThrowsAsync<UnauthorizedAccessException>(() => sender.ExecuteAsync(new("capture-grant", Value: grant), "portal-fixture"));
         }
         finally { Directory.Delete(root, true); }
     }
@@ -70,9 +72,10 @@ public sealed class EdgeInputTests
         var path = Path.Combine(directory, "daisyos-continuity-media");
         File.WriteAllText(path, """
             #!/usr/bin/python3
-            import pathlib,struct,sys,threading,time
+            import pathlib,struct,sys,threading,time,os
             root=pathlib.Path(__file__).parent
             (root/'args').write_text(' '.join(sys.argv[1:]))
+            (root/'grant').write_text(os.environ.get('DAISY_CONTINUITY_GRANT',''))
             lock=threading.Lock()
             def frame(value=b''):
                 with lock: sys.stdout.buffer.write(struct.pack('>I',len(value))+value);sys.stdout.buffer.flush()

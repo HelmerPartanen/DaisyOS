@@ -103,7 +103,7 @@ public sealed partial class ContinuityDaemon
             case "name":
                 lock (_gate)
                 {
-                    if (command.Action == "enable") { _state.Settings.Enabled = command.Allowed; if (command.Allowed) _state.Settings.Visible = true; }
+                    if (command.Action == "enable") { _state.Settings.Enabled = command.Allowed; if (command.Allowed) { _state.Settings.Visible = true; _state.Settings.Paused = false; } }
                     if (command.Action == "visible") _state.Settings.Visible = command.Allowed;
                     if (command.Action == "pause") _state.Settings.Paused = command.Allowed;
                     if (command.Action == "name") _state.Settings.Name = SecureState.SafeName(command.Value);
@@ -112,43 +112,28 @@ public sealed partial class ContinuityDaemon
                     _diagnostic = "";
                 }
                 return;
-            case "permission":
+            case "capture-grant":
                 lock (_gate)
                 {
-                    if (!_state.Settings.Peers.TryGetValue(command.Id, out var peer)) throw new InvalidDataException();
-                    _state.Settings.Peers[command.Id] = command.Value switch
-                    { "clipboard" => peer with { Clipboard = command.Allowed }, "files" => peer with { Files = command.Allowed },
-                      "input" => peer with { Input = command.Allowed }, "handoff" => peer with { Handoff = command.Allowed },
-                      "screen" => peer with { Screen = command.Allowed }, "audio" => peer with { Audio = command.Allowed }, _ => throw new InvalidDataException() };
-                    var featureBit = FeatureBit(command.Value);
-                    if (featureBit != 0) _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with
-                    { BlockedFeatures = command.Allowed ? peer.BlockedFeatures & ~featureBit : peer.BlockedFeatures | featureBit };
-                    if (!command.Allowed)
-                    {
-                        _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with { GrantId = Guid.NewGuid().ToString("N") };
-                    }
-                    if (!command.Allowed && _peerOperations.TryGetValue(command.Id, out var operations))
-                        foreach (var operation in operations.ToArray()) _ = operation.CancelAsync();
-                    if (command.Value == "clipboard" && !command.Allowed) _clipboard.ClearPeer(command.Id);
-                    SaveSettings();
-                    UpdateClipboardState();
+                    if (!Ready || !_captureGrants.TryGetValue(command.Value, out var grant) || grant.IsCancellationRequested)
+                        throw new UnauthorizedAccessException();
+                }
+                return;
+            case "pair-code":
+                lock (_gate)
+                {
+                    if (!Ready || !_pairInputs.TryGetValue(command.Id, out var input) || !_prompts.TryGetValue(command.Id, out var pending)) throw new InvalidDataException();
+                    if (command.Value.Length != 6 || !command.Value.All(char.IsAsciiDigit)) throw new InvalidDataException();
+                    input.TrySetResult(command.Value);
                 }
                 return;
             case "forget":
-                lock (_gate)
-                {
-                    _trustEpoch[command.Id] = _trustEpoch.GetValueOrDefault(command.Id) + 1;
-                    _revoked.Add(command.Id); _state.Settings.Peers.Remove(command.Id); _nearby.Remove(command.Id);
-                    if (_peerOperations.TryGetValue(command.Id, out var operations)) foreach (var operation in operations.ToArray()) _ = operation.CancelAsync();
-                    _clipboard.ClearPeer(command.Id);
-                    foreach (var request in _prompts.Values.Where(p => p.Prompt.PeerId == command.Id)) request.Decision.TrySetResult(false);
-                    SaveSettings();
-                }
+                await ForgetRemoteAsync(command.Id);
                 return;
             case "decide":
                 lock (_gate)
                 {
-                    if (!Ready || !_prompts.TryGetValue(command.Id, out var prompt)) throw new InvalidDataException();
+                    if (!Ready || !_prompts.TryGetValue(command.Id, out var prompt) || prompt.Prompt.Kind.StartsWith("pair-")) throw new InvalidDataException();
                     prompt.Decision.TrySetResult(command.Allowed);
                 }
                 return;
@@ -209,7 +194,12 @@ public sealed partial class ContinuityDaemon
                     _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with { InputEdge = command.Value };
                     SaveSettings();
                 }
-                StartLive(command.Id, "input", false, command.Value);
+                lock (_gate)
+                {
+                    var links = _live.Values.Where(l => l.Info.PeerId == command.Id && l.Info.Kind == "input" && l.Info.Outgoing).ToArray();
+                    foreach (var live in links) _ = live.Stop.CancelAsync();
+                    if (links.Length == 0) StartLive(command.Id, "input", false, command.Value);
+                }
                 return;
             case "live":
                 StartLive(command.Id, command.Value, command.Allowed);

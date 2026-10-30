@@ -60,46 +60,33 @@ public sealed class LiveFeatureTests
         Assert.Empty(daemon.Snapshot().Sessions!);
         Assert.Empty(daemon.Snapshot().Prompts);
     }
-    [Theory]
-    [InlineData("audio")]
-    public async Task InitialAudioRequestsRequireTargetConsent(string kind)
+    [Fact]
+    public async Task UnknownCaptureGrantsAreRejected()
     {
         using var fixture = new StateFixture();
-        fixture.HostState.Settings.Peers[fixture.Peer.Id] = fixture.HostState.Settings.Peers[fixture.Peer.Id] with { Screen = true, Audio = false };
         await using var daemon = fixture.Host();
-        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-        using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();
-        var server = Task.Run(async () =>
-        {
-            using var socket = await listener.AcceptTcpClientAsync(timeout.Token);
-            await using var wire = await PeerWire.OpenAsync(socket, fixture.HostState, true, false, fixture.Peer.Id, (_, _) => true, timeout.Token);
-            await daemon.ReceiveLiveAsync(wire, new() { SessionId = Guid.NewGuid().ToString("N"), Kind = kind }, timeout.Token);
-        });
-        using var client = new TcpClient(); await client.ConnectAsync(IPAddress.Loopback, ((IPEndPoint)listener.LocalEndpoint).Port);
-        await using var remote = await PeerWire.OpenAsync(client, fixture.Peer, false, false, fixture.HostState.Id, (_, _) => true, timeout.Token);
-        while (daemon.Snapshot().Prompts.Length == 0) await Task.Delay(5, timeout.Token);
-        var prompt = Assert.Single(daemon.Snapshot().Prompts);
-        Assert.Equal(kind, prompt.Kind);
-        await daemon.ExecuteAsync(new("decide", prompt.Id, Allowed: false), "local-ui");
-        Assert.False((await remote.ReceiveAsync(timeout.Token)).LiveDecision.Accepted);
-        await server;
-        Assert.Empty(daemon.Snapshot().Sessions!);
+        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => daemon.ExecuteAsync(new("capture-grant", Value: new string('a', 64)), "local-ui"));
     }
     [Fact]
-    public async Task PermissionsPersistAndDoNotAffectExistingPairing()
+    public void ExistingPairsEnableAllFeaturesAfterRestart()
     {
-        using var fixture = new StateFixture();
-        await using (var daemon = fixture.Host())
+        var root = Path.Combine(Path.GetTempPath(), "daisy-migrate-" + Guid.NewGuid().ToString("N"));
+        try
         {
-            foreach (var feature in new[] { "input", "screen", "audio", "handoff" })
-                await daemon.ExecuteAsync(new("permission", fixture.Peer.Id, feature, true), "local-ui");
-            var device = Assert.Single(daemon.Snapshot().Devices);
-            Assert.True(device.Input && device.Screen && device.Audio && device.Handoff);
-            Assert.False(device.Clipboard);
+            using var peer = new SecureState(Path.Combine(root, "peer"));
+            var path = Path.Combine(root, "host");
+            using (var state = new SecureState(path))
+            {
+                state.Settings.Peers[peer.Id] = new(Convert.ToBase64String(peer.Identity.RawData), "Peer", "127.0.0.1:1", BlockedFeatures: 15, InputEdge: "left");
+                state.Save();
+            }
+            using var reopened = new SecureState(path);
+            var saved = Assert.Single(reopened.Settings.Peers).Value;
+            Assert.True(saved.Clipboard && saved.Files && saved.Input && saved.Screen && saved.Audio && saved.Handoff);
+            Assert.Equal(0, saved.BlockedFeatures);
+            Assert.Equal("left", saved.InputEdge);
         }
-        Assert.True(fixture.HostState.Settings.Peers[fixture.Peer.Id].Audio);
-        await using var inactive = new ContinuityDaemon(fixture.HostState, 47621, () => false, fixture.Root, "unix:path=/nonexistent-live-test");
-        await Assert.ThrowsAsync<UnauthorizedAccessException>(() => inactive.ExecuteAsync(new("live", fixture.Peer.Id, "audio"), "local-ui"));
+        finally { Directory.Delete(root, true); }
     }
     private sealed class StateFixture : IDisposable
     {

@@ -22,11 +22,11 @@ public sealed partial class ContinuityDaemon
             !double.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out var fraction) || !double.IsFinite(fraction) || fraction is < 0 or > 1)
             throw new InvalidDataException();
     }
-    private Process StartEdgeHelper(params string[] args)
+    private Process StartEdgeHelper(CancellationToken lifetime, params string[] args)
     {
         var path = global::System.IO.Path.Combine(_mediaExecutableDirectory ?? AppContext.BaseDirectory, "daisyos-continuity-media");
         if (!File.Exists(path)) throw new IOException("Install the Continuity input helper.");
-        return StartPipe(path, args);
+        return StartPipe(path, args, lifetime);
     }
     private static async Task ReadyEdgeHelperAsync(Process helper, CancellationToken token)
     {
@@ -119,8 +119,8 @@ public sealed partial class ContinuityDaemon
     }
     private async Task SendEdgeInputAsync(PeerWire wire, Live live)
     {
-        SetLiveState(live, "Allow input capture", "Approve input sharing on this computer.");
-        using var helper = StartEdgeHelper("--capture", live.Edge);
+        SetLiveState(live, "Connecting");
+        using var helper = StartEdgeHelper(live.Stop.Token, "--capture", live.Edge);
         using var kill = live.Stop.Token.Register(() => Kill(helper));
         try
         {
@@ -147,9 +147,9 @@ public sealed partial class ContinuityDaemon
     }
     private async Task ReceiveEdgeInputAsync(PeerWire wire, Live live)
     {
-        SetLiveState(live, "Waiting for approval", "Allow keyboard and mouse control on this computer.");
-        // The compositor portal owns the target's consent and visible stop control.
-        using var helper = StartEdgeHelper("--input");
+        SetLiveState(live, "Connecting");
+        // The paired session carries a scoped grant into the compositor portal.
+        using var helper = StartEdgeHelper(live.Stop.Token, "--input");
         using var kill = live.Stop.Token.Register(() => Kill(helper));
         try
         {

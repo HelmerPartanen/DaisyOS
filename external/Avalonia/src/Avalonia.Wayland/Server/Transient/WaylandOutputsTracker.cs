@@ -23,6 +23,7 @@ internal sealed class WaylandOutputsTracker
     // Track outputs that haven't got their first done event
     private readonly List<Output> _pendingOutputs = new();
     public List<Output> Outputs { get; } = new();
+    public event Action? Changed;
 
     private readonly WaylandOutputsSinkProxy? _sink;
     private ZxdgOutputManagerV1? _xdgOutputManager;
@@ -86,6 +87,7 @@ internal sealed class WaylandOutputsTracker
 
     private void PushSnapshot()
     {
+        Changed?.Invoke();
         if (_sink == null)
             return;
         var list = new List<WaylandOutputSnapshot>(Outputs.Count);

@@ -62,16 +62,7 @@ public sealed class FileTransferTests
             var id = ByteString.CopyFrom(Guid.NewGuid().ToByteArray());
             var offer = new FileOffer { TransferId = id, DisplayName = name, Length = (ulong)data.Length, Sha256 = ByteString.CopyFrom(hash) };
             var transfer = daemon.ReceiveFileAsync(incoming, offer, timeout.Token);
-            if (staleApproval)
-            {
-                while (daemon.Snapshot().Prompts.Length == 0) await Task.Delay(5, timeout.Token);
-                Assert.Equal("file", Assert.Single(daemon.Snapshot().Prompts).Kind);
-                Assert.False(transfer.IsCompleted);
-                timeout.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => transfer);
-                Assert.False(Directory.Exists(downloads));
-                return;
-            }
+            Assert.Empty(daemon.Snapshot().Prompts);
             var decision = (await outgoing.ReceiveAsync(timeout.Token)).FileDecision;
             Assert.True(decision.Accepted);
             Assert.Equal(1000UL, decision.ResumeOffset);

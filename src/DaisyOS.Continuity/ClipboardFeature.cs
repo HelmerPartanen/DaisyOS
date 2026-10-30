@@ -15,7 +15,7 @@ public sealed partial class ContinuityDaemon
     }
     private string AddressFor(string id)
     {
-        lock (_gate) return _nearby.GetValueOrDefault(id)?.Address ?? _state.Settings.Peers[id].Address;
+        return PeerAddress(id);
     }
     public async Task PublishClipboardAsync(byte[] data)
     {

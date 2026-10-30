@@ -5,6 +5,7 @@
     <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="BouncyCastle.Cryptography" Version="2.7.0" />
     <PackageReference Include="Google.Protobuf" Version="3.36.2" />
     <ProjectReference Include="../DaisyOS.System/DaisyOS.System.csproj" />
   </ItemGroup>

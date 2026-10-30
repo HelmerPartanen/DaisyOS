@@ -19,6 +19,7 @@ public sealed class ManualConnectionTests
             using var second = new SecureState(Path.Combine(root, "b"));
             first.Settings.Enabled = true;
             first.Settings.Peers[second.Id] = new(Convert.ToBase64String(second.Identity.RawData), "Second", "127.0.0.1:1", true, true, "existing-grant");
+            second.Settings.Peers[first.Id] = new(Convert.ToBase64String(first.Identity.RawData), "First", "127.0.0.1:1");
             await using var host = new ContinuityDaemon(first, 47621, () => true, Path.Combine(root, "downloads"), "unix:path=/nonexistent-connect-test");
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
             using var listener = new TcpListener(IPAddress.Loopback, 0); listener.Start();

@@ -55,7 +55,7 @@ public sealed class NetworkTests : IDisposable
         Assert.Throws<IOException>(() => new SecureState(directory));
     }
     [Fact]
-    public void IdentityPersistsWithPrivatePermissionsAndDisabledDefaults()
+    public void IdentityPersistsWithPrivatePermissionsAndLegacyPauseIsCleared()
     {
         var directory = Path.Combine(_root, "identity");
         string id;
@@ -68,7 +68,7 @@ public sealed class NetworkTests : IDisposable
         }
         using var second = new SecureState(directory);
         Assert.Equal(id, second.Id);
-        Assert.True(second.Settings.Paused);
+        Assert.False(second.Settings.Paused);
         Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(Path.Combine(directory, "identity.pfx")));
     }
     [Fact]

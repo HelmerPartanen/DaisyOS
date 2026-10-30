@@ -27,7 +27,14 @@ def method(connection,sender,path,iface,member,parameters,invocation):
     if member in ['Close','Enable','Disable','Release']:
         invocation.return_value(GLib.Variant('()',()))
         if member=='Close':closed.append(path)
-        if member=='Release':released.append(args[1])
+        if member=='Release':
+            released.append(args[1])
+            if len(released)==1:
+                def reactivate():
+                    bus.emit_signal(sender,'/org/freedesktop/portal/desktop','org.freedesktop.portal.InputCapture','Activated',GLib.Variant('(oa{sv})',(session,{
+                        'activation_id':GLib.Variant('u',8),'barrier_id':GLib.Variant('u',1),'cursor_position':GLib.Variant('(dd)',(3840.,540.))})))
+                    return False
+                GLib.timeout_add(80,reactivate)
         if member=='Enable' and not enabled:
             enabled=True
             def activate():
@@ -59,7 +66,7 @@ registrations.append(bus.register_object('/org/freedesktop/portal/desktop',xml.i
 context=GLib.MainContext.default();helper=str(pathlib.Path(sys.argv[1]).resolve())
 with subprocess.Popen([helper,'--capture','right'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE) as process:
     try:
-        os.set_blocking(process.stdout.fileno(),False);buffer=b'';entered=False;sent_release=False;emitted=False;keys=[];motion=False;deadline=time.monotonic()+8
+        os.set_blocking(process.stdout.fileno(),False);buffer=b'';entered=False;entries=0;sent_release=False;emitted=False;keys=[];motion=False;deadline=time.monotonic()+8
         while time.monotonic()<deadline and process.poll() is None:
             while context.pending():context.iteration(False)
             server.dispatch()
@@ -75,14 +82,14 @@ with subprocess.Popen([helper,'--capture','right'],stdin=subprocess.PIPE,stdout=
                     if values[0]=='6':
                         assert values[:3]==['6','1','0'],data
                         assert abs(float(values[3])-.5)<.001
-                        entered=True
+                        entered=True;entries+=1;sent_release=False
                     elif values[0]=='1':keys.append(values[:3])
                     elif values[0]=='3':
                         assert float(values[3])==12.5 and float(values[4])==-4.5,data
                         motion=True
             if entered and motion and ['1','30','0'] in keys and ['1','29','0'] in keys and not sent_release:
                 process.stdin.write(b'release 0.25\n');process.stdin.flush();sent_release=True
-            if released and not process.stdin.closed:process.stdin.close()
+            if len(released)>=2 and not process.stdin.closed:process.stdin.close()
             time.sleep(.005)
         if process.poll() is None:
             process.kill();process.wait()
@@ -90,11 +97,13 @@ with subprocess.Popen([helper,'--capture','right'],stdin=subprocess.PIPE,stdout=
         error=process.stderr.read().decode()
         assert process.returncode==0,error
         assert entered and released and closed,(entered,released,closed,error)
+        assert entries==2 and len(released)==2,(entries,released)
+        assert released[1]['activation_id']==8
         assert released[0]['activation_id']==7
         assert released[0]['cursor_position']==(3838.,269.75),released
         assert ['1','30','1'] in keys and ['1','30','0'] in keys,keys
         assert ['1','29','1'] in keys and ['1','29','0'] in keys,keys
-        print('PASS: outside barrier, real libei captured motion/keys, activation, proportional return and clean session close')
+        print('PASS: outside barrier, real libei captured motion/keys, two edge crossings without relinking, proportional return and clean session close')
     finally:
         if process.poll() is None:process.kill();process.wait()
 server.close()

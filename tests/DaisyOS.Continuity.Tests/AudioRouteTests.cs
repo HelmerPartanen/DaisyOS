@@ -34,13 +34,11 @@ public sealed class AudioRouteTests
                 catch (Exception e) when (e is IOException or OperationCanceledException) { }
             });
             await sender.ExecuteAsync(new("live", target.Id, "audio"), "fixture-local-ui");
-            while (receiver.Snapshot().Prompts.Length == 0) await Task.Delay(10, deadline.Token);
-            var prompt = Assert.Single(receiver.Snapshot().Prompts);
-            await receiver.ExecuteAsync(new("decide", prompt.Id, Allowed: true), "fixture-local-ui");
+            Assert.Empty(receiver.Snapshot().Prompts);
             var pcm = Path.Combine(targetTools, "received.pcm");
             while (!File.Exists(pcm) || new FileInfo(pcm).Length < 7680) await Task.Delay(10, deadline.Token);
             Assert.All(File.ReadAllBytes(pcm), value => Assert.Equal((byte)42, value));
-            await sender.ExecuteAsync(new("permission", target.Id, "audio", false), "fixture-local-ui");
+            await sender.ExecuteAsync(new("forget", target.Id), "fixture-local-ui");
             while (sender.Snapshot().Sessions!.Length != 0) await Task.Delay(10, deadline.Token);
             await receive.WaitAsync(deadline.Token);
             Assert.Empty(receiver.Snapshot().Sessions!);
@@ -49,7 +47,7 @@ public sealed class AudioRouteTests
             Assert.Contains("set-default-sink daisy_continuity_", commands);
             Assert.Contains("move-sink-input 4 local.speakers", commands);
             Assert.Contains("unload-module 9", commands);
-            Assert.False(source.Settings.Peers[target.Id].Audio);
+            Assert.False(source.Settings.Peers.ContainsKey(target.Id));
         }
         finally { Directory.Delete(root, true); }
     }

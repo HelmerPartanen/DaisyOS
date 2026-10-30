@@ -13,7 +13,7 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
     {
         public string App { get; } = app;
         public uint Types = 3, Cursor = 2;
-        public bool Multiple, Selected, Started, Remote;
+        public bool Multiple, Selected, Started, Remote, Continuity;
         public uint Devices;
         public List<int> EisConnections { get; } = [];
         public List<Process> Streams { get; } = [];
@@ -28,7 +28,7 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
     {
         if (method == "CreateSession")
         {
-            if (!_sessions.TryAdd(args[1], new Session(args[2]) { Remote = portal == "RemoteDesktop" })) return (2, []);
+            if (!_sessions.TryAdd(args[1], new Session(args[2]) { Remote = portal == "RemoteDesktop", Continuity = await ContinuityPortalGrant.ValidateAsync(args[1], stop) })) return (2, []);
             return (0, new() { ["session_id"] = args[1].Split('/').Last() });
         }
         if (!_sessions.TryGetValue(args[1], out var session) || session.App != args[2] || session.Started) return (2, []);
@@ -50,9 +50,12 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
         if (method != "Start" || (!session.Selected && !session.Remote)) return (2, []);
         if (session.Remote && !session.Selected)
         {
-            var consent = PortalDialog.Create(() => new PortalDialog("Allow remote control?", $"{DisplayApp(session.App)} wants to control your computer. Requested access: {Devices(session.Devices)}. Only allow applications you trust.", "Allow remote control", "Deny"));
-            using var cancelConsent = stop.Register(() => Dispatcher.UIThread.Post(consent.Close));
-            if (!await consent.Present() || stop.IsCancellationRequested) return (1, []);
+            if (!session.Continuity)
+            {
+                var consent = PortalDialog.Create(() => new PortalDialog("Allow remote control?", $"{DisplayApp(session.App)} wants to control your computer. Requested access: {Devices(session.Devices)}. Only allow applications you trust.", "Allow remote control", "Deny"));
+                using var cancelConsent = stop.Register(() => Dispatcher.UIThread.Post(consent.Close));
+                if (!await consent.Present() || stop.IsCancellationRequested) return (1, []);
+            }
             if (!session.Selected)
             {
                 session.Started = true;
@@ -81,10 +84,10 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
             };
             choices.Add((source, check)); dialog.Fields.Children.Add(check);
         }
-        if (choices.Count == 1) choices[0].Check.IsChecked = true;
+        if (choices.Count == 1 || session.Continuity) choices[0].Check.IsChecked = true;
         dialog.Confirm.IsEnabled = choices.Any(item => item.Check.IsChecked == true);
         using var cancelDialog = token.Register(() => Dispatcher.UIThread.Post(dialog.Close));
-        if (!await dialog.Present() || token.IsCancellationRequested) return (1, []);
+        if ((!session.Continuity && !await dialog.Present()) || token.IsCancellationRequested) return (1, []);
         var streams = new Tmds.DBus.Protocol.Array<Struct<uint, Dict<string, VariantValue>>>();
         try
         {
@@ -117,6 +120,7 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
     private static string Devices(uint value) => string.Join(", ", new[] { (1u, "keyboard"), (2u, "pointer"), (4u, "touch input") }.Where(item => (value & item.Item1) != 0).Select(item => item.Item2));
     private void ShowIndicator(string path, Session session)
     {
+        if (session.Continuity) return;
         var indicator = PortalSharingIndicator.Create(session.Remote ? "Remote control" : "Screen sharing",
             $"Sharing with {DisplayApp(session.App)}", () => Close(path, true));
         indicator.Closed += (_, _) => Close(path, true);

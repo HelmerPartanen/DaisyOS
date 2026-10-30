@@ -50,47 +50,49 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             "YWNrZXRIABI+Cg5hY3Rpdml0eV9vZmZlchg8IAEoCzIkLmRhaXN5b3MuY29u",
             "dGludWl0eS52MS5BY3Rpdml0eU9mZmVySAASQAoPYWN0aXZpdHlfcmVzdWx0",
             "GD0gASgLMiUuZGFpc3lvcy5jb250aW51aXR5LnYxLkFjdGl2aXR5UmVzdWx0",
-            "SABCCQoHbWVzc2FnZUoECAQQCkoECA4QFEoECBcQHkoECCMQKCJiCgVIZWxs",
+            "SABCCQoHbWVzc2FnZUoECAQQCkoECA4QFEoECBcQHkoECCMQKCJzCgVIZWxs",
             "bxIRCglkZXZpY2VfaWQYASABKAwSNwoMY2FwYWJpbGl0aWVzGAIgAygOMiEu",
             "ZGFpc3lvcy5jb250aW51aXR5LnYxLkNhcGFiaWxpdHkSDQoFbm9uY2UYAyAB",
-            "KAwiGAoEUGluZxIQCghzZXF1ZW5jZRgBIAEoBCIYCgRQb25nEhAKCHNlcXVl",
-            "bmNlGAEgASgEIm0KDkNsaXBib2FyZE9mZmVyEhEKCXVwZGF0ZV9pZBgBIAEo",
-            "DBIWCg5vcmlnaW5fcGVlcl9pZBgCIAEoDBISCgptaW1lX3R5cGVzGAMgAygJ",
-            "EgwKBHNpemUYBCABKAQSDgoGc2hhMjU2GAUgASgMIjQKDENsaXBib2FyZEdl",
-            "dBIRCgl1cGRhdGVfaWQYASABKAwSEQoJbWltZV90eXBlGAIgASgJIkMKDUNs",
-            "aXBib2FyZERhdGESEQoJdXBkYXRlX2lkGAEgASgMEhEKCW1pbWVfdHlwZRgC",
-            "IAEoCRIMCgRkYXRhGAMgASgMImkKCUZpbGVPZmZlchITCgt0cmFuc2Zlcl9p",
-            "ZBgBIAEoDBIUCgxkaXNwbGF5X25hbWUYAiABKAkSDgoGbGVuZ3RoGAMgASgE",
-            "Eg4KBnNoYTI1NhgEIAEoDBIRCgltaW1lX2hpbnQYBSABKAkiTAoMRmlsZURl",
-            "Y2lzaW9uEhMKC3RyYW5zZmVyX2lkGAEgASgMEhAKCGFjY2VwdGVkGAIgASgI",
-            "EhUKDXJlc3VtZV9vZmZzZXQYAyABKAQiPgoJRmlsZUNodW5rEhMKC3RyYW5z",
-            "ZmVyX2lkGAEgASgMEg4KBm9mZnNldBgCIAEoBBIMCgRkYXRhGAMgASgMIjwK",
-            "DEZpbGVDb21wbGV0ZRITCgt0cmFuc2Zlcl9pZBgBIAEoDBIXCg92ZXJpZmll",
-            "ZF9zaGEyNTYYAiABKAwiIQoKRmlsZUNhbmNlbBITCgt0cmFuc2Zlcl9pZBgB",
-            "IAEoDCL4AQoFRXJyb3ISLwoEY29kZRgBIAEoDjIhLmRhaXN5b3MuY29udGlu",
-            "dWl0eS52MS5FcnJvci5Db2RlEhgKEHNhZmVfZGVzY3JpcHRpb24YAiABKAki",
-            "owEKBENvZGUSDwoLVU5TUEVDSUZJRUQQABIYChRJTkNPTVBBVElCTEVfVkVS",
-            "U0lPThABEhAKDFVOQVVUSE9SSVpFRBACEhMKD0lOVkFMSURfTUVTU0FHRRAD",
-            "EhIKDkxJTUlUX0VYQ0VFREVEEAQSDQoJQ0FOQ0VMTEVEEAUSDwoLVU5BVkFJ",
-            "TEFCTEUQBhIVChFDSEVDS1NVTV9NSVNNQVRDSBAHIlwKCUJvb3RzdHJhcBIN",
-            "CgVtYWpvchgBIAEoDRITCgtjZXJ0aWZpY2F0ZRgCIAEoDBIMCgRuYW1lGAMg",
-            "ASgJEg8KB3BhaXJpbmcYBCABKAgSDAoEcG9ydBgFIAEoDSIfCgtQYWlyQ29u",
-            "c2VudBIQCghhcHByb3ZlZBgBIAEoCCI+CglMaXZlU3RhcnQSEgoKc2Vzc2lv",
-            "bl9pZBgBIAEoCRIMCgRraW5kGAIgASgJEg8KB2NvbnRyb2wYAyABKAgiIAoM",
-            "TGl2ZURlY2lzaW9uEhAKCGFjY2VwdGVkGAEgASgIIiwKCkxpdmVQYWNrZXQS",
-            "EAoIc2VxdWVuY2UYASABKAQSDAoEZGF0YRgCIAEoDCJiCg1BY3Rpdml0eU9m",
-            "ZmVyEg4KBmFwcF9pZBgBIAEoCRIMCgRraW5kGAIgASgJEhYKDnNjaGVtYV92",
-            "ZXJzaW9uGAMgASgNEg0KBXRpdGxlGAQgASgJEgwKBHRleHQYBSABKAkiIgoO",
-            "QWN0aXZpdHlSZXN1bHQSEAoIYWNjZXB0ZWQYASABKAgqhgEKCkNhcGFiaWxp",
-            "dHkSGgoWQ0FQQUJJTElUWV9VTlNQRUNJRklFRBAAEhIKDlRFWFRfQ0xJUEJP",
-            "QVJEEAESCQoFRklMRVMQAhIJCgVJTlBVVBADEgsKB0hBTkRPRkYQBBIKCgZT",
-            "Q1JFRU4QBRIJCgVBVURJTxAGEg4KCkVER0VfSU5QVVQQB0IhqgIeRGFpc3lP",
-            "Uy5Db250aW51aXR5LlByb3RvY29sLlYxYgZwcm90bzM="));
+            "KAwSDwoHdHJ1c3RlZBgEIAEoCCIYCgRQaW5nEhAKCHNlcXVlbmNlGAEgASgE",
+            "IhgKBFBvbmcSEAoIc2VxdWVuY2UYASABKAQibQoOQ2xpcGJvYXJkT2ZmZXIS",
+            "EQoJdXBkYXRlX2lkGAEgASgMEhYKDm9yaWdpbl9wZWVyX2lkGAIgASgMEhIK",
+            "Cm1pbWVfdHlwZXMYAyADKAkSDAoEc2l6ZRgEIAEoBBIOCgZzaGEyNTYYBSAB",
+            "KAwiNAoMQ2xpcGJvYXJkR2V0EhEKCXVwZGF0ZV9pZBgBIAEoDBIRCgltaW1l",
+            "X3R5cGUYAiABKAkiQwoNQ2xpcGJvYXJkRGF0YRIRCgl1cGRhdGVfaWQYASAB",
+            "KAwSEQoJbWltZV90eXBlGAIgASgJEgwKBGRhdGEYAyABKAwiaQoJRmlsZU9m",
+            "ZmVyEhMKC3RyYW5zZmVyX2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEo",
+            "CRIOCgZsZW5ndGgYAyABKAQSDgoGc2hhMjU2GAQgASgMEhEKCW1pbWVfaGlu",
+            "dBgFIAEoCSJMCgxGaWxlRGVjaXNpb24SEwoLdHJhbnNmZXJfaWQYASABKAwS",
+            "EAoIYWNjZXB0ZWQYAiABKAgSFQoNcmVzdW1lX29mZnNldBgDIAEoBCI+CglG",
+            "aWxlQ2h1bmsSEwoLdHJhbnNmZXJfaWQYASABKAwSDgoGb2Zmc2V0GAIgASgE",
+            "EgwKBGRhdGEYAyABKAwiPAoMRmlsZUNvbXBsZXRlEhMKC3RyYW5zZmVyX2lk",
+            "GAEgASgMEhcKD3ZlcmlmaWVkX3NoYTI1NhgCIAEoDCIhCgpGaWxlQ2FuY2Vs",
+            "EhMKC3RyYW5zZmVyX2lkGAEgASgMIvgBCgVFcnJvchIvCgRjb2RlGAEgASgO",
+            "MiEuZGFpc3lvcy5jb250aW51aXR5LnYxLkVycm9yLkNvZGUSGAoQc2FmZV9k",
+            "ZXNjcmlwdGlvbhgCIAEoCSKjAQoEQ29kZRIPCgtVTlNQRUNJRklFRBAAEhgK",
+            "FElOQ09NUEFUSUJMRV9WRVJTSU9OEAESEAoMVU5BVVRIT1JJWkVEEAISEwoP",
+            "SU5WQUxJRF9NRVNTQUdFEAMSEgoOTElNSVRfRVhDRUVERUQQBBINCglDQU5D",
+            "RUxMRUQQBRIPCgtVTkFWQUlMQUJMRRAGEhUKEUNIRUNLU1VNX01JU01BVENI",
+            "EAciXAoJQm9vdHN0cmFwEg0KBW1ham9yGAEgASgNEhMKC2NlcnRpZmljYXRl",
+            "GAIgASgMEgwKBG5hbWUYAyABKAkSDwoHcGFpcmluZxgEIAEoCBIMCgRwb3J0",
+            "GAUgASgNIlIKC1BhaXJDb25zZW50EhAKCGFwcHJvdmVkGAEgASgIEgwKBHNh",
+            "bHQYAiABKAwSFAoMcHVibGljX3ZhbHVlGAMgASgMEg0KBXByb29mGAQgASgM",
+            "Ij4KCUxpdmVTdGFydBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGtpbmQYAiAB",
+            "KAkSDwoHY29udHJvbBgDIAEoCCIgCgxMaXZlRGVjaXNpb24SEAoIYWNjZXB0",
+            "ZWQYASABKAgiLAoKTGl2ZVBhY2tldBIQCghzZXF1ZW5jZRgBIAEoBBIMCgRk",
+            "YXRhGAIgASgMImIKDUFjdGl2aXR5T2ZmZXISDgoGYXBwX2lkGAEgASgJEgwK",
+            "BGtpbmQYAiABKAkSFgoOc2NoZW1hX3ZlcnNpb24YAyABKA0SDQoFdGl0bGUY",
+            "BCABKAkSDAoEdGV4dBgFIAEoCSIiCg5BY3Rpdml0eVJlc3VsdBIQCghhY2Nl",
+            "cHRlZBgBIAEoCCqGAQoKQ2FwYWJpbGl0eRIaChZDQVBBQklMSVRZX1VOU1BF",
+            "Q0lGSUVEEAASEgoOVEVYVF9DTElQQk9BUkQQARIJCgVGSUxFUxACEgkKBUlO",
+            "UFVUEAMSCwoHSEFORE9GRhAEEgoKBlNDUkVFThAFEgkKBUFVRElPEAYSDgoK",
+            "RURHRV9JTlBVVBAHQiGqAh5EYWlzeU9TLkNvbnRpbnVpdHkuUHJvdG9jb2wu",
+            "VjFiBnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::DaisyOS.Continuity.Protocol.V1.Capability), }, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Envelope), global::DaisyOS.Continuity.Protocol.V1.Envelope.Parser, new[]{ "ProtocolMajor", "ProtocolMinor", "RequestId", "Hello", "Ping", "Pong", "PairConsent", "ClipboardOffer", "ClipboardGet", "ClipboardData", "FileOffer", "FileDecision", "FileChunk", "FileComplete", "FileCancel", "Error", "LiveStart", "LiveDecision", "LivePacket", "ActivityOffer", "ActivityResult" }, new[]{ "Message" }, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Hello), global::DaisyOS.Continuity.Protocol.V1.Hello.Parser, new[]{ "DeviceId", "Capabilities", "Nonce" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Hello), global::DaisyOS.Continuity.Protocol.V1.Hello.Parser, new[]{ "DeviceId", "Capabilities", "Nonce", "Trusted" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Ping), global::DaisyOS.Continuity.Protocol.V1.Ping.Parser, new[]{ "Sequence" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Pong), global::DaisyOS.Continuity.Protocol.V1.Pong.Parser, new[]{ "Sequence" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.ClipboardOffer), global::DaisyOS.Continuity.Protocol.V1.ClipboardOffer.Parser, new[]{ "UpdateId", "OriginPeerId", "MimeTypes", "Size", "Sha256" }, null, null, null, null),
@@ -103,7 +105,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.FileCancel), global::DaisyOS.Continuity.Protocol.V1.FileCancel.Parser, new[]{ "TransferId" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Error), global::DaisyOS.Continuity.Protocol.V1.Error.Parser, new[]{ "Code", "SafeDescription" }, null, new[]{ typeof(global::DaisyOS.Continuity.Protocol.V1.Error.Types.Code) }, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Bootstrap), global::DaisyOS.Continuity.Protocol.V1.Bootstrap.Parser, new[]{ "Major", "Certificate", "Name", "Pairing", "Port" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.PairConsent), global::DaisyOS.Continuity.Protocol.V1.PairConsent.Parser, new[]{ "Approved" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.PairConsent), global::DaisyOS.Continuity.Protocol.V1.PairConsent.Parser, new[]{ "Approved", "Salt", "PublicValue", "Proof" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.LiveStart), global::DaisyOS.Continuity.Protocol.V1.LiveStart.Parser, new[]{ "SessionId", "Kind", "Control" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.LiveDecision), global::DaisyOS.Continuity.Protocol.V1.LiveDecision.Parser, new[]{ "Accepted" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.LivePacket), global::DaisyOS.Continuity.Protocol.V1.LivePacket.Parser, new[]{ "Sequence", "Data" }, null, null, null, null),
@@ -1427,6 +1429,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       deviceId_ = other.deviceId_;
       capabilities_ = other.capabilities_.Clone();
       nonce_ = other.nonce_;
+      trusted_ = other.trusted_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1477,6 +1480,21 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       }
     }
 
+    /// <summary>Field number for the "trusted" field.</summary>
+    public const int TrustedFieldNumber = 4;
+    private bool trusted_;
+    /// <summary>
+    /// whether this identity is still paired locally
+    /// </summary>
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Trusted {
+      get { return trusted_; }
+      set {
+        trusted_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1495,6 +1513,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       if (DeviceId != other.DeviceId) return false;
       if(!capabilities_.Equals(other.capabilities_)) return false;
       if (Nonce != other.Nonce) return false;
+      if (Trusted != other.Trusted) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1505,6 +1524,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       if (DeviceId.Length != 0) hash ^= DeviceId.GetHashCode();
       hash ^= capabilities_.GetHashCode();
       if (Nonce.Length != 0) hash ^= Nonce.GetHashCode();
+      if (Trusted != false) hash ^= Trusted.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1532,6 +1552,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(26);
         output.WriteBytes(Nonce);
       }
+      if (Trusted != false) {
+        output.WriteRawTag(32);
+        output.WriteBool(Trusted);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1551,6 +1575,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(26);
         output.WriteBytes(Nonce);
       }
+      if (Trusted != false) {
+        output.WriteRawTag(32);
+        output.WriteBool(Trusted);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -1567,6 +1595,9 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       size += capabilities_.CalculateSize(_repeated_capabilities_codec);
       if (Nonce.Length != 0) {
         size += 1 + pb::CodedOutputStream.ComputeBytesSize(Nonce);
+      }
+      if (Trusted != false) {
+        size += 1 + 1;
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1586,6 +1617,9 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       capabilities_.Add(other.capabilities_);
       if (other.Nonce.Length != 0) {
         Nonce = other.Nonce;
+      }
+      if (other.Trusted != false) {
+        Trusted = other.Trusted;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1619,6 +1653,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             Nonce = input.ReadBytes();
             break;
           }
+          case 32: {
+            Trusted = input.ReadBool();
+            break;
+          }
         }
       }
     #endif
@@ -1649,6 +1687,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
           }
           case 26: {
             Nonce = input.ReadBytes();
+            break;
+          }
+          case 32: {
+            Trusted = input.ReadBool();
             break;
           }
         }
@@ -4481,7 +4523,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
 
   /// <summary>
   /// Public bootstrap only; never grants trust. Certificates are validated by the
-  /// platform TLS chain engine and full fingerprints must be verified locally.
+  /// platform TLS chain engine; pairing uses SRP-6a with a one-time six-digit code bound to both identities.
   /// </summary>
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class Bootstrap : pb::IMessage<Bootstrap>
@@ -4865,6 +4907,9 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public PairConsent(PairConsent other) : this() {
       approved_ = other.approved_;
+      salt_ = other.salt_;
+      publicValue_ = other.publicValue_;
+      proof_ = other.proof_;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -4886,6 +4931,42 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       }
     }
 
+    /// <summary>Field number for the "salt" field.</summary>
+    public const int SaltFieldNumber = 2;
+    private pb::ByteString salt_ = pb::ByteString.Empty;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pb::ByteString Salt {
+      get { return salt_; }
+      set {
+        salt_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "public_value" field.</summary>
+    public const int PublicValueFieldNumber = 3;
+    private pb::ByteString publicValue_ = pb::ByteString.Empty;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pb::ByteString PublicValue {
+      get { return publicValue_; }
+      set {
+        publicValue_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "proof" field.</summary>
+    public const int ProofFieldNumber = 4;
+    private pb::ByteString proof_ = pb::ByteString.Empty;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public pb::ByteString Proof {
+      get { return proof_; }
+      set {
+        proof_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -4902,6 +4983,9 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         return true;
       }
       if (Approved != other.Approved) return false;
+      if (Salt != other.Salt) return false;
+      if (PublicValue != other.PublicValue) return false;
+      if (Proof != other.Proof) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -4910,6 +4994,9 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     public override int GetHashCode() {
       int hash = 1;
       if (Approved != false) hash ^= Approved.GetHashCode();
+      if (Salt.Length != 0) hash ^= Salt.GetHashCode();
+      if (PublicValue.Length != 0) hash ^= PublicValue.GetHashCode();
+      if (Proof.Length != 0) hash ^= Proof.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -4932,6 +5019,18 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(8);
         output.WriteBool(Approved);
       }
+      if (Salt.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteBytes(Salt);
+      }
+      if (PublicValue.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteBytes(PublicValue);
+      }
+      if (Proof.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteBytes(Proof);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -4946,6 +5045,18 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(8);
         output.WriteBool(Approved);
       }
+      if (Salt.Length != 0) {
+        output.WriteRawTag(18);
+        output.WriteBytes(Salt);
+      }
+      if (PublicValue.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteBytes(PublicValue);
+      }
+      if (Proof.Length != 0) {
+        output.WriteRawTag(34);
+        output.WriteBytes(Proof);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -4958,6 +5069,15 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       int size = 0;
       if (Approved != false) {
         size += 1 + 1;
+      }
+      if (Salt.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeBytesSize(Salt);
+      }
+      if (PublicValue.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeBytesSize(PublicValue);
+      }
+      if (Proof.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeBytesSize(Proof);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -4973,6 +5093,15 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       }
       if (other.Approved != false) {
         Approved = other.Approved;
+      }
+      if (other.Salt.Length != 0) {
+        Salt = other.Salt;
+      }
+      if (other.PublicValue.Length != 0) {
+        PublicValue = other.PublicValue;
+      }
+      if (other.Proof.Length != 0) {
+        Proof = other.Proof;
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -4997,6 +5126,18 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             Approved = input.ReadBool();
             break;
           }
+          case 18: {
+            Salt = input.ReadBytes();
+            break;
+          }
+          case 26: {
+            PublicValue = input.ReadBytes();
+            break;
+          }
+          case 34: {
+            Proof = input.ReadBytes();
+            break;
+          }
         }
       }
     #endif
@@ -5018,6 +5159,18 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             break;
           case 8: {
             Approved = input.ReadBool();
+            break;
+          }
+          case 18: {
+            Salt = input.ReadBytes();
+            break;
+          }
+          case 26: {
+            PublicValue = input.ReadBytes();
+            break;
+          }
+          case 34: {
+            Proof = input.ReadBytes();
             break;
           }
         }

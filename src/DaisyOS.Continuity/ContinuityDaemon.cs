@@ -34,6 +34,8 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     private readonly Dictionary<string, ContinuityTransfer> _transfers = new();
     private readonly Dictionary<string, List<CancellationTokenSource>> _peerOperations = new();
     private readonly Dictionary<string, DateTimeOffset> _pairAttempts = new();
+    private DateTimeOffset _lastPairAttempt;
+    private readonly Dictionary<string, TaskCompletionSource<string>> _pairInputs = new();
     private readonly Dictionary<string, long> _trustEpoch = new();
     private readonly HashSet<string> _revoked = new();
     private readonly AvahiDiscovery _discovery;
@@ -42,7 +44,6 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     private IDisposable? _ownerWatch;
     private IDisposable? _notificationWatch;
     private readonly HashSet<uint> _fileNotifications = new();
-    private readonly Dictionary<uint, string> _promptNotifications = [];
     private bool _disposing;
     private bool _sessionReady;
     private string _diagnostic = "";
@@ -96,12 +97,6 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 lock (_gate)
                 {
                     if (!Ready) return;
-                    if (_promptNotifications.TryGetValue(result.Value.Id, out var promptId))
-                    {
-                        if (result.Value.Action is not ("allow" or "decline")) return;
-                        if (_prompts.TryGetValue(promptId, out var prompt)) prompt.Decision.TrySetResult(result.Value.Action == "allow");
-                        _promptNotifications.Remove(result.Value.Id); return;
-                    }
                     if (result.Value.Action != "open-folder" || !_fileNotifications.Remove(result.Value.Id)) return;
                 }
                 new DaisyOS.System.Processes.SafeProcessLauncher().Launch("xdg-open", [global::System.IO.Path.Combine(_downloadsDirectory, "Continuity")]);
@@ -117,6 +112,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         try { await _discovery.StartAsync(linked.Token); }
         catch { _diagnostic = "Avahi is unavailable. Connect by address instead."; }
         _ = RefreshVisibilityAsync();
+        Track(MaintainPeersAsync);
         Console.Error.WriteLine("[continuity] service_ready");
         try
         {
@@ -142,6 +138,8 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             try { await action(); }
             catch (Exception ex) when (ex is IOException or AuthenticationException or OperationCanceledException or SocketException or InvalidProtocolBufferException or UnauthorizedAccessException or TimeoutException or DecoderFallbackException)
             {
+                // Forget, pause, lock, and user cancellation are normal lifecycle events.
+                if (ex is OperationCanceledException) return;
                 var code = ex switch
                 {
                     AuthenticationException => "peer_authentication_failed",
@@ -199,9 +197,9 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         lock (_gate)
         {
             if (!Ready) return false;
-            if (!pairing && _revoked.Contains(id)) return false;
-            if (!pairing) return _state.Settings.Peers.ContainsKey(id);
-            if (!_state.Settings.Visible) return false;
+            if (!pairing) return true; // TLS may report that a previously paired device has forgotten us.
+            if (!_state.Settings.Visible || DateTimeOffset.UtcNow - _lastPairAttempt < TimeSpan.FromSeconds(10)) return false;
+            _lastPairAttempt = DateTimeOffset.UtcNow;
             if (_pairAttempts.TryGetValue(id, out var last) && DateTimeOffset.UtcNow - last < TimeSpan.FromSeconds(10)) return false;
             foreach (var expired in _pairAttempts.Where(p => DateTimeOffset.UtcNow - p.Value > TimeSpan.FromMinutes(5)).Select(p => p.Key).ToArray()) _pairAttempts.Remove(expired);
             if (_pairAttempts.Count >= 256) return false;
@@ -220,13 +218,18 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         client.NoDelay = true;
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         await using var wire = await PeerWire.OpenAsync(client, _state, true, false, null, CandidateAllowed, deadline.Token, _boundPort);
+        if (!wire.Remote.Pairing && !CheckMutualTrust(wire)) return;
         using var lifetime = PeerLifetime(wire.PeerId, deadline.Token, wire.Remote.Pairing);
         try
         {
             if (wire.Remote.Pairing) { await PairAsync(wire, (endpoint.Address.AddressFamily == AddressFamily.InterNetworkV6 ? $"[{endpoint.Address}]:{wire.Remote.Port}" : $"{endpoint.Address}:{wire.Remote.Port}"), lifetime.Token); return; }
             Require(wire.PeerId, null);
             var envelope = await wire.ReceiveAsync(lifetime.Token).WaitAsync(TimeSpan.FromSeconds(30), lifetime.Token);
-            if (envelope.Ping is { } ping) await wire.SendAsync(new Envelope { Pong = new Pong { Sequence = ping.Sequence } }, lifetime.Token);
+            if (envelope.Ping is { } ping)
+            {
+                await wire.SendAsync(new Envelope { Pong = new Pong { Sequence = ping.Sequence } }, lifetime.Token);
+                if (ping.Sequence == ulong.MaxValue) ForgetPeer(wire.PeerId);
+            }
             else if (envelope.ClipboardOffer is { } offer) await ReceiveClipboardAsync(wire, offer, lifetime.Token);
             else if (envelope.FileOffer is { } file) await ReceiveFileAsync(wire, file, lifetime.Token);
             else if (envelope.LiveStart is { } live) await ReceiveLiveAsync(wire, live, lifetime.Token);
@@ -247,8 +250,10 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         try
         {
             await client.ConnectAsync(target, uri.Port < 0 ? 47621 : uri.Port, token).AsTask().WaitAsync(TimeSpan.FromSeconds(10), token);
-            return await PeerWire.OpenAsync(client, _state, false, pairing, expected,
+            var wire = await PeerWire.OpenAsync(client, _state, false, pairing, expected,
                 (id, _) => { lock (_gate) return Ready && (pairing || !_revoked.Contains(id) && _state.Settings.Peers.ContainsKey(id)); }, token, _boundPort);
+            if (!pairing && !CheckMutualTrust(wire)) { await wire.DisposeAsync(); throw new OperationCanceledException("Device was forgotten."); }
+            return wire;
         }
         catch { client.Dispose(); throw; }
     }
@@ -256,33 +261,12 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     {
         lock (_gate)
         {
-            if (!Ready || _revoked.Contains(id) || !_state.Settings.Peers.TryGetValue(id, out var peer) ||
+            if (_revoked.Contains(id)) throw new OperationCanceledException("Device was forgotten.");
+            if (!Ready || !_state.Settings.Peers.TryGetValue(id, out var peer) ||
                 feature == "clipboard" && !peer.Clipboard || feature == "files" && !peer.Files ||
                 feature == "input" && !peer.Input || feature == "handoff" && !peer.Handoff ||
                 feature == "screen" && !peer.Screen || feature == "audio" && !peer.Audio)
                 throw new UnauthorizedAccessException();
-        }
-    }
-    private async Task<bool> PromptAsync(string kind, string id, string name, string detail, CancellationToken token)
-    {
-        var request = Guid.NewGuid().ToString("N");
-        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-        lock (_gate)
-        {
-            if (!Ready || _prompts.Count >= 16) return false;
-            _prompts.Add(request, (new(request, kind, id, SecureState.SafeName(name), detail), decision));
-        }
-        _ = NotifyAsync(kind == "pair" ? "Continuity pairing request" : SecureState.SafeName(name),
-            kind == "pair" ? "Open Settings → Continuity to compare fingerprints." : detail, requestId: kind == "pair" ? null : request);
-        try { return await decision.Task.WaitAsync(TimeSpan.FromMinutes(2), token); }
-        catch (TimeoutException) { return false; }
-        finally
-        {
-            lock (_gate)
-            {
-                _prompts.Remove(request);
-                foreach (var notificationId in _promptNotifications.Where(p => p.Value == request).Select(p => p.Key).ToArray()) _promptNotifications.Remove(notificationId);
-            }
         }
     }
     internal async Task PairAsync(PeerWire wire, string address, CancellationToken token)
@@ -305,13 +289,35 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     {
         long epoch;
         lock (_gate) epoch = _trustEpoch.GetValueOrDefault(wire.PeerId);
-        // Verify BOTH full public fingerprints out-of-band. This is not a custom
-        // short authentication string or a PIN-derived encryption key.
-        var approved = await PromptAsync("pair", wire.PeerId, wire.Remote.Name,
-            $"Compare both full fingerprints on the two devices. This device: {_state.Id}\nOther device: {wire.PeerId}", token);
-        await wire.SendAsync(new Envelope { PairConsent = new PairConsent { Approved = approved } }, token);
-        var response = await wire.ReceiveAsync(token).WaitAsync(TimeSpan.FromMinutes(2), token);
-        if (!approved || response.PairConsent?.Approved != true) return;
+        // SRP proves knowledge of the receiver's code without transmitting it.
+        // Both TLS identities are part of the SRP identity, preventing relay to
+        // a different certificate. One proof attempt is allowed per pairing.
+        var identity = Encoding.UTF8.GetBytes(wire.IsServer ? wire.PeerId + _state.Id : _state.Id + wire.PeerId);
+        var code = wire.IsServer ? RandomNumberGenerator.GetInt32(1_000_000).ToString("D6", global::System.Globalization.CultureInfo.InvariantCulture) : "";
+        var input = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var request = Guid.NewGuid().ToString("N");
+        var decision = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+        lock (_gate)
+        {
+            if (!Ready || _prompts.Count >= 16 || _prompts.Values.Any(p => p.Prompt.Kind.StartsWith("pair-"))) return;
+            _prompts.Add(request, (new(request, wire.IsServer ? "pair-display" : "pair-code", wire.PeerId,
+                SecureState.SafeName(wire.Remote.Name), wire.IsServer ? code : "Enter the six-digit code shown on the other computer."), decision));
+            if (!wire.IsServer) _pairInputs[request] = input;
+        }
+        var notification = wire.IsServer ? await NotifyAsync("Continuity pairing code", $"{wire.Remote.Name}: {code} — enter this code on the pairing computer.") : null;
+        bool approved;
+        try
+        {
+            approved = wire.IsServer
+                ? await PairAuthentication.VerifyAsync(wire, identity, code, token)
+                : await PairAuthentication.ProveAsync(wire, identity, input.Task, token);
+        }
+        finally
+        {
+            lock (_gate) { _prompts.Remove(request); _pairInputs.Remove(request); }
+            if (notification is { } notificationId) await CloseNotificationAsync(notificationId);
+        }
+        if (!approved) { lock (_gate) _diagnostic = "Pairing code did not match or pairing was cancelled. Try pairing again."; return; }
         lock (_gate)
         {
             if (!Ready || token.IsCancellationRequested || _trustEpoch.GetValueOrDefault(wire.PeerId) != epoch || (_state.Settings.Peers.Count >= 64 && !_state.Settings.Peers.ContainsKey(wire.PeerId))) return;
@@ -319,7 +325,8 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             _clipboard.ClearPeer(wire.PeerId);
             _diagnostic = "";
             _state.Settings.Peers[wire.PeerId] = new(Convert.ToBase64String(wire.Remote.Certificate.ToByteArray()),
-                SecureState.SafeName(wire.Remote.Name), address, GrantId: Guid.NewGuid().ToString("N"));
+                SecureState.SafeName(wire.Remote.Name), address, Clipboard: true, Files: true, GrantId: Guid.NewGuid().ToString("N"), Input: true, Handoff: true, Screen: true, Audio: true);
+            UpdateClipboardState();
             SaveSettings();
         }
         await NotifyAsync("Device paired", SecureState.SafeName(wire.Remote.Name));
@@ -377,7 +384,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         }
         catch { lock (_gate) _diagnostic = "Discovery unavailable. Check Avahi or connect by address."; }
     }
-    private async Task NotifyAsync(string title, string body, bool openFolder = false, string? requestId = null)
+    private async Task<uint?> NotifyAsync(string title, string body, bool openFolder = false)
     {
         try
         {
@@ -387,12 +394,27 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 writer.WriteMethodCallHeader(destination: "org.freedesktop.Notifications", path: "/org/freedesktop/Notifications",
                     @interface: "org.freedesktop.Notifications", member: "Notify", signature: "susssasa{sv}i");
                 writer.WriteString("DaisyOS Continuity"); writer.WriteUInt32(0); writer.WriteString("network-workgroup");
-                writer.WriteString(title); writer.WriteString(global::System.Security.SecurityElement.Escape(body) ?? ""); writer.WriteArray(requestId is not null ? new[] { "allow", "Allow", "decline", "Decline" } : openFolder ? new[] { "open-folder", "Open containing folder" } : Array.Empty<string>());
-                writer.WriteDictionary(new Dictionary<string, VariantValue>()); writer.WriteInt32(requestId is not null ? 120000 : 8000); call = writer.CreateMessage();
+                writer.WriteString(title); writer.WriteString(global::System.Security.SecurityElement.Escape(body) ?? ""); writer.WriteArray(openFolder ? new[] { "open-folder", "Open containing folder" } : Array.Empty<string>());
+                writer.WriteDictionary(new Dictionary<string, VariantValue>()); writer.WriteInt32(title == "Continuity pairing code" ? 120000 : 8000); call = writer.CreateMessage();
             }
             var id = await _bus.CallMethodAsync(call, (reply, _) => reply.GetBodyReader().ReadUInt32()).WaitAsync(TimeSpan.FromSeconds(3));
-            if (requestId is not null) lock (_gate) if (_prompts.ContainsKey(requestId)) _promptNotifications[id] = requestId;
             if (openFolder) lock (_gate) { if (_fileNotifications.Count >= 64) _fileNotifications.Clear(); _fileNotifications.Add(id); }
+            return id;
+        }
+        catch { return null; }
+    }
+    private async Task CloseNotificationAsync(uint id)
+    {
+        try
+        {
+            MessageBuffer call;
+            using (var writer = _bus.GetMessageWriter())
+            {
+                writer.WriteMethodCallHeader(destination: "org.freedesktop.Notifications", path: "/org/freedesktop/Notifications",
+                    @interface: "org.freedesktop.Notifications", member: "CloseNotification", signature: "u");
+                writer.WriteUInt32(id); call = writer.CreateMessage();
+            }
+            await _bus.CallMethodAsync(call).WaitAsync(TimeSpan.FromSeconds(3));
         }
         catch { }
     }
