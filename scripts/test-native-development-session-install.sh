@@ -82,6 +82,10 @@ EOF
 chmod +x "$fake_checkout/scripts/install-kwin-window-bridge.sh"
 cat > "$fake_checkout/scripts/install-system-apps.sh" <<'EOF'
 #!/usr/bin/env bash
+if [[ -n "${DAISYOS_TEST_REPLACEMENT_PID:-}" ]]; then
+  printf '%s\n' "$DAISYOS_TEST_REPLACEMENT_PID" > "$XDG_RUNTIME_DIR/daisyos-native-development/shell.pid"
+  kill -TERM "$DAISYOS_TEST_OLD_PID"
+fi
 exit "${DAISYOS_TEST_INSTALL_FAILURE:-0}"
 EOF
 chmod +x "$fake_checkout/scripts/install-system-apps.sh"
@@ -104,7 +108,7 @@ printf 'DAISYOS_NATIVE_DEVELOPMENT_ROOT=%q\n' "$fake_checkout" > "$temp_dir/conf
 # state file. The fixture process is deliberately the current user.
 sleep 30 &
 fixture_pid=$!
-trap 'kill "$fixture_pid" 2>/dev/null || true; rm -rf "$temp_dir"' EXIT
+trap 'kill "$fixture_pid" 2>/dev/null || true; if [[ -n "${replacement_pid:-}" ]]; then kill "$replacement_pid" 2>/dev/null || true; fi; rm -rf "$temp_dir"' EXIT
 printf '%s\n' "$$" > "$temp_dir/runtime/daisyos-native-development/supervisor.pid"
 printf '%s\n' "$fixture_pid" > "$temp_dir/runtime/daisyos-native-development/shell.pid"
 printf '%s\n' 'daisyos-native-test' > "$temp_dir/runtime/daisyos-native-development/wayland-display"
@@ -148,6 +152,25 @@ grep -Fxq "build $fake_checkout/src/DaisyOS.Shell/DaisyOS.Shell.csproj -c Releas
 grep -Fxq "pid=$fixture_pid" "$temp_dir/runtime/daisyos-native-development/restart.request"
 if kill -0 "$fixture_pid" 2>/dev/null; then
   echo "The restart controller did not terminate the requested shell process." >&2
+  exit 1
+fi
+
+# A concurrent restart during the build must refresh the target PID, rather
+# than failing at kill or leaving the rebuilt shell running the old binaries.
+sleep 30 &
+fixture_pid=$!
+sleep 30 &
+replacement_pid=$!
+printf '%s\n' "$fixture_pid" > "$temp_dir/runtime/daisyos-native-development/shell.pid"
+PATH="$temp_dir/bin:$PATH" \
+  XDG_RUNTIME_DIR="$temp_dir/runtime" \
+  DAISYOS_NATIVE_DEVELOPMENT_CONFIG="$temp_dir/config" \
+  DAISYOS_TEST_OLD_PID="$fixture_pid" \
+  DAISYOS_TEST_REPLACEMENT_PID="$replacement_pid" \
+  "$control" restart
+grep -Fxq "pid=$replacement_pid" "$temp_dir/runtime/daisyos-native-development/restart.request"
+if kill -0 "$replacement_pid" 2>/dev/null; then
+  echo "The restart controller did not refresh the shell PID after building." >&2
   exit 1
 fi
 

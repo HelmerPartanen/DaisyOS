@@ -5,15 +5,16 @@
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
   <Viewbox Stretch="Uniform">
     <Canvas Width="25" Height="14">
-      <!-- battery.svg owns the complete base silhouette, including the cap. -->
-      <controls:DaisyIcon x:Name="BatteryBody"
-                          Icon="battery"
-                          Canvas.Left="0"
-                          Canvas.Top="1"
-                          Width="24"
-                          Height="12"
-                          Opacity="0.35"
-                          Foreground="{Binding BaseBrush, ElementName=Root}" />
+      <!-- Mirror battery.svg with a native path so body opacity is applied by
+           Avalonia rather than the SVG custom drawing operation. -->
+      <Path x:Name="BatteryBody"
+            Canvas.Left="0"
+            Canvas.Top="1"
+            Width="24"
+            Height="12"
+            Opacity="0.35"
+            Fill="{Binding BaseBrush, ElementName=Root}"
+            Data="M0 4V8C0 10.2091 1.79086 12 4 12H17C19.2091 12 21 10.2091 21 8V4C21 1.79086 19.2091 0 17 0H4C1.79086 0 0 1.79086 0 4Z M22.5 8V4C22.5 4 24 4 24 6C24 8 22.5 8 22.5 8Z" />
 
       <!-- The charge uses the exact body silhouette as its clip, so partial
            levels retain the rounded leading edge without any border artifacts. -->

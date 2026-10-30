@@ -5,7 +5,7 @@
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
   <UserControl.Styles>
     <Style Selector="controls|BatteryLevelIcon.BatteryLevel">
-      <Setter Property="FillBrush" Value="{Binding Foreground, ElementName=Root}" />
+      <Setter Property="FillBrush" Value="#FFFFFF" />
       <Setter Property="BaseBrush" Value="{DynamicResource ContentTertiaryBrush}" />
     </Style>
     <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Low">

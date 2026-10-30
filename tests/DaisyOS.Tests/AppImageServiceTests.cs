@@ -50,6 +50,7 @@ public sealed class AppImageServiceTests
             Comment = "A great application",
             Version = "2.1.0",
             Categories = "Utility;Development;",
+            StartupWMClass = "SampleAppWindow",
             AppImagePath = "/home/user/.local/share/daisyos/appimages/sample-app/sample-app.AppImage",
             DesktopFilePath = "/home/user/.local/share/applications/sample-app.desktop",
             IconPath = "/home/user/.local/share/icons/hicolor/1024x1024/apps/sample-app.png",
@@ -72,6 +73,7 @@ public sealed class AppImageServiceTests
         Assert.Equal("A great application", parsed["Comment"]);
         Assert.Equal("sample-app", parsed["X-DaisyOS-AppImage"]);
         Assert.Equal("2.1.0", parsed["X-AppImage-Version"]);
+        Assert.Equal("SampleAppWindow", parsed["StartupWMClass"]);
     }
 
     [Fact]
@@ -189,6 +191,7 @@ public sealed class AppImageServiceTests
         var inspection = await service.InspectAsync(samplePath);
 
         Assert.Equal("Epic Games Launcher", inspection.Name);
+        Assert.Equal("EpicGamesLauncher", inspection.StartupWMClass);
         Assert.NotNull(inspection.IconData);
         Assert.NotEmpty(inspection.IconData);
         Assert.Equal(".png", inspection.IconExtension);

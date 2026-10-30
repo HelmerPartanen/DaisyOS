@@ -144,13 +144,25 @@ restart_shell() {
     exit 1
   fi
 
+  # A build can outlive another restart. Refresh the target immediately before
+  # publishing the request instead of signalling the PID captured before builds.
+  supervisor_pid="$(read_runtime_value supervisor.pid || true)"
+  shell_pid="$(read_runtime_value shell.pid || true)"
+  if ! is_current_user_process "$supervisor_pid" || ! is_current_user_process "$shell_pid"; then
+    echo "The native development session changed while building; no shell was stopped." >&2
+    return 1
+  fi
+
   # The request identifies the exact child the supervisor is allowed to
   # replace. A stale request can never turn an unrelated shell exit into a
   # controlled restart.
   umask 077
   printf 'pid=%s\n' "$shell_pid" > "$runtime_root/restart.request.tmp.$$"
   mv -f "$runtime_root/restart.request.tmp.$$" "$runtime_root/restart.request"
-  kill -TERM "$shell_pid"
+  if ! kill -TERM "$shell_pid" 2>/dev/null && kill -0 "$shell_pid" 2>/dev/null; then
+    echo "Could not stop the native development shell (PID $shell_pid)." >&2
+    return 1
+  fi
 
   # Avalonia does not always leave its Wayland dispatcher on SIGTERM (notably
   # while a native layer surface owns keyboard focus). The supervisor cannot
@@ -163,7 +175,10 @@ restart_shell() {
   done
   if kill -0 "$shell_pid" 2>/dev/null; then
     echo "The shell did not exit after SIGTERM; completing the requested restart."
-    kill -KILL "$shell_pid"
+    if ! kill -KILL "$shell_pid" 2>/dev/null && kill -0 "$shell_pid" 2>/dev/null; then
+      echo "Could not complete the native shell restart (PID $shell_pid)." >&2
+      return 1
+    fi
   fi
   reconfigure_kwin_effects
   echo "Requested a DaisyOS shell restart. KWin and open applications stay running."

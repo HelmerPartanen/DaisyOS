@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Xml.Linq;
 using Avalonia.Controls;
+using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -14,22 +15,38 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class BatteryStatusViewTests
 {
     [AvaloniaTheory]
-    [InlineData(75, "#8899AA")]
-    [InlineData(19, "#FFCC00")]
-    public void DischargingBatteryUsesNeutralOrWarningFill(int percentage, string expected)
+    [InlineData(75, "#FFFFFF", false)]
+    [InlineData(75, "#FFFFFF", true)]
+    [InlineData(19, "#FFCC00", false)]
+    [InlineData(19, "#FFCC00", true)]
+    public void DischargingBatteryUsesWhiteOrWarningFill(int percentage, string expected, bool light)
     {
         var view = new BatteryStatusView
         {
             ChargePercent = percentage,
             Foreground = new SolidColorBrush(Color.Parse("#8899AA"))
         };
-        var window = new Window { Content = view };
+        var window = new Window
+        {
+            Content = view, Width = 160, Height = 60,
+            RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark,
+            Background = new SolidColorBrush(light ? Color.Parse("#F0F0F0") : Color.Parse("#202020"))
+        };
         window.Show();
         try
         {
             Dispatcher.UIThread.RunJobs();
             var icon = view.FindControl<BatteryLevelIcon>("LevelIcon")!;
             Assert.Equal(Color.Parse(expected), Assert.IsAssignableFrom<ISolidColorBrush>(icon.FillBrush).Color);
+            var screenshot = $"/tmp/daisy-battery-fill-{percentage}-{(light ? "light" : "dark")}.png";
+            window.CaptureRenderedFrame()!.Save(screenshot);
+            using var pixels = SkiaSharp.SKBitmap.Decode(screenshot);
+            var baseBrush = Assert.IsAssignableFrom<ISolidColorBrush>(icon.BaseBrush);
+            var baseColor = baseBrush.Color;
+            var background = light ? 240 : 32;
+            var alpha = baseColor.A / 255d * baseBrush.Opacity * 0.35;
+            var expectedEmpty = (int)Math.Round(background * (1 - alpha) + baseColor.R * alpha);
+            Assert.InRange((int)pixels.GetPixel(19, 30).Red, expectedEmpty - 2, expectedEmpty + 2);
         }
         finally { window.Close(); }
     }
@@ -98,9 +115,9 @@ public sealed class BatteryStatusViewTests
             Assert.Equal(1, Canvas.GetTop(fill));
             Assert.Equal(12, fill.Height);
             Assert.Equal(21 * 0.85, fill.Width, 5);
-            var body = icon.FindControl<DaisyIcon>("BatteryBody")!;
-            Assert.Equal("battery", body.Icon);
-            Assert.Equal(icon.BaseBrush, body.Foreground);
+            var body = icon.FindControl<Avalonia.Controls.Shapes.Path>("BatteryBody")!;
+            Assert.NotNull(body.Data);
+            Assert.Equal(icon.BaseBrush, body.Fill);
             Assert.Equal(0.35, body.Opacity, 2);
         }
         finally { window.Close(); }
@@ -114,6 +131,8 @@ public sealed class BatteryStatusViewTests
         var body = svg.Root!.Elements().First().Attribute("d")!.Value;
         var view = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Controls", "BatteryLevelIcon.axaml"));
         Assert.Contains($"Clip=\"{body}\"", view);
+        var silhouette = string.Join(" ", svg.Root.Elements().Select(element => element.Attribute("d")!.Value));
+        Assert.Contains($"Data=\"{silhouette}\"", view);
         var settings = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Apps", "System", "Settings", "SettingsView.axaml"));
         Assert.DoesNotContain("Icon=\"battery-charging\"", settings);
     }

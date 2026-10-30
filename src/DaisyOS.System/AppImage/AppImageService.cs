@@ -62,6 +62,7 @@ public sealed class AppImageService : IAppImageInstallerService
             Executable = embedded?.Executable ?? source,
             DesktopId = SanitizeDesktopId(embedded?.DesktopId ?? fallbackName),
             Categories = embedded?.Categories ?? "",
+            StartupWMClass = embedded?.StartupWMClass ?? "",
             SizeBytes = file.Length,
             HasEmbeddedMetadata = embedded is not null,
             IconData = embedded?.IconData,
@@ -96,6 +97,7 @@ public sealed class AppImageService : IAppImageInstallerService
                 Comment = AppImageDesktopEntry.CleanValue(inspection.Comment, ""),
                 Version = AppImageDesktopEntry.CleanValue(inspection.Version, ""),
                 Categories = AppImageDesktopEntry.CleanCategories(inspection.Categories),
+                StartupWMClass = AppImageDesktopEntry.CleanValue(inspection.StartupWMClass, ""),
                 AppImagePath = appImagePath,
                 DesktopFilePath = desktopFilePath,
                 IconPath = iconPath,
@@ -321,7 +323,8 @@ public sealed class AppImageService : IAppImageInstallerService
         var desktopId = SanitizeDesktopId(Path.GetFileNameWithoutExtension(desktopPath));
         var icon = await ReadIconAsync(source, offset, entries, fields, desktopPath, cancellationToken).ConfigureAwait(false);
 
-        return new EmbeddedMetadata(name, comment, version, executable, categories, desktopId, icon.Data, icon.Extension);
+        return new EmbeddedMetadata(name, comment, version, executable, categories, desktopId, icon.Data, icon.Extension,
+            AppImageDesktopEntry.CleanValue(fields.GetValueOrDefault("StartupWMClass"), ""));
     }
 
     private async Task<(byte[]? Data, string Extension)> ReadIconAsync(
@@ -758,5 +761,6 @@ public sealed class AppImageService : IAppImageInstallerService
         string Categories,
         string DesktopId,
         byte[]? IconData,
-        string IconExtension);
+        string IconExtension,
+        string StartupWMClass);
 }

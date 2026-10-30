@@ -339,7 +339,10 @@ public static class DesktopItemLoader
     /// <summary>
     /// Finds a desktop-entry file path matching the given identities.
     /// </summary>
-    public static string? FindDesktopEntryFilePath(IEnumerable<string?> identities)
+    public static string? FindDesktopEntryFilePath(IEnumerable<string?> identities) =>
+        FindDesktopEntryFilePath(identities, EnumerateDesktopEntryFiles());
+
+    internal static string? FindDesktopEntryFilePath(IEnumerable<string?> identities, IEnumerable<string> desktopEntryFiles)
     {
         var candidates = identities
             .Where(identity => !string.IsNullOrWhiteSpace(identity))
@@ -353,7 +356,7 @@ public static class DesktopItemLoader
 
         string? bestPath = null;
         var bestScore = 0;
-        foreach (var desktopEntryFile in EnumerateDesktopEntryFiles())
+        foreach (var desktopEntryFile in desktopEntryFiles)
         {
             var entry = ReadDesktopEntry(desktopEntryFile);
             if (entry.Count == 0)
@@ -401,7 +404,17 @@ public static class DesktopItemLoader
                 && candidates.Contains(NormalizeIdentity(flatpakCommand["--command=".Length..]))) return 2;
         }
 
-        return entry.TryGetValue("Name", out var name) && candidates.Contains(NormalizeIdentity(name)) ? 1 : 0;
+        if (entry.TryGetValue("Name", out var name) && candidates.Contains(NormalizeIdentity(name))) return 1;
+
+        // Older DaisyOS AppImage installs omitted StartupWMClass. Recover their
+        // window identity from the owned desktop ID, ignoring word separators.
+        if (entry.ContainsKey("X-DaisyOS-AppImage"))
+        {
+            static string Compact(string value) => new(value.Where(char.IsLetterOrDigit).ToArray());
+            var compactId = Compact(fileId);
+            if (compactId.Length > 0 && candidates.Any(candidate => Compact(candidate) == compactId)) return 1;
+        }
+        return 0;
     }
 
     private static Dictionary<string, string> ReadDesktopEntry(string path)
@@ -439,6 +452,7 @@ public static class DesktopItemLoader
         var home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
         var roots = new List<string>
         {
+            Path.Combine(Environment.GetEnvironmentVariable("XDG_DATA_HOME") ?? Path.Combine(home, ".local", "share"), "applications"),
             Path.Combine(home, ".local", "share", "applications"),
             Path.Combine(home, ".local", "share", "flatpak", "exports", "share", "applications"),
             "/var/lib/flatpak/exports/share/applications",

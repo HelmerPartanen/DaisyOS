@@ -7,6 +7,7 @@ public sealed record AppImageInstallation
     public required string Name { get; init; }
     public string Comment { get; init; } = "";
     public string Version { get; init; } = "";
+    public string StartupWMClass { get; init; } = "";
     public string Categories { get; init; } = "";
     public required string AppImagePath { get; init; }
     public required string DesktopFilePath { get; init; }

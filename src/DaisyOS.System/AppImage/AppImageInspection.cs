@@ -9,6 +9,7 @@ public sealed record AppImageInspection
     public string Version { get; init; } = "";
     public string Executable { get; init; } = "";
     public string DesktopId { get; init; } = "";
+    public string StartupWMClass { get; init; } = "";
     public string Categories { get; init; } = "";
     public long SizeBytes { get; init; }
     public bool HasEmbeddedMetadata { get; init; }

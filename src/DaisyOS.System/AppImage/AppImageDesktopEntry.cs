@@ -46,6 +46,8 @@ internal static class AppImageDesktopEntry
             : CleanValue(installation.IconPath, "application-x-executable"));
         builder.AppendLine("Terminal=false");
         builder.AppendLine("StartupNotify=true");
+        if (!string.IsNullOrWhiteSpace(installation.StartupWMClass))
+            builder.Append("StartupWMClass=").AppendLine(CleanValue(installation.StartupWMClass, ""));
         if (!string.IsNullOrWhiteSpace(installation.Categories))
             builder.Append("Categories=").AppendLine(CleanCategories(installation.Categories));
         builder.Append(OwnershipKey).Append('=').AppendLine(installation.DesktopId);

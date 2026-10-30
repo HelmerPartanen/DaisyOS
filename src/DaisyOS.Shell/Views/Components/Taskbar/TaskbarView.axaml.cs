@@ -61,6 +61,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
 
         private readonly List<Button> _order = new();
+        internal Func<IEnumerable<string?>, string?> DesktopEntryResolver { get; set; } = DesktopItemLoader.FindDesktopEntryFilePath;
+        private readonly Dictionary<string, (string? DesktopId, string AppId, string ResolvedId)> _resolvedWindowAppIds = new(StringComparer.Ordinal);
         private readonly HashSet<string> _pinnedAppIds = new(StringComparer.Ordinal);
         private readonly Dictionary<string, NativeAppWindowState> _windowStates = new(StringComparer.Ordinal);
         private readonly Dictionary<string, string> _appNames = new(StringComparer.Ordinal);
@@ -166,6 +168,9 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         {
             var snapshot = windows.ToArray();
             _previewWindows = snapshot;
+            var currentWindowIds = snapshot.Select(window => window.Id).ToHashSet(StringComparer.Ordinal);
+            foreach (var staleId in _resolvedWindowAppIds.Keys.Where(id => !currentWindowIds.Contains(id)).ToArray())
+                _resolvedWindowAppIds.Remove(staleId);
             _compositorRecords.Clear();
             foreach (var w in snapshot)
             {
@@ -281,6 +286,16 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
                 if (pinnedButton != null)
                 {
+                    // A shortcut may be pinned after its temporary window tile
+                    // already exists. Merge that tile into the persistent pin.
+                    var temporaryTag = $"kwin:{window.Id}";
+                    if (_order.FirstOrDefault(button => Equals(button.Tag, temporaryTag)) is { } temporaryButton)
+                    {
+                        _compositorWindowIds.Remove(temporaryTag);
+                        _windowStates.Remove(temporaryTag);
+                        _appNames.Remove(temporaryTag);
+                        RemoveSpecificApp(temporaryButton);
+                    }
                     var tag = (string)pinnedButton.Tag!;
                     _compositorWindowIds[tag] = window.Id;
                     SetAppWindowState(tag, ToTaskbarState(window));
@@ -424,7 +439,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
             var cleanOrder = order
                 .Where(id => !string.IsNullOrWhiteSpace(id) && !id.StartsWith("kwin:", StringComparison.Ordinal))
-                .Select(id => NormalizeAppId(id))
+                .Select(id => ResolveInstalledAppId(id))
                 .Where(id => !string.IsNullOrWhiteSpace(id))
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
@@ -1155,21 +1170,11 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
             if (_compositorRecords.TryGetValue(tag, out var record))
             {
-                if (!string.IsNullOrWhiteSpace(record.DaisyAppId))
-                    return record.DaisyAppId;
-                if (!string.IsNullOrWhiteSpace(record.DesktopFileId))
-                    return NormalizeAppId(record.DesktopFileId);
-                if (!string.IsNullOrWhiteSpace(record.AppId))
-                    return NormalizeAppId(record.AppId);
+                return ResolveEffectiveAppIdForWindow(record);
             }
             if (tag.StartsWith("kwin:", StringComparison.Ordinal) && _compositorRecords.TryGetValue(tag[5..], out var rec2))
             {
-                if (!string.IsNullOrWhiteSpace(rec2.DaisyAppId))
-                    return rec2.DaisyAppId;
-                if (!string.IsNullOrWhiteSpace(rec2.DesktopFileId))
-                    return NormalizeAppId(rec2.DesktopFileId);
-                if (!string.IsNullOrWhiteSpace(rec2.AppId))
-                    return NormalizeAppId(rec2.AppId);
+                return ResolveEffectiveAppIdForWindow(rec2);
             }
             return NormalizeAppId(tag);
         }
@@ -1288,7 +1293,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         public void PinApp(string appId, Button? contextButton = null)
         {
-            var effectiveId = ResolveEffectiveAppId(appId);
+            var effectiveId = ResolveInstalledAppId(ResolveEffectiveAppId(appId));
             _pinnedAppIds.Add(effectiveId);
 
             Button? runningButton = contextButton;
@@ -1381,15 +1386,30 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-        private static string ResolveEffectiveAppIdForWindow(CompositorWindowRecord window)
+        private string ResolveInstalledAppId(string appId)
         {
-            if (!string.IsNullOrWhiteSpace(window.DaisyAppId))
-                return window.DaisyAppId;
-            if (!string.IsNullOrWhiteSpace(window.DesktopFileId))
-                return NormalizeAppId(window.DesktopFileId);
-            if (!string.IsNullOrWhiteSpace(window.AppId))
-                return NormalizeAppId(window.AppId);
-            return window.Id;
+            var normalized = NormalizeAppId(appId);
+            if (normalized is "notes" or "files" or "settings" or "calendar" or "calculator" or "appstore" or "taskmanager" or "uikit" or "diskmanager" or "appinstaller")
+                return normalized;
+            var desktopFile = DesktopEntryResolver([appId]);
+            return desktopFile is null ? normalized : NormalizeAppId(Path.GetFileName(desktopFile));
+        }
+
+        private string ResolveEffectiveAppIdForWindow(CompositorWindowRecord window)
+        {
+            if (!string.IsNullOrWhiteSpace(window.DaisyAppId)) return window.DaisyAppId;
+            if (_resolvedWindowAppIds.TryGetValue(window.Id, out var cached)
+                && cached.DesktopId == window.DesktopFileId && cached.AppId == window.AppId)
+                return cached.ResolvedId;
+
+            // KWin's desktopFileName can itself be a WM class or Wayland app ID.
+            // Resolve it through installed metadata before persisting a launch ID.
+            var desktopFile = DesktopEntryResolver([window.DesktopFileId, window.AppId]);
+            var resolvedId = desktopFile is not null ? NormalizeAppId(Path.GetFileName(desktopFile))
+                : !string.IsNullOrWhiteSpace(window.DesktopFileId) ? NormalizeAppId(window.DesktopFileId)
+                : !string.IsNullOrWhiteSpace(window.AppId) ? NormalizeAppId(window.AppId) : window.Id;
+            _resolvedWindowAppIds[window.Id] = (window.DesktopFileId, window.AppId, resolvedId);
+            return resolvedId;
         }
 
         private Control CreateAppIconContent(string appId)
