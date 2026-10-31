@@ -3,6 +3,22 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <UserControl.Styles>
+    <Style Selector="controls|BatteryLevelIcon">
+      <Setter Property="FillBrush" Value="#FFFFFF" />
+      <Setter Property="BaseBrush" Value="{DynamicResource ContentTertiaryBrush}" />
+    </Style>
+    <Style Selector="controls|BatteryLevelIcon.Low">
+      <Setter Property="FillBrush" Value="#FFCC00" />
+    </Style>
+    <Style Selector="controls|BatteryLevelIcon.Critical">
+      <Setter Property="FillBrush" Value="{DynamicResource StatusDangerBrush}" />
+    </Style>
+    <Style Selector="controls|BatteryLevelIcon.Charging">
+      <Setter Property="FillBrush" Value="{DynamicResource BatteryChargingBrush}" />
+    </Style>
+  </UserControl.Styles>
+
   <Viewbox Stretch="Uniform">
     <Canvas Width="25" Height="14">
       <!-- Mirror battery.svg with a native path so body opacity is applied by

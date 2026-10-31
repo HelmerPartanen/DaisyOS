@@ -341,8 +341,6 @@
       <controls:BatteryStatusView x:Name="BatteryInfo"
                                   IsVisible="False"
                                   ShowState="True"
-                                  IconWidth="30"
-                                  IconHeight="22"
                                   LabelFontSize="{DynamicResource TypeSizeCaption}"
                                   HorizontalAlignment="Left"
                                   VerticalAlignment="Center"

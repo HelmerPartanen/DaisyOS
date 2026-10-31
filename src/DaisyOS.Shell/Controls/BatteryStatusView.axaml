@@ -3,27 +3,10 @@
              xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
-  <UserControl.Styles>
-    <Style Selector="controls|BatteryLevelIcon.BatteryLevel">
-      <Setter Property="FillBrush" Value="#FFFFFF" />
-      <Setter Property="BaseBrush" Value="{DynamicResource ContentTertiaryBrush}" />
-    </Style>
-    <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Low">
-      <Setter Property="FillBrush" Value="#FFCC00" />
-    </Style>
-    <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Critical">
-      <Setter Property="FillBrush" Value="{DynamicResource StatusDangerBrush}" />
-    </Style>
-    <Style Selector="controls|BatteryLevelIcon.BatteryLevel.Charging">
-      <Setter Property="FillBrush" Value="{DynamicResource BatteryChargingBrush}" />
-    </Style>
-  </UserControl.Styles>
-
   <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
     <Grid Width="{Binding IconWidth, ElementName=Root}"
           Height="{Binding IconHeight, ElementName=Root}">
       <controls:BatteryLevelIcon x:Name="LevelIcon"
-                                 Classes="BatteryLevel"
                                  Percentage="{Binding ChargePercent, ElementName=Root}"
                                  IsCharging="{Binding IsCharging, ElementName=Root}" />
     </Grid>

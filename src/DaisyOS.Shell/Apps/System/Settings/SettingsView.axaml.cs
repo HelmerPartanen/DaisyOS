@@ -615,6 +615,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             await Task.WhenAll(profileTask, batteryTask);
             var profileStatus = await profileTask;
             var batteryStatus = await batteryTask;
+            PowerBatteryIcon.Percentage = batteryStatus.ChargePercent ?? 0;
+            PowerBatteryIcon.IsCharging = BatteryStatusView.IsChargingState(batteryStatus.State);
 
             if (buildVersion != _categoryBuildVersion) return;
             CategoryContent.Children.Remove(checking);

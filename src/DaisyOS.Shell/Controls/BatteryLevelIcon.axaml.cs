@@ -30,6 +30,7 @@ public partial class BatteryLevelIcon : UserControl
     static BatteryLevelIcon()
     {
         PercentageProperty.Changed.AddClassHandler<BatteryLevelIcon>((icon, _) => icon.UpdateFill());
+        IsChargingProperty.Changed.AddClassHandler<BatteryLevelIcon>((icon, _) => icon.UpdateFill());
     }
 
     public BatteryLevelIcon()
@@ -74,6 +75,9 @@ public partial class BatteryLevelIcon : UserControl
 
     private void UpdateFill()
     {
+        Classes.Set("Charging", IsCharging);
+        Classes.Set("Low", GetSeverity(Percentage) == BatteryLevelSeverity.Low);
+        Classes.Set("Critical", GetSeverity(Percentage) == BatteryLevelSeverity.Critical);
         if (this.FindControl<Border>("FillBar") is { } fill)
             fill.Width = GetFillWidth(Percentage);
     }

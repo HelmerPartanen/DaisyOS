@@ -14,16 +14,15 @@ public partial class BatteryStatusView : UserControl
     public static readonly StyledProperty<bool> IsChargingProperty =
         AvaloniaProperty.Register<BatteryStatusView, bool>(nameof(IsCharging));
     public static readonly StyledProperty<double> IconWidthProperty =
-        AvaloniaProperty.Register<BatteryStatusView, double>(nameof(IconWidth), 28);
+        AvaloniaProperty.Register<BatteryStatusView, double>(nameof(IconWidth), 24);
     public static readonly StyledProperty<double> IconHeightProperty =
-        AvaloniaProperty.Register<BatteryStatusView, double>(nameof(IconHeight), 22);
+        AvaloniaProperty.Register<BatteryStatusView, double>(nameof(IconHeight), 18);
     public static readonly StyledProperty<double> LabelFontSizeProperty =
         AvaloniaProperty.Register<BatteryStatusView, double>(nameof(LabelFontSize), 13);
 
     static BatteryStatusView()
     {
         ChargePercentProperty.Changed.AddClassHandler<BatteryStatusView>((view, _) => view.UpdatePresentation());
-        IsChargingProperty.Changed.AddClassHandler<BatteryStatusView>((view, _) => view.UpdatePresentation());
     }
 
     public BatteryStatusView()
@@ -48,10 +47,6 @@ public partial class BatteryStatusView : UserControl
     {
         if (this.FindControl<TextBlock>("PercentText") is { } percent)
             percent.Text = $"{Math.Clamp(ChargePercent, 0, 100)}%";
-        if (this.FindControl<BatteryLevelIcon>("LevelIcon") is not { } icon) return;
-        icon.Classes.Set("Charging", IsCharging);
-        icon.Classes.Set("Low", BatteryLevelIcon.GetSeverity(ChargePercent) == BatteryLevelSeverity.Low);
-        icon.Classes.Set("Critical", BatteryLevelIcon.GetSeverity(ChargePercent) == BatteryLevelSeverity.Critical);
     }
 
     internal static bool IsChargingState(string? state) =>

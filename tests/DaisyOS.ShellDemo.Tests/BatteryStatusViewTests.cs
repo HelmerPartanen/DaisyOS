@@ -24,6 +24,8 @@ public sealed class BatteryStatusViewTests
         var view = new BatteryStatusView
         {
             ChargePercent = percentage,
+            IconWidth = 28,
+            IconHeight = 22,
             Foreground = new SolidColorBrush(Color.Parse("#8899AA"))
         };
         var window = new Window
@@ -47,6 +49,47 @@ public sealed class BatteryStatusViewTests
             var alpha = baseColor.A / 255d * baseBrush.Opacity * 0.35;
             var expectedEmpty = (int)Math.Round(background * (1 - alpha) + baseColor.R * alpha);
             Assert.InRange((int)pixels.GetPixel(19, 30).Red, expectedEmpty - 2, expectedEmpty + 2);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void StandaloneIconMatchesStatusIconAndUpdatesCharge(bool light)
+    {
+        var standalone = new BatteryLevelIcon { Width = 24, Height = 18, Percentage = 75 };
+        var status = new BatteryStatusView { ChargePercent = 75 };
+        var panel = new StackPanel();
+        panel.Children.Add(standalone);
+        panel.Children.Add(status);
+        var window = new Window
+        {
+            Content = panel, Width = 160, Height = 60,
+            Background = new SolidColorBrush(light ? Color.Parse("#F0F0F0") : Color.Parse("#202020")),
+            RequestedThemeVariant = light ? Avalonia.Styling.ThemeVariant.Light : Avalonia.Styling.ThemeVariant.Dark
+        };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            var wrapped = status.FindControl<BatteryLevelIcon>("LevelIcon")!;
+            Assert.Equal(24, status.IconWidth);
+            Assert.Equal(18, status.IconHeight);
+            Assert.Equal(Colors.White, Assert.IsAssignableFrom<ISolidColorBrush>(standalone.FillBrush).Color);
+            Assert.Equal(Assert.IsAssignableFrom<ISolidColorBrush>(wrapped.FillBrush).Color,
+                Assert.IsAssignableFrom<ISolidColorBrush>(standalone.FillBrush).Color);
+            Assert.Equal(Assert.IsAssignableFrom<ISolidColorBrush>(wrapped.BaseBrush).Color,
+                Assert.IsAssignableFrom<ISolidColorBrush>(standalone.BaseBrush).Color);
+            standalone.Percentage = 9;
+            Dispatcher.UIThread.RunJobs();
+            Assert.Contains("Critical", standalone.Classes);
+            Assert.Equal(BatteryLevelIcon.GetFillWidth(9), standalone.FindControl<Border>("FillBar")!.Width);
+            standalone.IsCharging = true;
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(standalone.FindControl<DaisyIcon>("ChargingGlyph")!.IsVisible);
+            Assert.Contains("Charging", standalone.Classes);
+            window.CaptureRenderedFrame()!.Save($"/tmp/daisy-shared-battery-{(light ? "light" : "dark")}.png");
         }
         finally { window.Close(); }
     }
