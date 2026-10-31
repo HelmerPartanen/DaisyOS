@@ -87,17 +87,8 @@ public sealed class ContinuityFlowTests
             typeof(SettingsView).GetMethod("BuildContinuityPage", flags)!.Invoke(view, [state]);
             window.UpdateLayout(); Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
             Assert.DoesNotContain(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Approve pairing")));
-            if (kind == "pair-code")
-            {
-                var field = Assert.Single(row.GetVisualDescendants().OfType<TextBox>(), f => f.PlaceholderText == Loc.Get("6-digit code"));
-                var pair = Assert.Single(row.GetVisualDescendants().OfType<Button>(), b => Equals(b.Content, Loc.Get("Pair")));
-                Assert.False(pair.IsEnabled);
-                field.Text = "012345"; Dispatcher.UIThread.RunJobs();
-                Assert.True(pair.IsEnabled);
-                field.Text = "abcdef"; Dispatcher.UIThread.RunJobs();
-                Assert.False(pair.IsEnabled);
-            }
-            else Assert.Contains(row.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == "012345");
+            Assert.DoesNotContain(row.GetVisualDescendants().OfType<TextBox>(), f => f.PlaceholderText == Loc.Get("6-digit code"));
+            Assert.Contains(row.GetVisualDescendants().OfType<TextBlock>(), t => t.Text == Loc.Get("Complete pairing in the pop-up."));
         }
         finally { window.Close(); }
     }

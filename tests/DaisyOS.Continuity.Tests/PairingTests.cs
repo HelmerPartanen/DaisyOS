@@ -7,9 +7,10 @@ namespace DaisyOS.Continuity.Tests;
 public sealed class PairingTests
 {
     [Theory]
-    [InlineData(true)]
-    [InlineData(false)]
-    public async Task OnlyInitiatorEntersCodeAndPairingEnablesEveryFeature(bool approveSecond)
+    [InlineData("correct")]
+    [InlineData("incorrect")]
+    [InlineData("cancel")]
+    public async Task OnlyInitiatorEntersCodeAndPairingEnablesEveryFeature(string action)
     {
         var root = Path.Combine(Path.GetTempPath(), "daisy-continuity-pair-" + Guid.NewGuid().ToString("N"));
         try
@@ -38,6 +39,17 @@ public sealed class PairingTests
             Assert.Equal("pair-code", promptA.Kind); Assert.Equal("pair-display", promptB.Kind);
             Assert.Matches("^[0-9]{6}$", promptB.Detail);
             Assert.Empty(first.Settings.Peers); Assert.Empty(second.Settings.Peers);
+            if (action == "cancel")
+            {
+                await firstHost.ExecuteAsync(new("pair-cancel", promptA.Id), "fixture-local-ui");
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => firstPair);
+                await firstWire.DisposeAsync();
+                await Assert.ThrowsAnyAsync<IOException>(() => secondPair);
+                Assert.Empty(first.Settings.Peers); Assert.Empty(second.Settings.Peers);
+                Assert.Empty(firstHost.Snapshot().Prompts);
+                return;
+            }
+            var approveSecond = action == "correct";
             var typedCode = approveSecond ? promptB.Detail : ((int.Parse(promptB.Detail) + 1) % 1_000_000).ToString("D6");
             await firstHost.ExecuteAsync(new("pair-code", promptA.Id, typedCode), "fixture-local-ui");
             await Task.WhenAll(firstPair, secondPair).WaitAsync(timeout.Token);

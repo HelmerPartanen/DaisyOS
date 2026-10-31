@@ -314,6 +314,7 @@ public partial class App : Application
             {
                 _continuitySession = new DaisyOS.System.Continuity.ContinuitySessionBridge();
                 _ = _continuitySession.RunAsync(traceLifetime.Token);
+                _ = new ContinuityPairingService().RunAsync(traceLifetime.Token);
             }
             StartApplicationSettingsService(traceLifetime.Token);
             _ = DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.RunAsync(traceLifetime.Token);

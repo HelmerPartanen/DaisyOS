@@ -304,7 +304,6 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 SecureState.SafeName(wire.Remote.Name), wire.IsServer ? code : "Enter the six-digit code shown on the other computer."), decision));
             if (!wire.IsServer) _pairInputs[request] = input;
         }
-        var notification = wire.IsServer ? await NotifyAsync("Continuity pairing code", $"{wire.Remote.Name}: {code} — enter this code on the pairing computer.") : null;
         bool approved;
         try
         {
@@ -315,7 +314,6 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         finally
         {
             lock (_gate) { _prompts.Remove(request); _pairInputs.Remove(request); }
-            if (notification is { } notificationId) await CloseNotificationAsync(notificationId);
         }
         if (!approved) { lock (_gate) _diagnostic = "Pairing code did not match or pairing was cancelled. Try pairing again."; return; }
         lock (_gate)
@@ -329,7 +327,6 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             UpdateClipboardState();
             SaveSettings();
         }
-        await NotifyAsync("Device paired", SecureState.SafeName(wire.Remote.Name));
     }
     internal ContinuityStatus Snapshot()
     {
@@ -395,28 +392,13 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                     @interface: "org.freedesktop.Notifications", member: "Notify", signature: "susssasa{sv}i");
                 writer.WriteString("DaisyOS Continuity"); writer.WriteUInt32(0); writer.WriteString("network-workgroup");
                 writer.WriteString(title); writer.WriteString(global::System.Security.SecurityElement.Escape(body) ?? ""); writer.WriteArray(openFolder ? new[] { "open-folder", "Open containing folder" } : Array.Empty<string>());
-                writer.WriteDictionary(new Dictionary<string, VariantValue>()); writer.WriteInt32(title == "Continuity pairing code" ? 120000 : 8000); call = writer.CreateMessage();
+                writer.WriteDictionary(new Dictionary<string, VariantValue>()); writer.WriteInt32(8000); call = writer.CreateMessage();
             }
             var id = await _bus.CallMethodAsync(call, (reply, _) => reply.GetBodyReader().ReadUInt32()).WaitAsync(TimeSpan.FromSeconds(3));
             if (openFolder) lock (_gate) { if (_fileNotifications.Count >= 64) _fileNotifications.Clear(); _fileNotifications.Add(id); }
             return id;
         }
         catch { return null; }
-    }
-    private async Task CloseNotificationAsync(uint id)
-    {
-        try
-        {
-            MessageBuffer call;
-            using (var writer = _bus.GetMessageWriter())
-            {
-                writer.WriteMethodCallHeader(destination: "org.freedesktop.Notifications", path: "/org/freedesktop/Notifications",
-                    @interface: "org.freedesktop.Notifications", member: "CloseNotification", signature: "u");
-                writer.WriteUInt32(id); call = writer.CreateMessage();
-            }
-            await _bus.CallMethodAsync(call).WaitAsync(TimeSpan.FromSeconds(3));
-        }
-        catch { }
     }
     public async ValueTask DisposeAsync()
     {

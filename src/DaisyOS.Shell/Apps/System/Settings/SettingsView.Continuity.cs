@@ -19,7 +19,6 @@ public partial class SettingsView
     private StackPanel? _continuityPreferences;
     private string? _continuityStructure;
     private readonly Dictionary<string, (TextBlock Label, ProgressBar Progress)> _continuityTransferControls = new();
-    private readonly Dictionary<string, string> _continuityPairEntries = new();
     private string? _continuitySendPath;
     private string? _continuitySelectedPeer;
     private ContinuityStatus? _continuityLastState;
@@ -269,33 +268,9 @@ public partial class SettingsView
         if (state.Diagnostic.Contains("Pairing code", StringComparison.Ordinal))
             _continuityLive.Children.Add(CreateSection(Loc.Get("PAIRING"), null, InfoRow(Loc.Get("Couldn’t pair devices"), Loc.Get(state.Diagnostic))));
 
-        foreach (var expired in _continuityPairEntries.Keys.Where(id => !state.Prompts.Any(p => p.Id == id)).ToArray())
-            _continuityPairEntries.Remove(expired);
-        foreach (var prompt in state.Prompts)
-        {
-            if (prompt.Kind == "pair-display")
-            {
-                _continuityLive.Children.Add(CreateSection(Loc.Get("PAIRING CODE"),
-                    Loc.Format("Enter this code on {0} to pair. Pairing enables all Continuity features.", prompt.Name),
-                    InfoRow(prompt.Detail, Loc.Get("This code expires in two minutes."))));
-            }
-            else if (prompt.Kind == "pair-code")
-            {
-                var code = new TextBox { PlaceholderText = Loc.Get("6-digit code"), MaxLength = 6, Width = 160, Text = _continuityPairEntries.GetValueOrDefault(prompt.Id, "") };
-                Avalonia.Automation.AutomationProperties.SetName(code, Loc.Get("Pairing code"));
-                var pair = ContinuityButton("Pair", () => new("pair-code", prompt.Id, code.Text?.Trim() ?? ""), true);
-                pair.IsEnabled = code.Text is { Length: 6 } initial && initial.All(char.IsAsciiDigit);
-                code.TextChanged += (_, _) =>
-                {
-                    _continuityPairEntries[prompt.Id] = code.Text ?? "";
-                    pair.IsEnabled = code.Text is { Length: 6 } value && value.All(char.IsAsciiDigit);
-                };
-                code.KeyDown += (_, e) => { if (e.Key == Key.Enter && pair.IsEnabled) { _ = ContinuityActionAsync(new("pair-code", prompt.Id, code.Text!)); e.Handled = true; } };
-                _continuityLive.Children.Add(CreateSection(Loc.Get("PAIR DEVICE"),
-                    Loc.Format("Enter the code shown on {0}. Pairing enables all Continuity features.", prompt.Name),
-                    PreferenceRow(prompt.Name, null, new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { code, pair } }, "continuity")));
-            }
-        }
+        foreach (var prompt in state.Prompts.Where(p => p.Kind is "pair-code" or "pair-display"))
+            _continuityLive.Children.Add(CreateSection(Loc.Get("PAIR DEVICE"), null,
+                InfoRow(prompt.Name, Loc.Get("Complete pairing in the pop-up."))));
 
         foreach (var session in (state.Sessions ?? []).Where(s => s.Kind != "input"))
         {

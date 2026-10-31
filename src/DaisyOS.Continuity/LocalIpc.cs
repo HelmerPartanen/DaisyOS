@@ -119,6 +119,15 @@ public sealed partial class ContinuityDaemon
                         throw new UnauthorizedAccessException();
                 }
                 return;
+            case "pair-cancel":
+                lock (_gate)
+                {
+                    if (!_prompts.TryGetValue(command.Id, out var pairing) || !pairing.Prompt.Kind.StartsWith("pair-", StringComparison.Ordinal)) return;
+                    if (_pairInputs.TryGetValue(command.Id, out var pendingInput)) pendingInput.TrySetCanceled();
+                    if (_peerOperations.TryGetValue(pairing.Prompt.PeerId, out var operations))
+                        foreach (var operation in operations.ToArray()) _ = operation.CancelAsync();
+                }
+                return;
             case "pair-code":
                 lock (_gate)
                 {
