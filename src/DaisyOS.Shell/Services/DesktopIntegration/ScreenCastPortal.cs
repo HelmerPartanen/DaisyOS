@@ -28,7 +28,9 @@ internal sealed class ScreenCastPortal(DBusConnection bus) : IDisposable
     {
         if (method == "CreateSession")
         {
-            if (!_sessions.TryAdd(args[1], new Session(args[2]) { Remote = portal == "RemoteDesktop", Continuity = await ContinuityPortalGrant.ValidateAsync(args[1], stop) })) return (2, []);
+            var continuity = await ContinuityPortalGrant.ValidateAsync(args[1], stop);
+            if (!continuity && ContinuityPortalGrant.IsContinuitySession(args[1])) return (2, []);
+            if (!_sessions.TryAdd(args[1], new Session(args[2]) { Remote = portal == "RemoteDesktop", Continuity = continuity })) return (2, []);
             return (0, new() { ["session_id"] = args[1].Split('/').Last() });
         }
         if (!_sessions.TryGetValue(args[1], out var session) || session.App != args[2] || session.Started) return (2, []);

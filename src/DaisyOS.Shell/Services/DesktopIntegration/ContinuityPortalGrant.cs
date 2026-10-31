@@ -4,6 +4,9 @@ namespace DaisyOS.Shell.Services.DesktopIntegration;
 
 internal static class ContinuityPortalGrant
 {
+    public static bool IsContinuitySession(string session) =>
+        session.Split('/').Last().StartsWith("continuity_", StringComparison.Ordinal);
+
     // The frontend preserves the helper's session token in the session path.
     // Only the daemon knows the random token issued to a paired live operation.
     public static async Task<bool> ValidateAsync(string session, CancellationToken token)

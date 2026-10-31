@@ -3,7 +3,7 @@
 #include <sys/mman.h>
 #include <xkbcommon/xkbcommon.h>
 #define CAPTURE "org.freedesktop.portal.InputCapture"
-static gboolean edge_captured, edge_suspended;
+static gboolean edge_captured, edge_suspended, edge_rearm;
 static guint edge_activation;
 static unsigned edge_side;
 static double zone_x, zone_y, zone_width, zone_height;
@@ -89,7 +89,11 @@ static void capture_signal(GDBusConnection *connection,const gchar *sender,const
         if(!edge_emit(6,edge_side,0,edge_clamp(fraction,0,1),0)||!sync_modifiers())running=FALSE;
     } else if(!strcmp(member,"Deactivated")) {
         edge_captured=FALSE;if(!edge_emit(7,0,0,0,0))running=FALSE;
-    } else if((!strcmp(member,"Disabled")&&!edge_suspended)||!strcmp(member,"ZonesChanged")) {
+    } else if(!strcmp(member,"Disabled")) {
+        // A compositor may disable capture when returning the pointer. Keep the
+        // authorized portal session and rearm it instead of recreating the link.
+        if(!edge_suspended)edge_rearm=TRUE;
+    } else if(!strcmp(member,"ZonesChanged")) {
         // Topology changes invalidate every barrier. Stop safely; reconnect rebuilds it.
         running=FALSE;
     }
@@ -261,7 +265,13 @@ static int edge_main(int argc,char **argv) {
     fcntl(STDIN_FILENO,F_SETFL,O_NONBLOCK);char buffer[1024];size_t used=0;gint64 last=g_get_monotonic_time();
     while(running&&!g_dbus_connection_is_closed(bus)) {
         while(g_main_context_iteration(NULL,FALSE)){}if(!running)break;
-        if(capture)capture_events();else {
+        if(capture){
+            if(edge_rearm){
+                edge_rearm=FALSE;
+                if(!edge_suspended){GVariant *r=call(CAPTURE,"Enable",g_variant_new("(o@a{sv})",session,empty()));if(!r)break;g_variant_unref(r);}
+            }
+            capture_events();
+        }else {
             double width=remote_position.width,height=remote_position.height,x=remote_origin_x,y=remote_origin_y;
             dispatch_input();
             if(!remote_bounds()||width!=remote_position.width||height!=remote_position.height||x!=remote_origin_x||y!=remote_origin_y)break;

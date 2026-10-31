@@ -30,16 +30,19 @@ def method(connection,sender,path,iface,member,parameters,invocation):
         if member=='Release':
             released.append(args[1])
             if len(released)==1:
-                def reactivate():
-                    bus.emit_signal(sender,'/org/freedesktop/portal/desktop','org.freedesktop.portal.InputCapture','Activated',GLib.Variant('(oa{sv})',(session,{
-                        'activation_id':GLib.Variant('u',8),'barrier_id':GLib.Variant('u',1),'cursor_position':GLib.Variant('(dd)',(3840.,540.))})))
+                enabled=False
+                def deactivate():
+                    bus.emit_signal(sender,'/org/freedesktop/portal/desktop','org.freedesktop.portal.InputCapture','Deactivated',GLib.Variant('(oa{sv})',(session,{
+                        'activation_id':GLib.Variant('u',7)})))
+                    bus.emit_signal(sender,'/org/freedesktop/portal/desktop','org.freedesktop.portal.InputCapture','Disabled',GLib.Variant('(oa{sv})',(session,{})))
                     return False
-                GLib.timeout_add(80,reactivate)
+                GLib.timeout_add(30,deactivate)
         if member=='Enable' and not enabled:
             enabled=True
+            activation=7+len(released)
             def activate():
                 bus.emit_signal(sender,'/org/freedesktop/portal/desktop','org.freedesktop.portal.InputCapture','Activated',GLib.Variant('(oa{sv})',(session,{
-                    'activation_id':GLib.Variant('u',7),'barrier_id':GLib.Variant('u',1),'cursor_position':GLib.Variant('(dd)',(3840.,540.))})))
+                    'activation_id':GLib.Variant('u',activation),'barrier_id':GLib.Variant('u',1),'cursor_position':GLib.Variant('(dd)',(3840.,540.))})))
                 return False
             GLib.timeout_add(30,activate)
         return
@@ -97,6 +100,7 @@ with subprocess.Popen([helper,'--capture','right'],stdin=subprocess.PIPE,stdout=
         error=process.stderr.read().decode()
         assert process.returncode==0,error
         assert entered and released and closed,(entered,released,closed,error)
+        assert calls.count('CreateSession')==1 and calls.count('Enable')==2,calls
         assert entries==2 and len(released)==2,(entries,released)
         assert released[1]['activation_id']==8
         assert released[0]['activation_id']==7

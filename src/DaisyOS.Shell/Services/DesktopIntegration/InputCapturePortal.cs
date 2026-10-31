@@ -34,6 +34,10 @@ internal sealed class InputCapturePortal(DBusConnection bus) : IDisposable
                 var session = new Session(args[2]); _sessions.Add(args[1], session);
                 using var linked = CancellationTokenSource.CreateLinkedTokenSource(stop, session.Stop.Token);
                 var continuity = await ContinuityPortalGrant.ValidateAsync(args[1], linked.Token);
+                // A cancelled/stale Continuity operation must reconnect with a fresh
+                // daemon grant, never turn into an interactive permission request.
+                if (!continuity && ContinuityPortalGrant.IsContinuitySession(args[1]))
+                { Close(args[1]); return (2, []); }
                 if (!continuity)
                 {
                     var dialog = PortalDialog.Create(() => new PortalDialog("Allow input sharing?", $"{args[2]} wants to capture your input when the pointer reaches a configured screen edge. Allow only applications you trust.", "Allow", "Deny"));

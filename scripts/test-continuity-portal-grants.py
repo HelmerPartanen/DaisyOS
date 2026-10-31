@@ -27,7 +27,8 @@ class Daemon(dbus.service.Object):
     def Execute(self, value):
         command = json.loads(value)
         assert command['action'] == 'capture-grant', command
-        assert command['value'] == grant, command
+        if command['value'] != grant:
+            raise dbus.exceptions.DBusException('Expired grant', name='org.daisyos.Continuity1.RequestFailed')
         validated.append(command)
         return json.dumps(dict(enabled=True, visible=True, paused=False, sessionReady=True,
             name='Fixture', deviceId='fixture', clipboardStatus='', diagnostic='', devices=[], prompts=[], transfers=[], sessions=[]))
@@ -48,7 +49,7 @@ log = open('/tmp/daisy-continuity-portal-grants.log', 'w')
 process = subprocess.Popen([sys.argv[1], '--desktop-services'], stdout=subprocess.DEVNULL, stderr=log)
 loop = GLib.MainLoop()
 
-def call(portal, method, *args):
+def call(portal, method, *args, expected=0):
     result, errors = [], []
     def done(*values): result.extend(values); loop.quit()
     def failed(error): errors.append(str(error)); loop.quit()
@@ -58,7 +59,7 @@ def call(portal, method, *args):
     loop.run()
     GLib.source_remove(timeout)
     assert not errors, errors
-    assert result and int(result[0]) == 0, result
+    assert result and int(result[0]) == expected, result
     return result
 
 try:
@@ -77,6 +78,12 @@ try:
     call('RemoteDesktop', 'SelectDevices', request, remote, '', dbus.Dictionary({'types': dbus.UInt32(3)}, signature='sv'))
     call('RemoteDesktop', 'Start', request, remote, '', '', options)
     assert len(validated) == 2
+    for suffix in ('continuity_' + 'b' * 64, 'continuity_edge_1234'):
+        stale = dbus.ObjectPath(root + '/session/stale/' + suffix)
+        call('InputCapture', 'CreateSession', request, stale, '', '', dbus.Dictionary({'capabilities': dbus.UInt32(3)}, signature='sv'), expected=2)
+        call('RemoteDesktop', 'CreateSession', request, stale, '', options, expected=2)
+        call('ScreenCast', 'CreateSession', request, stale, '', options, expected=2)
+    assert len(captures) == 1 and len(validated) == 2
     print('PASS: authenticated Continuity input capture and remote input start without approval dialogs through the real portal backend')
 finally:
     process.terminate()
