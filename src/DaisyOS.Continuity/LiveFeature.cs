@@ -100,6 +100,7 @@ public sealed partial class ContinuityDaemon
             {
                 if (!live.Stop.IsCancellationRequested)
                 {
+                    if (kind == "input") Console.Error.WriteLine("[continuity] input_link_failed: " + ex.GetType().Name + ": " + ex.Message);
                     SetLiveState(live, "Failed", "Couldn’t connect. Unlock the other computer and check that Continuity is up to date.");
                     if (kind != "input") _ = NotifyAsync("Continuity", "Couldn’t connect to " + live.Info.Name + ". Unlock the other computer and try again.");
                 }
@@ -122,7 +123,7 @@ public sealed partial class ContinuityDaemon
         finally { RemoveLive(live); }
     }
     private readonly Dictionary<string, CancellationToken> _captureGrants = new();
-    private Process StartPipe(string name, IEnumerable<string> args, CancellationToken? captureLifetime = null)
+    private Process StartPipe(string name, IEnumerable<string> args, CancellationToken? captureLifetime = null, bool inputDiagnostics = false)
     {
         var start = new ProcessStartInfo(_mediaExecutableDirectory is not null && !global::System.IO.Path.IsPathFullyQualified(name) ? global::System.IO.Path.Combine(_mediaExecutableDirectory, name) : name) { UseShellExecute = false, RedirectStandardInput = true,
             RedirectStandardOutput = true, RedirectStandardError = true };
@@ -138,8 +139,23 @@ public sealed partial class ContinuityDaemon
         try { process = Process.Start(start) ?? throw new IOException("Media helper unavailable."); }
         catch (global::System.ComponentModel.Win32Exception ex) { throw new IOException("Media dependency unavailable.", ex); }
         // Drain without retaining audio-server or portal diagnostics in memory/logs.
-        _ = DrainAsync(process.StandardError.BaseStream);
+        _ = inputDiagnostics ? DrainInputDiagnosticsAsync(process.StandardError) : DrainAsync(process.StandardError.BaseStream);
         return process;
+    }
+    private static async Task DrainInputDiagnosticsAsync(StreamReader reader)
+    {
+        try
+        {
+            var buffer = new char[1024];
+            while (await reader.ReadAsync(buffer) is var count && count > 0)
+            {
+                var text = new string(buffer, 0, count);
+                foreach (var stage in new[] { "create session", "connect EIS", "configure barriers", "enable capture", "wait for keyboard and pointer devices" })
+                    if (text.Contains("Continuity input initialization failed: " + stage, StringComparison.Ordinal))
+                        Console.Error.WriteLine("[continuity] input_initialization_failed: " + stage);
+            }
+        }
+        catch (IOException) { }
     }
     private static async Task DrainAsync(Stream stream)
     { try { var bytes = new byte[1024]; while (await stream.ReadAsync(bytes) > 0) { } } catch (IOException) { } }

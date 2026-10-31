@@ -124,8 +124,10 @@ public sealed partial class ContinuityDaemon
                     using var timeout = CreateSharingLifetime(_stop.Token);
                     timeout.CancelAfter(TimeSpan.FromSeconds(12));
                     await using var wire = await DialPeerAsync(id, timeout.Token);
-                    await wire.SendAsync(new() { Ping = new Ping { Sequence = 1 } }, timeout.Token);
-                    if ((await wire.ReceiveAsync(timeout.Token)).Pong?.Sequence != 1) continue;
+                    await wire.SendAsync(new() { Ping = new Ping { Sequence = 1, Position = GetInputPosition(id) } }, timeout.Token);
+                    var pong = (await wire.ReceiveAsync(timeout.Token)).Pong;
+                    if (pong?.Sequence != 1) continue;
+                    ApplyInputPosition(id, pong.Position);
                     lock (_gate)
                     {
                         if (!Ready || !_state.Settings.Peers.TryGetValue(id, out var peer)) continue;

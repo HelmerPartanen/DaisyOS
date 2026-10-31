@@ -53,48 +53,53 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             "SABCCQoHbWVzc2FnZUoECAQQCkoECA4QFEoECBcQHkoECCMQKCJzCgVIZWxs",
             "bxIRCglkZXZpY2VfaWQYASABKAwSNwoMY2FwYWJpbGl0aWVzGAIgAygOMiEu",
             "ZGFpc3lvcy5jb250aW51aXR5LnYxLkNhcGFiaWxpdHkSDQoFbm9uY2UYAyAB",
-            "KAwSDwoHdHJ1c3RlZBgEIAEoCCIYCgRQaW5nEhAKCHNlcXVlbmNlGAEgASgE",
-            "IhgKBFBvbmcSEAoIc2VxdWVuY2UYASABKAQibQoOQ2xpcGJvYXJkT2ZmZXIS",
-            "EQoJdXBkYXRlX2lkGAEgASgMEhYKDm9yaWdpbl9wZWVyX2lkGAIgASgMEhIK",
-            "Cm1pbWVfdHlwZXMYAyADKAkSDAoEc2l6ZRgEIAEoBBIOCgZzaGEyNTYYBSAB",
-            "KAwiNAoMQ2xpcGJvYXJkR2V0EhEKCXVwZGF0ZV9pZBgBIAEoDBIRCgltaW1l",
-            "X3R5cGUYAiABKAkiQwoNQ2xpcGJvYXJkRGF0YRIRCgl1cGRhdGVfaWQYASAB",
-            "KAwSEQoJbWltZV90eXBlGAIgASgJEgwKBGRhdGEYAyABKAwiaQoJRmlsZU9m",
-            "ZmVyEhMKC3RyYW5zZmVyX2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEo",
-            "CRIOCgZsZW5ndGgYAyABKAQSDgoGc2hhMjU2GAQgASgMEhEKCW1pbWVfaGlu",
-            "dBgFIAEoCSJMCgxGaWxlRGVjaXNpb24SEwoLdHJhbnNmZXJfaWQYASABKAwS",
-            "EAoIYWNjZXB0ZWQYAiABKAgSFQoNcmVzdW1lX29mZnNldBgDIAEoBCI+CglG",
-            "aWxlQ2h1bmsSEwoLdHJhbnNmZXJfaWQYASABKAwSDgoGb2Zmc2V0GAIgASgE",
-            "EgwKBGRhdGEYAyABKAwiPAoMRmlsZUNvbXBsZXRlEhMKC3RyYW5zZmVyX2lk",
-            "GAEgASgMEhcKD3ZlcmlmaWVkX3NoYTI1NhgCIAEoDCIhCgpGaWxlQ2FuY2Vs",
-            "EhMKC3RyYW5zZmVyX2lkGAEgASgMIvgBCgVFcnJvchIvCgRjb2RlGAEgASgO",
-            "MiEuZGFpc3lvcy5jb250aW51aXR5LnYxLkVycm9yLkNvZGUSGAoQc2FmZV9k",
-            "ZXNjcmlwdGlvbhgCIAEoCSKjAQoEQ29kZRIPCgtVTlNQRUNJRklFRBAAEhgK",
-            "FElOQ09NUEFUSUJMRV9WRVJTSU9OEAESEAoMVU5BVVRIT1JJWkVEEAISEwoP",
-            "SU5WQUxJRF9NRVNTQUdFEAMSEgoOTElNSVRfRVhDRUVERUQQBBINCglDQU5D",
-            "RUxMRUQQBRIPCgtVTkFWQUlMQUJMRRAGEhUKEUNIRUNLU1VNX01JU01BVENI",
-            "EAciXAoJQm9vdHN0cmFwEg0KBW1ham9yGAEgASgNEhMKC2NlcnRpZmljYXRl",
-            "GAIgASgMEgwKBG5hbWUYAyABKAkSDwoHcGFpcmluZxgEIAEoCBIMCgRwb3J0",
-            "GAUgASgNIlIKC1BhaXJDb25zZW50EhAKCGFwcHJvdmVkGAEgASgIEgwKBHNh",
-            "bHQYAiABKAwSFAoMcHVibGljX3ZhbHVlGAMgASgMEg0KBXByb29mGAQgASgM",
-            "Ij4KCUxpdmVTdGFydBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGtpbmQYAiAB",
-            "KAkSDwoHY29udHJvbBgDIAEoCCIgCgxMaXZlRGVjaXNpb24SEAoIYWNjZXB0",
-            "ZWQYASABKAgiLAoKTGl2ZVBhY2tldBIQCghzZXF1ZW5jZRgBIAEoBBIMCgRk",
-            "YXRhGAIgASgMImIKDUFjdGl2aXR5T2ZmZXISDgoGYXBwX2lkGAEgASgJEgwK",
-            "BGtpbmQYAiABKAkSFgoOc2NoZW1hX3ZlcnNpb24YAyABKA0SDQoFdGl0bGUY",
-            "BCABKAkSDAoEdGV4dBgFIAEoCSIiCg5BY3Rpdml0eVJlc3VsdBIQCghhY2Nl",
-            "cHRlZBgBIAEoCCqGAQoKQ2FwYWJpbGl0eRIaChZDQVBBQklMSVRZX1VOU1BF",
-            "Q0lGSUVEEAASEgoOVEVYVF9DTElQQk9BUkQQARIJCgVGSUxFUxACEgkKBUlO",
-            "UFVUEAMSCwoHSEFORE9GRhAEEgoKBlNDUkVFThAFEgkKBUFVRElPEAYSDgoK",
-            "RURHRV9JTlBVVBAHQiGqAh5EYWlzeU9TLkNvbnRpbnVpdHkuUHJvdG9jb2wu",
-            "VjFiBnByb3RvMw=="));
+            "KAwSDwoHdHJ1c3RlZBgEIAEoCCI/Cg1JbnB1dFBvc2l0aW9uEgwKBGVkZ2UY",
+            "ASABKAkSEAoIcmV2aXNpb24YAiABKAMSDgoGYXV0aG9yGAMgASgJIlAKBFBp",
+            "bmcSEAoIc2VxdWVuY2UYASABKAQSNgoIcG9zaXRpb24YAiABKAsyJC5kYWlz",
+            "eW9zLmNvbnRpbnVpdHkudjEuSW5wdXRQb3NpdGlvbiJQCgRQb25nEhAKCHNl",
+            "cXVlbmNlGAEgASgEEjYKCHBvc2l0aW9uGAIgASgLMiQuZGFpc3lvcy5jb250",
+            "aW51aXR5LnYxLklucHV0UG9zaXRpb24ibQoOQ2xpcGJvYXJkT2ZmZXISEQoJ",
+            "dXBkYXRlX2lkGAEgASgMEhYKDm9yaWdpbl9wZWVyX2lkGAIgASgMEhIKCm1p",
+            "bWVfdHlwZXMYAyADKAkSDAoEc2l6ZRgEIAEoBBIOCgZzaGEyNTYYBSABKAwi",
+            "NAoMQ2xpcGJvYXJkR2V0EhEKCXVwZGF0ZV9pZBgBIAEoDBIRCgltaW1lX3R5",
+            "cGUYAiABKAkiQwoNQ2xpcGJvYXJkRGF0YRIRCgl1cGRhdGVfaWQYASABKAwS",
+            "EQoJbWltZV90eXBlGAIgASgJEgwKBGRhdGEYAyABKAwiaQoJRmlsZU9mZmVy",
+            "EhMKC3RyYW5zZmVyX2lkGAEgASgMEhQKDGRpc3BsYXlfbmFtZRgCIAEoCRIO",
+            "CgZsZW5ndGgYAyABKAQSDgoGc2hhMjU2GAQgASgMEhEKCW1pbWVfaGludBgF",
+            "IAEoCSJMCgxGaWxlRGVjaXNpb24SEwoLdHJhbnNmZXJfaWQYASABKAwSEAoI",
+            "YWNjZXB0ZWQYAiABKAgSFQoNcmVzdW1lX29mZnNldBgDIAEoBCI+CglGaWxl",
+            "Q2h1bmsSEwoLdHJhbnNmZXJfaWQYASABKAwSDgoGb2Zmc2V0GAIgASgEEgwK",
+            "BGRhdGEYAyABKAwiPAoMRmlsZUNvbXBsZXRlEhMKC3RyYW5zZmVyX2lkGAEg",
+            "ASgMEhcKD3ZlcmlmaWVkX3NoYTI1NhgCIAEoDCIhCgpGaWxlQ2FuY2VsEhMK",
+            "C3RyYW5zZmVyX2lkGAEgASgMIvgBCgVFcnJvchIvCgRjb2RlGAEgASgOMiEu",
+            "ZGFpc3lvcy5jb250aW51aXR5LnYxLkVycm9yLkNvZGUSGAoQc2FmZV9kZXNj",
+            "cmlwdGlvbhgCIAEoCSKjAQoEQ29kZRIPCgtVTlNQRUNJRklFRBAAEhgKFElO",
+            "Q09NUEFUSUJMRV9WRVJTSU9OEAESEAoMVU5BVVRIT1JJWkVEEAISEwoPSU5W",
+            "QUxJRF9NRVNTQUdFEAMSEgoOTElNSVRfRVhDRUVERUQQBBINCglDQU5DRUxM",
+            "RUQQBRIPCgtVTkFWQUlMQUJMRRAGEhUKEUNIRUNLU1VNX01JU01BVENIEAci",
+            "XAoJQm9vdHN0cmFwEg0KBW1ham9yGAEgASgNEhMKC2NlcnRpZmljYXRlGAIg",
+            "ASgMEgwKBG5hbWUYAyABKAkSDwoHcGFpcmluZxgEIAEoCBIMCgRwb3J0GAUg",
+            "ASgNIlIKC1BhaXJDb25zZW50EhAKCGFwcHJvdmVkGAEgASgIEgwKBHNhbHQY",
+            "AiABKAwSFAoMcHVibGljX3ZhbHVlGAMgASgMEg0KBXByb29mGAQgASgMIj4K",
+            "CUxpdmVTdGFydBISCgpzZXNzaW9uX2lkGAEgASgJEgwKBGtpbmQYAiABKAkS",
+            "DwoHY29udHJvbBgDIAEoCCIgCgxMaXZlRGVjaXNpb24SEAoIYWNjZXB0ZWQY",
+            "ASABKAgiLAoKTGl2ZVBhY2tldBIQCghzZXF1ZW5jZRgBIAEoBBIMCgRkYXRh",
+            "GAIgASgMImIKDUFjdGl2aXR5T2ZmZXISDgoGYXBwX2lkGAEgASgJEgwKBGtp",
+            "bmQYAiABKAkSFgoOc2NoZW1hX3ZlcnNpb24YAyABKA0SDQoFdGl0bGUYBCAB",
+            "KAkSDAoEdGV4dBgFIAEoCSIiCg5BY3Rpdml0eVJlc3VsdBIQCghhY2NlcHRl",
+            "ZBgBIAEoCCqGAQoKQ2FwYWJpbGl0eRIaChZDQVBBQklMSVRZX1VOU1BFQ0lG",
+            "SUVEEAASEgoOVEVYVF9DTElQQk9BUkQQARIJCgVGSUxFUxACEgkKBUlOUFVU",
+            "EAMSCwoHSEFORE9GRhAEEgoKBlNDUkVFThAFEgkKBUFVRElPEAYSDgoKRURH",
+            "RV9JTlBVVBAHQiGqAh5EYWlzeU9TLkNvbnRpbnVpdHkuUHJvdG9jb2wuVjFi",
+            "BnByb3RvMw=="));
       descriptor = pbr::FileDescriptor.FromGeneratedCode(descriptorData,
           new pbr::FileDescriptor[] { },
           new pbr::GeneratedClrTypeInfo(new[] {typeof(global::DaisyOS.Continuity.Protocol.V1.Capability), }, null, new pbr::GeneratedClrTypeInfo[] {
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Envelope), global::DaisyOS.Continuity.Protocol.V1.Envelope.Parser, new[]{ "ProtocolMajor", "ProtocolMinor", "RequestId", "Hello", "Ping", "Pong", "PairConsent", "ClipboardOffer", "ClipboardGet", "ClipboardData", "FileOffer", "FileDecision", "FileChunk", "FileComplete", "FileCancel", "Error", "LiveStart", "LiveDecision", "LivePacket", "ActivityOffer", "ActivityResult" }, new[]{ "Message" }, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Hello), global::DaisyOS.Continuity.Protocol.V1.Hello.Parser, new[]{ "DeviceId", "Capabilities", "Nonce", "Trusted" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Ping), global::DaisyOS.Continuity.Protocol.V1.Ping.Parser, new[]{ "Sequence" }, null, null, null, null),
-            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Pong), global::DaisyOS.Continuity.Protocol.V1.Pong.Parser, new[]{ "Sequence" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.InputPosition), global::DaisyOS.Continuity.Protocol.V1.InputPosition.Parser, new[]{ "Edge", "Revision", "Author" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Ping), global::DaisyOS.Continuity.Protocol.V1.Ping.Parser, new[]{ "Sequence", "Position" }, null, null, null, null),
+            new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.Pong), global::DaisyOS.Continuity.Protocol.V1.Pong.Parser, new[]{ "Sequence", "Position" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.ClipboardOffer), global::DaisyOS.Continuity.Protocol.V1.ClipboardOffer.Parser, new[]{ "UpdateId", "OriginPeerId", "MimeTypes", "Size", "Sha256" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.ClipboardGet), global::DaisyOS.Continuity.Protocol.V1.ClipboardGet.Parser, new[]{ "UpdateId", "MimeType" }, null, null, null, null),
             new pbr::GeneratedClrTypeInfo(typeof(global::DaisyOS.Continuity.Protocol.V1.ClipboardData), global::DaisyOS.Continuity.Protocol.V1.ClipboardData.Parser, new[]{ "UpdateId", "MimeType", "Data" }, null, null, null, null),
@@ -1701,6 +1706,278 @@ namespace DaisyOS.Continuity.Protocol.V1 {
   }
 
   [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
+  public sealed partial class InputPosition : pb::IMessage<InputPosition>
+  #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      , pb::IBufferMessage
+  #endif
+  {
+    private static readonly pb::MessageParser<InputPosition> _parser = new pb::MessageParser<InputPosition>(() => new InputPosition());
+    private pb::UnknownFieldSet _unknownFields;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pb::MessageParser<InputPosition> Parser { get { return _parser; } }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public static pbr::MessageDescriptor Descriptor {
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[2]; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    pbr::MessageDescriptor pb::IMessage.Descriptor {
+      get { return Descriptor; }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public InputPosition() {
+      OnConstruction();
+    }
+
+    partial void OnConstruction();
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public InputPosition(InputPosition other) : this() {
+      edge_ = other.edge_;
+      revision_ = other.revision_;
+      author_ = other.author_;
+      _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public InputPosition Clone() {
+      return new InputPosition(this);
+    }
+
+    /// <summary>Field number for the "edge" field.</summary>
+    public const int EdgeFieldNumber = 1;
+    private string edge_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Edge {
+      get { return edge_; }
+      set {
+        edge_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    /// <summary>Field number for the "revision" field.</summary>
+    public const int RevisionFieldNumber = 2;
+    private long revision_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public long Revision {
+      get { return revision_; }
+      set {
+        revision_ = value;
+      }
+    }
+
+    /// <summary>Field number for the "author" field.</summary>
+    public const int AuthorFieldNumber = 3;
+    private string author_ = "";
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public string Author {
+      get { return author_; }
+      set {
+        author_ = pb::ProtoPreconditions.CheckNotNull(value, "value");
+      }
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override bool Equals(object other) {
+      return Equals(other as InputPosition);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public bool Equals(InputPosition other) {
+      if (ReferenceEquals(other, null)) {
+        return false;
+      }
+      if (ReferenceEquals(other, this)) {
+        return true;
+      }
+      if (Edge != other.Edge) return false;
+      if (Revision != other.Revision) return false;
+      if (Author != other.Author) return false;
+      return Equals(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override int GetHashCode() {
+      int hash = 1;
+      if (Edge.Length != 0) hash ^= Edge.GetHashCode();
+      if (Revision != 0L) hash ^= Revision.GetHashCode();
+      if (Author.Length != 0) hash ^= Author.GetHashCode();
+      if (_unknownFields != null) {
+        hash ^= _unknownFields.GetHashCode();
+      }
+      return hash;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public override string ToString() {
+      return pb::JsonFormatter.ToDiagnosticString(this);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void WriteTo(pb::CodedOutputStream output) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      output.WriteRawMessage(this);
+    #else
+      if (Edge.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Edge);
+      }
+      if (Revision != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(Revision);
+      }
+      if (Author.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(Author);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(output);
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalWriteTo(ref pb::WriteContext output) {
+      if (Edge.Length != 0) {
+        output.WriteRawTag(10);
+        output.WriteString(Edge);
+      }
+      if (Revision != 0L) {
+        output.WriteRawTag(16);
+        output.WriteInt64(Revision);
+      }
+      if (Author.Length != 0) {
+        output.WriteRawTag(26);
+        output.WriteString(Author);
+      }
+      if (_unknownFields != null) {
+        _unknownFields.WriteTo(ref output);
+      }
+    }
+    #endif
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public int CalculateSize() {
+      int size = 0;
+      if (Edge.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Edge);
+      }
+      if (Revision != 0L) {
+        size += 1 + pb::CodedOutputStream.ComputeInt64Size(Revision);
+      }
+      if (Author.Length != 0) {
+        size += 1 + pb::CodedOutputStream.ComputeStringSize(Author);
+      }
+      if (_unknownFields != null) {
+        size += _unknownFields.CalculateSize();
+      }
+      return size;
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(InputPosition other) {
+      if (other == null) {
+        return;
+      }
+      if (other.Edge.Length != 0) {
+        Edge = other.Edge;
+      }
+      if (other.Revision != 0L) {
+        Revision = other.Revision;
+      }
+      if (other.Author.Length != 0) {
+        Author = other.Author;
+      }
+      _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
+    }
+
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public void MergeFrom(pb::CodedInputStream input) {
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+      input.ReadRawMessage(this);
+    #else
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, input);
+            break;
+          case 10: {
+            Edge = input.ReadString();
+            break;
+          }
+          case 16: {
+            Revision = input.ReadInt64();
+            break;
+          }
+          case 26: {
+            Author = input.ReadString();
+            break;
+          }
+        }
+      }
+    #endif
+    }
+
+    #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    void pb::IBufferMessage.InternalMergeFrom(ref pb::ParseContext input) {
+      uint tag;
+      while ((tag = input.ReadTag()) != 0) {
+      if ((tag & 7) == 4) {
+        // Abort on any end group tag.
+        return;
+      }
+      switch(tag) {
+          default:
+            _unknownFields = pb::UnknownFieldSet.MergeFieldFrom(_unknownFields, ref input);
+            break;
+          case 10: {
+            Edge = input.ReadString();
+            break;
+          }
+          case 16: {
+            Revision = input.ReadInt64();
+            break;
+          }
+          case 26: {
+            Author = input.ReadString();
+            break;
+          }
+        }
+      }
+    }
+    #endif
+
+  }
+
+  [global::System.Diagnostics.DebuggerDisplayAttribute("{ToString(),nq}")]
   public sealed partial class Ping : pb::IMessage<Ping>
   #if !GOOGLE_PROTOBUF_REFSTRUCT_COMPATIBILITY_MODE
       , pb::IBufferMessage
@@ -1715,7 +1992,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[2]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[3]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1736,6 +2013,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public Ping(Ping other) : this() {
       sequence_ = other.sequence_;
+      position_ = other.position_ != null ? other.position_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1757,6 +2035,18 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       }
     }
 
+    /// <summary>Field number for the "position" field.</summary>
+    public const int PositionFieldNumber = 2;
+    private global::DaisyOS.Continuity.Protocol.V1.InputPosition position_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::DaisyOS.Continuity.Protocol.V1.InputPosition Position {
+      get { return position_; }
+      set {
+        position_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1773,6 +2063,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         return true;
       }
       if (Sequence != other.Sequence) return false;
+      if (!object.Equals(Position, other.Position)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1781,6 +2072,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     public override int GetHashCode() {
       int hash = 1;
       if (Sequence != 0UL) hash ^= Sequence.GetHashCode();
+      if (position_ != null) hash ^= Position.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -1803,6 +2095,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(8);
         output.WriteUInt64(Sequence);
       }
+      if (position_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(Position);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -1817,6 +2113,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(8);
         output.WriteUInt64(Sequence);
       }
+      if (position_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(Position);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -1829,6 +2129,9 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       int size = 0;
       if (Sequence != 0UL) {
         size += 1 + pb::CodedOutputStream.ComputeUInt64Size(Sequence);
+      }
+      if (position_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Position);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -1844,6 +2147,12 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       }
       if (other.Sequence != 0UL) {
         Sequence = other.Sequence;
+      }
+      if (other.position_ != null) {
+        if (position_ == null) {
+          Position = new global::DaisyOS.Continuity.Protocol.V1.InputPosition();
+        }
+        Position.MergeFrom(other.Position);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -1868,6 +2177,13 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             Sequence = input.ReadUInt64();
             break;
           }
+          case 18: {
+            if (position_ == null) {
+              Position = new global::DaisyOS.Continuity.Protocol.V1.InputPosition();
+            }
+            input.ReadMessage(Position);
+            break;
+          }
         }
       }
     #endif
@@ -1889,6 +2205,13 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             break;
           case 8: {
             Sequence = input.ReadUInt64();
+            break;
+          }
+          case 18: {
+            if (position_ == null) {
+              Position = new global::DaisyOS.Continuity.Protocol.V1.InputPosition();
+            }
+            input.ReadMessage(Position);
             break;
           }
         }
@@ -1913,7 +2236,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[3]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[4]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -1934,6 +2257,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public Pong(Pong other) : this() {
       sequence_ = other.sequence_;
+      position_ = other.position_ != null ? other.position_.Clone() : null;
       _unknownFields = pb::UnknownFieldSet.Clone(other._unknownFields);
     }
 
@@ -1955,6 +2279,18 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       }
     }
 
+    /// <summary>Field number for the "position" field.</summary>
+    public const int PositionFieldNumber = 2;
+    private global::DaisyOS.Continuity.Protocol.V1.InputPosition position_;
+    [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
+    [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
+    public global::DaisyOS.Continuity.Protocol.V1.InputPosition Position {
+      get { return position_; }
+      set {
+        position_ = value;
+      }
+    }
+
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public override bool Equals(object other) {
@@ -1971,6 +2307,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         return true;
       }
       if (Sequence != other.Sequence) return false;
+      if (!object.Equals(Position, other.Position)) return false;
       return Equals(_unknownFields, other._unknownFields);
     }
 
@@ -1979,6 +2316,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     public override int GetHashCode() {
       int hash = 1;
       if (Sequence != 0UL) hash ^= Sequence.GetHashCode();
+      if (position_ != null) hash ^= Position.GetHashCode();
       if (_unknownFields != null) {
         hash ^= _unknownFields.GetHashCode();
       }
@@ -2001,6 +2339,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(8);
         output.WriteUInt64(Sequence);
       }
+      if (position_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(Position);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(output);
       }
@@ -2015,6 +2357,10 @@ namespace DaisyOS.Continuity.Protocol.V1 {
         output.WriteRawTag(8);
         output.WriteUInt64(Sequence);
       }
+      if (position_ != null) {
+        output.WriteRawTag(18);
+        output.WriteMessage(Position);
+      }
       if (_unknownFields != null) {
         _unknownFields.WriteTo(ref output);
       }
@@ -2027,6 +2373,9 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       int size = 0;
       if (Sequence != 0UL) {
         size += 1 + pb::CodedOutputStream.ComputeUInt64Size(Sequence);
+      }
+      if (position_ != null) {
+        size += 1 + pb::CodedOutputStream.ComputeMessageSize(Position);
       }
       if (_unknownFields != null) {
         size += _unknownFields.CalculateSize();
@@ -2042,6 +2391,12 @@ namespace DaisyOS.Continuity.Protocol.V1 {
       }
       if (other.Sequence != 0UL) {
         Sequence = other.Sequence;
+      }
+      if (other.position_ != null) {
+        if (position_ == null) {
+          Position = new global::DaisyOS.Continuity.Protocol.V1.InputPosition();
+        }
+        Position.MergeFrom(other.Position);
       }
       _unknownFields = pb::UnknownFieldSet.MergeFrom(_unknownFields, other._unknownFields);
     }
@@ -2064,6 +2419,13 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             break;
           case 8: {
             Sequence = input.ReadUInt64();
+            break;
+          }
+          case 18: {
+            if (position_ == null) {
+              Position = new global::DaisyOS.Continuity.Protocol.V1.InputPosition();
+            }
+            input.ReadMessage(Position);
             break;
           }
         }
@@ -2089,6 +2451,13 @@ namespace DaisyOS.Continuity.Protocol.V1 {
             Sequence = input.ReadUInt64();
             break;
           }
+          case 18: {
+            if (position_ == null) {
+              Position = new global::DaisyOS.Continuity.Protocol.V1.InputPosition();
+            }
+            input.ReadMessage(Position);
+            break;
+          }
         }
       }
     }
@@ -2111,7 +2480,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[4]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[5]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2446,7 +2815,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[5]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[6]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2681,7 +3050,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[6]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[7]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -2953,7 +3322,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[7]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[8]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3302,7 +3671,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[8]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[9]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3577,7 +3946,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[9]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[10]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -3849,7 +4218,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[10]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[11]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4084,7 +4453,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[11]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[12]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4282,7 +4651,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[12]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[13]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4540,7 +4909,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[13]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[14]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -4886,7 +5255,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[14]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[15]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5198,7 +5567,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[15]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[16]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5470,7 +5839,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[16]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[17]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5668,7 +6037,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[17]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[18]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -5906,7 +6275,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[18]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[19]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
@@ -6252,7 +6621,7 @@ namespace DaisyOS.Continuity.Protocol.V1 {
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]
     [global::System.CodeDom.Compiler.GeneratedCode("protoc", null)]
     public static pbr::MessageDescriptor Descriptor {
-      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[19]; }
+      get { return global::DaisyOS.Continuity.Protocol.V1.ContinuityReflection.Descriptor.MessageTypes[20]; }
     }
 
     [global::System.Diagnostics.DebuggerNonUserCodeAttribute]

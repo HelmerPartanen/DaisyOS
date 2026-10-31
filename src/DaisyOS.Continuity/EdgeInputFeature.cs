@@ -26,7 +26,7 @@ public sealed partial class ContinuityDaemon
     {
         var path = global::System.IO.Path.Combine(_mediaExecutableDirectory ?? AppContext.BaseDirectory, "daisyos-continuity-media");
         if (!File.Exists(path)) throw new IOException("Install the Continuity input helper.");
-        return StartPipe(path, args, lifetime);
+        return StartPipe(path, args, lifetime, inputDiagnostics: true);
     }
     private static async Task ReadyEdgeHelperAsync(Process helper, CancellationToken token)
     {
@@ -68,7 +68,7 @@ public sealed partial class ContinuityDaemon
         var header = new byte[4];
         while (true)
         {
-            await helper.StandardOutput.BaseStream.ReadExactlyAsync(header, live.Stop.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(4), live.Stop.Token);
+            await helper.StandardOutput.BaseStream.ReadExactlyAsync(header, live.Stop.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(10), live.Stop.Token);
             var length = BinaryPrimitives.ReadUInt32BigEndian(header);
             if (length > 128) throw new InvalidDataException();
             var bytes = new byte[length];
@@ -86,7 +86,7 @@ public sealed partial class ContinuityDaemon
         ulong sequence = 1;
         while (true)
         {
-            var packet = (await wire.ReceiveAsync(live.Stop.Token).WaitAsync(TimeSpan.FromSeconds(4), live.Stop.Token)).LivePacket ?? throw new InvalidDataException();
+            var packet = (await wire.ReceiveAsync(live.Stop.Token).WaitAsync(TimeSpan.FromSeconds(10), live.Stop.Token)).LivePacket ?? throw new InvalidDataException();
             if (packet.Sequence != sequence++ || packet.Data.Length > 128) throw new InvalidDataException();
             if (packet.Data.Length == 0) continue;
             var command = Encoding.ASCII.GetString(packet.Data.Span); ValidateEdgeInput(command);

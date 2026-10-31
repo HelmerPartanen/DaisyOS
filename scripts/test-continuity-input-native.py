@@ -20,7 +20,7 @@ def method(connection,sender,path,iface,member,parameters,invocation):
         fd=server.client_fd();fds=Gio.UnixFDList.new();index=fds.append(fd);os.close(fd)
         invocation.return_value_with_unix_fd_list(GLib.Variant('(h)',(index,)),fds);return
     options=args[-1];sender_path=sender[1:].replace('.','_');token=options['handle_token']
-    request='/org/freedesktop/portal/desktop/request/'+sender_path+'/'+token
+    request='/org/freedesktop/portal/desktop/request/'+sender_path+'/actual_'+token
     results={}
     if member=='CreateSession':
         session='/org/freedesktop/portal/desktop/session/'+sender_path+'/'+options['session_handle_token']

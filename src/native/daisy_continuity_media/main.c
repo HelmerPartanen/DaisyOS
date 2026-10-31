@@ -47,6 +47,11 @@ static GVariant *request(const char *iface, const char *method, const char *toke
     g_free(sender); waiting_path = path; response = NULL;
     GVariant *reply = call(iface, method, args);
     if (!reply) { waiting_path = NULL; g_free(path); return NULL; }
+    // The portal may choose a different request handle (for example after a
+    // reused token). Match its returned path rather than losing the response.
+    const char *actual_path;
+    g_variant_get(reply, "(&o)", &actual_path);
+    if (strcmp(path, actual_path)) { char *resolved = g_strdup(actual_path); g_free(path); path = resolved; waiting_path = path; }
     g_variant_unref(reply);
     gint64 end = g_get_monotonic_time() + 120 * G_USEC_PER_SEC;
     while (running && !response && g_get_monotonic_time() < end) {

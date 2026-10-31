@@ -201,7 +201,7 @@ public sealed partial class ContinuityDaemon
                 lock (_gate)
                 {
                     Require(command.Id, null);
-                    _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with { InputEdge = command.Value };
+                    _state.Settings.Peers[command.Id] = _state.Settings.Peers[command.Id] with { InputEdge = command.Value, EdgeRevision = Math.Max(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(), _state.Settings.Peers[command.Id].EdgeRevision + 1), EdgeAuthor = _state.Id };
                     SaveSettings();
                 }
                 lock (_gate)

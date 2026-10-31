@@ -233,7 +233,8 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
             var envelope = await wire.ReceiveAsync(lifetime.Token).WaitAsync(TimeSpan.FromSeconds(30), lifetime.Token);
             if (envelope.Ping is { } ping)
             {
-                await wire.SendAsync(new Envelope { Pong = new Pong { Sequence = ping.Sequence } }, lifetime.Token);
+                ApplyInputPosition(wire.PeerId, ping.Position);
+                await wire.SendAsync(new Envelope { Pong = new Pong { Sequence = ping.Sequence, Position = GetInputPosition(wire.PeerId) } }, lifetime.Token);
                 if (ping.Sequence == ulong.MaxValue) ForgetPeer(wire.PeerId);
             }
             else if (envelope.ClipboardOffer is { } offer) await ReceiveClipboardAsync(wire, offer, lifetime.Token);

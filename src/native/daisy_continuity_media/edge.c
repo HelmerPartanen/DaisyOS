@@ -246,6 +246,7 @@ static int edge_main(int argc,char **argv) {
     bus=g_bus_get_sync(G_BUS_TYPE_SESSION,NULL,NULL);if(!bus)return 1;
     guint watch=g_dbus_connection_signal_subscribe(bus,DESKTOP,NULL,NULL,NULL,NULL,G_DBUS_SIGNAL_FLAGS_NONE,signal_received,NULL,NULL);
     guint capture_watch=capture?g_dbus_connection_signal_subscribe(bus,DESKTOP,CAPTURE,NULL,PATH,NULL,G_DBUS_SIGNAL_FLAGS_NONE,capture_signal,NULL,NULL):0;
+    const char *stage="create session";
     int status=1;if(!create_edge_session(capture))goto cleanup;
     if(!capture) {
         GVariant *result=request("org.freedesktop.portal.RemoteDesktop","SelectDevices","devices",g_variant_new("(o@a{sv})",session,g_variant_new_parsed("{'handle_token': <'devices'>, 'types': <uint32 3>}")));
@@ -253,10 +254,11 @@ static int edge_main(int argc,char **argv) {
         result=request("org.freedesktop.portal.RemoteDesktop","Start","start",g_variant_new("(os@a{sv})",session,"",g_variant_new_parsed("{'handle_token': <'start'>}")));
         if(!result)goto cleanup;guint devices_granted=0;g_variant_lookup(result,"devices","u",&devices_granted);g_variant_unref(result);if((devices_granted&3)!=3)goto cleanup;
     }
-    if(!connect_edge_eis(capture))goto cleanup;
-    if(capture&&!configure_capture())goto cleanup;
-    if(capture){GVariant *reply=call(CAPTURE,"Enable",g_variant_new("(o@a{sv})",session,empty()));if(!reply)goto cleanup;g_variant_unref(reply);}
+    stage="connect EIS";if(!connect_edge_eis(capture))goto cleanup;
+    stage="configure barriers";if(capture&&!configure_capture())goto cleanup;
+    stage="enable capture";if(capture){GVariant *reply=call(CAPTURE,"Enable",g_variant_new("(o@a{sv})",session,empty()));if(!reply)goto cleanup;g_variant_unref(reply);}
     else {
+        stage="wait for keyboard and pointer devices";
         gint64 deadline=g_get_monotonic_time()+5*G_USEC_PER_SEC;
         while(running&&!remote_bounds()&&g_get_monotonic_time()<deadline){while(g_main_context_iteration(NULL,FALSE)){}dispatch_input();g_usleep(1000);}
         if(!remote_bounds())goto cleanup;
@@ -296,6 +298,7 @@ static int edge_main(int argc,char **argv) {
     }
     status=0;
 cleanup:
+    if(status)g_printerr("Continuity input initialization failed: %s\n",stage);
     if(capture)release_capture(.5);else if(input)stop_emulation();
     if(session){GVariant *r=g_dbus_connection_call_sync(bus,DESKTOP,session,"org.freedesktop.portal.Session","Close",NULL,NULL,G_DBUS_CALL_FLAGS_NONE,2000,NULL,NULL);if(r)g_variant_unref(r);g_free(session);}
     for(int i=0;i<16;i++)if(devices[i])ei_device_unref(devices[i]);if(input)ei_unref(input);
