@@ -1,7 +1,7 @@
 .pragma library
 
 function createTracker() {
-    return { samples: [], position: 0, lastTime: NaN, lastDelta: 0 };
+    return { samples: [], position: 0, lastTime: NaN, direction: 0, reverseTravel: 0 };
 }
 
 function update(tracker, position, time) {
@@ -10,10 +10,16 @@ function update(tracker, position, time) {
     if (delta === 0) return;
     if (!tracker.samples.length || time < tracker.lastTime || time - tracker.lastTime > 100)
         tracker.samples = [{ time: time - 16, position: tracker.position }];
-    else if (delta * tracker.lastDelta < 0 && Math.abs(delta) >= 0.002)
+    // Keep sensor noise from hiding a subsequent deliberate reversal.
+    else
+        tracker.reverseTravel = delta * tracker.direction >= 0 ? 0 : tracker.reverseTravel + delta;
+    if (tracker.samples.length > 1 && Math.abs(tracker.reverseTravel) >= 0.002)
         tracker.samples = [{ time: tracker.lastTime, position: tracker.position }];
+    if (tracker.samples.length === 1) {
+        tracker.direction = delta > 0 ? 1 : -1;
+        tracker.reverseTravel = 0;
+    }
     tracker.position = position;
-    tracker.lastDelta = delta;
     tracker.lastTime = time;
     var samples = tracker.samples;
     if (samples.length > 1 && samples[samples.length - 1].time === time)
@@ -27,14 +33,18 @@ function update(tracker, position, time) {
 function velocity(tracker, time) {
     if (!tracker.samples.length || time < tracker.lastTime || time - tracker.lastTime > 100) return 0;
     var first = tracker.samples[0];
-    return (tracker.position - first.position) / Math.max(8, tracker.lastTime - first.time);
+    // Match launcher paging: allow delivery latency, then decay while held still.
+    return (tracker.position - first.position) /
+        Math.max(8, tracker.lastTime - first.time + Math.max(0, time - tracker.lastTime - 32));
 }
 
 function shouldCommit(tracker, progress, time) {
     var speed = velocity(tracker, time);
     if (speed < -0.0005) return false;
-    return progress >= 0.5 ||
-        progress >= 0.06 && speed >= 0.0015 && progress + speed * 180 >= 0.5;
+    // A flick expresses intent through release speed, independently of the
+    // halfway distance used for slow drags. Keep a small travel floor so a
+    // sensor spike alone cannot open or close the overview.
+    return progress >= 0.5 || progress >= 0.03 && speed >= 0.001;
 }
 
 function settleDuration(distance, speed, baseDuration) {

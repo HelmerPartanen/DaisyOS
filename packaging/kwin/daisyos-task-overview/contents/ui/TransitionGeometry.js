@@ -4,6 +4,12 @@ function clamp01(value) {
     return Math.max(0, Math.min(1, Number(value) || 0));
 }
 
+// Progress measures finger travel, so grabbing a settling overview must retain
+// the same sensitivity as a swipe begun at either endpoint.
+function gesturePosition(start, opening, progress) {
+    return clamp01(start + (opening ? 1 : -1) * clamp01(progress));
+}
+
 function interpolateRect(source, target, progress) {
     var amount = clamp01(progress);
     return {

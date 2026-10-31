@@ -58,7 +58,7 @@ public sealed class WindowDecorationThemeService
                 var temporary = Path.Combine(directory, $".{ConfigFileName}.{Environment.ProcessId}.tmp");
                 File.WriteAllText(temporary, content, new UTF8Encoding(encoderShouldEmitUTF8Identifier: false));
                 File.Move(temporary, destination, overwrite: true);
-                ExportKWinConfig(overviewValues, "Effect-daisyos-task-overview-v15");
+                ExportKWinConfig(overviewValues, "Effect-daisyos-task-overview-v16");
                 ExportKWinConfig(overviewValues.Where(pair => pair.Key == "ReduceMotion").ToArray(), "Effect-daisyos-window-motion");
                 ExportKWinConfig(frameValues, "Round-Corners");
                 ExportKWinConfig([new("BlurStrength", "4")], "Effect-blur");
@@ -255,7 +255,7 @@ public sealed class WindowDecorationThemeService
                     ArgumentList =
                     {
                         "--file", "kwinrc",
-                        "--group", group ?? (key == "ReduceMotion" ? "Effect-daisyos-window-motion" : "Effect-daisyos-task-overview-v15"),
+                        "--group", group ?? (key == "ReduceMotion" ? "Effect-daisyos-window-motion" : "Effect-daisyos-task-overview-v16"),
                         "--key", key,
                         value
                     },
@@ -318,7 +318,7 @@ public sealed class WindowDecorationThemeService
             new[] { "/Effects", "org.kde.kwin.Effects.loadEffect", "kwin4_effect_shapecorners" },
             new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "kwin4_effect_shapecorners" },
             new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-window-motion" },
-            new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-task-overview-v15" },
+            new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-task-overview-v16" },
             new[] { "/Effects", "org.kde.kwin.Effects.isEffectLoaded", "kwin4_effect_shapecorners" }
         })
         {

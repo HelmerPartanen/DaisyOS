@@ -259,7 +259,8 @@ configure_kwin_for_daisyos() {
   kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v2Enabled false
   kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v3Enabled false
   kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v14Enabled false
-  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v15Enabled true
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v15Enabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v16Enabled true
   kwriteconfig6 --file kwinrc --group Plugins --key screenshotEnabled true
   # ext_background_effect_v1 only defines the requested regions. KWin's Blur
   # effect performs the actual sampling, so it must be enabled before the

@@ -128,7 +128,7 @@ public sealed class KWinWindowBridge : ICompositorWindowService
     public Task MoveToWorkspaceAsync(string windowId, int workspace, CancellationToken cancellationToken = default) =>
         _dispatcher.DispatchAsync(windowId, KWinWindowCommand.MoveToWorkspace, cancellationToken, workspace);
 
-    public Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v15", CancellationToken cancellationToken = default) =>
+    public Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v16", CancellationToken cancellationToken = default) =>
         _dispatcher.ToggleOverviewEffectAsync(effectName, cancellationToken);
 
     internal void ApplySerializedSnapshot(string? payload)

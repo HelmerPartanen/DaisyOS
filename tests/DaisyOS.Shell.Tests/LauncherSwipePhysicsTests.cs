@@ -33,6 +33,34 @@ public sealed class LauncherSwipePhysicsTests
         Assert.False(LauncherSwipePhysics.ShouldCommit(-84, fast.VelocityAt(1090), 1100));
     }
 
+    [Fact]
+    public void SmallReverseSamplesDoNotInheritOutwardMomentum()
+    {
+        var tracker = new SwipeVelocityTracker();
+        tracker.Add(-80, 1000);
+        tracker.Add(0.25, 1008);
+        Assert.True(tracker.VelocityAt(1008) < 0); // Sensor noise retains the outward estimate.
+        tracker.Add(3, 1016);
+        Assert.True(tracker.VelocityAt(1016) > 0);
+        tracker.Reset();
+        tracker.Add(-80, 1000);
+        for (var time = 1008; time <= 1040; time += 8) tracker.Add(0.5, time);
+        Assert.True(tracker.VelocityAt(1040) > 0);
+    }
+
+    [Fact]
+    public void ReleaseVelocityDecaysDuringAPauseAndResetDropsHistory()
+    {
+        var tracker = new SwipeVelocityTracker();
+        tracker.Add(-32, 1000);
+        Assert.True(Math.Abs(tracker.VelocityAt(1080)) < Math.Abs(tracker.VelocityAt(1010)));
+        Assert.Equal(0, tracker.VelocityAt(1101));
+        tracker.Reset();
+        Assert.Equal(0, tracker.VelocityAt(1000));
+        tracker.Add(1, 2000);
+        Assert.True(tracker.VelocityAt(2000) > 0);
+    }
+
     [Theory]
     [InlineData(-220, 0, true)]
     [InlineData(220, 0, true)]

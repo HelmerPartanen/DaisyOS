@@ -30,22 +30,21 @@ KWinComponents.SceneEffect {
     property QtObject pendingActivation: null
     readonly property int animationDuration: Math.max(1, Number(configuration.AnimationDuration || 280))
 
-    GlobalGestures { overview: effect }
+    GlobalGestures { objectName: "overviewGestures"; overview: effect }
 
     delegate: ScreenView {
         onSessionReady: view => effect.handleSessionReady(view)
     }
 
-    Behavior on transitionProgress {
-        enabled: !effect.reduceMotion && (effect.phase === effect.phaseEntering || effect.phase === effect.phaseExiting)
-        NumberAnimation {
-            id: transitionAnimation
-            duration: effect.settleDuration
-            easing.type: effect.phase === effect.phaseExiting ? Easing.InCubic : Easing.OutCubic
-            onRunningChanged: {
-                if (!running) effect.finishTransition();
-            }
-        }
+    // Own the settle animation explicitly. An animation nested in a Behavior
+    // cannot be stopped directly when fingers take control of the same value.
+    NumberAnimation {
+        id: transitionAnimation
+        target: effect
+        property: "transitionProgress"
+        duration: effect.settleDuration
+        easing.type: Easing.OutCubic
+        onFinished: effect.finishTransition()
     }
 
     Timer {
@@ -99,9 +98,10 @@ KWinComponents.SceneEffect {
 
     function updateGesture(progress) {
         if (!gestureTracking) return;
+        if (!isFinite(progress)) return;
         gestureProgress = Math.max(0, Math.min(1, progress));
         if (phase === phaseGesture)
-            transitionProgress = gestureStartProgress + ((gestureOpening ? 1 : 0) - gestureStartProgress) * gestureProgress;
+            transitionProgress = Transition.gesturePosition(gestureStartProgress, gestureOpening, gestureProgress);
     }
 
     function endGesture(commit, releaseVelocity) {
@@ -121,12 +121,20 @@ KWinComponents.SceneEffect {
     }
 
     function animateTo(targetProgress, releaseVelocity) {
-        var unchanged = transitionProgress === targetProgress;
+        var displayed = transitionProgress;
+        transitionAnimation.stop();
+        var unchanged = displayed === targetProgress;
         settleDuration = isFinite(releaseVelocity)
             ? Flick.settleDuration(targetProgress - transitionProgress, releaseVelocity, animationDuration)
             : Math.max(80, Math.round(animationDuration * Math.abs(targetProgress - transitionProgress)));
-        transitionProgress = targetProgress;
-        if (reduceMotion || unchanged) finishTransition();
+        if (reduceMotion || unchanged) {
+            transitionProgress = targetProgress;
+            finishTransition();
+        } else {
+            transitionAnimation.from = displayed;
+            transitionAnimation.to = targetProgress;
+            transitionAnimation.start();
+        }
     }
 
     function activeRoot() {
@@ -140,8 +148,12 @@ KWinComponents.SceneEffect {
         view.beginEntry();
         if (gestureTracking) {
             phase = phaseGesture;
-            transitionProgress = gestureStartProgress + ((gestureOpening ? 1 : 0) - gestureStartProgress) * gestureProgress;
+            transitionProgress = Transition.gesturePosition(gestureStartProgress, gestureOpening, gestureProgress);
         } else if (gestureTarget >= 0) {
+            // Preparation is asynchronous. Start settling at the last finger
+            // position, including when release arrived before the first frame.
+            phase = phaseGesture;
+            transitionProgress = Transition.gesturePosition(gestureStartProgress, gestureOpening, gestureProgress);
             var target = gestureTarget;
             gestureTarget = -1;
             phase = target ? phaseEntering : phaseExiting;

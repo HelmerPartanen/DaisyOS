@@ -8,8 +8,8 @@ preview_package_root="$repo_root/packaging/kwin/daisyos-taskbar-preview"
 preview_id="daisyos-taskbar-preview"
 installed_preview="$HOME/.local/share/kwin/scripts/$preview_id/contents/ui/main.qml"
 bridge_id="daisyos-window-bridge"
-overview_id="daisyos-task-overview-v15"
-legacy_overview_ids=("daisyos-task-overview" "daisyos-task-overview-v2" "daisyos-task-overview-v3" "daisyos-task-overview-v4" "daisyos-task-overview-v5" "daisyos-task-overview-v6" "daisyos-task-overview-v7" "daisyos-task-overview-v8" "daisyos-task-overview-v9" "daisyos-task-overview-v10" "daisyos-task-overview-v11" "daisyos-task-overview-v12" "daisyos-task-overview-v13" "daisyos-task-overview-v14")
+overview_id="daisyos-task-overview-v16"
+legacy_overview_ids=("daisyos-task-overview" "daisyos-task-overview-v2" "daisyos-task-overview-v3" "daisyos-task-overview-v4" "daisyos-task-overview-v5" "daisyos-task-overview-v6" "daisyos-task-overview-v7" "daisyos-task-overview-v8" "daisyos-task-overview-v9" "daisyos-task-overview-v10" "daisyos-task-overview-v11" "daisyos-task-overview-v12" "daisyos-task-overview-v13" "daisyos-task-overview-v14" "daisyos-task-overview-v15")
 installed_script="$HOME/.local/share/kwin/scripts/$bridge_id/contents/code/main.js"
 installed_overview="$HOME/.local/share/kwin/effects/$overview_id/contents/ui/main.qml"
 
@@ -32,6 +32,18 @@ if [[ ! -f "$preview_package_root/metadata.json" || ! -f "$preview_package_root/
   echo "DaisyOS taskbar preview package is incomplete: $preview_package_root" >&2
   exit 1
 fi
+# A new package URL bypasses KWin's shared QML engine cache on live upgrades.
+# Keep custom theme/motion preferences when moving to the new effect ID.
+if command -v kreadconfig6 >/dev/null 2>&1 && command -v kwriteconfig6 >/dev/null 2>&1; then
+  while IFS= read -r overview_key; do
+    saved_value="$(kreadconfig6 --file kwinrc --group Effect-daisyos-task-overview-v15 --key "$overview_key" --default __daisy_unset__)"
+    current_value="$(kreadconfig6 --file kwinrc --group "Effect-$overview_id" --key "$overview_key" --default __daisy_unset__)"
+    if [[ "$current_value" == __daisy_unset__ && "$saved_value" != __daisy_unset__ ]]; then
+      kwriteconfig6 --file kwinrc --group "Effect-$overview_id" --key "$overview_key" "$saved_value"
+    fi
+  done < <(sed -n 's/.*<entry name="\([^"]*\)".*/\1/p' "$overview_package_root/contents/config/main.xml")
+fi
+
 if command -v qdbus6 >/dev/null 2>&1; then
   qdbus6 org.kde.KWin /Scripting org.kde.kwin.Scripting.unloadScript "$preview_id" >/dev/null 2>&1 || true
 fi

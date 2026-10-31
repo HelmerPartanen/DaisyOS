@@ -28,5 +28,5 @@ public interface ICompositorWindowService : IAsyncDisposable
 
     Task MoveToWorkspaceAsync(string windowId, int workspace, CancellationToken cancellationToken = default);
 
-    Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v15", CancellationToken cancellationToken = default);
+    Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v16", CancellationToken cancellationToken = default);
 }

@@ -134,6 +134,6 @@ public sealed class FakeWindows : ICompositorWindowService
     public Task<bool> ForceQuitAsync(string windowId, CancellationToken cancellationToken = default) => Task.FromResult(false);
     public Task SetMaximizedAsync(string windowId, bool maximized, CancellationToken cancellationToken = default) => Task.CompletedTask;
     public Task MoveToWorkspaceAsync(string windowId, int workspace, CancellationToken cancellationToken = default) => Task.CompletedTask;
-    public Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v15", CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v16", CancellationToken cancellationToken = default) => Task.CompletedTask;
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }

@@ -10,6 +10,61 @@ Item {
     property bool callPending: false
     property var gestureClock: function() { return Date.now(); }
 
+    property var cancelledSwipe: null
+    property int cancellationGeneration: 0
+
+    function updateSwipe(handler, opening, progress) {
+        if (!isFinite(progress)) return;
+        if (cancelledSwipe) {
+            var previous = cancelledSwipe;
+            cancelledSwipe = null;
+            ++cancellationGeneration;
+            if (previous !== handler) {
+                // KWin cancels the old direction before reporting the new one
+                // when fingers cross the gesture origin. This is a reversal,
+                // not a release flick followed by a second gesture.
+                previous.tracking = false;
+                overview.endGesture(false, 0);
+                return;
+            }
+            // The recognizer can also cancel and reselect the same direction
+            // during axis selection. Keep the current finger position live.
+        }
+        if (!handler.tracking && progress > 0) {
+            handler.tracking = overview.beginGesture(opening);
+            if (handler.tracking) handler.flick = Flick.createTracker();
+        }
+        if (handler.tracking) {
+            Flick.update(handler.flick, progress, gestureClock());
+            overview.updateGesture(progress);
+        }
+    }
+
+    function finishSwipe(handler, activated) {
+        if (!handler.tracking) return;
+        var now = gestureClock();
+        var commit = activated || Flick.shouldCommit(handler.flick, handler.progress, now);
+        var speed = Flick.velocity(handler.flick, now);
+        if (activated) {
+            cancelledSwipe = null;
+            ++cancellationGeneration;
+            handler.tracking = false;
+            overview.endGesture(commit, speed);
+            return;
+        }
+        // 'cancelled' also means an ordinary below-distance finger release.
+        // Wait one event turn to distinguish it from a direction/axis handoff.
+        // Capture release velocity now so dispatcher delay cannot erase a flick.
+        cancelledSwipe = handler;
+        var generation = ++cancellationGeneration;
+        Qt.callLater(function() {
+            if (generation !== gestures.cancellationGeneration) return;
+            gestures.cancelledSwipe = null;
+            handler.tracking = false;
+            overview.endGesture(commit, speed);
+        });
+    }
+
     function sendPinch(opening, progress, finished, commit) {
         if (overview.visible) return;
         var message = { opening: opening, progress: progress, finished: finished, commit: commit };
@@ -90,57 +145,27 @@ Item {
         }
     }
     KWinComponents.SwipeGestureHandler {
+        id: swipeUp
         objectName: "swipeUp"
         fingerCount: 3
         deviceType: KWinComponents.SwipeGestureHandler.Touchpad
         direction: KWinComponents.SwipeGestureHandler.Up
         property bool tracking: false
         property var flick: Flick.createTracker()
-        onProgressChanged: {
-            if (!tracking && progress > 0) {
-                tracking = overview.beginGesture(true);
-                if (tracking) flick = Flick.createTracker();
-            }
-            if (tracking) {
-                Flick.update(flick, progress, gestures.gestureClock());
-                overview.updateGesture(progress);
-            }
-        }
-        onActivated: {
-            if (tracking) overview.endGesture(true, Flick.velocity(flick, gestures.gestureClock()));
-            tracking = false;
-        }
-        onCancelled: {
-            var now = gestures.gestureClock();
-            if (tracking) overview.endGesture(Flick.shouldCommit(flick, progress, now), Flick.velocity(flick, now));
-            tracking = false;
-        }
+        onProgressChanged: gestures.updateSwipe(swipeUp, true, progress)
+        onActivated: gestures.finishSwipe(swipeUp, true)
+        onCancelled: gestures.finishSwipe(swipeUp, false)
     }
     KWinComponents.SwipeGestureHandler {
+        id: swipeDown
         objectName: "swipeDown"
         fingerCount: 3
         deviceType: KWinComponents.SwipeGestureHandler.Touchpad
         direction: KWinComponents.SwipeGestureHandler.Down
         property bool tracking: false
         property var flick: Flick.createTracker()
-        onProgressChanged: {
-            if (!tracking && progress > 0) {
-                tracking = overview.beginGesture(false);
-                if (tracking) flick = Flick.createTracker();
-            }
-            if (tracking) {
-                Flick.update(flick, progress, gestures.gestureClock());
-                overview.updateGesture(progress);
-            }
-        }
-        onActivated: {
-            if (tracking) overview.endGesture(true, Flick.velocity(flick, gestures.gestureClock()));
-            tracking = false;
-        }
-        onCancelled: {
-            var now = gestures.gestureClock();
-            if (tracking) overview.endGesture(Flick.shouldCommit(flick, progress, now), Flick.velocity(flick, now));
-            tracking = false;
-        }
+        onProgressChanged: gestures.updateSwipe(swipeDown, false, progress)
+        onActivated: gestures.finishSwipe(swipeDown, true)
+        onCancelled: gestures.finishSwipe(swipeDown, false)
     }
 }

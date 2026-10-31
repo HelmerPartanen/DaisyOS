@@ -7,7 +7,8 @@ internal sealed class SwipeVelocityTracker
     private int _start;
     private int _count;
     private double _position;
-    private double _lastDelta;
+    private int _direction;
+    private double _reverseTravel;
     public long LastMotionTime { get; private set; }
 
     public void Add(double delta, long time)
@@ -19,7 +20,13 @@ internal sealed class SwipeVelocityTracker
             _start = 0;
             _samples[0] = (time - 16, _position);
         }
-        else if (Math.Sign(delta) != Math.Sign(_lastDelta) && Math.Abs(delta) >= 2)
+        else
+        {
+            // Accumulate small reverse samples: high-rate trackpads often report
+            // a deliberate reversal as many sub-pixel movements.
+            _reverseTravel = Math.Sign(delta) == _direction ? 0 : _reverseTravel + delta;
+        }
+        if (_count > 1 && Math.Abs(_reverseTravel) >= 2)
         {
             // A deliberate reversal must not inherit the outward flick's momentum.
             _count = 1;
@@ -27,7 +34,11 @@ internal sealed class SwipeVelocityTracker
             _samples[0] = (LastMotionTime, _position);
         }
         _position += delta;
-        _lastDelta = delta;
+        if (_count == 1)
+        {
+            _direction = Math.Sign(delta);
+            _reverseTravel = 0;
+        }
         LastMotionTime = time;
         var last = (_start + _count - 1) % _samples.Length;
         if (_count > 1 && _samples[last].Time == time)
@@ -44,13 +55,17 @@ internal sealed class SwipeVelocityTracker
         }
     }
 
+    // Allow normal event delivery latency, then include the stationary time in
+    // the estimate rather than retaining full momentum until the expiry cutoff.
     public double VelocityAt(long time) => _count == 0 || time - LastMotionTime > 100 || time < LastMotionTime
-        ? 0 : (_position - _samples[_start].Position) / Math.Max(8, LastMotionTime - _samples[_start].Time);
+        ? 0 : (_position - _samples[_start].Position) /
+            Math.Max(8, LastMotionTime - _samples[_start].Time + Math.Max(0, time - LastMotionTime - 32));
 
     public void Reset()
     {
         _start = _count = 0;
-        _position = _lastDelta = 0;
+        _position = _reverseTravel = 0;
+        _direction = 0;
         LastMotionTime = 0;
     }
 }

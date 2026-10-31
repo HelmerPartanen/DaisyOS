@@ -39,9 +39,9 @@ internal sealed class KWinCommandDispatcher
     /// <summary>
     /// Triggers the DaisyOS compositor-owned live task overview.
     /// </summary>
-    public async Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v15", CancellationToken cancellationToken = default)
+    public async Task ToggleOverviewEffectAsync(string effectName = "daisyos-task-overview-v16", CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(effectName)) effectName = "daisyos-task-overview-v15";
+        if (string.IsNullOrWhiteSpace(effectName)) effectName = "daisyos-task-overview-v16";
         Console.Error.WriteLine($"[daisy-window-bridge] Toggling compositor effect {effectName}.");
 
         try

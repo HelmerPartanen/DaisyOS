@@ -28,7 +28,51 @@ migrates a legacy `[Touchpad]` preference into that default group and leaves
 explicit per-device settings intact. KWin's default-group lookup is in
 [Connection::applyDeviceConfig](https://github.com/KDE/kwin/blob/master/src/backends/libinput/connection.cpp).
 
+## Gesture release behavior
+
+Launcher paging and the three-finger overview swipe track motion directly while
+fingers are down. Their velocity trackers accumulate small reverse samples so a
+high-rate trackpad can cancel a flick without retaining momentum in the original
+direction. Sub-threshold sensor noise does not reset the velocity history.
+A short overview flick commits at 3% travel with a release speed of at least
+one normalized gesture distance per second. It does not need to project past
+the halfway point; slow drags still commit at 50% travel. The same rule applies
+to opening and closing, while a deliberate reversal cancels the flick.
+Release velocity starts decaying after a 32 ms delivery allowance and expires
+after 100 ms without motion, so a paused gesture does not retain full flick speed.
+
+When checking hardware, include a fast outward swipe followed by a slow reversal
+made of tiny movements, and releases after short pauses. Check these in both
+directions, including above the normal distance threshold.
+
+KWin can emit swipe cancellation during axis selection or a direction change,
+as well as on finger release below its distance threshold. Overview release
+handling waits one event turn: continued movement keeps tracking, and a direction
+handoff cancels instead of falsely committing a flick. Velocity is captured at
+the cancellation event so the deferred decision does not lose momentum.
+
+The v16 effect ID gives live upgrades a new QML URL. Unloading/reloading the same
+URL can retain old components in KWin's shared engine. Installation migrates v15
+theme and motion preferences and disables/unloads older versions.
+
+The overview stops its settle animation before handing control back to fingers.
+Interrupted swipes retain full sensitivity, and a release during asynchronous
+preview preparation settles from the last reported finger position. Opening and
+closing both decelerate into their endpoint.
+
 ## Verification
+
+Run the overview gesture state and motion checks with:
+
+```sh
+scripts/test-task-overview-gestures.sh
+```
+
+The state tests run the production QML transition logic with a fake KWin scene;
+they exercise animation interruption and delayed preview readiness without
+requiring a compositor. Thumbnail rendering and physical input latency still
+need a live session.
+
 
 ```sh
 dotnet test tests/DaisyOS.ShellDemo.Tests/DaisyOS.ShellDemo.Tests.csproj \

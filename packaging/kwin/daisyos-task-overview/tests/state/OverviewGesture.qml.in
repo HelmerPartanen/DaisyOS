@@ -1,0 +1,137 @@
+import QtQuick
+import QtTest
+
+TestCase {
+    id: testCase
+    name: "OverviewGesture"
+    property real clock: 1000
+    property var overview
+    QtObject {
+        id: view
+        function prepareSession() { return true; }
+        function beginEntry() { }
+        function finishEntry() { }
+        function beginExit() { }
+        function finishExit() { }
+        function reverseTransition(opening) { }
+    }
+    function init() {
+        var component = Qt.createComponent("../contents/ui/main.qml");
+        compare(component.status, Component.Ready, component.errorString());
+        overview = component.createObject(testCase);
+        verify(overview !== null);
+        overview.activeView = { rootItem: view };
+        clock = 1000;
+        findChild(overview, "overviewGestures").gestureClock = function() { return testCase.clock; };
+    }
+    function cleanup() { if (overview) overview.destroy(); }
+
+    function test_shortFlickThroughRealHandlersSurvivesDelayedPreviewReadiness() {
+        var up = findChild(overview, "swipeUp");
+        up.progress = 0.005;
+        clock += 20;
+        up.progress = 0.04;
+        up.cancelled();
+        tryCompare(overview, "gestureTracking", false);
+        compare(overview.gestureTarget, 1);
+        overview.handleSessionReady(view);
+        tryCompare(overview, "phase", overview.phaseActive);
+        compare(overview.transitionProgress, 1);
+    }
+    function test_directionHandoffThroughRealHandlersCancelsTheOpening() {
+        var up = findChild(overview, "swipeUp");
+        up.progress = 0.02;
+        clock += 16;
+        up.progress = 0.1;
+        up.cancelled();
+        findChild(overview, "swipeDown").progress = 0.01;
+        compare(overview.gestureTarget, 0);
+        overview.handleSessionReady(view);
+        tryCompare(overview, "phase", overview.phaseIdle);
+        verify(!overview.visible);
+    }
+    function test_releaseBeforePreviewsReadyKeepsFingerPosition() {
+        verify(overview.beginGesture(true));
+        overview.updateGesture(0.7);
+        overview.endGesture(true, 0);
+        compare(overview.phase, overview.phasePreparing);
+        overview.handleSessionReady(view);
+        compare(overview.transitionProgress, 0.7);
+        compare(overview.phase, overview.phaseEntering);
+        tryCompare(overview, "phase", overview.phaseActive);
+    }
+    function test_cancelBeforePreviewsReadySettlesFromFingerPosition() {
+        overview.beginGesture(true);
+        overview.updateGesture(0.3);
+        overview.endGesture(false, 0);
+        overview.handleSessionReady(view);
+        compare(overview.transitionProgress, 0.3);
+        tryCompare(overview, "phase", overview.phaseIdle);
+        verify(!overview.visible);
+    }
+    function test_interruptedSettleKeepsFullSwipeSensitivity() {
+        overview.beginGesture(true);
+        overview.handleSessionReady(view);
+        overview.updateGesture(0.6);
+        overview.endGesture(true, 0);
+        verify(overview.beginGesture(false));
+        var start = overview.transitionProgress;
+        overview.updateGesture(0.1);
+        fuzzyCompare(overview.transitionProgress, start - 0.1, 0.00001);
+        overview.updateGesture(0.05);
+        fuzzyCompare(overview.transitionProgress, start - 0.05, 0.00001);
+        overview.updateGesture(Number.NaN);
+        fuzzyCompare(overview.transitionProgress, start - 0.05, 0.00001);
+        wait(100);
+        // The old settle must stop writing to progress while fingers hold still.
+        fuzzyCompare(overview.transitionProgress, start - 0.05, 0.00001);
+        compare(overview.phase, overview.phaseGesture);
+    }
+    function test_openingCanGrabACancelledEntryWithoutJumping() {
+        overview.beginGesture(true);
+        overview.handleSessionReady(view);
+        overview.updateGesture(0.4);
+        overview.endGesture(false, 0);
+        wait(30);
+        var start = overview.transitionProgress;
+        verify(overview.beginGesture(true));
+        fuzzyCompare(overview.transitionProgress, start, 0.00001);
+        overview.updateGesture(0.1);
+        fuzzyCompare(overview.transitionProgress, start + 0.1, 0.00001);
+        wait(100);
+        fuzzyCompare(overview.transitionProgress, start + 0.1, 0.00001);
+        overview.endGesture(true, 0);
+        tryCompare(overview, "phase", overview.phaseActive);
+    }
+    function test_reducedMotionStillTracksFingersAndSettlesImmediately() {
+        overview.configuration = { AnimationDuration: 280, ReduceMotion: true };
+        overview.beginGesture(true);
+        overview.handleSessionReady(view);
+        overview.updateGesture(0.4);
+        compare(overview.transitionProgress, 0.4);
+        overview.endGesture(true, 0);
+        compare(overview.transitionProgress, 1);
+        compare(overview.phase, overview.phaseActive);
+        overview.beginGesture(false);
+        overview.updateGesture(0.2);
+        compare(overview.transitionProgress, 0.8);
+        overview.endGesture(true, 0);
+        compare(overview.phase, overview.phaseIdle);
+        verify(!overview.visible);
+    }
+    function test_closeImmediatelyMovesAfterRelease() {
+        overview.configuration = { AnimationDuration: 280, ReduceMotion: true };
+        overview.activate();
+        overview.handleSessionReady(view);
+        compare(overview.phase, overview.phaseActive);
+        overview.configuration = { AnimationDuration: 280, ReduceMotion: false };
+        overview.beginGesture(false);
+        overview.updateGesture(0.2);
+        overview.endGesture(true, 0);
+        wait(60);
+        // Outward easing should already cover meaningful distance, rather
+        // than stalling near the release position with cubic acceleration.
+        verify(overview.transitionProgress < 0.65);
+        tryCompare(overview, "phase", overview.phaseIdle);
+    }
+}

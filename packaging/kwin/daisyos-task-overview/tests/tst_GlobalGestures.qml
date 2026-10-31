@@ -73,12 +73,23 @@ TestCase {
         up.progress = 0.2;
         compare(fakeOverview.progress, 0.2);
         up.cancelled();
-        compare(fakeOverview.committed, false);
+        tryCompare(fakeOverview, "committed", false);
         var down = findChild(bridge, "swipeDown");
         down.progress = 0.65;
         verify(!fakeOverview.opening);
         down.cancelled();
-        compare(fakeOverview.committed, true);
+        tryCompare(fakeOverview, "committed", true);
+    }
+    function test_smallReversalAboveHalfwayCancelsInsteadOfOpening() {
+        var up = findChild(bridge, "swipeUp");
+        up.progress = 0.8;
+        clock += 8;
+        up.progress = 0.7999;
+        clock += 8;
+        up.progress = 0.79;
+        up.cancelled();
+        tryCompare(fakeOverview, "committed", false);
+        verify(!fakeOverview.tracking);
     }
     function test_shortFlickOpensAndClosesBeforeHalfway() {
         var up = findChild(bridge, "swipeUp");
@@ -88,26 +99,78 @@ TestCase {
         compare(fakeOverview.progress, 0.14);
         clock += 8;
         up.cancelled();
-        compare(fakeOverview.committed, true);
+        tryCompare(fakeOverview, "committed", true);
         var down = findChild(bridge, "swipeDown");
         clock += 200;
         down.progress = 0.12;
         clock += 8;
         down.cancelled();
         verify(!fakeOverview.opening);
-        compare(fakeOverview.committed, true);
+        tryCompare(fakeOverview, "committed", true);
+    }
+    function test_veryShortFlickOpensAndCloses_data() {
+        return [{ tag: "open", handler: "swipeUp", opening: true },
+                { tag: "close", handler: "swipeDown", opening: false }];
+    }
+    function test_veryShortFlickOpensAndCloses(data) {
+        var swipe = findChild(bridge, data.handler);
+        swipe.progress = 0.005;
+        clock += 20;
+        swipe.progress = 0.04;
+        compare(fakeOverview.opening, data.opening);
+        compare(fakeOverview.progress, 0.04);
+        tryCompare(fakeOverview, "committed", null); // Stay under finger control until release.
+        clock += 8;
+        swipe.cancelled(); // KWin reports below-distance releases as cancelled.
+        tryCompare(fakeOverview, "committed", true);
     }
     function test_pauseOrTinyMovementDoesNotBecomeAFlick() {
         var up = findChild(bridge, "swipeUp");
         up.progress = 0.15;
         clock += 200;
         up.cancelled();
-        compare(fakeOverview.committed, false);
+        tryCompare(fakeOverview, "committed", false);
         clock += 200;
         up.progress = 0.02;
         clock += 8;
         up.cancelled();
+        tryCompare(fakeOverview, "committed", false);
+    }
+    function test_directionHandoffCannotTurnAReversalIntoAnOpeningFlick() {
+        var up = findChild(bridge, "swipeUp");
+        up.progress = 0.02;
+        clock += 16;
+        up.progress = 0.1;
+        up.cancelled();
+        var down = findChild(bridge, "swipeDown");
+        down.progress = 0.01;
+        tryCompare(fakeOverview, "committed", false);
+        verify(!up.tracking);
+        verify(!down.tracking);
+        wait(10);
         compare(fakeOverview.committed, false);
+    }
+    function test_axisReselectionDoesNotSettleWhileFingersStillMove() {
+        var up = findChild(bridge, "swipeUp");
+        up.progress = 0.02;
+        up.cancelled();
+        clock += 16;
+        up.progress = 0.1;
+        wait(10);
+        compare(fakeOverview.committed, null);
+        verify(fakeOverview.tracking);
+        compare(fakeOverview.progress, 0.1);
+        up.cancelled();
+        tryCompare(fakeOverview, "committed", true);
+    }
+    function test_deferredReleaseUsesVelocityAtReleaseTime() {
+        var up = findChild(bridge, "swipeUp");
+        up.progress = 0.005;
+        clock += 20;
+        up.progress = 0.04;
+        up.cancelled();
+        clock += 500;
+        tryCompare(fakeOverview, "committed", true);
     }
     function test_busFailureDropsStaleSamples() {
         var pinch = findChild(bridge, "pinchIn");

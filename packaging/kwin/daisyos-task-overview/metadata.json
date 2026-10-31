@@ -10,7 +10,7 @@
     "Category": "Window Management",
     "Description": "DaisyOS compositor-owned live task overview",
     "EnabledByDefault": true,
-    "Id": "daisyos-task-overview-v15",
+    "Id": "daisyos-task-overview-v16",
     "License": "MIT",
     "Name": "DaisyOS Task Overview",
     "Version": "1.0"
