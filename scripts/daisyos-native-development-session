@@ -282,6 +282,7 @@ configure_kwin_for_daisyos() {
   kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveSecondOutlineThickness 1
   kwriteconfig6 --file kwinrc --group Round-Corners --key OuterOutlineThickness 0
   kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveOuterOutlineThickness 0
+  kwriteconfig6 --file kwinrc --group Round-Corners --key Exclusions 'DaisyOS Lock Screen,DaisyOS Lock Wallpaper'
   kwriteconfig6 --file kwinrc --group Round-Corners --key IncludeNormalWindows true
   kwriteconfig6 --file kwinrc --group Round-Corners --key IncludeDialogs true
   kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineTile false

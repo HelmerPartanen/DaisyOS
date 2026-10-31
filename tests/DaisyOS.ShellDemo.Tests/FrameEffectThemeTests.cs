@@ -24,6 +24,7 @@ public sealed class FrameEffectThemeTests
             var values = ((IReadOnlyList<KeyValuePair<string, string>>)method.Invoke(null, [app])!).ToDictionary(pair => pair.Key, pair => pair.Value);
             Assert.Equal("1", values["OutlineThickness"]);
             Assert.Equal("1", values["SecondOutlineThickness"]);
+            Assert.Equal("DaisyOS Lock Screen,DaisyOS Lock Wallpaper", values["Exclusions"]);
             Assert.Equal("true", values["IncludeNormalWindows"]);
             Assert.Equal("true", values["IncludeDialogs"]);
             Assert.Equal("false", values["DisableOutlineTile"]);

@@ -17,11 +17,12 @@ build_dir="$cache_root/build"
 ecm_prefix="$cache_root/ecm-prefix"
 plugin_root="$HOME/.local/lib/qt6/plugins"
 plugin_dir="$plugin_root/kwin/effects/plugins"
-shader_dir="$HOME/.local/share/kwin/shaders"
+shader_dir="${XDG_DATA_HOME:-$HOME/.local/share}/kwin/shaders"
 
 # KWin effects use private compositor APIs. File existence alone cannot tell
 # whether a previous build matches this checkout or the installed compositor.
-stamp_path="$HOME/.local/share/daisyos/kwin-frame-effect.version"
+stamp_path="${XDG_DATA_HOME:-$HOME/.local/share}/daisyos/kwin-frame-effect.version"
+manifest_path="${stamp_path}.sha256"
 kwin_version="$(kwin_wayland --version 2>/dev/null || true)"
 expected_version="$(
   { printf '%s\n' "$effect_commit" "$ecm_commit" "$vulkan_headers_commit" "$kwin_version";
@@ -31,7 +32,8 @@ expected_version="$(
 if [[ "${1:-}" == --check ]]; then
   [[ $# == 1 && -n "$kwin_version" && -s "$plugin_dir/kwin4_effect_shapecorners.so" \
      && -s "$shader_dir/shapecorners.frag" && -s "$shader_dir/shapecorners_core.frag" \
-     && -f "$stamp_path" && "$(cat "$stamp_path")" == "$expected_version" ]]
+     && -f "$stamp_path" && "$(cat "$stamp_path")" == "$expected_version" \
+     && -f "$manifest_path" ]] && sha256sum --check --status "$manifest_path"
   exit "$?"
 fi
 if (($#)); then
@@ -51,7 +53,9 @@ checkout_pinned() {
   if [[ ! -d "$destination/.git" ]]; then
     git clone --filter=blob:none --no-checkout "$repository" "$destination"
   fi
-  git -C "$destination" fetch --depth=1 origin "$commit"
+  if ! git -C "$destination" cat-file -e "$commit^{commit}" 2>/dev/null; then
+    git -C "$destination" fetch --depth=1 origin "$commit"
+  fi
   git -C "$destination" checkout --detach --force "$commit"
 }
 
@@ -77,9 +81,17 @@ cmake -S "$source_dir" -B "$build_dir" "${cmake_generator[@]}" \
 cmake --build "$build_dir"
 
 install -d -m 0755 "$plugin_dir" "$shader_dir"
-install -m 0755 "$build_dir/bin/kwin/effects/plugins/kwin4_effect_shapecorners.so" "$plugin_dir/"
-install -m 0644 "$build_dir/src/shaders/shapecorners.frag" "$shader_dir/"
-install -m 0644 "$build_dir/src/shaders/shapecorners_core.frag" "$shader_dir/"
+# Never truncate a shared object mapped by the running compositor. Publish
+# complete files atomically, then reload the effect after its config is ready.
+atomic_install() {
+  local mode="$1" source="$2" destination="$3" temporary
+  temporary="$(mktemp "${destination}.XXXXXX")"
+  install -m "$mode" "$source" "$temporary"
+  mv -f -- "$temporary" "$destination"
+}
+atomic_install 0755 "$build_dir/bin/kwin/effects/plugins/kwin4_effect_shapecorners.so" "$plugin_dir/kwin4_effect_shapecorners.so"
+atomic_install 0644 "$build_dir/src/shaders/shapecorners.frag" "$shader_dir/shapecorners.frag"
+atomic_install 0644 "$build_dir/src/shaders/shapecorners_core.frag" "$shader_dir/shapecorners_core.frag"
 
 kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shapecornersEnabled true
 kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
@@ -120,9 +132,8 @@ kwriteconfig6 --file kwinrc --group Round-Corners --key OuterOutlineThickness 0
 kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveOuterOutlineThickness 0
 kwriteconfig6 --file kwinrc --group Round-Corners --key IncludeNormalWindows true
 kwriteconfig6 --file kwinrc --group Round-Corners --key IncludeDialogs true
-# Keep the process-wide fallback so an older in-memory plugin never frames the
-# desktop. The DaisyOS patch bypasses this exclusion only for titled normal
-# application windows and rejects untitled layer-shell surfaces directly.
+# Layer surfaces are excluded by the plugin itself. A process-wide Shell
+# exclusion would also hide the frame on normal application windows.
 kwriteconfig6 --file kwinrc --group Round-Corners --key Exclusions \
   'DaisyOS Lock Screen,DaisyOS Lock Wallpaper'
 kwriteconfig6 --file kwinrc --group Round-Corners --key DisableRoundTile true
@@ -134,9 +145,13 @@ kwriteconfig6 --file kwinrc --group Round-Corners --key DisableOutlineFullScreen
 
 if command -v qdbus6 >/dev/null 2>&1; then
   timeout 3 qdbus6 org.kde.KWin /KWin org.kde.KWin.reconfigure >/dev/null 2>&1 || true
+  timeout 3 qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.unloadEffect kwin4_effect_shapecorners >/dev/null 2>&1 || true
+  timeout 3 qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.loadEffect kwin4_effect_shapecorners >/dev/null 2>&1 || true
 fi
 
 mkdir -p "$(dirname "$stamp_path")"
+sha256sum "$plugin_dir/kwin4_effect_shapecorners.so" "$shader_dir/shapecorners.frag" "$shader_dir/shapecorners_core.frag" > "${manifest_path}.tmp"
+mv -f -- "${manifest_path}.tmp" "$manifest_path"
 printf '%s\n' "$expected_version" > "$stamp_path"
 
 echo "Installed the DaisyOS rounded-window compositor effect. Restart the DaisyOS session once so KWin discovers the plugin."

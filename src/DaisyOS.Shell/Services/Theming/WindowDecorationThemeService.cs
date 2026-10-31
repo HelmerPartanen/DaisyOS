@@ -17,6 +17,7 @@ public sealed class WindowDecorationThemeService
     private const string ConfigFileName = "daisyos-window-decorationrc";
     private readonly SemaphoreSlim _exportGate = new(1, 1);
     private string? _lastExportedConfig;
+    private bool _frameEffectChecked;
 
     public void Export(Application application) => _ = ExportAsync(application);
 
@@ -39,13 +40,19 @@ public sealed class WindowDecorationThemeService
             {
                 return;
             }
-            _lastExportedConfig = content;
 
             var directory = GetConfigDirectory();
             // File I/O and qdbus6 process spawn run on the thread pool to avoid
             // blocking the UI thread during startup or theme changes.
             await Task.Run(() =>
             {
+                // Existing development launchers may predate effect provisioning.
+                // Repair those accounts when the updated shell starts, too.
+                if (!_frameEffectChecked)
+                {
+                    try { _frameEffectChecked = EnsureDevelopmentFrameEffectAsync().GetAwaiter().GetResult(); }
+                    catch (Exception ex) { Console.Error.WriteLine($"[daisy-decoration] Frame effect repair failed: {ex.Message}"); }
+                }
                 Directory.CreateDirectory(directory);
                 var destination = Path.Combine(directory, ConfigFileName);
                 var temporary = Path.Combine(directory, $".{ConfigFileName}.{Environment.ProcessId}.tmp");
@@ -56,8 +63,9 @@ public sealed class WindowDecorationThemeService
                 ExportKWinConfig(frameValues, "Round-Corners");
                 ExportKWinConfig([new("BlurStrength", "4")], "Effect-blur");
                 ExportKWinConfig([new("blurEnabled", "true"), new("kwin4_effect_shapecornersEnabled", "true")], "Plugins");
-                RequestKWinReconfigure();
+                RequestKWinReconfigureAsync().GetAwaiter().GetResult();
             }).ConfigureAwait(false);
+            _lastExportedConfig = _frameEffectChecked ? content : null;
         }
         catch (Exception ex)
         {
@@ -184,6 +192,9 @@ public sealed class WindowDecorationThemeService
             new("InactiveSecondOutlineThickness", "1"),
             new("OuterOutlineThickness", "0"),
             new("InactiveOuterOutlineThickness", "0"),
+            // Repair legacy process-wide exclusions on upgrades as well as fresh installs.
+            // The effect itself excludes untitled layer surfaces; app windows need the frame.
+            new("Exclusions", "DaisyOS Lock Screen,DaisyOS Lock Wallpaper"),
             new("IncludeNormalWindows", "true"),
             new("IncludeDialogs", "true"),
             new("DisableOutlineTile", "false"),
@@ -260,57 +271,70 @@ public sealed class WindowDecorationThemeService
         }
     }
 
-    private static void RequestKWinReconfigure()
+    private static async Task<bool> EnsureDevelopmentFrameEffectAsync()
     {
-        if (!string.Equals(Environment.GetEnvironmentVariable("DAISYOS_SHELL_SESSION"), "1", StringComparison.Ordinal))
+        if (!OperatingSystem.IsLinux() || Environment.GetEnvironmentVariable("DAISYOS_SHELL_SESSION") != "1") return true;
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null)
         {
-            return;
+            var installer = Path.Combine(directory.FullName, "scripts", "install-kwin-frame-effect.sh");
+            if (File.Exists(installer))
+            {
+                async Task<int> RunAsync(bool check)
+                {
+                    var start = new ProcessStartInfo(installer)
+                    {
+                        UseShellExecute = false, CreateNoWindow = true,
+                        RedirectStandardOutput = true, RedirectStandardError = true
+                    };
+                    if (check) start.ArgumentList.Add("--check");
+                    using var process = Process.Start(start) ?? throw new IOException("Could not check the KWin frame effect.");
+                    var output = process.StandardOutput.ReadToEndAsync();
+                    var error = process.StandardError.ReadToEndAsync();
+                    using var timeout = new CancellationTokenSource(check ? TimeSpan.FromSeconds(5) : TimeSpan.FromMinutes(5));
+                    try { await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false); }
+                    catch (OperationCanceledException) { process.Kill(entireProcessTree: true); throw; }
+                    if (!check && process.ExitCode != 0)
+                        Console.Error.WriteLine($"[daisy-decoration] Frame effect repair failed: {await output}\n{await error}");
+                    else { await output; await error; }
+                    return process.ExitCode;
+                }
+                return await RunAsync(true).ConfigureAwait(false) == 0 || await RunAsync(false).ConfigureAwait(false) == 0;
+            }
+            directory = directory.Parent;
         }
+        return true;
+    }
 
-        try
+    private static async Task RequestKWinReconfigureAsync()
+    {
+        if (!string.Equals(Environment.GetEnvironmentVariable("DAISYOS_SHELL_SESSION"), "1", StringComparison.Ordinal)) return;
+
+        // Loading and reconfiguring must finish in order. Independent processes
+        // could reconfigure before the effect was loaded and leave its old palette.
+        foreach (var args in new[]
         {
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "qdbus6",
-                ArgumentList = { "org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure" },
-                CreateNoWindow = true,
-                UseShellExecute = false
-            });
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "qdbus6",
-                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-window-motion" },
-                CreateNoWindow = true,
-                UseShellExecute = false
-            });
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "qdbus6",
-                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.loadEffect", "kwin4_effect_shapecorners" },
-                CreateNoWindow = true,
-                UseShellExecute = false
-            });
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "qdbus6",
-                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "kwin4_effect_shapecorners" },
-                CreateNoWindow = true,
-                UseShellExecute = false
-            });
-            // KWin.reconfigure discovers enabled effects; it does not reload a
-            // running SceneEffect's KConfigPropertyMap. Refresh its palette too.
-            Process.Start(new ProcessStartInfo
-            {
-                FileName = "qdbus6",
-                ArgumentList = { "org.kde.KWin", "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-task-overview-v15" },
-                CreateNoWindow = true,
-                UseShellExecute = false
-            });
-        }
-        catch
+            new[] { "/KWin", "org.kde.KWin.reconfigure" },
+            new[] { "/Effects", "org.kde.kwin.Effects.loadEffect", "kwin4_effect_shapecorners" },
+            new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "kwin4_effect_shapecorners" },
+            new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-window-motion" },
+            new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-task-overview-v15" },
+            new[] { "/Effects", "org.kde.kwin.Effects.isEffectLoaded", "kwin4_effect_shapecorners" }
+        })
         {
-            // The file watcher in the decoration catches this path if qdbus6
-            // is unavailable in a minimal native development session.
+            var start = new ProcessStartInfo("qdbus6") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true };
+            start.ArgumentList.Add("org.kde.KWin");
+            foreach (var arg in args) start.ArgumentList.Add(arg);
+            using var process = Process.Start(start);
+            if (process is null) throw new IOException("Could not start KWin theme reconfiguration.");
+            var output = process.StandardOutput.ReadToEndAsync();
+            using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+            try { await process.WaitForExitAsync(timeout.Token).ConfigureAwait(false); }
+            catch (OperationCanceledException) { process.Kill(); throw; }
+            var result = await output.ConfigureAwait(false);
+            if (process.ExitCode != 0) throw new IOException($"KWin theme reconfiguration failed: {args[1]}");
+            if (args[1].EndsWith(".isEffectLoaded", StringComparison.Ordinal) && result.Trim() != "true")
+                throw new IOException("The KWin frame effect could not be loaded. Restart the DaisyOS session after updating its launcher.");
         }
     }
 }
