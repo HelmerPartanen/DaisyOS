@@ -223,6 +223,9 @@ public sealed partial class ContinuityDaemon
             case "handoff":
                 StartHandoff(command.Id, command.Value);
                 return;
+            case "clipboard-clear":
+                lock (_gate) ClearPendingClipboard();
+                return;
             case "clipboard":
                 if (command.Value.Length > 1_400_000) throw new InvalidDataException();
                 var data = Convert.FromBase64String(command.Value);

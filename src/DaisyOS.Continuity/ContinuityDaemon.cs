@@ -58,14 +58,14 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     // Composition seam for isolated policy/transfer tests. Program always uses
     // the public constructor with the real logind + shell session authority.
     internal ContinuityDaemon(SecureState state, int port, Func<bool>? sessionIsActive,
-        string? downloadsDirectory, string? sessionBusAddress, string? mediaExecutableDirectory = null, Func<string, Task<bool>>? sessionUnlocked = null)
+        string? downloadsDirectory, string? sessionBusAddress, string? mediaExecutableDirectory = null, Func<string, Task<bool>>? sessionUnlocked = null, ClipboardBridge? clipboard = null)
     {
         _sessionUnlocked = sessionUnlocked ?? SessionUnlockedAsync;
         _state = state; _mediaExecutableDirectory = mediaExecutableDirectory; _port = port; _boundPort = port;
         _sessionIsActive = sessionIsActive ?? (() => _sessionReady);
         _downloadsDirectory = downloadsDirectory ?? DaisyOS.Core.Storage.UserDirectoryPaths.Load()["Downloads"];
         _bus = new(sessionBusAddress ?? DBusAddress.Session ?? throw new IOException("No session bus."));
-        _clipboard = new ClipboardBridge();
+        _clipboard = clipboard ?? new ClipboardBridge();
         _discovery = new AvahiDiscovery((id, name, address, found) =>
         {
             lock (_gate)
@@ -368,6 +368,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
         _ = old.CancelAsync().ContinueWith(_ => old.Dispose(), TaskScheduler.Default);
         foreach (var pending in _prompts.Values) pending.Decision.TrySetResult(false);
         _clipboard.Stop();
+        ClearPendingClipboard();
         _ = RefreshVisibilityAsync();
     }
     private async Task RefreshVisibilityAsync()

@@ -75,7 +75,12 @@ with tempfile.TemporaryDirectory(prefix='daisy-clipboard-watch-') as temporary:
                     break
             assert process.poll() is None, 'Forwarding timeout killed clipboard watching'
         assert result.read_bytes() == b'next copy'
-        print('PASS: clipboard watcher survives forwarding timeout and delivers the next selection through a private Wayland connection')
+        connection.sendall(message(6, 1, number(0)))
+        for _ in range(100):
+            if result.read_bytes() == b'': break
+            time.sleep(.01)
+        assert result.read_bytes() == b'', 'Cleared selection did not clear pending forwarding'
+        print('PASS: clipboard watcher survives forwarding timeout, delivers the next selection, and forwards clipboard clearing through a private Wayland connection')
     finally:
         process.terminate()
         process.wait(timeout=5)

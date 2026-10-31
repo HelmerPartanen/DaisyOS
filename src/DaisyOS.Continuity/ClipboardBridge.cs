@@ -8,6 +8,7 @@ namespace DaisyOS.Continuity;
 
 public sealed class ClipboardBridge(TimeProvider? timeProvider = null)
 {
+    internal Func<ProcessStartInfo, Process?> ProcessStarter { get; init; } = start => Process.Start(start);
     private readonly object _gate = new();
     private string? _sourcePeer;
     private Process? _watch;
@@ -190,6 +191,11 @@ elif mode == "watch":
                             except (subprocess.TimeoutExpired, OSError):
                                 # A temporarily busy daemon must not stop future clipboard events.
                                 pass
+                if not oid and initial_sync:
+                    try:
+                        subprocess.run(cmd, input=b"", env=dict(os.environ, CLIPBOARD_STATE="clear"), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+                    except (subprocess.TimeoutExpired, OSError):
+                        pass
                 if oid:
                     sock.sendall(wl_msg(oid, 1))
 """;
@@ -224,7 +230,7 @@ elif mode == "watch":
             if (Path.GetFileNameWithoutExtension(Environment.ProcessPath) == "dotnet") start.ArgumentList.Add(typeof(ClipboardBridge).Assembly.Location);
             start.ArgumentList.Add("--clipboard-event");
             if (WaylandDisplay() is { } display) start.Environment["WAYLAND_DISPLAY"] = display;
-            _watch = Process.Start(start);
+            _watch = ProcessStarter(start);
             if (_watch is not null) { _ = _watch.StandardError.ReadToEndAsync(); _ = _watch.StandardOutput.ReadToEndAsync(); }
             Status = "Text clipboard uses Wayland data-control. Copying from a peer replaces this device’s clipboard.";
         }
@@ -279,7 +285,7 @@ elif mode == "watch":
             foreach (var arg in new[] { "-c", WaylandDataControlScript, "copy" }) start.ArgumentList.Add(arg);
         }
         if (WaylandDisplay() is { } display) start.Environment["WAYLAND_DISPLAY"] = display;
-        _source = Process.Start(start) ?? throw new IOException("Clipboard unavailable.");
+        _source = ProcessStarter(start) ?? throw new IOException("Clipboard unavailable.");
         _ = _source.StandardError.ReadToEndAsync(); _ = _source.StandardOutput.ReadToEndAsync();
         source = _source;
         }
@@ -305,7 +311,13 @@ elif mode == "watch":
     }
     public static async Task<int> ForwardAsync()
     {
-        if (Environment.GetEnvironmentVariable("CLIPBOARD_STATE") is "nil" or "clear" or "sensitive") return 0;
+        var state = Environment.GetEnvironmentVariable("CLIPBOARD_STATE");
+        if (state == "sensitive") return 0;
+        if (state is "nil" or "clear")
+        {
+            try { await new ContinuityClient().ExecuteAsync(new("clipboard-clear")); return 0; }
+            catch { return 1; }
+        }
         using var input = Console.OpenStandardInput();
         using var buffer = new MemoryStream();
         var bytes = new byte[8192];

@@ -64,7 +64,7 @@ public sealed partial class ContinuityDaemon
                 try
                 {
                     Require(peer, "files");
-                    await using var wire = await DialAsync(AddressFor(peer), peer, false, lifetime.Token);
+                    await using var wire = await DialPeerAsync(peer, lifetime.Token);
                     await wire.SendAsync(new() { FileOffer = new FileOffer { TransferId = transferId, DisplayName = name,
                         Length = (ulong)length, Sha256 = ByteString.CopyFrom(digest) } }, lifetime.Token);
                     Progress(id, peer, name, length, done, "Awaiting receiver");

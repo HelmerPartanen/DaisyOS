@@ -233,6 +233,10 @@ public sealed class AvahiDiscovery : IAsyncDisposable
         }
         return SecureState.SafeName(global::System.Text.Encoding.UTF8.GetString(bytes.ToArray()));
     }
+    internal string[] AddressesFor(string id)
+    {
+        lock (_resolved) return _resolved.Values.Where(p => p.Id == id).Select(p => p.Address).Distinct().ToArray();
+    }
     private void Report(string id, string name)
     {
         var addresses = _resolved.Values.Where(p => p.Id == id).Select(p => p.Address).OrderBy(a => a.StartsWith('[')).ThenBy(a => a, StringComparer.Ordinal).ToArray();

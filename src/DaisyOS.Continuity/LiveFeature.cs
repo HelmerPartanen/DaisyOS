@@ -85,7 +85,7 @@ public sealed partial class ContinuityDaemon
         {
             try
             {
-                await using var wire = await DialAsync(PeerAddress(peer), peer, false, live.Stop.Token);
+                await using var wire = await DialPeerAsync(peer, live.Stop.Token);
                 if (!wire.Supports(kind == "audio" ? Capability.Audio : kind == "input" ? Capability.EdgeInput : Capability.Screen) || control && !wire.Supports(Capability.Input))
                     throw new InvalidDataException("Peer must be updated for this feature.");
                 await wire.SendAsync(new() { LiveStart = new() { SessionId = live.Info.Id, Kind = kind, Control = control } }, live.Stop.Token);

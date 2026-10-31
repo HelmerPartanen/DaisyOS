@@ -44,6 +44,12 @@ public sealed class TrustedReconnectTests
             string? previous = null;
             for (var round = 0; round < 2; round++)
             {
+                if (round == 1)
+                {
+                    // Simulate the saved address becoming stale after a network change.
+                    // Discovery still has the verified reachable address from round one.
+                    source.Settings.Peers[target.Id] = source.Settings.Peers[target.Id] with { Address = "127.0.0.1:1" };
+                }
                 await sender.ReconcilePeersAsync();
                 while (!sender.Snapshot().Sessions!.Any(s => s.State == "Ready")) await Task.Delay(10, timeout.Token);
                 var link = Assert.Single(sender.Snapshot().Sessions!);
@@ -57,6 +63,7 @@ public sealed class TrustedReconnectTests
             }
             await server;
             Assert.Equal("left", source.Settings.Peers[target.Id].InputEdge);
+            Assert.Equal("127.0.0.1:" + ((IPEndPoint)listener.LocalEndpoint).Port, source.Settings.Peers[target.Id].Address);
             Assert.Single(source.Settings.Peers);
             Assert.Single(target.Settings.Peers);
         }

@@ -22,7 +22,7 @@ public sealed partial class ContinuityDaemon
             try
             {
                 life = PeerLifetime(peer, _stop.Token);
-                await using var wire = await DialAsync(PeerAddress(peer), peer, false, life.Token);
+                await using var wire = await DialPeerAsync(peer, life.Token);
                 if (!wire.Supports(Capability.Handoff)) throw new InvalidDataException("Peer must be updated for handoff.");
                 await wire.SendAsync(new() { ActivityOffer = new() { AppId = activity.AppId, Kind = activity.Kind,
                     SchemaVersion = (uint)activity.SchemaVersion, Title = activity.Title, Text = activity.Text } }, life.Token);
