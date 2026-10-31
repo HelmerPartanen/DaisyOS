@@ -10,6 +10,7 @@ public sealed partial class ContinuityDaemon
     private IDisposable? _sleepWatch;
     private string _sessionId = "";
     private bool _sessionGranted;
+    private bool _preparingForSleep;
     private long _sessionRevision;
     private async Task StartSessionGuardAsync()
     {
@@ -24,24 +25,33 @@ public sealed partial class ContinuityDaemon
             notification =>
             {
                 if (!notification.HasValue) return;
-                lock (_gate) { _sessionRevision++; _sessionReady = false; StopSharing(); }
-                // Active/unlocked logind revalidation may restore clipboard sharing.
-                // No remote-input or capture grants exist in this MVP.
+                PrepareForSleep(notification.Value);
             }, emitOnCapturedContext: false);
         NetworkChange.NetworkAddressChanged += NetworkChanged;
+    }
+    internal void PrepareForSleep(bool sleeping)
+    {
+        lock (_gate)
+        {
+            _preparingForSleep = sleeping;
+            _sessionRevision++;
+            if (sleeping) { _sessionReady = false; StopSharing(); }
+        }
+        if (!sleeping) Track(RevalidateSessionAsync);
     }
     private void NetworkChanged(object? sender, EventArgs e) => Track(RefreshVisibilityAsync);
     private async Task RevalidateSessionAsync()
     {
         string id; long revision;
-        lock (_gate) { if (!_sessionGranted || _shellOwner is null) return; id = _sessionId; revision = ++_sessionRevision; }
-        var valid = await SessionUnlockedAsync(id);
+        lock (_gate) { if (_preparingForSleep || !_sessionGranted || _shellOwner is null) return; id = _sessionId; revision = ++_sessionRevision; }
+        var valid = await _sessionUnlocked(id);
         lock (_gate)
         {
-            if (!_sessionGranted || _shellOwner is null || id != _sessionId || revision != _sessionRevision) return;
+            if (_preparingForSleep || !_sessionGranted || _shellOwner is null || id != _sessionId || revision != _sessionRevision) return;
+            var wasReady = Ready;
             _sessionReady = valid;
             if (!valid) StopSharing();
-            else { UpdateClipboardState(); _ = RefreshVisibilityAsync(); }
+            else { UpdateClipboardState(); _ = RefreshVisibilityAsync(); if (!wasReady) Track(ReconcilePeersAsync); }
         }
     }
     private async Task FailClosedOnDisconnectAsync(DBusConnection bus)

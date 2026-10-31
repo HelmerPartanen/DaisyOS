@@ -154,4 +154,15 @@ sha256sum "$plugin_dir/kwin4_effect_shapecorners.so" "$shader_dir/shapecorners.f
 mv -f -- "${manifest_path}.tmp" "$manifest_path"
 printf '%s\n' "$expected_version" > "$stamp_path"
 
-echo "Installed the DaisyOS rounded-window compositor effect. Restart the DaisyOS session once so KWin discovers the plugin."
+echo "Installed the DaisyOS rounded-window compositor effect."
+if command -v qdbus6 >/dev/null 2>&1; then
+  loaded="$(timeout 3 qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.isEffectLoaded kwin4_effect_shapecorners 2>/dev/null || true)"
+  if [[ "$loaded" == true ]]; then
+    echo "KWin confirms the effect is loaded."
+  else
+    echo "The files are installed, but KWin has NOT loaded the effect in this session." >&2
+    echo "Log out and back into DaisyOS. If it remains missing, check the KWin journal for ShapeCorners or shader errors." >&2
+  fi
+else
+  echo "Live KWin activation could not be checked because qdbus6 is unavailable. Restart the DaisyOS session once."
+fi

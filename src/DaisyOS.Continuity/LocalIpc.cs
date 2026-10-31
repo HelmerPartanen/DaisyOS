@@ -88,13 +88,14 @@ public sealed partial class ContinuityDaemon
                 lock (_gate) revision = ++_sessionRevision;
                 if (await ShellOwnerAsync() != sender) throw new UnauthorizedAccessException();
                 var sessionId = string.IsNullOrEmpty(command.Value) ? await ResolveSeatSessionIdAsync() : command.Value;
-                var valid = command.Allowed && await SessionUnlockedAsync(sessionId);
+                var valid = command.Allowed && await _sessionUnlocked(sessionId);
                 lock (_gate)
                 {
                     if (revision != _sessionRevision) throw new UnauthorizedAccessException();
-                    _shellOwner = sender; _sessionId = sessionId; _sessionGranted = command.Allowed; _sessionReady = valid;
-                    if (!valid) StopSharing();
-                    else { UpdateClipboardState(); _ = RefreshVisibilityAsync(); }
+                    var wasReady = Ready;
+                    _shellOwner = sender; _sessionId = sessionId; _sessionGranted = command.Allowed; _sessionReady = valid && !_preparingForSleep;
+                    if (!_sessionReady) StopSharing();
+                    else { UpdateClipboardState(); _ = RefreshVisibilityAsync(); if (!wasReady) Track(ReconcilePeersAsync); }
                 }
                 return;
             case "enable":

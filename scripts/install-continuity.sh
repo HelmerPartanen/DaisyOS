@@ -50,7 +50,9 @@ launcher.chmod(0o755)
 PY
 if [[ "$was_active" == true ]]; then
   systemctl --user daemon-reload
-  systemctl --user start daisyos-continuity.service
+  # A running shell can start the old release again while files are staged.
+  # Restart after the atomic switch to ensure the new payload is the one running.
+  systemctl --user restart daisyos-continuity.service
 fi
 printf 'Installed under %s. Install dependencies: .NET 10 ASP.NET runtime, avahi, wl-clipboard; media also needs libei, GStreamer/PipeWire plugins and libpulse (pactl/pacat).\n' "$prefix"
 printf 'Reload user units with systemctl --user daemon-reload, then start daisyos-continuity.service. Sharing stays off until enabled in Settings.\n'

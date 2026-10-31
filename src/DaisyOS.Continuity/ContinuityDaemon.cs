@@ -23,6 +23,7 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     private readonly object _gate = new();
     private readonly DBusConnection _bus;
     private readonly Func<bool> _sessionIsActive;
+    private readonly Func<string, Task<bool>> _sessionUnlocked;
     private readonly string _downloadsDirectory;
     private readonly CancellationTokenSource _stop = new();
     private CancellationTokenSource _sharing = new();
@@ -50,15 +51,16 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
     private string? _shellOwner;
     public string Path => ContinuityClient.ObjectPath;
     public bool HandlesChildPaths => false;
-    private bool Ready => !_stop.IsCancellationRequested && _state.Settings.Enabled && _sessionIsActive() && !_state.Settings.Paused;
+    private bool Ready => !_stop.IsCancellationRequested && !_preparingForSleep && _state.Settings.Enabled && _sessionIsActive() && !_state.Settings.Paused;
 
     public ContinuityDaemon(SecureState state, int port) : this(state, port, null, null, null) { }
 
     // Composition seam for isolated policy/transfer tests. Program always uses
     // the public constructor with the real logind + shell session authority.
     internal ContinuityDaemon(SecureState state, int port, Func<bool>? sessionIsActive,
-        string? downloadsDirectory, string? sessionBusAddress, string? mediaExecutableDirectory = null)
+        string? downloadsDirectory, string? sessionBusAddress, string? mediaExecutableDirectory = null, Func<string, Task<bool>>? sessionUnlocked = null)
     {
+        _sessionUnlocked = sessionUnlocked ?? SessionUnlockedAsync;
         _state = state; _mediaExecutableDirectory = mediaExecutableDirectory; _port = port; _boundPort = port;
         _sessionIsActive = sessionIsActive ?? (() => _sessionReady);
         _downloadsDirectory = downloadsDirectory ?? DaisyOS.Core.Storage.UserDirectoryPaths.Load()["Downloads"];
@@ -102,11 +104,15 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 new DaisyOS.System.Processes.SafeProcessLauncher().Launch("xdg-open", [global::System.IO.Path.Combine(_downloadsDirectory, "Continuity")]);
             }, emitOnCapturedContext: false);
         _bus.AddMethodHandler(this);
-        _ownerWatch = await _bus.AddMatchAsync<int>(new MatchRule { Type = MessageType.Signal,
+        _ownerWatch = await _bus.AddMatchAsync<string>(new MatchRule { Type = MessageType.Signal,
             Sender = "org.freedesktop.DBus", Interface = "org.freedesktop.DBus", Member = "NameOwnerChanged", Arg0 = "org.daisyos.ContinuitySession1" },
-            (message, _) => 0, notification =>
+            (message, _) => { var reader = message.GetBodyReader(); reader.ReadString(); return reader.ReadString(); }, notification =>
             {
-                if (notification.HasValue) lock (_gate) { _sessionRevision++; _shellOwner = null; _sessionGranted = false; _sessionReady = false; StopSharing(); }
+                if (notification.HasValue) lock (_gate)
+                {
+                    if (notification.Value.Length == 0 || notification.Value != _shellOwner) return;
+                    _sessionRevision++; _shellOwner = null; _sessionGranted = false; _sessionReady = false; StopSharing();
+                }
             }, emitOnCapturedContext: false);
         if (!await _bus.TryRequestNameAsync(ContinuityClient.BusName)) throw new IOException("Continuity already running.");
         try { await _discovery.StartAsync(linked.Token); }

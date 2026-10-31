@@ -66,7 +66,7 @@ public sealed class EdgeInputTests
         }
         finally { Directory.Delete(root, true); }
     }
-    private static string Tools(string directory)
+    internal static string Tools(string directory)
     {
         Directory.CreateDirectory(directory);
         var path = Path.Combine(directory, "daisyos-continuity-media");

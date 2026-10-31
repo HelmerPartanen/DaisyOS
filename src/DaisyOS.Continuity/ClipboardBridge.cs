@@ -22,9 +22,23 @@ public sealed class ClipboardBridge(TimeProvider? timeProvider = null)
         private set => _status = value;
     }
     private static bool Available(string name) => (Environment.GetEnvironmentVariable("PATH") ?? "").Split(':').Any(p => File.Exists(Path.Combine(p, name)));
-    private static bool HasWaylandDisplay() =>
-        !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")) ||
-        File.Exists(Path.Combine(Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR") ?? "", "daisyos-native-development", "wayland-display"));
+    internal static string? ResolveWaylandDisplay(string? display, string? runtime)
+    {
+        static bool Exists(string? name, string? root) => !string.IsNullOrEmpty(name) &&
+            File.Exists(Path.IsPathFullyQualified(name) ? name : Path.Combine(root ?? "", name));
+        if (Exists(display, runtime)) return display;
+        var record = Path.Combine(runtime ?? "", "daisyos-native-development", "wayland-display");
+        try
+        {
+            var current = File.ReadAllText(record).Trim();
+            if (Exists(current, runtime)) return current;
+        }
+        catch (IOException) { }
+        return display;
+    }
+    private static string? WaylandDisplay() => ResolveWaylandDisplay(
+        Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"), Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR"));
+    private static bool HasWaylandDisplay() => !string.IsNullOrEmpty(WaylandDisplay());
 
     private const string WaylandDataControlScript = """
 import socket, struct, os, array, sys, select, subprocess
@@ -115,7 +129,10 @@ if mode == "copy":
             elif obj == 7 and op == 0:
                 fd = fds_queue.pop(0)
                 try:
-                    os.write(fd, payload)
+                    remaining = memoryview(payload)
+                    while remaining:
+                        written = os.write(fd, remaining)
+                        remaining = remaining[written:]
                 except OSError:
                     pass
                 finally:
@@ -168,19 +185,24 @@ elif mode == "watch":
                             out.extend(d)
                         os.close(rfd)
                         if 0 < len(out) <= 1024 * 1024:
-                            subprocess.run(cmd, input=bytes(out), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+                            try:
+                                subprocess.run(cmd, input=bytes(out), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+                            except (subprocess.TimeoutExpired, OSError):
+                                # A temporarily busy daemon must not stop future clipboard events.
+                                pass
                 if oid:
                     sock.sendall(wl_msg(oid, 1))
 """;
 
     private static bool UseNativeScript() =>
         Available("python3") && (!Available("wl-copy") || !Available("wl-paste") ||
-            (Environment.GetEnvironmentVariable("WAYLAND_DISPLAY") ?? "").StartsWith("daisyos-native-", StringComparison.Ordinal));
+            (WaylandDisplay() ?? "").StartsWith("daisyos-native-", StringComparison.Ordinal));
 
     public void Start()
     {
         lock (_gate) {
         if (_watch is { HasExited: false }) return;
+        _watch?.Dispose(); _watch = null;
         var hasWl = Available("wl-copy") && Available("wl-paste");
         var useScript = UseNativeScript();
         if ((!hasWl && !useScript) || !HasWaylandDisplay())
@@ -201,6 +223,7 @@ elif mode == "watch":
             // Framework-dependent launches use dotnet plus the assembly path.
             if (Path.GetFileNameWithoutExtension(Environment.ProcessPath) == "dotnet") start.ArgumentList.Add(typeof(ClipboardBridge).Assembly.Location);
             start.ArgumentList.Add("--clipboard-event");
+            if (WaylandDisplay() is { } display) start.Environment["WAYLAND_DISPLAY"] = display;
             _watch = Process.Start(start);
             if (_watch is not null) { _ = _watch.StandardError.ReadToEndAsync(); _ = _watch.StandardOutput.ReadToEndAsync(); }
             Status = "Text clipboard uses Wayland data-control. Copying from a peer replaces this device’s clipboard.";
@@ -255,6 +278,7 @@ elif mode == "watch":
             start = new ProcessStartInfo("python3") { RedirectStandardInput = true, RedirectStandardError = true, RedirectStandardOutput = true };
             foreach (var arg in new[] { "-c", WaylandDataControlScript, "copy" }) start.ArgumentList.Add(arg);
         }
+        if (WaylandDisplay() is { } display) start.Environment["WAYLAND_DISPLAY"] = display;
         _source = Process.Start(start) ?? throw new IOException("Clipboard unavailable.");
         _ = _source.StandardError.ReadToEndAsync(); _ = _source.StandardOutput.ReadToEndAsync();
         source = _source;

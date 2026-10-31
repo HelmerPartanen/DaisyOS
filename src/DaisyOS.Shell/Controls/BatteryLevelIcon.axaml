@@ -28,7 +28,7 @@
             Canvas.Top="1"
             Width="24"
             Height="12"
-            Opacity="0.35"
+            Opacity="0.6"
             Fill="{Binding BaseBrush, ElementName=Root}"
             Data="M0 4V8C0 10.2091 1.79086 12 4 12H17C19.2091 12 21 10.2091 21 8V4C21 1.79086 19.2091 0 17 0H4C1.79086 0 0 1.79086 0 4Z M22.5 8V4C22.5 4 24 4 24 6C24 8 22.5 8 22.5 8Z" />
 

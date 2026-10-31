@@ -54,13 +54,26 @@ public sealed partial class ContinuityDaemon
         finally { ForgetPeer(id); } // Offline peers reconcile trust on their next authenticated connection.
     }
 
+    private readonly SemaphoreSlim _peerReconcile = new(1, 1);
     private async Task MaintainPeersAsync()
     {
+        await ReconcilePeersAsync();
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(5));
-        while (await timer.WaitForNextTickAsync(_stop.Token))
+        while (await timer.WaitForNextTickAsync(_stop.Token)) await ReconcilePeersAsync();
+    }
+    internal async Task ReconcilePeersAsync()
+    {
+        if (!_peerReconcile.Wait(0)) return;
+        try
         {
             string[] peers;
-            lock (_gate) peers = Ready ? _state.Settings.Peers.Keys.ToArray() : [];
+            lock (_gate)
+            {
+                // Clipboard helpers can exit across compositor changes or a failed
+                // transfer. Reconcile them even when pairing and enablement stay unchanged.
+                UpdateClipboardState();
+                peers = Ready ? _state.Settings.Peers.Keys.ToArray() : [];
+            }
             foreach (var id in peers)
             {
                 try
@@ -86,5 +99,6 @@ public sealed partial class ContinuityDaemon
                 }
             }
         }
+        finally { _peerReconcile.Release(); }
     }
 }

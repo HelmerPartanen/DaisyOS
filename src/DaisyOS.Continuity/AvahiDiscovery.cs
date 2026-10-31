@@ -33,6 +33,8 @@ public sealed class AvahiDiscovery : IAsyncDisposable
     }
     public async Task StartAsync(CancellationToken token)
     {
+        // LAN discovery must work even when Avahi or its CLI is unavailable.
+        StartUdpDiscovery(token);
         await _bus.ConnectAsync();
         _ownerWatch = await _bus.AddMatchAsync<string>(new MatchRule { Type = MessageType.Signal,
             Sender = "org.freedesktop.DBus", Interface = "org.freedesktop.DBus", Member = "NameOwnerChanged", Arg0 = "org.freedesktop.Avahi" },
@@ -49,7 +51,6 @@ public sealed class AvahiDiscovery : IAsyncDisposable
         _ = _browser.StandardError.ReadToEndAsync(token);
         Diagnostic = "Discovery active.";
         _ = ReadAsync(_browser, token);
-        StartUdpDiscovery(token);
     }
     private void StartUdpDiscovery(CancellationToken token)
     {

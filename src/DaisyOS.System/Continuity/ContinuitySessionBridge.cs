@@ -16,22 +16,48 @@ public sealed class ContinuitySessionBridge : IDisposable
     {
         try
         {
-            var bus = new DBusConnection(DBusAddress.Session ?? throw new IOException());
-            _bus = bus;
-            await bus.ConnectAsync();
-            if (!await bus.TryRequestNameAsync("org.daisyos.ContinuitySession1")) { Dispose(); return; }
-            _owner = await bus.AddMatchAsync<int>(new MatchRule { Type = MessageType.Signal, Sender = "org.freedesktop.DBus",
-                Interface = "org.freedesktop.DBus", Member = "NameOwnerChanged", Arg0 = ContinuityClient.BusName },
-                (message, _) => 0, notification => { if (notification.HasValue) Wake(); }, emitOnCapturedContext: false);
-            Wake();
-            while (!token.IsCancellationRequested)
+            while (!token.IsCancellationRequested && !_disposed)
             {
-                await _signal.WaitAsync(token);
-                try { await SendAsync(token); } catch (Exception ex) when (ex is IOException or DBusExceptionBase or TimeoutException) { }
+                try
+                {
+                    await StartServiceAsync(token);
+                    var bus = new DBusConnection(DBusAddress.Session ?? throw new IOException());
+                    _bus = bus;
+                    await bus.ConnectAsync();
+                    if (!await bus.TryRequestNameAsync("org.daisyos.ContinuitySession1")) return;
+                    _owner = await bus.AddMatchAsync<int>(new MatchRule { Type = MessageType.Signal, Sender = "org.freedesktop.DBus",
+                        Interface = "org.freedesktop.DBus", Member = "NameOwnerChanged", Arg0 = ContinuityClient.BusName },
+                        (message, _) => 0, notification => { if (notification.HasValue) Wake(); }, emitOnCapturedContext: false);
+                    Wake();
+                    while (!token.IsCancellationRequested && !_disposed)
+                    {
+                        // Retry missed startup/wake updates without requiring Settings
+                        // to be opened or a new NameOwnerChanged signal to arrive.
+                        await _signal.WaitAsync(TimeSpan.FromSeconds(5), token);
+                        try { await SendAsync(token); }
+                        catch (Exception ex) when (ex is IOException or DBusExceptionBase or TimeoutException or ObjectDisposedException)
+                        { await StartServiceAsync(token); break; }
+                    }
+                }
+                catch (Exception ex) when (ex is IOException or DBusExceptionBase or TimeoutException or ObjectDisposedException) { }
+                finally
+                {
+                    _owner?.Dispose(); _owner = null;
+                    _bus?.Dispose(); _bus = null;
+                }
+                await Task.Delay(TimeSpan.FromSeconds(2), token);
             }
         }
-        catch (Exception ex) when (ex is OperationCanceledException or IOException or DBusExceptionBase) { }
+        catch (OperationCanceledException) when (token.IsCancellationRequested) { }
         finally { Dispose(); }
+    }
+    private static async Task StartServiceAsync(CancellationToken token)
+    {
+        if (!OperatingSystem.IsLinux()) return;
+        // Starting the daemon preserves its saved enabled/paused state and trust.
+        // Native sessions do not necessarily activate graphical-session.target.
+        // Never replace a stop/restart job belonging to the upgrade installer.
+        await new Processes.SafeCommandRunner().RunAsync("systemctl", ["--user", "--job-mode=fail", "start", "daisyos-continuity.service"], TimeSpan.FromSeconds(3), token);
     }
     private void Wake() { try { _signal.Release(); } catch (SemaphoreFullException) { } }
     public async Task SetLockedAsync(bool locked)
@@ -39,7 +65,13 @@ public sealed class ContinuitySessionBridge : IDisposable
         _locked = locked;
         if (_bus is null || _disposed) return;
         try { await SendAsync(CancellationToken.None).WaitAsync(TimeSpan.FromSeconds(2)); }
-        catch { if (locked) Dispose(); else Wake(); }
+        catch
+        {
+            // Losing the owner stops input immediately if the lock update failed.
+            // RunAsync reconnects it instead of permanently disabling Continuity.
+            if (locked) _bus?.Dispose();
+            Wake();
+        }
     }
     private async Task SendAsync(CancellationToken token)
     {
@@ -54,6 +86,7 @@ public sealed class ContinuitySessionBridge : IDisposable
     public void Dispose()
     {
         _disposed = true;
+        Wake();
         _owner?.Dispose(); _owner = null; _bus?.Dispose(); _bus = null;
     }
 }
