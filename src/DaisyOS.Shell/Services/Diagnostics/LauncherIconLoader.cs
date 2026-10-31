@@ -8,10 +8,10 @@ using DaisyOS.Shell.ViewModels;
 
 namespace DaisyOS.Shell.Services.Diagnostics;
 
-/// <summary>Catalog items retain decoded icons while hidden. Four workers share an image cache.</summary>
+/// <summary>Catalog icons share a bounded cache and leave CPU time for input and rendering.</summary>
 internal sealed class LauncherIconLoader : IDisposable
 {
-    private static readonly SemaphoreSlim Workers = new(Math.Clamp(Environment.ProcessorCount, 4, 8));
+    private static readonly SemaphoreSlim Workers = new(Math.Clamp(Environment.ProcessorCount / 2, 2, 4));
     // Byte budget covers cache ownership; catalog leases are counted separately.
     private readonly ThumbnailCache _cache = new(896, 16L * 1024 * 1024);
     private readonly Dictionary<LauncherItemViewModel, Request> _requests = [];
@@ -29,6 +29,7 @@ internal sealed class LauncherIconLoader : IDisposable
     }
     public void Register(LauncherItemViewModel item, double scaling)
     {
+        if (item.IsCalendarIcon || string.IsNullOrWhiteSpace(item.IconName)) return;
         if (item.IconBitmap != null) return;
         if (_requests.ContainsKey(item)) return;
         // Capture UI-owned appearance before dispatching decode work. Workers
@@ -89,7 +90,7 @@ internal sealed class LauncherIconLoader : IDisposable
                 request.Lease = lease;
                 item.IconBitmap = lease?.Visual.Thumbnail;
                 lease = null;
-            });
+            }, DispatcherPriority.Background);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { }

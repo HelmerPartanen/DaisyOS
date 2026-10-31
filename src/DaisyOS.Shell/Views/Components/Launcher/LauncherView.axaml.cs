@@ -31,6 +31,11 @@ public partial class LauncherView : UserControl
     private readonly DaisyOS.Shell.Services.Diagnostics.LauncherIconLoader _icons = new();
     private CancellationTokenSource? _animationCts;
     private CancellationTokenSource? _stageAnimationCts;
+    private readonly Border _launcherRoot;
+    private readonly Grid _launcherStage;
+    private readonly Grid _pageViewport;
+    private readonly ItemsControl _applicationGrid;
+    private readonly ItemsControl _outgoingPageGrid;
     private Border? _powerMenu;
     private Border? _appContextMenu;
     private readonly MenuItem? _appContextUninstallItem;
@@ -55,7 +60,7 @@ public partial class LauncherView : UserControl
     {
         if (UseSolidBackdrop == solid) return;
         UseSolidBackdrop = solid;
-        var root = this.FindControl<Border>("LauncherRootBorder");
+        var root = _launcherRoot;
         root?.Classes.Set("SolidBackdrop", solid);
         BackdropStyleChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -90,7 +95,7 @@ public partial class LauncherView : UserControl
 
     private void AnimateStage(bool entering, TimeSpan duration, bool immediate = false)
     {
-        var stage = this.FindControl<Grid>("LauncherStage");
+        var stage = _launcherStage;
         if (stage is null) return;
 
         var startScale = entering ? 0.972 : 1.0;
@@ -177,19 +182,14 @@ public partial class LauncherView : UserControl
         _animationCts = cts;
         IsOpen = true;
 
-        var content = this.FindControl<Border>("LauncherRootBorder");
+        var content = _launcherRoot;
 
         if (!IsVisible)
         {
-            // A hidden control has not been measured on first use. Lay out the
-            // complete card before choosing its off-screen starting position.
-            // Keep the host transparent throughout this preparation.
+            // Scale/opacity reveals do not need a synchronous layout pass.
+            // Let the normal render transaction measure newly visible content.
             Opacity = 0;
             IsVisible = true;
-            UpdateLayout();
-            foreach (var frame in this.GetVisualDescendants().OfType<DaisyOS.Shell.Controls.ShellFrameBorder>()
-                         .Where(frame => frame.IsEffectivelyVisible))
-                frame.PrepareFrame();
         }
 
         var duration = interactive ? TimeSpan.Zero : ResolveLauncherDuration(entering: true);
@@ -217,8 +217,7 @@ public partial class LauncherView : UserControl
         try
         {
             await ViewModel.ApplicationsReady;
-            PreloadCatalogIcons();
-            do { await _icons.WhenReady; } while (!_icons.WhenReady.IsCompleted);
+            ScheduleCatalogIconPreload();
         }
         catch (Exception error)
         {
@@ -239,7 +238,7 @@ public partial class LauncherView : UserControl
         _animationCts = null;
         AnimateStage(entering: false, TimeSpan.Zero, immediate: true);
 
-        var content = this.FindControl<Border>("LauncherRootBorder");
+        var content = _launcherRoot;
         if (content is not null)
         {
             _ = GuiMotion.SetScaleVisibleAsync(
@@ -280,7 +279,7 @@ public partial class LauncherView : UserControl
         _animationCts = cts;
 
         var duration = ResolveLauncherDuration(entering: false);
-        var content = this.FindControl<Border>("LauncherRootBorder");
+        var content = _launcherRoot;
         AnimateStage(entering: false, duration);
 
         if (content is not null)
@@ -326,7 +325,8 @@ public partial class LauncherView : UserControl
         if (ViewModel != null)
         {
             foreach (var item in ViewModel.AllApps) item.IconBitmap = null;
-            PreloadCatalogIcons();
+            _catalogIconsDirty = true;
+            ScheduleCatalogIconPreload();
         }
         foreach (var button in this.GetVisualDescendants().OfType<Button>().Where(button => button.Classes.Contains("LauncherTile") && button.IsLoaded))
         {
@@ -351,9 +351,24 @@ public partial class LauncherView : UserControl
             _icons.Register(item, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
     }
 
+    private bool _catalogIconsDirty = true;
+    private bool _catalogPreloadQueued;
+
+    private void ScheduleCatalogIconPreload()
+    {
+        if (_catalogPreloadQueued || !_catalogIconsDirty) return;
+        _catalogPreloadQueued = true;
+        Dispatcher.UIThread.Post(() =>
+        {
+            _catalogPreloadQueued = false;
+            PreloadCatalogIcons();
+        }, DispatcherPriority.Background);
+    }
+
     private void PreloadCatalogIcons()
     {
-        if (_iconsReclaimed && !IsOpen) return;
+        if (!_catalogIconsDirty || _iconsReclaimed && !IsOpen) return;
+        _catalogIconsDirty = false;
         _iconsReclaimed = false;
         // Queue currently visible page tiles ahead of off-screen pages for instant first-frame icons.
         _icons.Preload(ViewModel.PageApps.Concat(ViewModel.AllApps), TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
@@ -363,6 +378,7 @@ public partial class LauncherView : UserControl
     {
         if (IsVisible || IsOpen || _iconsReclaimed) return;
         _iconsReclaimed = true;
+        _catalogIconsDirty = true;
         _icons.Dispose();
     }
 
@@ -428,7 +444,7 @@ public partial class LauncherView : UserControl
     private double _pageDragOffset;
     private int _dragNeighbour = -1;
     private int _dragGeneration;
-    private double PageStride => Math.Max(1, this.FindControl<Grid>("LauncherPageViewport")!.Bounds.Width);
+    private double PageStride => Math.Max(1, _pageViewport.Bounds.Width);
 
     private void DragPage(Vector delta)
     {
@@ -454,9 +470,9 @@ public partial class LauncherView : UserControl
         if (!_pageDragging)
         {
             ++_pageTransitionGeneration;
-            var current = this.FindControl<ItemsControl>("ApplicationGrid")!;
+            var current = _applicationGrid;
             GuiMotion.Cancel(current);
-            GuiMotion.Cancel(this.FindControl<ItemsControl>("OutgoingPageGrid")!);
+            GuiMotion.Cancel(_outgoingPageGrid);
             _pageDragOffset = 0;
             _pageDragging = true;
             current.IsHitTestVisible = false;
@@ -471,8 +487,8 @@ public partial class LauncherView : UserControl
 
     private void RenderPageDrag(double offset)
     {
-        var current = this.FindControl<ItemsControl>("ApplicationGrid")!;
-        var neighbour = this.FindControl<ItemsControl>("OutgoingPageGrid")!;
+        var current = _applicationGrid;
+        var neighbour = _outgoingPageGrid;
         var direction = offset < 0 ? 1 : -1;
         var index = ViewModel.PageIndex + direction;
         var valid = index >= 0 && index < ViewModel.PageCount;
@@ -505,6 +521,11 @@ public partial class LauncherView : UserControl
         var direction = from < 0 ? 1 : -1;
         var targetPage = ViewModel.PageIndex + direction;
         var velocity = Environment.TickCount64 - _pageMotionTime <= 80 ? _pageVelocity : 0;
+        // A new swipe can choose a fresh axis even while this one settles.
+        _pageHorizontal = null;
+        _pageAxisTravel = default;
+        _pageVelocity = 0;
+        _pageMotionTime = 0;
         var commit = LauncherSwipePhysics.ShouldCommit(from, velocity, PageStride) &&
             targetPage >= 0 && targetPage < ViewModel.PageCount;
         var to = commit ? -direction * PageStride : 0;
@@ -540,6 +561,14 @@ public partial class LauncherView : UserControl
 
     private void CancelPageDrag()
     {
+        if (_pageDragging)
+        {
+            _applicationGrid.RenderTransform = null;
+            var neighbour = _outgoingPageGrid;
+            neighbour.RenderTransform = null;
+            neighbour.IsVisible = false;
+            neighbour.ItemsSource = null;
+        }
         ++_dragGeneration;
         _pageDragIdle.Stop();
         _pageDragging = false;
@@ -549,7 +578,7 @@ public partial class LauncherView : UserControl
         _pageVelocity = 0;
         _pageMotionTime = 0;
         _dragNeighbour = -1;
-        this.FindControl<ItemsControl>("ApplicationGrid")!.IsHitTestVisible = true;
+        _applicationGrid.IsHitTestVisible = true;
     }
 
     private LauncherItemViewModel[] _displayedPage = [];
@@ -559,8 +588,8 @@ public partial class LauncherView : UserControl
     private async void OnPageChanged()
     {
         CancelPageDrag();
-        var incoming = this.FindControl<ItemsControl>("ApplicationGrid")!;
-        var outgoing = this.FindControl<ItemsControl>("OutgoingPageGrid")!;
+        var incoming = _applicationGrid;
+        var outgoing = _outgoingPageGrid;
         var previous = _displayedPage;
         var direction = Math.Sign(ViewModel.PageIndex - _displayedPageIndex);
         _displayedPageIndex = ViewModel.PageIndex;
@@ -670,6 +699,11 @@ public partial class LauncherView : UserControl
     internal LauncherView(LauncherViewModel? viewModel)
     {
         InitializeComponent();
+        _launcherRoot = this.FindControl<Border>("LauncherRootBorder")!;
+        _launcherStage = this.FindControl<Grid>("LauncherStage")!;
+        _pageViewport = this.FindControl<Grid>("LauncherPageViewport")!;
+        _applicationGrid = this.FindControl<ItemsControl>("ApplicationGrid")!;
+        _outgoingPageGrid = this.FindControl<ItemsControl>("OutgoingPageGrid")!;
         _pageDragIdle.Tick += (_, _) => SettlePageDrag();
         // This menu is later reparented to a separate native layer surface.
         // Retain named children while the Launcher name scope is still intact.
@@ -721,8 +755,12 @@ public partial class LauncherView : UserControl
 
         ViewModel = viewModel ?? new LauncherViewModel((Application.Current as App)?.SessionState);
         Loc.RefreshOnChange(this, () => { foreach (var item in ViewModel.AllApps) item.UpdateApp(item.App); _ = ViewModel.ReloadApplicationsAsync(); });
-        ViewModel.AllApps.CollectionChanged += (_, _) => PreloadCatalogIcons();
-        PreloadCatalogIcons();
+        ViewModel.AllApps.CollectionChanged += (_, _) =>
+        {
+            _catalogIconsDirty = true;
+            ScheduleCatalogIconPreload();
+        };
+        ScheduleCatalogIconPreload();
         DataContext = ViewModel;
         ViewModel.PropertyChanged += (_, e) =>
         {

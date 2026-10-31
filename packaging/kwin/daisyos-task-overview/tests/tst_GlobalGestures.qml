@@ -1,0 +1,94 @@
+import QtQuick
+import QtTest
+import "../contents/ui" as Overview
+
+TestCase {
+    name: "GlobalGestures"
+    Component {
+        id: bridgeComponent
+        Overview.GlobalGestures { }
+    }
+    QtObject {
+        id: fakeOverview
+        property bool visible: false
+        property bool tracking: false
+        property bool opening: false
+        property real progress: 0
+        property var committed: null
+        function beginGesture(open) {
+            if (tracking) return false;
+            tracking = true;
+            opening = open;
+            return true;
+        }
+        function updateGesture(value) { progress = value; }
+        function endGesture(commit) { tracking = false; committed = commit; }
+    }
+    property var bridge
+    function init() {
+        fakeOverview.visible = false;
+        fakeOverview.tracking = false;
+        fakeOverview.committed = null;
+        bridge = createTemporaryObject(bridgeComponent, this, { overview: fakeOverview });
+        verify(bridge !== null);
+    }
+    function test_pinchTracksBothDirectionsAndKeepsTerminalMessages() {
+        var pinch = findChild(bridge, "pinchIn");
+        var call = findChild(bridge, "pinchCall");
+        compare(pinch.fingerCount, 4);
+        pinch.progress = 0.2;
+        compare(call.sent.length, 1);
+        compare(call.sent[0].progress, 0.2);
+        pinch.progress = 0.4;
+        pinch.progress = 0.7;
+        compare(bridge.pending.length, 1);
+        pinch.cancelled(); // Release after halfway settles open.
+        compare(bridge.pending.length, 2);
+        call.finished([]);
+        compare(call.sent[1].progress, 0.7);
+        call.finished([]);
+        verify(call.sent[2].finished);
+        verify(call.sent[2].commit);
+        call.finished([]);
+        var out = findChild(bridge, "pinchOut");
+        out.progress = 0.3;
+        out.cancelled();
+        call.finished([]);
+        var terminal = call.sent[call.sent.length - 1];
+        verify(!terminal.opening);
+        verify(terminal.finished);
+        verify(!terminal.commit);
+    }
+    function test_swipesTrackAndReverseBeforeRelease() {
+        var up = findChild(bridge, "swipeUp");
+        compare(up.fingerCount, 3);
+        up.progress = 0.8;
+        verify(fakeOverview.opening);
+        compare(fakeOverview.progress, 0.8);
+        up.progress = 0.2;
+        compare(fakeOverview.progress, 0.2);
+        up.cancelled();
+        compare(fakeOverview.committed, false);
+        var down = findChild(bridge, "swipeDown");
+        down.progress = 0.65;
+        verify(!fakeOverview.opening);
+        down.cancelled();
+        compare(fakeOverview.committed, true);
+    }
+    function test_busFailureDropsStaleSamples() {
+        var pinch = findChild(bridge, "pinchIn");
+        var call = findChild(bridge, "pinchCall");
+        pinch.progress = 0.1;
+        pinch.progress = 0.3;
+        call.failed();
+        compare(bridge.pending.length, 0);
+        verify(!bridge.callPending);
+    }
+    function test_pinchDoesNotOpenLauncherOverOverview() {
+        fakeOverview.visible = true;
+        var pinch = findChild(bridge, "pinchIn");
+        pinch.progress = 0.8;
+        pinch.activated();
+        compare(findChild(bridge, "pinchCall").sent.length, 0);
+    }
+}

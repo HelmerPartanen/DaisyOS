@@ -61,14 +61,17 @@ public class LauncherViewModel : INotifyPropertyChanged
 
     public void GoToPage(int index)
     {
-        _pageIndex = Math.Clamp(index, 0, PageCount - 1);
+        var next = Math.Clamp(index, 0, PageCount - 1);
+        if (_pageIndex == next) return;
+        _pageIndex = next;
         RefreshPage();
     }
 
     private void RefreshPage()
     {
         _pageIndex = Math.Clamp(_pageIndex, 0, PageCount - 1);
-        PageApps.ReplaceAll(FilteredApps.Skip(_pageIndex * _pageSize).Take(_pageSize));
+        var page = GetPageApps(_pageIndex);
+        if (!PageApps.SequenceEqual(page)) PageApps.ReplaceAll(page);
         OnPropertyChanged(nameof(PageIndex));
         OnPropertyChanged(nameof(PageCount));
         OnPropertyChanged(nameof(HasMultiplePages));

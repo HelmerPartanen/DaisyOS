@@ -14,6 +14,22 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class LauncherPagingTests
 {
     [AvaloniaFact]
+    public void UnchangedPageAndMatchingSearchKeepTheExistingTiles()
+    {
+        var apps = Enumerable.Range(0, 20)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray();
+        var model = new LauncherViewModel(null, apps);
+        var resets = model.PageApps.NotificationCount;
+        var original = model.PageApps.ToArray();
+        model.GoToPage(0);
+        model.GoToPage(-1);
+        Assert.Equal(resets, model.PageApps.NotificationCount);
+        model.SearchText = "App";
+        Assert.Equal(original, model.PageApps.ToArray());
+        Assert.Equal(resets, model.PageApps.NotificationCount);
+    }
+
+    [AvaloniaFact]
     public void PagesCoverCatalogAndClampAfterResizeAndSearch()
     {
         var apps = Enumerable.Range(0, 47)
@@ -185,6 +201,13 @@ public sealed class LauncherPagingTests
             Assert.True(launcher.IsHitTestVisible);
             launcher.BeginInteractiveReveal(false);
             launcher.UpdateInteractiveReveal(0.6);
+            launcher.Resources["MotionDurationEnter"] = TimeSpan.FromMilliseconds(220);
+            launcher.Resources["MotionDurationExit"] = TimeSpan.FromMilliseconds(220);
+            launcher.EndInteractiveReveal(false, () => Assert.Fail("Interrupted close must not complete"));
+            Assert.Equal(false, launcher.RevealSettlingTarget);
+            Assert.Equal(0.6, launcher.BeginInteractiveReveal(true));
+            Assert.Equal(0.6, material.Opacity); // Catch an in-flight close without a jump.
+            launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
             launcher.EndInteractiveReveal(true, () => { });
             Assert.Equal(1, material.Opacity);
             Assert.True(launcher.IsHitTestVisible);
@@ -220,6 +243,11 @@ public sealed class LauncherPagingTests
             Assert.Equal(0, model.PageIndex);
             Assert.Null(current.RenderTransform);
             Assert.True(current.IsHitTestVisible);
+            Scroll(new Vector(-60, 0));
+            launcher.BeginInteractiveReveal(false); // Pinching interrupts page motion safely.
+            Assert.Null(current.RenderTransform);
+            Assert.False(launcher.FindControl<ItemsControl>("OutgoingPageGrid")!.IsVisible);
+            launcher.EndInteractiveReveal(true, () => { });
             Scroll(new Vector(0, -220)); // A new swipe may select the other axis.
             Scroll(default, true);
             Assert.Equal(1, model.PageIndex);

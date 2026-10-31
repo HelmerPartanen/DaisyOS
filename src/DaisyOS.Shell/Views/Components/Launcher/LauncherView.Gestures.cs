@@ -8,19 +8,26 @@ public partial class LauncherView
 {
     private int _revealGeneration;
     private bool _revealInteractive;
+    private bool _revealSettling;
+    private bool _revealTarget;
+    public bool? RevealSettlingTarget => _revealSettling ? _revealTarget : null;
+    internal bool IsRevealInProgress => _revealInteractive || _revealSettling;
     private double _revealProgress = 1;
 
-    public void BeginInteractiveReveal(bool opening)
+    public double BeginInteractiveReveal(bool opening)
     {
+        var start = _revealInteractive || _revealSettling ? _revealProgress : opening ? 0 : 1;
+        _revealSettling = false;
         ++_revealGeneration;
         _revealInteractive = true;
         _stageAnimationCts?.Cancel();
         CancelPageDrag();
         ClosePowerMenu();
         CloseAppContextMenu();
-        GuiMotion.Cancel(this.FindControl<Border>("LauncherRootBorder")!);
+        GuiMotion.Cancel(_launcherRoot);
         IsHitTestVisible = false;
-        SetRevealProgress(opening ? 0 : 1);
+        SetRevealProgress(start);
+        return start;
     }
 
     public void UpdateInteractiveReveal(double progress)
@@ -31,10 +38,10 @@ public partial class LauncherView
     private void SetRevealProgress(double progress)
     {
         _revealProgress = Math.Clamp(progress, 0, 1);
-        var content = this.FindControl<Border>("LauncherRootBorder")!;
+        var content = _launcherRoot;
         content.Opacity = _revealProgress;
         // Only transform the content. The full-output material never changes size.
-        var stage = this.FindControl<Grid>("LauncherStage")!;
+        var stage = _launcherStage;
         var reduced = Application.Current is App { ReduceMotionEnabled: true };
         ApplyStageTransform(stage, reduced ? 1 : 0.88 + 0.12 * _revealProgress, 0);
     }
@@ -43,6 +50,8 @@ public partial class LauncherView
     {
         if (!_revealInteractive) return;
         _revealInteractive = false;
+        _revealSettling = true;
+        _revealTarget = visible;
         var generation = ++_revealGeneration;
         var from = _revealProgress;
         var target = visible ? 1d : 0d;
@@ -51,6 +60,7 @@ public partial class LauncherView
         {
             if (generation != _revealGeneration) return;
             SetRevealProgress(target);
+            _revealSettling = false;
             IsHitTestVisible = visible;
             completed();
         }
@@ -76,6 +86,7 @@ public partial class LauncherView
     {
         ++_revealGeneration;
         _revealInteractive = false;
+        _revealSettling = false;
         IsHitTestVisible = true;
     }
 }

@@ -29,6 +29,7 @@ Item {
 
     KWinComponents.DBusCall {
         id: pinchCall
+        objectName: "pinchCall"
         service: "org.daisyos.Shell.WindowBridge"
         path: "/org/daisyos/Shell/WindowBridge"
         dbusInterface: "org.daisyos.Shell.WindowBridge"
@@ -39,6 +40,7 @@ Item {
 
     KWinComponents.PinchGestureHandler {
         id: pinchIn
+        objectName: "pinchIn"
         fingerCount: 4
         direction: KWinComponents.PinchGestureHandler.Contracting
         property bool tracking: false
@@ -51,12 +53,13 @@ Item {
             tracking = false;
         }
         onCancelled: {
-            if (tracking) gestures.sendPinch(true, progress, true, false);
+            if (tracking) gestures.sendPinch(true, progress, true, progress >= 0.5);
             tracking = false;
         }
     }
     KWinComponents.PinchGestureHandler {
         id: pinchOut
+        objectName: "pinchOut"
         fingerCount: 4
         direction: KWinComponents.PinchGestureHandler.Expanding
         property bool tracking: false
@@ -69,7 +72,7 @@ Item {
             tracking = false;
         }
         onCancelled: {
-            if (tracking) gestures.sendPinch(false, progress, true, false);
+            if (tracking) gestures.sendPinch(false, progress, true, progress >= 0.5);
             tracking = false;
         }
     }
@@ -85,6 +88,7 @@ Item {
         }
     }
     KWinComponents.SwipeGestureHandler {
+        objectName: "swipeUp"
         fingerCount: 3
         deviceType: KWinComponents.SwipeGestureHandler.Touchpad
         direction: KWinComponents.SwipeGestureHandler.Up
@@ -94,9 +98,10 @@ Item {
             if (tracking) overview.updateGesture(progress);
         }
         onActivated: { if (tracking) overview.endGesture(true); tracking = false; }
-        onCancelled: { if (tracking) overview.endGesture(false); tracking = false; }
+        onCancelled: { if (tracking) overview.endGesture(progress >= 0.5); tracking = false; }
     }
     KWinComponents.SwipeGestureHandler {
+        objectName: "swipeDown"
         fingerCount: 3
         deviceType: KWinComponents.SwipeGestureHandler.Touchpad
         direction: KWinComponents.SwipeGestureHandler.Down
@@ -106,6 +111,6 @@ Item {
             if (tracking) overview.updateGesture(progress);
         }
         onActivated: { if (tracking) overview.endGesture(true); tracking = false; }
-        onCancelled: { if (tracking) overview.endGesture(false); tracking = false; }
+        onCancelled: { if (tracking) overview.endGesture(progress >= 0.5); tracking = false; }
     }
 }

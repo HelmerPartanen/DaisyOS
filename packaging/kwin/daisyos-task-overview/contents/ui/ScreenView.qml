@@ -443,15 +443,11 @@ FocusScope {
                 required property real capturedStackingOrder
                 required property bool closing
                 readonly property bool selected: root.selectedIndex === index
-                readonly property var transitionRect: Transition.interpolateRect(
-                    { x: sourceX, y: sourceY, width: sourceWidth, height: sourceHeight },
-                    { x: targetX, y: targetY, width: targetWidth, height: targetHeight },
-                    effect.transitionProgress)
-
-                x: transitionRect.x
-                y: transitionRect.y
-                width: transitionRect.width
-                height: transitionRect.height
+                // Arithmetic bindings avoid allocating rectangles per window per sample.
+                x: sourceX + (targetX - sourceX) * effect.transitionProgress
+                y: sourceY + (targetY - sourceY) * effect.transitionProgress
+                width: sourceWidth + (targetWidth - sourceWidth) * effect.transitionProgress
+                height: sourceHeight + (targetHeight - sourceHeight) * effect.transitionProgress
                 opacity: closing ? 0 : 1
                 z: selected ? 10000 : capturedStackingOrder
                 transformOrigin: Item.Center
@@ -476,9 +472,12 @@ FocusScope {
                     onTriggered: root.finalizeRemoval(tile.persistentId)
                 }
 
-                Rectangle {
+                OverviewTransitionFrame {
                     id: outerFrame
-                    anchors.fill: parent
+                    width: tile.targetWidth
+                    height: tile.targetHeight
+                    presentationWidth: tile.width
+                    presentationHeight: tile.height
                     radius: Number(effect.configuration.CornerRadius || 16)
                     color: effect.configuration.FrameOuter || "#99000000"
                     clip: true

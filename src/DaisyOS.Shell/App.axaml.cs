@@ -660,17 +660,21 @@ public partial class App : Application
         // PopupOverlayLayer, not below LauncherView. Observe and scan the
         // complete surface so opening and closing a menu updates KWin's mask
         // in the same layout transaction as the popup itself.
+        var launcherMaterial = (Control?)shell.Launcher.FindControl<Border>("LauncherRootBorder") ?? shell.Launcher;
+        Control[] launcherGestureMaterials = [launcherMaterial];
         var launcherBlur = new KWinBlur(launcherSurface, launcherSurface, () =>
         {
             if (!shell.Launcher.IsEffectivelyVisible || shell.Launcher.Opacity <= 0.001 ||
                 shell.Launcher.UseSolidBackdrop)
                 return [];
-            var root = shell.Launcher.FindControl<Border>("LauncherRootBorder");
+            // Gestures close both menus before tracking. Avoid walking every
+            // tile's visual tree for each opacity sample of the fixed backdrop.
+            if (shell.Launcher.IsRevealInProgress) return launcherGestureMaterials;
             var regions = launcherSurface.GetVisualDescendants().OfType<Border>()
                 .Where(border => border.Name == "MenuBlurHost")
                 .Cast<Control>()
                 .ToList();
-            regions.Insert(0, (Control?)root ?? shell.Launcher);
+            regions.Insert(0, launcherMaterial);
             return regions;
         });
         _launcherBlur = launcherBlur;
@@ -1400,6 +1404,7 @@ public partial class App : Application
     }
 
     private bool? _launcherPinchOpening;
+    private double _launcherPinchStartProgress;
     private DispatcherTimer? _launcherPinchTimeout;
 
     private void HandleLauncherPinch(LauncherPinchUpdate update)
@@ -1408,18 +1413,22 @@ public partial class App : Application
         var launcher = _shellView.Launcher;
         if (_launcherPinchOpening is null)
         {
-            if (update.Finished || update.Progress <= 0 || update.Opening == _shellView.IsLauncherVisible) return;
+            if (update.Finished || update.Progress <= 0) return;
+            if (update.Opening == _shellView.IsLauncherVisible && launcher.RevealSettlingTarget != !update.Opening) return;
             _launcherPinchOpening = update.Opening;
-            if (update.Opening) ShowLauncher(interactive: true);
-            launcher.BeginInteractiveReveal(update.Opening);
+            if (update.Opening && !_shellView.IsLauncherVisible) ShowLauncher(interactive: true);
+            _launcherPinchStartProgress = launcher.BeginInteractiveReveal(update.Opening);
         }
         if (_launcherPinchOpening != update.Opening) return;
-        launcher.UpdateInteractiveReveal(update.Opening ? update.Progress : 1 - update.Progress);
-        _launcherPinchTimeout ??= new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+        launcher.UpdateInteractiveReveal(_launcherPinchStartProgress +
+            ((update.Opening ? 1 : 0) - _launcherPinchStartProgress) * update.Progress);
+        if (_launcherPinchTimeout is null)
+        {
+            // Recover if the compositor effect disappears or the bus fails mid-gesture.
+            _launcherPinchTimeout = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _launcherPinchTimeout.Tick += OnLauncherPinchTimeout;
+        }
         _launcherPinchTimeout.Stop();
-        // Recover if the compositor effect disappears or the bus fails mid-gesture.
-        _launcherPinchTimeout.Tick -= OnLauncherPinchTimeout;
-        _launcherPinchTimeout.Tick += OnLauncherPinchTimeout;
         if (!update.Finished)
         {
             _launcherPinchTimeout.Start();
@@ -1575,7 +1584,9 @@ public partial class App : Application
         _ = Task.Run(() => GetExternalAppLookup(_sharedLauncherService.Value));
         kwinBridge.ScreenshotRequested += (_, action) => Dispatcher.UIThread.Post(() => _ = HandleScreenshotRequestAsync(action));
         kwinBridge.LockRequested += (_, _) => Dispatcher.UIThread.Post(() => LockSession());
-        kwinBridge.LauncherPinchChanged += (_, update) => Dispatcher.UIThread.Post(() => HandleLauncherPinch(update));
+        var pinchDispatcher = new LauncherPinchDispatcher(
+            callback => Dispatcher.UIThread.Post(callback, DispatcherPriority.BeforeRender), HandleLauncherPinch);
+        kwinBridge.LauncherPinchChanged += (_, update) => pinchDispatcher.Push(update);
         kwinBridge.OverviewRequested += (_, _) => Dispatcher.UIThread.Post(() => ToggleOverview());
         kwinBridge.MediaActionRequested += (_, action) => Dispatcher.UIThread.Post(() => _ = HandleMediaActionAsync(action));
         kwinBridge.ShellActionRequested += (_, action) => Dispatcher.UIThread.Post(() => HandleShellAction(action));

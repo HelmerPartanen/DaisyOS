@@ -1,0 +1,4 @@
+module org.kde.kwin
+PinchGestureHandler 1.0 PinchGestureHandler.qml
+SwipeGestureHandler 1.0 SwipeGestureHandler.qml
+DBusCall 1.0 DBusCall.qml
