@@ -59,7 +59,7 @@ public sealed class ComboBoxBehaviorTests
             using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
             picker.RaiseEvent(new PointerWheelEventArgs(picker, pointer, window, new Point(10, 10), 0,
                 new PointerPointProperties(), KeyModifiers.None, new Vector(0, -36)) { IsPrecise = true });
-            Assert.Equal(36, scroller.Offset.Y, 1);
+            Assert.Equal(144, scroller.Offset.Y, 1);
             Assert.Equal(0, picker.SelectedIndex);
         }
         finally { window.Close(); }

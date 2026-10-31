@@ -5,6 +5,7 @@
 import QtQuick
 import org.kde.kwin as KWinComponents
 import "TransitionGeometry.js" as Transition
+import "FlickMotion.js" as Flick
 
 KWinComponents.SceneEffect {
     id: effect
@@ -20,6 +21,7 @@ KWinComponents.SceneEffect {
     property real gestureStartProgress: 0
     property int settleDuration: animationDuration
     property int gestureTarget: -1
+    property real gestureReleaseVelocity: 0
     readonly property string phaseExiting: "exiting"
     property string phase: phaseIdle
     readonly property bool activated: phase === phaseEntering || phase === phaseActive || phase === phaseGesture
@@ -102,7 +104,8 @@ KWinComponents.SceneEffect {
             transitionProgress = gestureStartProgress + ((gestureOpening ? 1 : 0) - gestureStartProgress) * gestureProgress;
     }
 
-    function endGesture(commit) {
+    function endGesture(commit, releaseVelocity) {
+        gestureReleaseVelocity = isFinite(releaseVelocity) ? releaseVelocity : 0;
         if (!gestureTracking) return;
         gestureTracking = false;
         var target = commit ? (gestureOpening ? 1 : 0) : (gestureOpening ? 0 : 1);
@@ -113,13 +116,15 @@ KWinComponents.SceneEffect {
         phase = target ? phaseEntering : phaseExiting;
         var view = activeRoot();
         if (view && !target) view.beginExit();
-        animateTo(target);
+        animateTo(target, gestureReleaseVelocity);
         if (transitionProgress === target && !transitionAnimation.running) finishTransition();
     }
 
-    function animateTo(targetProgress) {
+    function animateTo(targetProgress, releaseVelocity) {
         var unchanged = transitionProgress === targetProgress;
-        settleDuration = Math.max(80, Math.round(animationDuration * Math.abs(targetProgress - transitionProgress)));
+        settleDuration = isFinite(releaseVelocity)
+            ? Flick.settleDuration(targetProgress - transitionProgress, releaseVelocity, animationDuration)
+            : Math.max(80, Math.round(animationDuration * Math.abs(targetProgress - transitionProgress)));
         transitionProgress = targetProgress;
         if (reduceMotion || unchanged) finishTransition();
     }
@@ -141,7 +146,7 @@ KWinComponents.SceneEffect {
             gestureTarget = -1;
             phase = target ? phaseEntering : phaseExiting;
             if (!target) view.beginExit();
-            animateTo(target);
+            animateTo(target, gestureReleaseVelocity);
         } else {
             phase = phaseEntering;
             animateTo(1);

@@ -1,5 +1,6 @@
 import QtQuick
 import org.kde.kwin as KWinComponents
+import "FlickMotion.js" as Flick
 
 // KWin owns recognition, including while the pointer is over another app.
 Item {
@@ -7,6 +8,7 @@ Item {
     required property var overview
     property var pending: []
     property bool callPending: false
+    property var gestureClock: function() { return Date.now(); }
 
     function sendPinch(opening, progress, finished, commit) {
         if (overview.visible) return;
@@ -93,12 +95,26 @@ Item {
         deviceType: KWinComponents.SwipeGestureHandler.Touchpad
         direction: KWinComponents.SwipeGestureHandler.Up
         property bool tracking: false
+        property var flick: Flick.createTracker()
         onProgressChanged: {
-            if (!tracking && progress > 0) tracking = overview.beginGesture(true);
-            if (tracking) overview.updateGesture(progress);
+            if (!tracking && progress > 0) {
+                tracking = overview.beginGesture(true);
+                if (tracking) flick = Flick.createTracker();
+            }
+            if (tracking) {
+                Flick.update(flick, progress, gestures.gestureClock());
+                overview.updateGesture(progress);
+            }
         }
-        onActivated: { if (tracking) overview.endGesture(true); tracking = false; }
-        onCancelled: { if (tracking) overview.endGesture(progress >= 0.5); tracking = false; }
+        onActivated: {
+            if (tracking) overview.endGesture(true, Flick.velocity(flick, gestures.gestureClock()));
+            tracking = false;
+        }
+        onCancelled: {
+            var now = gestures.gestureClock();
+            if (tracking) overview.endGesture(Flick.shouldCommit(flick, progress, now), Flick.velocity(flick, now));
+            tracking = false;
+        }
     }
     KWinComponents.SwipeGestureHandler {
         objectName: "swipeDown"
@@ -106,11 +122,25 @@ Item {
         deviceType: KWinComponents.SwipeGestureHandler.Touchpad
         direction: KWinComponents.SwipeGestureHandler.Down
         property bool tracking: false
+        property var flick: Flick.createTracker()
         onProgressChanged: {
-            if (!tracking && progress > 0) tracking = overview.beginGesture(false);
-            if (tracking) overview.updateGesture(progress);
+            if (!tracking && progress > 0) {
+                tracking = overview.beginGesture(false);
+                if (tracking) flick = Flick.createTracker();
+            }
+            if (tracking) {
+                Flick.update(flick, progress, gestures.gestureClock());
+                overview.updateGesture(progress);
+            }
         }
-        onActivated: { if (tracking) overview.endGesture(true); tracking = false; }
-        onCancelled: { if (tracking) overview.endGesture(progress >= 0.5); tracking = false; }
+        onActivated: {
+            if (tracking) overview.endGesture(true, Flick.velocity(flick, gestures.gestureClock()));
+            tracking = false;
+        }
+        onCancelled: {
+            var now = gestures.gestureClock();
+            if (tracking) overview.endGesture(Flick.shouldCommit(flick, progress, now), Flick.velocity(flick, now));
+            tracking = false;
+        }
     }
 }

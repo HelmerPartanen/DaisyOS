@@ -149,7 +149,7 @@ Audio
             Assert.Contains(mockRunner.History, h => h.Arguments.Contains("TapToClick"));
 
             await service.SetTrackpadScrollSpeedAsync(1);
-            Assert.Contains(mockRunner.History, h => h.Arguments.Contains("ScrollFactor") && h.Arguments.Contains("0.7"));
+            Assert.Contains(mockRunner.History, h => h.Arguments.Contains("ScrollFactor") && h.Arguments.Contains("0.2"));
             Assert.Contains(mockRunner.History, h => h.Arguments.Contains(tempFile));
             Assert.Contains(mockRunner.History, h => h.Command == "busctl" && h.Arguments.Contains("reconfigure"));
         }
@@ -168,20 +168,20 @@ Audio
             var mockRunner = new MockCommandRunner();
             var service = new DaisyOS.System.Input.LinuxInputHardwareService(mockRunner, tempFile);
 
-            // DaisyOS defaults to the slowest tick when no preference exists.
+            // DaisyOS defaults to the middle tick when no preference exists.
             var status = await service.GetStatusAsync();
-            Assert.Equal(0, status.TrackpadScrollSpeed);
+            Assert.Equal(2, status.TrackpadScrollSpeed);
 
-            // Write 0.4 (slowest, tick 0) directly to file
+            // An explicit 0.4 factor remains the faster tick (3).
             await File.WriteAllLinesAsync(tempFile, ["[Touchpad]", "ScrollFactor=0.4"]);
             status = await service.GetStatusAsync();
-            Assert.Equal(0, status.TrackpadScrollSpeed);
+            Assert.Equal(3, status.TrackpadScrollSpeed);
 
             // Force the command fallback and verify the selected value survives
             // a fresh read from the same config file.
             mockRunner.SuccessToReturn = false;
             Assert.False(await service.SetTrackpadScrollSpeedAsync(4));
-            Assert.Contains(mockRunner.History, h => h.Arguments.Contains("ScrollFactor") && h.Arguments.Contains("1.8"));
+            Assert.Contains(mockRunner.History, h => h.Arguments.Contains("ScrollFactor") && h.Arguments.Contains("0.5"));
             status = await service.GetStatusAsync();
             Assert.Equal(4, status.TrackpadScrollSpeed);
         }
@@ -192,7 +192,7 @@ Audio
     }
 
     [Fact]
-    public async Task InputHardwareService_AppliesSlowestDefaultWithoutOverwritingAChoice()
+    public async Task InputHardwareService_AppliesBalancedDefaultWithoutOverwritingAChoice()
     {
         var tempFile = Path.Combine(Path.GetTempPath(), $"kcminputrc_default_scroll_{Guid.NewGuid():N}");
         try
@@ -201,18 +201,45 @@ Audio
             var service = new DaisyOS.System.Input.LinuxInputHardwareService(runner, tempFile);
 
             Assert.False(await service.EnsureDefaultTrackpadScrollSpeedAsync());
-            Assert.Contains("ScrollFactor=0.4", await File.ReadAllLinesAsync(tempFile));
+            Assert.Contains("ScrollFactor=0.3", await File.ReadAllLinesAsync(tempFile));
 
             await File.WriteAllLinesAsync(tempFile, ["[Touchpad]", "ScrollFactor=1.4"]);
             runner.History.Clear();
-            Assert.True(await service.EnsureDefaultTrackpadScrollSpeedAsync());
+            Assert.False(await service.EnsureDefaultTrackpadScrollSpeedAsync()); // Compositor is unavailable.
             Assert.DoesNotContain(runner.History, call => call.Arguments.Contains("set-property"));
-            Assert.Contains("ScrollFactor=1.4", await File.ReadAllLinesAsync(tempFile));
+            var persisted = await File.ReadAllTextAsync(tempFile);
+            Assert.Contains("[Touchpad]\nScrollFactor=1.4", persisted);
+            Assert.Contains("[Libinput][Defaults][Touchpad]\nScrollFactor=1.4", persisted);
+            runner.History.Clear();
+            Assert.True(await service.EnsureDefaultTrackpadScrollSpeedAsync());
+            Assert.Empty(runner.History);
         }
         finally
         {
             if (File.Exists(tempFile)) File.Delete(tempFile);
         }
+    }
+
+    [Fact]
+    public async Task InputHardwareService_SeedsHotplugDefaultsWithoutReplacingDevicePreferences()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), $"kcminputrc_hotplug_{Guid.NewGuid():N}");
+        try
+        {
+            const string device = "[Libinput][1234][5678][Custom Touchpad]\nScrollFactor=0.5\n";
+            await File.WriteAllTextAsync(tempFile, device);
+            var runner = new MockCommandRunner { SuccessToReturn = false };
+            var service = new DaisyOS.System.Input.LinuxInputHardwareService(runner, tempFile);
+            Assert.False(await service.EnsureDefaultTrackpadScrollSpeedAsync());
+            var config = await File.ReadAllTextAsync(tempFile);
+            Assert.StartsWith(device, config);
+            Assert.Contains("[Libinput][Defaults][Touchpad]\nScrollFactor=0.3", config);
+            Assert.DoesNotContain(runner.History, call => call.Arguments.Contains("set-property"));
+            Assert.Contains(runner.History, call => call.Command == "kwriteconfig6" &&
+                call.Arguments.Count(argument => argument == "--group") == 3 &&
+                call.Arguments.Contains("Defaults"));
+        }
+        finally { if (File.Exists(tempFile)) File.Delete(tempFile); }
     }
 
     [Fact]
@@ -227,7 +254,7 @@ Audio
                     : arguments.Contains("touchpad")
                         ? "b true\n"
                         : arguments.Contains("scrollFactor") && arguments.Contains("get-property")
-                            ? "d 1.4\n"
+                            ? "d 0.4\n"
                             : string.Empty;
                 return new CommandResult(0, output, string.Empty, TimedOut: false);
             }
@@ -242,7 +269,7 @@ Audio
             Assert.Contains(mockRunner.History, call =>
                 call.Arguments.Contains("set-property") &&
                 call.Arguments.Contains("scrollFactor") &&
-                call.Arguments.Contains("0.7"));
+                call.Arguments.Contains("0.2"));
         }
         finally
         {

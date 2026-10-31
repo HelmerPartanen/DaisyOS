@@ -718,23 +718,40 @@ namespace Avalonia.Controls.Presenters
                     delta = AdjustDeltaForFlowDirection(delta, FlowDirection);
                 }
 
+                delta = e.GetScrollDelta(delta,
+                    isLogical ? scrollable!.ScrollSize.Width : 50,
+                    isLogical ? scrollable!.ScrollSize.Height : 50);
+
+                if (e.IsPrecise && isLogical)
+                {
+                    // Logical panels express offsets in items, not pixels.
+                    // Convert once using the current physical viewport so row
+                    // height never becomes a trackpad speed multiplier.
+                    var itemSize = Bounds.Size / scrollable!.Viewport;
+                    delta = new Vector(
+                        itemSize.X > 0 && !double.IsInfinity(itemSize.X) ? delta.X / itemSize.X : 0,
+                        itemSize.Y > 0 && !double.IsInfinity(itemSize.Y) ? delta.Y / itemSize.Y : 0);
+                }
+
                 if (Extent.Height > Viewport.Height)
                 {
-                    double height = isLogical ? scrollable!.ScrollSize.Height : 50;
-                    y += -delta.Y * height;
+                    y += -delta.Y;
                     y = Math.Max(y, 0);
                     y = Math.Min(y, Extent.Height - Viewport.Height);
                 }
 
                 if (Extent.Width > Viewport.Width)
                 {
-                    double width = isLogical ? scrollable!.ScrollSize.Width : 50;
-                    x += -delta.X * width;
+                    x += -delta.X;
                     x = Math.Max(x, 0);
                     x = Math.Min(x, Extent.Width - Viewport.Width);
                 }
 
-                Vector newOffset = SnapOffset(new Vector(x, y), delta, true);
+                // Track fingers continuously. Snap only after release, to the
+                // nearest point rather than jumping a whole item per sample.
+                Vector newOffset = e.IsPrecise && !e.IsScrollEnd
+                    ? new Vector(x, y)
+                    : SnapOffset(new Vector(x, y), delta, !e.IsPrecise);
 
                 bool offsetChanged = newOffset != Offset;
                 SetCurrentValue(OffsetProperty, newOffset);

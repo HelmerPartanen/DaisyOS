@@ -487,8 +487,8 @@ partial class WaylandInputDispatcher : IDisposable
                 {
                     // Combine v120 (notches) with raw axis (continuous). Per axis, prefer v120
                     // if any v120 event fired this frame; otherwise fall back to the raw axis.
-                    var deltaX = handler._frameV120SeenX ? handler._frameV120X : handler._frameAxisRawX;
-                    var deltaY = handler._frameV120SeenY ? handler._frameV120Y : handler._frameAxisRawY;
+                    var deltaX = !handler._axisIsPrecise && handler._frameV120SeenX ? handler._frameV120X : handler._frameAxisRawX;
+                    var deltaY = !handler._axisIsPrecise && handler._frameV120SeenY ? handler._frameV120Y : handler._frameAxisRawY;
                     if (deltaX != 0 || deltaY != 0 || handler._frameAxisStopped)
                     {
                         // Wayland: positive = scroll down/right. Avalonia: positive Y = scroll up.

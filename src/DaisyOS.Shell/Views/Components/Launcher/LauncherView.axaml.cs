@@ -415,8 +415,9 @@ public partial class LauncherView : UserControl
         if (e.IsPrecise)
         {
             e.Handled = true;
-            DragPage(e.Delta);
-            if (e.IsScrollEnd) SettlePageDrag();
+            var time = e.Timestamp > 0 ? (long)e.Timestamp : Environment.TickCount64;
+            DragPage(e.GetScrollDelta(), time);
+            if (e.IsScrollEnd) SettlePageDrag(time);
             return;
         }
         var now = Environment.TickCount64;
@@ -435,8 +436,7 @@ public partial class LauncherView : UserControl
     private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(180) };
     private Vector _pageAxisTravel;
     private bool? _pageHorizontal;
-    private double _pageVelocity;
-    private long _pageMotionTime;
+    private readonly SwipeVelocityTracker _pageVelocity = new();
     private readonly TranslateTransform _pageCurrentTransform = new();
     private readonly TranslateTransform _pageNeighbourTransform = new();
     private bool _pageDragging;
@@ -446,11 +446,10 @@ public partial class LauncherView : UserControl
     private int _dragGeneration;
     private double PageStride => Math.Max(1, _pageViewport.Bounds.Width);
 
-    private void DragPage(Vector delta)
+    private void DragPage(Vector delta, long now)
     {
         if (ViewModel.PageCount <= 1) return;
         if (!double.IsFinite(delta.X) || !double.IsFinite(delta.Y)) return;
-        var now = Environment.TickCount64;
         _pageDragIdle.Stop();
         _pageDragIdle.Start();
         _pageAxisTravel += delta;
@@ -463,10 +462,7 @@ public partial class LauncherView : UserControl
         }
         var movement = _pageHorizontal.Value ? delta.X : delta.Y;
         if (movement == 0) return;
-        var elapsed = now - _pageMotionTime;
-        _pageVelocity = elapsed is > 0 and < 100
-            ? _pageVelocity * 0.55 + movement / Math.Max(8, elapsed) * 0.45 : 0;
-        _pageMotionTime = now;
+        _pageVelocity.Add(movement, now);
         if (!_pageDragging)
         {
             ++_pageTransitionGeneration;
@@ -507,7 +503,7 @@ public partial class LauncherView : UserControl
         neighbour.RenderTransform = _pageNeighbourTransform;
     }
 
-    private void SettlePageDrag()
+    private void SettlePageDrag(long? releaseTime = null)
     {
         _pageDragIdle.Stop();
         if (!_pageDragging)
@@ -520,12 +516,12 @@ public partial class LauncherView : UserControl
         var from = _pageDragOffset;
         var direction = from < 0 ? 1 : -1;
         var targetPage = ViewModel.PageIndex + direction;
-        var velocity = Environment.TickCount64 - _pageMotionTime <= 80 ? _pageVelocity : 0;
+        // The idle fallback represents a missing axis_stop, not a stationary finger.
+        var velocity = _pageVelocity.VelocityAt(releaseTime ?? _pageVelocity.LastMotionTime);
         // A new swipe can choose a fresh axis even while this one settles.
         _pageHorizontal = null;
         _pageAxisTravel = default;
-        _pageVelocity = 0;
-        _pageMotionTime = 0;
+        _pageVelocity.Reset();
         var commit = LauncherSwipePhysics.ShouldCommit(from, velocity, PageStride) &&
             targetPage >= 0 && targetPage < ViewModel.PageCount;
         var to = commit ? -direction * PageStride : 0;
@@ -545,7 +541,7 @@ public partial class LauncherView : UserControl
             Finish();
             return;
         }
-        var settleDuration = Math.Clamp(Math.Abs(to - from) / Math.Max(2.5, Math.Abs(velocity)), 140, 280);
+        var settleDuration = Math.Clamp(Math.Abs(to - from) / Math.Max(4, Math.Abs(velocity)), 120, 240);
         void Frame(TimeSpan time)
         {
             if (generation != _dragGeneration) return;
@@ -575,8 +571,7 @@ public partial class LauncherView : UserControl
         _pageDragOffset = 0;
         _pageHorizontal = null;
         _pageAxisTravel = default;
-        _pageVelocity = 0;
-        _pageMotionTime = 0;
+        _pageVelocity.Reset();
         _dragNeighbour = -1;
         _applicationGrid.IsHitTestVisible = true;
     }

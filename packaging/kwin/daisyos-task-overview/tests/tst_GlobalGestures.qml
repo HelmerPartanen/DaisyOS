@@ -3,7 +3,9 @@ import QtTest
 import "../contents/ui" as Overview
 
 TestCase {
+    id: testCase
     name: "GlobalGestures"
+    property real clock: 1000
     Component {
         id: bridgeComponent
         Overview.GlobalGestures { }
@@ -29,7 +31,10 @@ TestCase {
         fakeOverview.visible = false;
         fakeOverview.tracking = false;
         fakeOverview.committed = null;
-        bridge = createTemporaryObject(bridgeComponent, this, { overview: fakeOverview });
+        clock = 1000;
+        bridge = createTemporaryObject(bridgeComponent, this, {
+            overview: fakeOverview, gestureClock: function() { return testCase.clock; }
+        });
         verify(bridge !== null);
     }
     function test_pinchTracksBothDirectionsAndKeepsTerminalMessages() {
@@ -74,6 +79,35 @@ TestCase {
         verify(!fakeOverview.opening);
         down.cancelled();
         compare(fakeOverview.committed, true);
+    }
+    function test_shortFlickOpensAndClosesBeforeHalfway() {
+        var up = findChild(bridge, "swipeUp");
+        up.progress = 0.02;
+        clock += 20;
+        up.progress = 0.14;
+        compare(fakeOverview.progress, 0.14);
+        clock += 8;
+        up.cancelled();
+        compare(fakeOverview.committed, true);
+        var down = findChild(bridge, "swipeDown");
+        clock += 200;
+        down.progress = 0.12;
+        clock += 8;
+        down.cancelled();
+        verify(!fakeOverview.opening);
+        compare(fakeOverview.committed, true);
+    }
+    function test_pauseOrTinyMovementDoesNotBecomeAFlick() {
+        var up = findChild(bridge, "swipeUp");
+        up.progress = 0.15;
+        clock += 200;
+        up.cancelled();
+        compare(fakeOverview.committed, false);
+        clock += 200;
+        up.progress = 0.02;
+        clock += 8;
+        up.cancelled();
+        compare(fakeOverview.committed, false);
     }
     function test_busFailureDropsStaleSamples() {
         var pinch = findChild(bridge, "pinchIn");

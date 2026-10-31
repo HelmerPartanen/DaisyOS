@@ -81,7 +81,8 @@ mkdir -p "$iso_root/usr/share/icons" "$iso_root/etc/xdg"
 cp -a "$publish_dir/cursor-themes/"DaisyOS-* "$iso_root/usr/share/icons/"
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorTheme DaisyOS-Dark
 kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Mouse --key cursorSize 32
-kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Touchpad --key ScrollFactor 0.4
+kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Touchpad --key ScrollFactor 0.3
+kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Libinput --group Defaults --group Touchpad --key ScrollFactor 0.3
 # New accounts copy the skeleton before KDE's cascading defaults are read.
 # Keep its cursor id aligned with the generated Xcursor theme name so KWin can
 # load DaisyOS's animated progress/wait frames on the first session.

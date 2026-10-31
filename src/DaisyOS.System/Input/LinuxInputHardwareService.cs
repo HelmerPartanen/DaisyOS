@@ -13,7 +13,7 @@ public sealed record InputHardwareStatus(
     bool NaturalScroll,
     bool TapToClick,
     string PointerSpeed,
-    int TrackpadScrollSpeed = 0);
+    int TrackpadScrollSpeed = LinuxInputHardwareService.DefaultTrackpadScrollSpeed);
 
 public sealed class LinuxInputHardwareService
 {
@@ -21,7 +21,9 @@ public sealed class LinuxInputHardwareService
     private readonly ICommandRunner _commandRunner;
     private readonly string _configFilePath;
 
-    // Five deliberately slower KWin touchpad scroll factors (slowest to fastest).
+    // One compositor factor controls all native clients; never compensate per app.
+    public const int DefaultTrackpadScrollSpeed = 2;
+    private const string TrackpadDefaultsGroup = "Libinput][Defaults][Touchpad";
     public static readonly double[] ScrollFactors = [0.1, 0.2, 0.3, 0.4, 0.5];
 
     public static int FactorToScrollSpeedIndex(double factor)
@@ -61,7 +63,7 @@ public sealed class LinuxInputHardwareService
         bool naturalScroll = false;
         bool tapToClick = true;
         string pointerSpeed = "Normal";
-        int trackpadScrollSpeed = 0;
+        int trackpadScrollSpeed = DefaultTrackpadScrollSpeed;
 
         try
         {
@@ -180,6 +182,7 @@ public sealed class LinuxInputHardwareService
         var factorStr = factor.ToString("0.0#", CultureInfo.InvariantCulture);
 
         var touchpadSaved = await WriteConfigAsync("Touchpad", "ScrollFactor", factorStr, cancellationToken);
+        var defaultsSaved = await WriteConfigAsync(TrackpadDefaultsGroup, "ScrollFactor", factorStr, cancellationToken);
         var applied = await ApplyLiveKWinTouchpadScrollFactorAsync(factor, cancellationToken);
 
         // Setting the KWin device property applies the value immediately and
@@ -187,7 +190,7 @@ public sealed class LinuxInputHardwareService
         // Keep the generic Touchpad entry above as DaisyOS's offline fallback.
         if (applied)
         {
-            return touchpadSaved;
+            return touchpadSaved && defaultsSaved;
         }
 
         await ReloadKWinAsync(cancellationToken);
@@ -195,31 +198,45 @@ public sealed class LinuxInputHardwareService
     }
 
     /// <summary>
-    /// Applies DaisyOS's slowest scroll speed on first use. Existing user or
+    /// Applies DaisyOS's balanced scroll speed on first use. Existing user or
     /// per-device KWin configuration is never overwritten.
     /// </summary>
     public async Task<bool> EnsureDefaultTrackpadScrollSpeedAsync(CancellationToken cancellationToken = default)
     {
+        var factor = ScrollSpeedIndexToFactor(DefaultTrackpadScrollSpeed);
         try
         {
             if (File.Exists(_configFilePath))
             {
-                var lines = await File.ReadAllLinesAsync(_configFilePath, cancellationToken);
-                if (lines.Any(line => line.Split('=', 2)[0].Trim().Equals("ScrollFactor", StringComparison.OrdinalIgnoreCase)))
-                    return true;
+                var group = "";
+                foreach (var line in await File.ReadAllLinesAsync(_configFilePath, cancellationToken))
+                {
+                    var trimmed = line.Trim();
+                    if (trimmed.StartsWith('[') && trimmed.EndsWith(']'))
+                    {
+                        group = trimmed[1..^1];
+                        continue;
+                    }
+                    var pair = trimmed.Split('=', 2);
+                    if (pair.Length != 2 || !pair[0].Trim().Equals("ScrollFactor", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (group.Equals(TrackpadDefaultsGroup, StringComparison.OrdinalIgnoreCase)) return true;
+                    if (group.Equals("Touchpad", StringComparison.OrdinalIgnoreCase) &&
+                        double.TryParse(pair[1], NumberStyles.Float, CultureInfo.InvariantCulture, out var saved) &&
+                        double.IsFinite(saved) && saved > 0)
+                        factor = saved;
+                }
             }
         }
-        catch (OperationCanceledException)
-        {
-            throw;
-        }
-        catch
-        {
-            // Try to establish the default even if the existing file could not
-            // be inspected; SetTrackpadScrollSpeedAsync reports persistence errors.
-        }
+        catch (OperationCanceledException) { throw; }
+        catch (IOException) { return false; }
+        catch (UnauthorizedAccessException) { return false; }
 
-        return await SetTrackpadScrollSpeedAsync(0, cancellationToken);
+        // KWin loads this fallback for unconfigured devices, including hotplug.
+        // Reconfigure respects explicit per-device Libinput entries, unlike
+        // setting every live device property during startup.
+        var persisted = await WriteConfigAsync(TrackpadDefaultsGroup, "ScrollFactor",
+            factor.ToString("0.0#", CultureInfo.InvariantCulture), cancellationToken);
+        return persisted && await ReloadKWinAsync(cancellationToken);
     }
 
     private async Task<double?> TryGetLiveKWinTouchpadScrollFactorAsync(CancellationToken cancellationToken)
@@ -317,9 +334,13 @@ public sealed class LinuxInputHardwareService
 
     private async Task<bool> WriteConfigAsync(string group, string key, string value, CancellationToken cancellationToken)
     {
+        var arguments = new List<string> { "--file", _configFilePath };
+        foreach (var part in group.Split("][", StringSplitOptions.None))
+            arguments.AddRange(["--group", part]);
+        arguments.AddRange(["--key", key, value, "--notify"]);
         var result = await _commandRunner.RunAsync(
             "kwriteconfig6",
-            ["--file", _configFilePath, "--group", group, "--key", key, value, "--notify"],
+            arguments.ToArray(),
             CommandTimeout,
             cancellationToken);
 

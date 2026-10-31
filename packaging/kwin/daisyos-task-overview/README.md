@@ -9,13 +9,20 @@ KWin recognizes these gestures globally, including over application windows:
 | Three-finger swipe upward | Reveal task overview |
 | Three-finger swipe downward | Dismiss task overview |
 
-Panels follow gesture progress, including reversals. Release past halfway to
-complete; release before halfway to return to the original state. Reduced motion
-keeps direct progress feedback and skips the settling animation.
+Panels follow gesture progress, including reversals. Release past halfway or
+make a short, deliberate flick to complete the overview gesture. Slow movements
+below halfway return to the original state; pausing clears flick intent and
+reversing overrides outward momentum. Reduced motion keeps direct progress
+feedback and skips the settling animation. Pinches retain their distance-based
+release decision.
 
 The launcher also supports two-finger paging with direction locking, velocity
 projection, and resistance at the first and last pages. A new gesture can interrupt
 settling without resetting the displayed position.
+Paging measures recent movement using input timestamps, including batched and
+single-sample flicks. Each flick commits at most one page and never passes the
+first or last page. Faster releases settle sooner; holding a finger stationary
+before release does not count as a flick.
 
 Motion samples are coalesced before the shell's render cycle, while release
 events remain ordered. Icon decoding uses a bounded worker pool and publishes
@@ -42,6 +49,8 @@ QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner \
   -input packaging/kwin/daisyos-task-overview/tests/tst_TransitionGeometry.qml
 QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner \
   -input packaging/kwin/daisyos-task-overview/tests/tst_OverviewTransitionFrame.qml
+QT_QPA_PLATFORM=offscreen /usr/lib/qt6/bin/qmltestrunner \
+  -input packaging/kwin/daisyos-task-overview/tests/tst_FlickMotion.qml
 ```
 
 The gesture QML tests use test doubles for KWin recognition and D-Bus transport;

@@ -121,7 +121,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Input", "LANGUAGE", "System language", "Choose the desktop language", "language locale translation english finnish suomi kieli"),
             new("Input", "KEYBOARD LAYOUT", "Keyboard layout", "Choose the language and physical layout used while typing", "keyboard layout language typing input finnish us english"),
             new("Input", "MOUSE & TRACKPAD", "Mouse and trackpad", "Pointer speed, scroll speed, natural scrolling, tap to click", "mouse trackpad pointer scrolling scroll speed tap"),
-            new("Input", "MOUSE & TRACKPAD", "Trackpad scroll speed", "Slowest", "trackpad touchpad scroll scrolling speed slider mouse"),
+            new("Input", "MOUSE & TRACKPAD", "Trackpad scroll speed", "Medium", "trackpad touchpad scroll scrolling speed slider mouse"),
             new("DateTime", "TIME", "Automatic date and time", "System time, time zone, and clock format", "date time timezone time zone clock ntp automatic"),
             new("DateTime", "TIME", "Time format", "Choose between 24-hour and 12-hour time", "time format clock 12h 24h 12-hour 24-hour am pm"),
             new("About", "DAISYOS", "About this system", "Version and desktop-session information", "version about diagnostics support")
@@ -2339,7 +2339,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Pointer speed was saved, but couldn’t be applied yet."));
                     ShowCategory("Input");
                 }, "Slow", "Normal", "Fast"),
-                PreferenceRow(Loc.Get("Trackpad scroll speed"), $"{Loc.Get("Slowest")} ({Loc.Get("Default")})", scrollSpeedSlider),
+                PreferenceRow(Loc.Get("Trackpad scroll speed"), GetScrollSpeedLabel(DaisyOS.System.Input.LinuxInputHardwareService.DefaultTrackpadScrollSpeed), scrollSpeedSlider),
                 Toggle("Natural scrolling", "input.natural-scroll", status.NaturalScroll, async enabled =>
                 {
                     if (!await hardwareService.SetNaturalScrollAsync(enabled))
@@ -2361,9 +2361,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private static string GetScrollSpeedLabel(int index) => index switch
         {
-            0 => $"{Loc.Get("Slowest")} ({Loc.Get("Default")})",
+            0 => Loc.Get("Slowest"),
             1 => Loc.Get("Slower"),
-            2 => Loc.Get("Medium"),
+            2 => $"{Loc.Get("Medium")} ({Loc.Get("Default")})",
             3 => Loc.Get("Faster"),
             4 => Loc.Get("Fastest"),
             _ => Loc.Get("Default")

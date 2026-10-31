@@ -14,6 +14,41 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class LauncherPagingTests
 {
     [AvaloniaFact]
+    public void ShortQuickFlickChangesOnePageWhilePausedMovementAndEdgesDoNot()
+    {
+        var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
+        var launcher = new LauncherView(model);
+        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        var window = new Window { Width = 1280, Height = 900, Content = launcher };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            var viewport = launcher.FindControl<Grid>("LauncherPageViewport")!;
+            using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
+            void Scroll(double pixels, ulong time, bool end = false) => viewport.RaiseEvent(new PointerWheelEventArgs(
+                viewport, pointer, window, new Point(100, 100), time, new PointerPointProperties(),
+                KeyModifiers.None, new Vector(pixels / 4, 0)) { IsPrecise = true, IsScrollEnd = end });
+            Scroll(-32, 1000);
+            Assert.Equal(0, model.PageIndex); // Finger-down movement never autonomously commits.
+            Scroll(0, 1010, true);
+            Assert.Equal(1, model.PageIndex);
+            Scroll(32, 2000);
+            Scroll(0, 2010, true);
+            Assert.Equal(0, model.PageIndex);
+            Scroll(32, 3000); // Flicking past the first page only resists and returns.
+            Scroll(0, 3010, true);
+            Assert.Equal(0, model.PageIndex);
+            Scroll(-32, 4000);
+            Scroll(0, 4200, true); // A stationary hold removes flick intent.
+            Assert.Equal(0, model.PageIndex);
+            Assert.True(launcher.FindControl<ItemsControl>("ApplicationGrid")!.IsHitTestVisible);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public void UnchangedPageAndMatchingSearchKeepTheExistingTiles()
     {
         var apps = Enumerable.Range(0, 20)
@@ -140,9 +175,10 @@ public sealed class LauncherPagingTests
             var current = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
             var neighbour = launcher.FindControl<ItemsControl>("OutgoingPageGrid")!;
             using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
+            ulong time = 1000;
             void Scroll(double x, bool end = false) => viewport.RaiseEvent(new PointerWheelEventArgs(
-                viewport, pointer, window, new Point(100, 100), 0, new PointerPointProperties(),
-                KeyModifiers.None, new Vector(x, 0)) { IsPrecise = true, IsScrollEnd = end });
+                viewport, pointer, window, new Point(100, 100), time += 160, new PointerPointProperties(),
+                KeyModifiers.None, new Vector(x / 4, 0)) { IsPrecise = true, IsScrollEnd = end });
             Scroll(-40);
             Assert.Equal(0, model.PageIndex);
             Assert.Equal(-40, current.RenderTransform!.Value.M31);
@@ -233,9 +269,10 @@ public sealed class LauncherPagingTests
             var viewport = launcher.FindControl<Grid>("LauncherPageViewport")!;
             var current = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
             using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
+            ulong time = 1000;
             void Scroll(Vector delta, bool end = false) => viewport.RaiseEvent(new PointerWheelEventArgs(
-                viewport, pointer, window, new Point(100, 100), 0, new PointerPointProperties(),
-                KeyModifiers.None, delta) { IsPrecise = true, IsScrollEnd = end });
+                viewport, pointer, window, new Point(100, 100), time += 160, new PointerPointProperties(),
+                KeyModifiers.None, delta / 4) { IsPrecise = true, IsScrollEnd = end });
             Scroll(new Vector(-30, -2));
             Scroll(new Vector(-5, 50));
             Assert.Equal(-35, current.RenderTransform!.Value.M31);

@@ -1,0 +1,117 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Controls.Presenters;
+using Avalonia.Headless.XUnit;
+using Avalonia.Input;
+using Avalonia.VisualTree;
+using Xunit;
+
+namespace DaisyOS.ShellDemo.Tests;
+
+public sealed class TrackpadScrollingTests
+{
+    [AvaloniaTheory]
+    [InlineData(240)]
+    [InlineData(480)]
+    public void PreciseScrollUsesSameDistanceAtDifferentViewportSizes(int height)
+    {
+        var scroll = new ScrollViewer
+        {
+            HorizontalScrollBarVisibility = ScrollBarVisibility.Auto,
+            Content = new Border { Width = 2400, Height = 2400 }
+        };
+        var window = new Window { Width = 500, Height = height, Content = scroll };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            scroll.Offset = new Vector(100, 100);
+            Send(scroll, window, new Vector(-2.5, -3.25));
+            Assert.Equal(new Vector(110, 113), scroll.Offset);
+            for (var i = 0; i < 8; i++) Send(scroll, window, new Vector(0, -0.125));
+            Assert.Equal(117, scroll.Offset.Y);
+            Send(scroll, window, new Vector(0, 1)); // Reversal applies immediately.
+            Assert.Equal(113, scroll.Offset.Y);
+            Send(scroll, window, default, end: true);
+            Assert.Equal(113, scroll.Offset.Y); // Release adds no delayed distance.
+            Send(scroll, window, new Vector(0, -1), precise: false);
+            Assert.Equal(163, scroll.Offset.Y); // Mouse wheels retain their 50px step.
+            Send(scroll, window, new Vector(0, -2), modifiers: KeyModifiers.Shift);
+            Assert.Equal(118, scroll.Offset.X);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void MandatorySnapPointsDoNotFightTheFingers()
+    {
+        var content = new StackPanel();
+        for (var i = 0; i < 20; i++) content.Children.Add(new Border { Height = 100 });
+        var scroll = new ScrollViewer { Content = content, VerticalSnapPointsType = SnapPointsType.Mandatory };
+        var window = new Window { Width = 500, Height = 300, Content = scroll };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            Send(scroll, window, new Vector(0, -0.5));
+            Assert.Equal(2, scroll.Offset.Y);
+            Send(scroll, window, default, end: true);
+            Assert.Equal(0, scroll.Offset.Y);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void LogicalContentConvertsPixelsToItemUnitsWithoutUsingWheelStepSize()
+    {
+        var content = new LogicalContent();
+        var scroll = new ScrollViewer { Content = content, HorizontalScrollBarVisibility = ScrollBarVisibility.Auto };
+        var window = new Window { Width = 500, Height = 300, Content = scroll };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            var itemWidth = content.Bounds.Width / content.Viewport.Width;
+            var itemHeight = content.Bounds.Height / content.Viewport.Height;
+            Send(scroll, window, new Vector(-itemWidth / 4, -itemHeight / 4));
+            Assert.Equal(1, scroll.Offset.X, 5);
+            Assert.Equal(1, scroll.Offset.Y, 5);
+            Send(scroll, window, new Vector(0, -1), precise: false);
+            Assert.Equal(8, scroll.Offset.Y); // The panel's wheel step remains seven items.
+        }
+        finally { window.Close(); }
+    }
+
+    private static void Send(Control source, Window window, Vector delta, bool precise = true,
+        bool end = false, KeyModifiers modifiers = KeyModifiers.None)
+    {
+        if (source is ScrollViewer)
+            source = source.GetVisualDescendants().OfType<ScrollContentPresenter>().First();
+        using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
+        source.RaiseEvent(new PointerWheelEventArgs(source, pointer, window, new Point(50, 50), 0,
+            new PointerPointProperties(), modifiers, delta) { IsPrecise = precise, IsScrollEnd = end });
+    }
+
+    private sealed class LogicalContent : Control, ILogicalScrollable
+    {
+        private Vector _offset;
+        public bool CanHorizontallyScroll { get; set; }
+        public bool CanVerticallyScroll { get; set; }
+        public bool IsLogicalScrollEnabled => true;
+        public Size Extent => new(100, 100);
+        public Size Viewport => new(10, 10);
+        public Size ScrollSize => new(5, 7);
+        public Size PageScrollSize => Viewport;
+        public Vector Offset
+        {
+            get => _offset;
+            set { _offset = value; RaiseScrollInvalidated(EventArgs.Empty); }
+        }
+        public event EventHandler? ScrollInvalidated;
+        public void RaiseScrollInvalidated(EventArgs e) => ScrollInvalidated?.Invoke(this, e);
+        public bool BringIntoView(Control target, Rect targetRect) => false;
+        public Control? GetControlInDirection(NavigationDirection direction, Control? from) => null;
+        protected override Size MeasureOverride(Size availableSize) => new(500, 300);
+    }
+}
