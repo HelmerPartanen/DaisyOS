@@ -1,5 +1,39 @@
 #!/usr/bin/env bash
 set -euo pipefail
+# User services may retain a dead display after the native compositor restarts.
+# Recover only from this session's recorded display, never an arbitrary socket.
+if [[ -n "${XDG_RUNTIME_DIR:-}" && ( -n "${WAYLAND_DISPLAY:-}" || -r "$XDG_RUNTIME_DIR/daisyos-native-development/wayland-display" ) ]]; then
+  if resolved_display="$(python3 - <<'DISPLAY_PY'
+import os, pathlib, socket, sys
+runtime = pathlib.Path(os.environ['XDG_RUNTIME_DIR'])
+candidates = [os.environ.get('WAYLAND_DISPLAY', '')]
+try:
+    candidates.append((runtime / 'daisyos-native-development/wayland-display').read_text().strip())
+except OSError:
+    pass
+for display in dict.fromkeys(candidates):
+    if not display:
+        continue
+    path = pathlib.Path(display)
+    if not path.is_absolute():
+        path = runtime / path
+    try:
+        with socket.socket(socket.AF_UNIX) as connection:
+            connection.settimeout(1)
+            connection.connect(str(path))
+        print(display)
+        sys.exit(0)
+    except OSError:
+        pass
+sys.exit(1)
+DISPLAY_PY
+)"; then
+    export WAYLAND_DISPLAY="$resolved_display"
+  else
+    echo 'DaisyOS portal is waiting for a reachable Wayland display.' >&2
+    exit 1
+  fi
+fi
 # Installed systems use the published shell; development sessions use their selected checkout.
 if [[ -f /etc/daisyos/daisyos-native-development.conf ]]; then
   # shellcheck source=/dev/null

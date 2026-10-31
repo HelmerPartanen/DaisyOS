@@ -22,7 +22,7 @@ esac
 [[ -S "$wayland_socket" ]] || { echo 'The session Wayland socket is not ready.' >&2; exit 1; }
 export GTK_USE_PORTAL=1 GIO_USE_PORTALS=1 QT_QPA_PLATFORMTHEME=xdgdesktopportal
 if command -v dbus-update-activation-environment >/dev/null 2>&1; then
-  dbus-update-activation-environment --systemd GTK_USE_PORTAL GIO_USE_PORTALS QT_QPA_PLATFORMTHEME
+  dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_RUNTIME_DIR XDG_SESSION_TYPE XDG_CURRENT_DESKTOP GTK_USE_PORTAL GIO_USE_PORTALS QT_QPA_PLATFORMTHEME
 fi
 systemctl --user cat daisyos-desktop-services.service >/dev/null || {
   echo 'Install the DaisyOS desktop services before preparing the session.' >&2; exit 1;
@@ -32,7 +32,7 @@ if systemctl --user is-active --quiet plasma-polkit-agent.service; then
   previous_agent=true
   systemctl --user stop plasma-polkit-agent.service
 fi
-if ! systemctl --user start daisyos-desktop-services.service; then
+if ! systemctl --user restart daisyos-desktop-services.service; then
   if [[ "$previous_agent" == true ]]; then systemctl --user start plasma-polkit-agent.service; fi
   echo 'DaisyOS desktop services failed to start. Check the user service journal.' >&2
   exit 1
