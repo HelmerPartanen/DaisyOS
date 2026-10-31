@@ -27,6 +27,8 @@ public sealed class PeerWire : IAsyncDisposable
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         deadline.CancelAfter(TimeSpan.FromSeconds(10));
         var ct = deadline.Token;
+        // Input events must leave immediately on both accepted and dialled sockets.
+        client.NoDelay = true;
         var network = client.GetStream();
         var local = new Bootstrap { Major = 1, Certificate = ByteString.CopyFrom(state.Identity.RawData),
             Name = SecureState.SafeName(state.Settings.Name), Pairing = pairing, Port = (uint)port };
@@ -73,10 +75,16 @@ public sealed class PeerWire : IAsyncDisposable
     {
         envelope.ProtocolMajor = 1; envelope.ProtocolMinor = 1;
         envelope.RequestId = ByteString.CopyFrom(Guid.NewGuid().ToByteArray());
-        var encoded = envelope.ToByteArray();
+        // One TLS write per envelope: splitting a tiny event's header and body
+        // adds records and can interact with delayed TCP acknowledgements.
+        var size = envelope.CalculateSize();
+        if (size is 0 or > ContinuityFraming.MaxEnvelopeBytes) throw new InvalidDataException("Message limit exceeded.");
+        var encoded = new byte[4 + size];
+        global::System.Buffers.Binary.BinaryPrimitives.WriteUInt32BigEndian(encoded, (uint)size);
+        envelope.WriteTo(encoded.AsSpan(4));
         using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
         deadline.CancelAfter(TimeSpan.FromSeconds(30));
-        try { await ContinuityFraming.WriteAsync(Stream, encoded, deadline.Token); await Stream.FlushAsync(deadline.Token); }
+        try { await Stream.WriteAsync(encoded, deadline.Token); await Stream.FlushAsync(deadline.Token); }
         catch (OperationCanceledException) when (!token.IsCancellationRequested) { throw new TimeoutException("Continuity write deadline."); }
         finally { global::System.Security.Cryptography.CryptographicOperations.ZeroMemory(encoded); }
     }

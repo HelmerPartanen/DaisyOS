@@ -68,17 +68,21 @@ public sealed partial class ContinuityDaemon
         var header = new byte[4];
         while (true)
         {
-            await helper.StandardOutput.BaseStream.ReadExactlyAsync(header, live.Stop.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(10), live.Stop.Token);
+            using var readDeadline = CancellationTokenSource.CreateLinkedTokenSource(live.Stop.Token);
+            readDeadline.CancelAfter(TimeSpan.FromSeconds(5));
+            await helper.StandardOutput.BaseStream.ReadExactlyAsync(header, readDeadline.Token);
             var length = BinaryPrimitives.ReadUInt32BigEndian(header);
             if (length > 128) throw new InvalidDataException();
             var bytes = new byte[length];
-            await helper.StandardOutput.BaseStream.ReadExactlyAsync(bytes, live.Stop.Token);
+            await helper.StandardOutput.BaseStream.ReadExactlyAsync(bytes, readDeadline.Token);
             if (length > 0)
             {
                 var command = Encoding.ASCII.GetString(bytes); ValidateEdgeInput(command);
                 if (!live.Info.Outgoing && command.StartsWith("7 ", StringComparison.Ordinal)) await ChangeCaptureStateAsync(live.Info.Id, false);
             }
-            await wire.SendAsync(new() { LivePacket = new() { Sequence = (ulong)Interlocked.Increment(ref live.EdgeSequence), Data = ByteString.CopyFrom(bytes) } }, live.Stop.Token);
+            using var writeDeadline = CancellationTokenSource.CreateLinkedTokenSource(live.Stop.Token);
+            writeDeadline.CancelAfter(TimeSpan.FromSeconds(2));
+            await wire.SendAsync(new() { LivePacket = new() { Sequence = (ulong)Interlocked.Increment(ref live.EdgeSequence), Data = ByteString.CopyFrom(bytes) } }, writeDeadline.Token);
         }
     }
     private async Task PumpEdgePeerAsync(PeerWire wire, Live live, Process helper)
@@ -86,7 +90,7 @@ public sealed partial class ContinuityDaemon
         ulong sequence = 1;
         while (true)
         {
-            var packet = (await wire.ReceiveAsync(live.Stop.Token).WaitAsync(TimeSpan.FromSeconds(10), live.Stop.Token)).LivePacket ?? throw new InvalidDataException();
+            var packet = (await wire.ReceiveAsync(live.Stop.Token).WaitAsync(TimeSpan.FromSeconds(5), live.Stop.Token)).LivePacket ?? throw new InvalidDataException();
             if (packet.Sequence != sequence++ || packet.Data.Length > 128) throw new InvalidDataException();
             if (packet.Data.Length == 0) continue;
             var command = Encoding.ASCII.GetString(packet.Data.Span); ValidateEdgeInput(command);
@@ -100,7 +104,10 @@ public sealed partial class ContinuityDaemon
                 Require(live.Info.PeerId, "input");
                 if (command.StartsWith("6 ", StringComparison.Ordinal)) await ChangeCaptureStateAsync(live.Info.Id, true);
                 else if (command.StartsWith("7 ", StringComparison.Ordinal)) await ChangeCaptureStateAsync(live.Info.Id, false);
-                else lock (_gate) if (_remoteInputOwner != live.Info.Id) throw new UnauthorizedAccessException();
+                // The destination can return the pointer while motion/key events
+                // are already in flight. Drain them until the next activation;
+                // tearing down here makes an ordinary edge return lose the link.
+                else lock (_gate) if (_remoteInputOwner != live.Info.Id) continue;
             }
             await WriteEdgeLineAsync(helper, command, live.Stop.Token);
         }

@@ -23,6 +23,8 @@ public sealed class NetworkTests : IDisposable
         var right = PeerWire.OpenAsync(server, second, true, false, first.Id, (_, _) => true, timeout.Token);
         await using var a = await left;
         await using var b = await right;
+        Assert.True(client.NoDelay);
+        Assert.True(server.NoDelay);
         Assert.Equal(second.Id, a.PeerId);
         Assert.Equal(first.Id, b.PeerId);
         Assert.Equal(SslProtocols.Tls13, a.Stream.SslProtocol);

@@ -1,9 +1,10 @@
 # Two-device Continuity acceptance
 
-This revision is prepared for **private two-device MVP testing**, not a claim of
-completed release acceptance. Keyboard/mouse control, app handoff and display
-streaming are outside this MVP and remain unavailable. Do not push automatically
-from an agent; the user will push and pull the same revision onto the desktop.
+The checklist below preserves the original clipboard/file MVP acceptance pass.
+For current automatic keyboard/mouse links, screen viewing, audio and app handoff,
+use [SEAMLESS_CONTROL.md](SEAMLESS_CONTROL.md). Physical two-device latency and
+recovery acceptance is still required. Do not push automatically from an agent;
+the user will push and pull the same revision onto the desktop.
 
 ## Install the same revision on both devices
 

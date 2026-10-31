@@ -1,3 +1,7 @@
+> Historical implementation notes: the permission and input workflows below have
+> been superseded by [SEAMLESS_CONTROL.md](SEAMLESS_CONTROL.md). Use that guide
+> for current automatic, popup-free paired-device behavior.
+
 # Continuity input, handoff, screen viewing and audio
 
 > Current screen-edge control and streamlined audio/handoff flows: see [SEAMLESS_CONTROL.md](SEAMLESS_CONTROL.md). The original viewer-only implementation described below is historical where it conflicts with that guide.
