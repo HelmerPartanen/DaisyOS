@@ -1255,7 +1255,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var connected = networkStatus.IsConnected && networkStatus.ConnectionKind == NetworkConnectionKind.WiFi;
             if (radio.IsAvailable)
             {
-                AddSection(Loc.Get("WI-FI"), Loc.Get("Connect to a wireless network."),
+                AddSection(Loc.Get("WI-FI"), Loc.Get("Choose a network to connect to."),
                     Toggle("Wi-Fi", "network.wifi", radio.IsEnabled, value => { _ = SetWifi(value); }),
                     InfoRow(Loc.Get("Current connection"), connected ? networkStatus.DisplayName : Loc.Get("Not connected")));
 
