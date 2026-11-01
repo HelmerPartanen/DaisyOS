@@ -1,5 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <AssemblyName>DaisyOS.PerformanceBenchmark</AssemblyName>
     <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
     <ShellOutput>$(MSBuildThisFileDirectory)../../src/DaisyOS.Shell/bin/Debug/net10.0</ShellOutput>

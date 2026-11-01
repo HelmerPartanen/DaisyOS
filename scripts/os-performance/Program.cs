@@ -31,7 +31,7 @@ for (var run = -warmups; run < samples; run++)
     var watch = Stopwatch.StartNew();
     launcher.ViewModel.SearchText = launcherQuery; Tick();
     Record("launcher.search", watch.Elapsed.TotalMilliseconds, run);
-    if (launcher.ViewModel.FilteredApps.Count != 10) throw new Exception($"Search result mismatch: {launcher.ViewModel.FilteredApps.Count} matches, {launcher.ViewModel.AllApps.Count} catalog entries.");
+    if (launcher.ViewModel.FilteredApps.Count != 12) throw new Exception($"Search result mismatch: {launcher.ViewModel.FilteredApps.Count} matches, {launcher.ViewModel.AllApps.Count} catalog entries.");
     launcher.ViewModel.SearchText = "Application"; Tick();
     watch.Restart(); launcher.IsVisible = false; Tick(); launcher.IsVisible = true; Tick();
     Record("launcher.show-hide", watch.Elapsed.TotalMilliseconds, run);

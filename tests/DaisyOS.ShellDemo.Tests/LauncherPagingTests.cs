@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Headless.XUnit;
 using Avalonia.Headless;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.ViewModels;
 using DaisyOS.Shell.Views.Components.Launcher;
@@ -13,6 +14,127 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class LauncherPagingTests
 {
+    [AvaloniaFact]
+    public void ResolvingAQueuedSearchDoesNotReapplyItAfterPageNavigation()
+    {
+        var model = new LauncherViewModel(null, Enumerable.Range(0, 3000)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:0000}", "", "", false)).ToArray());
+        model.SearchText = "App";
+        Assert.NotNull(model.ResolveSearchResult());
+        model.GoToPage(1);
+        var page = model.PageApps.ToArray();
+        Dispatcher.UIThread.RunJobs();
+        Assert.Equal(1, model.PageIndex);
+        Assert.Equal(page, model.PageApps.ToArray());
+    }
+
+    [AvaloniaFact]
+    public void LiveCalendarIconIsCreatedOnlyForCalendarTiles()
+    {
+        var icon = new DaisyOS.Shell.Controls.LauncherCalendarIcon();
+        Assert.Null(icon.Child);
+        icon.IsCalendar = true;
+        Assert.IsType<DaisyOS.Shell.Controls.CalendarAppIcon>(icon.Child);
+        icon.IsCalendar = false;
+        Assert.Null(icon.Child);
+    }
+
+    [AvaloniaFact]
+    public void ReopeningFromALaterPageDoesNotAnimateAnOutgoingPage()
+    {
+        var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
+        var launcher = new LauncherView(model);
+        var window = new Window { Width = 1280, Height = 900, Content = launcher };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            launcher.AnimateIn();
+            model.GoToPage(1);
+            launcher.CloseImmediate();
+            launcher.AnimateIn();
+            Assert.Equal(0, model.PageIndex);
+            var outgoing = launcher.FindControl<ItemsControl>("OutgoingPageGrid")!;
+            Assert.False(outgoing.IsVisible);
+            Assert.Null(outgoing.ItemsSource);
+        }
+        finally { launcher.CloseImmediate(); window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void PagesAndSearchReuseTilesAndUpdateTheirBindings()
+    {
+        var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
+        var launcher = new LauncherView(model);
+        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        var window = new Window { Width = 1280, Height = 900, Content = launcher };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            var grid = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
+            Button[] Tiles() => grid.GetVisualDescendants().OfType<Button>()
+                .Where(button => button.Classes.Contains("LauncherTile") && button.IsEffectivelyVisible).ToArray();
+            void CheckBindings(Button[] tiles)
+            {
+                Assert.Equal(model.PageApps.Count, tiles.Length);
+                foreach (var item in model.PageApps)
+                {
+                    var tile = Assert.Single(tiles, button => ReferenceEquals(button.DataContext, item));
+                    Assert.Contains(tile.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == item.Name);
+                    Assert.Equal(item.IsTopSearchResult, tile.Classes.Contains("SearchSelected"));
+                }
+            }
+            Assert.IsType<DaisyOS.Shell.Controls.LauncherItemsControl>(grid);
+            Assert.IsType<DaisyOS.Shell.Controls.VirtualizingLauncherGrid>(grid.ItemsPanelRoot);
+            var original = Tiles();
+            Assert.NotEmpty(original);
+            var containers = Enumerable.Range(0, model.PageApps.Count).Select(grid.ContainerFromIndex).ToArray();
+            model.GoToPage(1);
+            window.UpdateLayout();
+            Assert.All(Enumerable.Range(0, model.PageApps.Count).Select(grid.ContainerFromIndex), container => Assert.Contains(container, containers));
+            var next = Tiles();
+            CheckBindings(next);
+            Assert.All(next, tile => Assert.Contains(tile, original));
+            model.SearchText = "App 99";
+            window.UpdateLayout();
+            var result = Assert.Single(Tiles());
+            Assert.Contains(result, original);
+            CheckBindings([result]);
+            Assert.Equal("app-99", model.ResolveSearchResult()?.App.Id);
+            model.SearchText = "missing application";
+            window.UpdateLayout();
+            Assert.Empty(Tiles());
+            model.SearchText = "";
+            window.UpdateLayout();
+            CheckBindings(Tiles());
+            Assert.All(Tiles(), tile => Assert.Contains(tile, original));
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void PageSnapshotsAreReusedAndInvalidatedAfterSearchAndResize()
+    {
+        var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
+            .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
+        model.SetPageLayout(4, 3);
+        var original = model.GetPageApps(0);
+        model.GoToPage(1);
+        model.GoToPage(0);
+        Assert.Same(original, model.GetPageApps(0));
+        model.SearchText = "App 99";
+        Assert.Single(model.GetPageApps(0));
+        Assert.Equal("app-99", model.GetPageApps(0)[0].App.Id);
+        model.SearchText = "";
+        Assert.NotSame(original, model.GetPageApps(0));
+        model.SetPageLayout(3, 2);
+        Assert.Equal(6, model.GetPageApps(0).Length);
+        Assert.Equal(model.PageApps.ToArray(), model.GetPageApps(0));
+    }
+
     [AvaloniaFact]
     public void ShortQuickFlickChangesOnePageWhilePausedMovementAndEdgesDoNot()
     {

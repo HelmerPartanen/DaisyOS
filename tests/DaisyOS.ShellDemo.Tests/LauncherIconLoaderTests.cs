@@ -69,6 +69,32 @@ public class LauncherIconLoaderTests
         Assert.Null(item.IconBitmap);
     }
 
+    [AvaloniaFact]
+    public async Task ReplacingOrCancellingABackgroundPreloadCannotRestoreStaleIcons()
+    {
+        using var loader = new LauncherIconLoader();
+        var old = Enumerable.Range(0, 24).Select(i =>
+            new LauncherItemViewModel(new AppEntry($"old-{i}", $"Old {i}", "", "notes", false))).ToArray();
+        var current = new LauncherItemViewModel(new AppEntry("current", "Current", "", "files", false));
+        loader.Preload(old, 1);
+        var superseded = loader.WhenReady;
+        loader.Preload([current], 1);
+        await WaitForIcon(current, Task.WhenAll(superseded, loader.WhenReady));
+        Assert.All(old, item => Assert.Null(item.IconBitmap));
+        loader.Preload(old, 1);
+        var cancelled = loader.WhenReady;
+        loader.Dispose();
+        for (var attempt = 0; attempt < 500 && !cancelled.IsCompleted; attempt++)
+        {
+            await Task.Delay(10);
+            Dispatcher.UIThread.RunJobs();
+        }
+        Assert.True(cancelled.IsCompleted);
+        await cancelled;
+        Assert.All(old, item => Assert.Null(item.IconBitmap));
+        Assert.Null(current.IconBitmap);
+    }
+
     private static async Task WaitForIcon(LauncherItemViewModel item, Task completion)
     {
         for (var attempt = 0; attempt < 500 && !completion.IsCompleted; attempt++)

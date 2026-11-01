@@ -42,6 +42,7 @@ public partial class LauncherView : UserControl
     private Button? _contextMenuButton;
     private LauncherItemViewModel? _contextMenuItem;
     private bool _iconsReclaimed;
+    private bool _preparingOpen;
     public bool IsOpen { get; private set; }
     public event EventHandler<bool>? OpenStateChanged;
     public event EventHandler<bool>? PowerMenuVisibilityChanged;
@@ -181,6 +182,12 @@ public partial class LauncherView : UserControl
         var cts = new CancellationTokenSource();
         _animationCts = cts;
         IsOpen = true;
+        CancelPageDrag();
+        // Reset the page before revealing the launcher. Opening should not
+        // construct and animate an outgoing page underneath its own reveal.
+        _preparingOpen = true;
+        try { ViewModel.GoToPage(0); }
+        finally { _preparingOpen = false; }
 
         var content = _launcherRoot;
 
@@ -206,10 +213,6 @@ public partial class LauncherView : UserControl
         }
         AnimateStage(entering: true, duration);
 
-        if (ViewModel.PageIndex != 0)
-        {
-            ViewModel.GoToPage(0);
-        }
         ViewModel.ResetSelection();
         Opacity = 1;
         OpenStateChanged?.Invoke(this, true);
@@ -588,7 +591,7 @@ public partial class LauncherView : UserControl
         var previous = _displayedPage;
         var direction = Math.Sign(ViewModel.PageIndex - _displayedPageIndex);
         _displayedPageIndex = ViewModel.PageIndex;
-        _displayedPage = ViewModel.PageApps.ToArray();
+        _displayedPage = ViewModel.GetPageApps(ViewModel.PageIndex);
         var generation = ++_pageTransitionGeneration;
         GuiMotion.Cancel(incoming);
         GuiMotion.Cancel(outgoing);
@@ -597,7 +600,7 @@ public partial class LauncherView : UserControl
         outgoing.IsVisible = false;
         outgoing.ItemsSource = null;
         UpdatePageIndicators();
-        if (_committingDrag || direction == 0 || previous.Length == 0 || !IsEffectivelyVisible ||
+        if (_committingDrag || _preparingOpen || direction == 0 || previous.Length == 0 || !IsEffectivelyVisible ||
             TopLevel.GetTopLevel(this) is null || ResolveLauncherDuration(entering: true) == TimeSpan.Zero)
             return;
 

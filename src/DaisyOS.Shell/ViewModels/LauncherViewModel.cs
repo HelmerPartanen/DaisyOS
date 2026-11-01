@@ -27,6 +27,7 @@ public class LauncherViewModel : INotifyPropertyChanged
     public FastObservableCollection<LauncherItemViewModel> FilteredApps { get; } = new();
     public FastObservableCollection<LauncherItemViewModel> PageApps { get; } = new();
 
+    private readonly Dictionary<int, LauncherItemViewModel[]> _pages = [];
     private int _pageSize = 24;
     private int _pageIndex;
     private int _pageColumns = 8;
@@ -48,6 +49,7 @@ public class LauncherViewModel : INotifyPropertyChanged
         rows = Math.Clamp(rows, 1, MaxPageRows);
         var size = columns * rows;
         if (size == _pageSize && columns == _pageColumns && rows == _pageRows) return;
+        _pages.Clear();
         _pageSize = size;
         _pageColumns = columns;
         _pageRows = rows;
@@ -56,8 +58,15 @@ public class LauncherViewModel : INotifyPropertyChanged
         RefreshPage();
     }
 
-    internal LauncherItemViewModel[] GetPageApps(int index) =>
-        FilteredApps.Skip(index * _pageSize).Take(_pageSize).ToArray();
+    internal LauncherItemViewModel[] GetPageApps(int index)
+    {
+        if (index < 0 || index >= PageCount) return [];
+        if (_pages.TryGetValue(index, out var cached)) return cached;
+        var start = index * _pageSize;
+        var page = new LauncherItemViewModel[Math.Min(_pageSize, FilteredApps.Count - start)];
+        for (var i = 0; i < page.Length; i++) page[i] = FilteredApps[start + i];
+        return _pages[index] = page;
+    }
 
     public void GoToPage(int index)
     {
@@ -120,7 +129,7 @@ public class LauncherViewModel : INotifyPropertyChanged
             {
                 Dispatcher.UIThread.Post(() =>
                 {
-                    if (generation == _searchGeneration) UpdateFilteredApps();
+                    if (generation == _searchGeneration && generation != _appliedSearchGeneration) UpdateFilteredApps();
                 }, DispatcherPriority.Input);
             }
         }
@@ -258,6 +267,7 @@ public class LauncherViewModel : INotifyPropertyChanged
 
         if (!FilteredApps.SequenceEqual(matching))
         {
+            _pages.Clear();
             FilteredApps.ReplaceAll(matching);
         }
 

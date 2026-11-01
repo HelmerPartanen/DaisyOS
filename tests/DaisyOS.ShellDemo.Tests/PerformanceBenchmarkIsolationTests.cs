@@ -51,7 +51,8 @@ public sealed class PerformanceBenchmarkIsolationTests
             Assert.All(viewModel.AllApps, item => Assert.StartsWith("fixture-", item.App.Id));
             viewModel.SearchText = "Application 012";
             Dispatcher.UIThread.RunJobs();
-            Assert.Equal(10, viewModel.FilteredApps.Count);
+            // Token matching also includes Application 0012 and Application 1012.
+            Assert.Equal(12, viewModel.FilteredApps.Count);
         }
         finally { window.Close(); Loc.Apply(Application.Current!.Resources, "en-US"); Directory.Delete(directory, true); }
     }

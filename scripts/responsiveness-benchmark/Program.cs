@@ -1,63 +1,101 @@
 using System.Diagnostics;
-using System.Reflection;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
+using Avalonia.Input;
 using Avalonia.Media;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
+using DaisyOS.Core.Models;
 using DaisyOS.Shell;
+using DaisyOS.Shell.Services;
 using DaisyOS.Shell.ViewModels;
 using DaisyOS.Shell.Views.Components.Launcher;
-using DaisyOS.Core.Models;
 
-var output = args[0];
+if (args.Length is < 1 or > 2)
+    throw new ArgumentException("Usage: responsiveness-benchmark <output.json> [samples]");
+var output = Path.GetFullPath(args[0]);
+var samples = args.Length == 2 ? int.Parse(args[1]) : 40;
+if (samples < 5) throw new ArgumentException("At least five samples are required.");
+LinuxTextIsolation();
 AppBuilder.Configure<QaApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" }).SetupWithoutStarting();
-var cold = Stopwatch.StartNew();
-var view = new LauncherView();
-var window = new Window { Width=720, Height=600, Content=view, Background=Brushes.Gray };
-window.Show();
-Tick();
-var coldMs=cold.Elapsed.TotalMilliseconds;
-// Stop the initial asynchronous discovery before injecting a deterministic 2,000-app catalog.
-var wait=Stopwatch.StartNew();
-while(view.ViewModel.AllApps.Count==0 && wait.Elapsed.TotalSeconds<10) { Tick(); Thread.Sleep(5); }
-var entries=Enumerable.Range(0,2000).Select(i=>new AppEntry($"qa-{i}",$"Application {i:D4}","Test application","",false)).ToArray();
-var apply=typeof(LauncherViewModel).GetMethod("ApplyApplicationCatalog",BindingFlags.Instance|BindingFlags.NonPublic)!;
-apply.Invoke(view.ViewModel,[entries]);Tick();
-var grid=view.FindControl<ListBox>("ApplicationGrid");
-var realized=grid?.GetRealizedContainers().Count() ?? view.GetVisualDescendants().OfType<Button>().Count(b=>b.Classes.Contains("LauncherTile"));
-if(realized==0 || realized>150) throw new Exception($"Grid failed virtualization: {realized} containers");
-var original=view.ViewModel.AllApps[100];apply.Invoke(view.ViewModel,[entries]);
-if(!ReferenceEquals(original,view.ViewModel.AllApps[100])) throw new Exception("Catalog lost stable identity");
-var search=new List<double>();var toggle=new List<double>();
-for(int i=0;i<30;i++)
+var fixture = Directory.CreateTempSubdirectory("daisy-launcher-benchmark-");
+try
 {
-    var timer=Stopwatch.StartNew();view.ViewModel.SearchText=$"{i:D2}";Tick();search.Add(timer.Elapsed.TotalMilliseconds);
-    if(view.ViewModel.FilteredApps.Any(item=>!item.SearchKey.Contains($"{i:D2}"))) throw new Exception("Stale search projection");
-    view.ViewModel.SearchText="obsolete";view.ViewModel.SearchText="Application";Tick();
-    if(view.ViewModel.FilteredApps.Count!=2000) throw new Exception("Coalesced query lost last result");
-    timer.Restart();view.IsVisible=false;Tick();view.IsVisible=true;Tick();toggle.Add(timer.Elapsed.TotalMilliseconds);
+    const int catalogSize = 2000;
+    var apps = Enumerable.Range(0, catalogSize).Select(i => new AppEntry($"qa-{i}", $"Application {i:D4}", "Benchmark application", "", false)).ToArray();
+    var cold = Stopwatch.StartNew();
+    var model = new LauncherViewModel(new ShellSessionState(Path.Combine(fixture.FullName, "state.json")), apps);
+    var view = new LauncherView(model) { IsVisible = false };
+    // Measure preparation/render work, excluding intentional animation duration.
+    view.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+    view.Resources["MotionDurationExit"] = TimeSpan.Zero;
+    var window = new Window { Width = 1280, Height = 900, Content = view, Background = Brushes.Gray };
+    window.Show(); view.AnimateIn(); Tick();
+    var coldMs = cold.Elapsed.TotalMilliseconds;
+    var metrics = new Dictionary<string, List<(double Ms, long Bytes)>>();
+    using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
+    var viewport = view.FindControl<Grid>("LauncherPageViewport")!;
+    ulong timestamp = 1000;
+    for (var run = -5; run < samples; run++)
+    {
+        model.SearchText = "Application"; Tick();
+        Measure("search-render", () => { model.SearchText = "Application 012"; Tick(); }, run);
+        if (model.FilteredApps.Count != 12 || model.ResolveSearchResult()?.Name != "Application 0120")
+            throw new Exception($"Search mismatch: count={model.FilteredApps.Count}, top={model.ResolveSearchResult()?.Name}, query={model.SearchText}.");
+        model.SearchText = ""; model.GoToPage(0); Tick();
+        Measure("page-render", () => { model.GoToPage(1); Tick(); }, run);
+        Measure("swipe-render", () =>
+        {
+            Scroll(-40); Tick(); Scroll(-80); Tick(); Scroll(-100); Tick(); Scroll(0, true); Tick();
+        }, run);
+        view.CloseImmediate(); Tick();
+        Measure("warm-open-render", () => { view.AnimateIn(); Tick(); }, run);
+    }
+    var tiles = view.GetVisualDescendants().OfType<Button>().Count(b => b.IsEffectivelyVisible && b.Classes.Contains("LauncherTile"));
+    if (tiles != model.PageApps.Count) throw new Exception($"Visible tiles do not match page: {tiles}.");
+    Directory.CreateDirectory(Path.GetDirectoryName(output)!);
+    File.WriteAllText(output, JsonSerializer.Serialize(new
+    {
+        protocol = 2,
+        mode = "headless Skia CPU preparation and render tick; animations disabled; no KWin presentation",
+        catalogSize, samples, coldConstructionOpenRenderMs = coldMs, visibleTiles = tiles,
+        metrics = metrics.ToDictionary(x => x.Key, x => Summary(x.Value)),
+        managedBytes = GC.GetTotalMemory(false)
+    }, new JsonSerializerOptions { WriteIndented = true }));
+    view.CloseImmediate(); window.Close();
+    void Measure(string name, Action action, int run)
+    {
+        var bytes = GC.GetAllocatedBytesForCurrentThread();
+        var watch = Stopwatch.StartNew(); action(); var ms = watch.Elapsed.TotalMilliseconds;
+        if (run < 0) return;
+        if (!metrics.TryGetValue(name, out var values)) metrics[name] = values = [];
+        values.Add((ms, GC.GetAllocatedBytesForCurrentThread() - bytes));
+    }
+    void Scroll(double pixels, bool end = false)
+    {
+        timestamp += 16;
+        viewport.RaiseEvent(new PointerWheelEventArgs(viewport, pointer, window, new Point(100, 100), timestamp,
+            new PointerPointProperties(), KeyModifiers.None, new Vector(pixels / 4, 0)) { IsPrecise = true, IsScrollEnd = end });
+    }
 }
-if(grid is not null)
+finally { fixture.Delete(true); }
+static object Summary(List<(double Ms, long Bytes)> values)
 {
-    grid.ScrollIntoView(view.ViewModel.FilteredApps[1500]);Tick();Tick();
-    if(grid.ContainerFromItem(view.ViewModel.FilteredApps[1500]) is null) throw new Exception("Grid scroll target missing");
+    var times = values.Select(x => x.Ms).Order().ToArray();
+    var allocations = values.Select(x => x.Bytes).Order().ToArray();
+    return new { p50Ms = times[times.Length / 2], p95Ms = times[(int)Math.Ceiling(times.Length * 0.95) - 1], worstMs = times[^1], medianAllocatedBytes = allocations[allocations.Length / 2] };
 }
-using(var frame=window.CaptureRenderedFrame()!) frame.Save(output+".png");
-var process=Process.GetCurrentProcess();
-File.WriteAllText(output,JsonSerializer.Serialize(new {mode="headless Skia; CPU render pass, not KWin presentation",coldConstructionRenderMs=coldMs,catalogSize=2000,realizedContainers=realized,search=Summary(search),warmVisibility=Summary(toggle),rssBytes=process.WorkingSet64,managedBytes=GC.GetTotalMemory(false)},new JsonSerializerOptions{WriteIndented=true}));
-window.Close();
-static object Summary(List<double> values){values.Sort();return new {samples=values.Count,p50Ms=values[14],p95Ms=values[28],worstMs=values[^1]};}
-static void Tick(){Dispatcher.UIThread.RunJobs();AvaloniaHeadlessPlatform.ForceRenderTimerTick();Dispatcher.UIThread.RunJobs();}
-public sealed class QaApp:Application
+static void Tick() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
+static void LinuxTextIsolation() => DaisyOS.Shell.Services.Theming.LinuxTextLibraryIsolation.EnsureLoaded();
+public sealed class QaApp : Application
 {
     public override void Initialize()
     {
-        var shell=new App();shell.Initialize();Resources=shell.Resources;shell.Resources=new ResourceDictionary();
-        foreach(var style in shell.Styles.ToArray()){shell.Styles.Remove(style);Styles.Add(style);}
-        RequestedThemeVariant=Avalonia.Styling.ThemeVariant.Dark;
+        var shell = new App(); shell.Initialize(); var resources = shell.Resources; shell.Resources = new ResourceDictionary(); Resources = resources;
+        foreach (var style in shell.Styles.ToArray()) { shell.Styles.Remove(style); Styles.Add(style); }
+        RequestedThemeVariant = Avalonia.Styling.ThemeVariant.Dark;
     }
 }

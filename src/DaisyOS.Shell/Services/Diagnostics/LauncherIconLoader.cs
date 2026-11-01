@@ -16,6 +16,8 @@ internal sealed class LauncherIconLoader : IDisposable
     private readonly ThumbnailCache _cache = new(896, 16L * 1024 * 1024);
     private readonly Dictionary<LauncherItemViewModel, Request> _requests = [];
     private int _generation;
+    private volatile int _preloadGeneration;
+    private Task _preloadCompletion = Task.CompletedTask;
     private sealed class Request(int generation, string iconName, bool isLight)
     {
         public readonly string IconName = iconName;
@@ -38,7 +40,7 @@ internal sealed class LauncherIconLoader : IDisposable
         _requests.Add(item, request);
         request.Completion = LoadAsync(item, request, scaling);
     }
-    public Task WhenReady => Task.WhenAll(_requests.Values.Select(request => request.Completion));
+    public Task WhenReady => Task.WhenAll(_requests.Values.Select(request => request.Completion).Append(_preloadCompletion));
     public void Preload(IEnumerable<LauncherItemViewModel> items, double scaling)
     {
         var ordered = new List<LauncherItemViewModel>();
@@ -50,7 +52,34 @@ internal sealed class LauncherIconLoader : IDisposable
         foreach (var item in _requests.Keys.Where(item => !catalog.Contains(item)).ToArray()) Unregister(item);
         foreach (var item in ordered)
             if (_requests.TryGetValue(item, out var request) && request.IconName != item.IconName) Unregister(item);
-        foreach (var item in ordered) Register(item, scaling);
+        ordered.RemoveAll(item => item.IsCalendarIcon || string.IsNullOrWhiteSpace(item.IconName) ||
+            item.IconBitmap is not null || _requests.ContainsKey(item));
+        var generation = ++_preloadGeneration;
+        _preloadCompletion = PreloadBatchesAsync(ordered, scaling, generation);
+    }
+    private async Task PreloadBatchesAsync(List<LauncherItemViewModel> items, double scaling, int generation)
+    {
+        // Keep at most one small background batch ahead of tiles registered by
+        // the current page/search. Do not queue thousands of semaphore waiters.
+        const int batchSize = 4;
+        for (var offset = 0; offset < items.Count; offset += batchSize)
+        {
+            if (generation != _preloadGeneration) return;
+            var start = offset;
+            Task[] batch = [];
+            await Dispatcher.UIThread.InvokeAsync(() =>
+            {
+                if (generation != _preloadGeneration) return;
+                var completions = new List<Task>(batchSize);
+                for (var i = start; i < Math.Min(items.Count, start + batchSize); i++)
+                {
+                    Register(items[i], scaling);
+                    if (_requests.TryGetValue(items[i], out var request)) completions.Add(request.Completion);
+                }
+                batch = completions.ToArray();
+            }, DispatcherPriority.Background).GetTask().ConfigureAwait(false);
+            await Task.WhenAll(batch).ConfigureAwait(false);
+        }
     }
     private async Task LoadAsync(LauncherItemViewModel item, Request request, double scaling)
     {
@@ -58,7 +87,7 @@ internal sealed class LauncherIconLoader : IDisposable
         VisualLease? lease = null;
         try
         {
-            await Workers.WaitAsync(token);
+            await Workers.WaitAsync(token).ConfigureAwait(false);
             try
             {
                 lease = await Task.Run(() =>
@@ -80,7 +109,7 @@ internal sealed class LauncherIconLoader : IDisposable
                             : DecodeBitmap(stream);
                         return new FileVisual(bitmap, null, string.Empty);
                     }, $"{request.Generation}:{scaling.ToString(global::System.Globalization.CultureInfo.InvariantCulture)}");
-                }, token);
+                }, token).ConfigureAwait(false);
             }
             finally { Workers.Release(); }
             await Dispatcher.UIThread.InvokeAsync(() =>
@@ -90,7 +119,7 @@ internal sealed class LauncherIconLoader : IDisposable
                 request.Lease = lease;
                 item.IconBitmap = lease?.Visual.Thumbnail;
                 lease = null;
-            }, DispatcherPriority.Background);
+            }, DispatcherPriority.Background).GetTask().ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or ArgumentException) { }
@@ -152,6 +181,7 @@ internal sealed class LauncherIconLoader : IDisposable
     public void Dispose()
     {
         _generation++;
+        ++_preloadGeneration;
         foreach (var pair in _requests.ToArray())
         {
             pair.Value.Count = 1;

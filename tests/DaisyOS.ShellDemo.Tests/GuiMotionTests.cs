@@ -208,6 +208,8 @@ public sealed class GuiMotionTests
         {
             using (window.CaptureRenderedFrame()) { }
             launcher.AnimateIn();
+            // Reveal preparation defers layout to the normal render transaction.
+            window.UpdateLayout();
             var root = launcher.FindControl<Border>("LauncherRootBorder")!;
             Assert.Equal(window.Bounds.Width, launcher.Bounds.Width);
             Assert.Equal(window.Bounds.Height, launcher.Bounds.Height);

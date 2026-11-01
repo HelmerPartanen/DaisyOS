@@ -34,7 +34,7 @@
           <Panel Grid.Row="0" Width="68" Height="62" HorizontalAlignment="Center">
             <Panel Width="58" Height="58"
                    HorizontalAlignment="Center" VerticalAlignment="Center">
-              <controls:CalendarAppIcon Width="58" Height="58" IsVisible="{Binding IsCalendarIcon}" />
+              <controls:LauncherCalendarIcon Width="58" Height="58" IsCalendar="{Binding IsCalendarIcon}" IsVisible="{Binding IsCalendarIcon}" />
               <Image Source="{Binding IconBitmap}" IsVisible="{Binding IsBitmapIconVisible}"
                      RenderOptions.BitmapInterpolationMode="HighQuality"
                      Width="58" Height="58" Stretch="Uniform" />
@@ -230,23 +230,23 @@
             </Grid>
 
             <Grid x:Name="LauncherPageViewport" Grid.Row="1" SizeChanged="OnPageViewportSizeChanged" ClipToBounds="True">
-              <ItemsControl x:Name="OutgoingPageGrid" IsVisible="False" IsHitTestVisible="False"
+              <controls:LauncherItemsControl x:Name="OutgoingPageGrid" IsVisible="False" IsHitTestVisible="False"
                             Width="{Binding PageGridWidth}" Height="{Binding PageGridHeight}"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             ItemTemplate="{StaticResource LauncherTileTemplate}">
                 <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  <ItemsPanelTemplate><controls:VirtualizingLauncherGrid /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-              </ItemsControl>
+              </controls:LauncherItemsControl>
 
-              <ItemsControl x:Name="ApplicationGrid" ItemsSource="{Binding PageApps}"
+              <controls:LauncherItemsControl x:Name="ApplicationGrid" ItemsSource="{Binding PageApps}"
                             Width="{Binding PageGridWidth}" Height="{Binding PageGridHeight}"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             ItemTemplate="{StaticResource LauncherTileTemplate}">
                 <ItemsControl.ItemsPanel>
-                  <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+                  <ItemsPanelTemplate><controls:VirtualizingLauncherGrid /></ItemsPanelTemplate>
                 </ItemsControl.ItemsPanel>
-              </ItemsControl>
+              </controls:LauncherItemsControl>
 
               <StackPanel Classes="EmptyState" IsVisible="{Binding ShowNoResults}"
                           HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
