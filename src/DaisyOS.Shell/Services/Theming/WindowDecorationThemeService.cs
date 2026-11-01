@@ -62,7 +62,7 @@ public sealed class WindowDecorationThemeService
                 ExportKWinConfig(overviewValues.Where(pair => pair.Key == "ReduceMotion").ToArray(), "Effect-daisyos-window-motion");
                 ExportKWinConfig(frameValues, "Round-Corners");
                 ExportKWinConfig([new("BlurStrength", "4")], "Effect-blur");
-                ExportKWinConfig([new("blurEnabled", "true"), new("kwin4_effect_shapecornersEnabled", "true")], "Plugins");
+                ExportKWinConfig([new("blurEnabled", "true"), new("daisyframeEnabled", "true"), new("kwin4_effect_shapecornersEnabled", "false")], "Plugins");
                 RequestKWinReconfigureAsync().GetAwaiter().GetResult();
             }).ConfigureAwait(false);
             _lastExportedConfig = _frameEffectChecked ? content : null;
@@ -193,7 +193,7 @@ public sealed class WindowDecorationThemeService
             new("OuterOutlineThickness", "0"),
             new("InactiveOuterOutlineThickness", "0"),
             // Repair legacy process-wide exclusions on upgrades as well as fresh installs.
-            // The effect itself excludes untitled layer surfaces; app windows need the frame.
+            // The effect excludes layer-shell surfaces by type; app windows need the frame.
             new("Exclusions", "DaisyOS Lock Screen,DaisyOS Lock Wallpaper"),
             new("IncludeNormalWindows", "true"),
             new("IncludeDialogs", "true"),
@@ -315,11 +315,11 @@ public sealed class WindowDecorationThemeService
         foreach (var args in new[]
         {
             new[] { "/KWin", "org.kde.KWin.reconfigure" },
-            new[] { "/Effects", "org.kde.kwin.Effects.loadEffect", "kwin4_effect_shapecorners" },
-            new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "kwin4_effect_shapecorners" },
+            new[] { "/Effects", "org.kde.kwin.Effects.loadEffect", "daisyframe" },
+            new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyframe" },
             new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-window-motion" },
             new[] { "/Effects", "org.kde.kwin.Effects.reconfigureEffect", "daisyos-task-overview-v16" },
-            new[] { "/Effects", "org.kde.kwin.Effects.isEffectLoaded", "kwin4_effect_shapecorners" }
+            new[] { "/Effects", "org.kde.kwin.Effects.isEffectLoaded", "daisyframe" }
         })
         {
             var start = new ProcessStartInfo("qdbus6") { CreateNoWindow = true, UseShellExecute = false, RedirectStandardOutput = true };

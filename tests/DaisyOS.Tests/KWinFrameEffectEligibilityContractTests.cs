@@ -6,20 +6,21 @@ namespace DaisyOS.Tests;
 public sealed class KWinFrameEffectEligibilityContractTests
 {
     [Fact]
-    public void EffectSeparatesUntitledShellSurfacesFromTitledSystemApps()
+    public void EffectExcludesLayerSurfacesByTypeAndPreservesNormalSystemApps()
     {
         var root = FindRepoRoot();
         var installer = File.ReadAllText(Path.Combine(root, "scripts", "install-kwin-frame-effect.sh"));
 
         Assert.Contains("'DaisyOS Lock Screen,DaisyOS Lock Wallpaper'", installer);
         Assert.DoesNotContain("'DaisyOS.Shell,DaisyOS Lock Screen", installer);
-        Assert.Contains("daisyos-layer-surfaces.patch", installer);
-        var patch = File.ReadAllText(Path.Combine(root, "src", "native", "kwin_frame_effect", "daisyos-layer-surfaces.patch"));
-        Assert.Contains("kwindow->caption().trimmed().isEmpty()", patch);
-        Assert.Contains("DaisyOS.Shell", patch);
-        Assert.Contains("!w->caption().trimmed().isEmpty()", patch);
-        Assert.DoesNotContain("caption().contains(QStringLiteral(\"Files\")", patch);
-        Assert.Contains("continue;", patch);
+        var effect = File.ReadAllText(Path.Combine(root, "src", "native", "kwin_frame_effect", "frameeffect.cpp"));
+        Assert.Contains("KWin::LayerShellV1Window", effect);
+        Assert.Contains("w->isNormalWindow()", effect);
+        Assert.Contains("w->isDialog()", effect);
+        Assert.Contains("w->isLockScreen()", effect);
+        Assert.DoesNotContain("caption().trimmed().isEmpty()", effect);
+        Assert.DoesNotContain("KDE-Rounded-Corners", installer);
+
     }
 
     private static string FindRepoRoot()

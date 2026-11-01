@@ -267,7 +267,8 @@ configure_kwin_for_daisyos() {
   # compositor starts or every Daisy glass surface becomes a flat tint after
   # a fresh login/reboot.
   kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
-  kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shapecornersEnabled true
+  kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shapecornersEnabled false
+  kwriteconfig6 --file kwinrc --group Plugins --key daisyframeEnabled true
   kwriteconfig6 --file kwinrc --group Plugins --key forceblurEnabled false
   # Keep compositor blur deliberately restrained. KWin uses an integer scale;
   # four is DaisyOS's visual default for every native glass region.

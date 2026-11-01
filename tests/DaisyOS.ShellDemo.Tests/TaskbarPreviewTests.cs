@@ -15,6 +15,43 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public class TaskbarPreviewTests
 {
+    [AvaloniaTheory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void PinnedAppClearsUnresponsiveWarningAfterCrash(bool owned)
+    {
+        var view = new TaskbarView();
+        var window = new Window { Content = view, Width = 800, Height = 180 };
+        window.Show();
+        try
+        {
+            var tag = owned ? "notes" : "code";
+            view.ApplyOrder([tag]);
+            var client = owned ? Note("crashed") : new CompositorWindowRecord(
+                "crashed", "code", "Visual Studio Code", "code", null, null,
+                1, true, false, false, false, true);
+            view.SetCompositorWindows([client with { IsUnresponsive = true, ProcessId = 1234 }]);
+            var button = view.FindControl<Canvas>("AppIconsCanvas")!.Children
+                .OfType<Button>().Single(b => Equals(b.Tag, tag));
+            Assert.Contains("WindowUnresponsive", button.Classes);
+            Assert.Contains("Not responding", button.GetValue(ToolTip.TipProperty)?.ToString());
+
+            view.SetCompositorWindows([]);
+            Assert.Contains(button, view.FindControl<Canvas>("AppIconsCanvas")!.Children);
+            Assert.DoesNotContain("WindowUnresponsive", button.Classes);
+            Assert.DoesNotContain("WindowActive", button.Classes);
+            Assert.DoesNotContain("Not responding", button.GetValue(ToolTip.TipProperty)?.ToString() ?? "");
+            var indicator = button.GetVisualDescendants().OfType<Border>()
+                .Single(b => b.Classes.Contains("TaskbarWindowIndicator"));
+            Assert.DoesNotContain("WindowRunning", indicator.Classes);
+
+            view.SetCompositorWindows([client with { Id = "reopened", IsActive = true }]);
+            Assert.DoesNotContain("WindowUnresponsive", button.Classes);
+            Assert.Contains("WindowActive", button.Classes);
+        }
+        finally { window.Close(); }
+    }
+
     [AvaloniaFact]
     public void SystemAppIndicatorsRecoverFromStartupAndReopening()
     {

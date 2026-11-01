@@ -602,6 +602,14 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             // TaskbarView.axaml. WindowRunning/WindowMinimized only affect the
             // indicator Border below, so they aren't set on the button itself.
             button.Classes.Set("WindowActive", presentation.IsActive);
+            if (!presentation.IsRunning)
+            {
+                // Pinned controls survive window removal, including a crashed
+                // client that was previously marked unresponsive by KWin.
+                button.Classes.Remove("WindowUnresponsive");
+                if (_forceQuitItems.TryGetValue(appId, out var forceQuit))
+                    forceQuit.IsEnabled = false;
+            }
 
             if (button.Content is Panel panel && panel.Children.OfType<Border>().FirstOrDefault(b => b.Classes.Contains("TaskbarWindowIndicator")) is { } indicator)
             {
@@ -704,10 +712,10 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             {
                 _compositorWindowIds.Remove(tag);
                 _compositorWindowIds.Remove(effectiveId);
-                _forceQuitItems.Remove(tag);
-                _forceQuitItems.Remove(effectiveId);
                 SetAppWindowState(tag, NativeAppWindowState.NotRunning);
                 SetAppWindowState(effectiveId, NativeAppWindowState.NotRunning);
+                _forceQuitItems.Remove(tag);
+                _forceQuitItems.Remove(effectiveId);
                 return;
             }
 
