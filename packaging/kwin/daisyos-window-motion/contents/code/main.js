@@ -43,7 +43,7 @@ class DaisyWindowMotion {
             && !!w.caption && !/^DaisyOS Lock/.test(w.caption);
     }
     allowed(w, role) {
-        return this.eligible(w) && !this.reduced && effects.animationTimeFactor > 0
+        return this.eligible(w) && !w.move && !w.resize && !this.reduced && effects.animationTimeFactor > 0
             && !effects.hasActiveFullScreenEffect && !effect.isGrabbed(w, role);
     }
     stop(w) {
@@ -96,6 +96,10 @@ class DaisyWindowMotion {
     manage(w) {
         if (this.windows.has(w)) return;
         this.windows.add(w);
+        // A drag must track KWin's real geometry immediately. In particular,
+        // tearing a maximized/tiled window away must not retain the old
+        // translation or start another maximize transition under the pointer.
+        w.windowStartUserMovedResized.connect(() => this.stop(w));
         w.minimizedChanged.connect(() => this.minimize(w));
         w.windowHiddenChanged.connect(() => {
             if (!w.minimized && w.daisyMotionKind !== "minimize") this.presence(w, w.visible);

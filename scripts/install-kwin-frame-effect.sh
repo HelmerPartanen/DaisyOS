@@ -154,11 +154,16 @@ mv -f -- "${stamp_path}.tmp" "$stamp_path"
 echo "Installed the DaisyOS window-frame compositor effect (embedded shader)."
 if command -v qdbus6 >/dev/null 2>&1; then
   loaded="$(timeout 3 qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.isEffectLoaded daisyframe 2>/dev/null || true)"
-  if [[ "$loaded" == true ]]; then
-    echo "KWin confirms the effect is loaded."
+  plugin_version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["KPlugin"]["Version"])' "$source_dir/metadata.json")"
+  runtime_details="$(timeout 3 qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.debug daisyframe '' 2>/dev/null || true)"
+  if [[ "$loaded" == true && "$runtime_details" == "DaisyFrame $plugin_version "* ]]; then
+    echo "KWin confirms DaisyFrame $plugin_version is loaded."
+  elif [[ "$loaded" == true ]]; then
+    echo "The update is installed, but KWin is retaining an older plugin in memory." >&2
+    echo "Log out and back into DaisyOS to load DaisyFrame $plugin_version." >&2
   else
     echo "The files are installed, but KWin has NOT loaded the effect in this session." >&2
-    echo "Log out and back into DaisyOS. If it remains missing, check the KWin journal for ShapeCorners or shader errors." >&2
+    echo "Log out and back into DaisyOS. If it remains missing, check the KWin journal for DaisyFrame or shader errors." >&2
   fi
 else
   echo "Live KWin activation could not be checked because qdbus6 is unavailable. Restart the DaisyOS session once."

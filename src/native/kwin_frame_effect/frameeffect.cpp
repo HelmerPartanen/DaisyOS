@@ -38,7 +38,7 @@ public:
         KWin::effects->addRepaintFull();
     }
     static bool supported() { return KWin::OffscreenEffect::supported(); }
-    QString debug(const QString &) const override { return QStringLiteral("DaisyFrame 1.0 (embedded shader)"); }
+    QString debug(const QString &) const override { return QStringLiteral("DaisyFrame 1.1 (pixel-area corners)"); }
     bool isActive() const override { return bool(m_shader); }
     int requestedEffectChainPosition() const override { return 99; }
     // Keep scanout conservative while any windows use offscreen rendering.

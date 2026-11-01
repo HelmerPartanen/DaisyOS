@@ -27,7 +27,7 @@
     <Color x:Key="SurfaceBaseColor">#99F2F2F2</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FFF2F2F2</Color>
     <!-- The launcher uses the same dark translucent overlay in both themes. -->
-    <Color x:Key="LauncherBackdropColor">#4D0F1012</Color>
+    <Color x:Key="LauncherBackdropColor">#1A000000</Color>
     <Color x:Key="SurfaceRaisedColor">#FFFFFFFF</Color>
     <Color x:Key="SurfaceRaisedSubtleColor">#0F000000</Color>
     <Color x:Key="SurfaceInputSubtleColor">#12FFFFFF</Color>
@@ -268,10 +268,10 @@
 
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
-      <Color x:Key="SurfaceBaseColor">#330F0F0F</Color>
-    <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
+      <Color x:Key="SurfaceBaseColor">#00000000</Color>
+    <Color x:Key="SurfaceBaseColorSolid">#FF0F0F0F</Color>
       <!-- Fullscreen launcher glass. See the light theme for the contract. -->
-      <Color x:Key="LauncherBackdropColor">#4D0F1012</Color>
+      <Color x:Key="LauncherBackdropColor">#1A000000</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
       <Color x:Key="SurfaceRaisedSubtleColor">#14FFFFFF</Color>
       <Color x:Key="SurfaceInputSubtleColor">#0FFFFFFF</Color>

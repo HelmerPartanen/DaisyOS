@@ -25,6 +25,7 @@ function cancel(ids) { cancelled.push(ids); ids.forEach(id => alive.delete(id));
 function redirect(ids, dir) { redirects.push(dir); return ids.every(id => alive.has(id)); }
 function windowMock() { return { managed: true, normalWindow: true, caption: 'Files', visible: true,
     geometry: {x: 100,y: 100,width: 600,height: 400}, iconGeometry: {x: 100,y: 760,width: 40,height: 40},
+    windowStartUserMovedResized: signal(),
     minimizedChanged: signal(), windowHiddenChanged: signal(), windowMaximizedStateAboutToChange: signal(),
     windowMaximizedStateChanged: signal(), windowFrameGeometryChanged: signal(), windowFullScreenChanged: signal() }; }
 function check(value, message) { if (!value) throw new Error(message); }
@@ -49,6 +50,20 @@ w.windowFrameGeometryChanged.emit(w,{width:600,height:400});
 check(w.daisyMotionKind === 'geometry', 'initial maximize geometry must not cancel transition');
 w.geometry.width = 1100; w.windowFrameGeometryChanged.emit(w,{width:1200,height:800});
 check(!w.daisyMotion, 'resize cancels stale geometry');
+// Dragging cancels any remaining positional transform, even without a resize.
+w.windowMaximizedStateAboutToChange.emit(w);
+w.geometry = {x:0,y:0,width:1200,height:800}; w.windowMaximizedStateChanged.emit(w);
+check(w.daisyMotionKind === 'geometry', 'start a transition before grabbing');
+w.move = true; w.windowStartUserMovedResized.emit(w);
+check(!w.daisyMotion && !w.daisyGeometrySource, 'drag cancels stale positional animation');
+var dragCalls = calls.length;
+w.windowMaximizedStateAboutToChange.emit(w);
+w.geometry = {x:180,y:150,width:600,height:400}; w.windowMaximizedStateChanged.emit(w);
+check(calls.length === dragCalls && !w.daisyMotion, 'unmaximize while dragging must follow the pointer');
+w.move = false; w.resize = true; w.windowStartUserMovedResized.emit(w);
+w.windowMaximizedStateAboutToChange.emit(w); w.windowMaximizedStateChanged.emit(w);
+check(calls.length === dragCalls, 'interactive resize must not start geometry animation');
+w.resize = false;
 effects.windowClosed.emit(w); check(calls[calls.length-1].keepAlive, 'close retains deleted surface');
 var panel = windowMock(); panel.normalWindow = false; var before = calls.length;
 effects.windowAdded.emit(panel); check(calls.length === before, 'exclude shell surfaces');

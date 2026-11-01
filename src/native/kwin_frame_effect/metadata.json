@@ -3,7 +3,7 @@
         "Name": "Daisy Window Frame",
         "Description": "DaisyOS rounded windows with two inset frame bands",
         "License": "GPL-2.0-or-later",
-        "Version": "1.0",
+        "Version": "1.1",
         "EnabledByDefault": false
     },
     "org.kde.kwin.effect": { "exclusiveGroup": "", "internal": false }

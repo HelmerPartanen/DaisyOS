@@ -475,15 +475,12 @@
 
             <!-- Primary action -->
             <Button x:Name="CaptureButton" AutomationProperties.Name="{DynamicResource Loc_1900B478A586}"
-                    Classes="Primary"
+                    Classes="Primary Small"
                     Click="OnCaptureClicked"
                     ToolTip.Tip="{DynamicResource Loc_8A47E564AFA2}">
               <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-                <controls:DaisyIcon Icon="camera" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentOnActionBrush}" VerticalAlignment="Center" />
+                <controls:DaisyIcon Icon="camera" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" />
                 <TextBlock x:Name="CaptureActionLabel" Text="{DynamicResource Loc_1900B478A586}"
-                           Foreground="{DynamicResource ContentOnActionBrush}"
-                           FontWeight="SemiBold"
-                           FontSize="{DynamicResource TypeSizeBodySmall}"
                            VerticalAlignment="Center" />
               </StackPanel>
             </Button>

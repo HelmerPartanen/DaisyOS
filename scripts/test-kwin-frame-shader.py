@@ -5,6 +5,7 @@ Color-management helpers are identity stubs here; the isolated KWin test checks
 compilation with the real KWin helpers. No window system or user session needed.
 """
 import ctypes as C
+import math
 from pathlib import Path
 
 E = C.CDLL('libEGL.so.1')
@@ -99,6 +100,28 @@ for scale in (1, 1.25, 1.5, 2):
         assert pixel(w // 2, h // 2) == (0, 0, 255, 255)
         if radius:
             assert pixel(0, 0)[3] == 0, (scale, pixel(0, 0))
+# Compare rounded bands against an independent 16x16 area-sampled circle.
+# Checking actual coverage catches diagonal blur that edge-only tests miss.
+for scale in (1, 1.25, 1.5, 2):
+    w, h, pixel = render(scale)
+    radius = 16 * scale
+    for y in range(math.ceil(radius + 2)):
+        for x in range(math.ceil(radius + 2)):
+            if abs(math.hypot(max(radius - x - .5, 0), max(radius - y - .5, 0)) - radius) > 3 * scale:
+                continue
+            masks = []
+            for inset in (0, scale, scale * 2):
+                count = 0
+                for sy in range(16):
+                    for sx in range(16):
+                        px, py = x + (sx + .5) / 16, y + (sy + .5) / 16
+                        count += (px >= inset and py >= inset
+                            and math.hypot(max(radius - px, 0), max(radius - py, 0)) <= radius - inset)
+                masks.append(count / 256)
+            a, b, c = masks
+            expected = ((a - b) * 255, (b - c) * 255, c * 255, a * 255)
+            for cx, cy in ((x, y), (w - 1 - x, y), (x, h - 1 - y), (w - 1 - x, h - 1 - y)):
+                assert max(abs(v - e) for v, e in zip(pixel(cx, cy), expected)) <= 8, (scale, cx, cy, pixel(cx, cy), expected)
 # Antialiased border pixels must retain the shape coverage, not accumulate
 # opacity from the client texture under the frame bands.
 w, h, reference = render(1)

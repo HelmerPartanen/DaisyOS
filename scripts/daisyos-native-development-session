@@ -708,6 +708,7 @@ start_compositor_and_shell() {
     log_message "DaisyOS native window-menu installation failed."
   fi
   disable_kde_wallet
+  "$source_root/scripts/configure-kwin-snapping.sh" --no-reconfigure
   configure_kwin_for_daisyos
   refresh_desktop_service_cache
   log_message "Starting KWin Wayland for DaisyOS Native Development on socket $socket_name."
