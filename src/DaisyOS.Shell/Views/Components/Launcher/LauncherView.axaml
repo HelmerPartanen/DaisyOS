@@ -15,7 +15,7 @@
       <Setter Property="Background" Value="{DynamicResource LauncherBackdropBrush}" />
     </Style>
     <Style Selector="Border.LauncherBackdrop.SolidBackdrop">
-      <Setter Property="Background" Value="{DynamicResource SurfaceBaseSolidBrush}" />
+      <Setter Property="Background" Value="{DynamicResource LauncherSolidBackdropBrush}" />
     </Style>
   </UserControl.Styles>
 

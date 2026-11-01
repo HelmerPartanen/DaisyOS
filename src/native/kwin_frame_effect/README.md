@@ -31,7 +31,7 @@ Validation:
 
 - `scripts/test-kwin-frame-shader.py`: actual surfaceless EGL/OpenGL pixel tests;
   requires Mesa EGL and desktop OpenGL. KWin color helpers are identity stubs.
-- `scripts/test-kwin-frame-effect-integrity.py`: isolated install metadata tests.
+- `python3 scripts/test-kwin-frame-effect-integrity.py`: isolated install metadata tests.
 - `scripts/test-kwin-frame-effect-runtime.sh /path/to/daisyframe.so`:
   isolated KWin, private D-Bus/config/plugin path, real KWin shader helpers,
   SSD and frameless clients, resize/maximize/fullscreen, reload and destruction.

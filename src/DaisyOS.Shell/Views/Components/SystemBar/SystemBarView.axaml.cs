@@ -475,8 +475,6 @@ public partial class SystemBarView : UserControl
         {
             wifiIcon.IsVisible = wifiIsOnline;
             wifiIcon.SignalPercent = network.SignalPercent ?? 0;
-            wifiIcon.ActiveBrush = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.White;
-            wifiIcon.InactiveBrush = this.FindResource("ContentTertiaryBrush") as IBrush ?? Brushes.Gray;
             ToolTip.SetTip(wifiIcon, network.DisplayName);
         }
         if (this.FindControl<DaisyIcon>("SystemBarEthernetIcon") is { } ethernetIcon)

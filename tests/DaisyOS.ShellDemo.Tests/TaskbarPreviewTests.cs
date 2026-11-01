@@ -41,7 +41,7 @@ public class TaskbarPreviewTests
             Assert.DoesNotContain("WindowUnresponsive", button.Classes);
             Assert.DoesNotContain("WindowActive", button.Classes);
             Assert.DoesNotContain("Not responding", button.GetValue(ToolTip.TipProperty)?.ToString() ?? "");
-            var indicator = button.GetVisualDescendants().OfType<Border>()
+            var indicator = ((Panel)button.Content!).Children.OfType<Border>()
                 .Single(b => b.Classes.Contains("TaskbarWindowIndicator"));
             Assert.DoesNotContain("WindowRunning", indicator.Classes);
 

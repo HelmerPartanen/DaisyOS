@@ -26,9 +26,8 @@
     <!-- Translucent so KWin's native background effect remains visible. -->
     <Color x:Key="SurfaceBaseColor">#99F2F2F2</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FFF2F2F2</Color>
-    <!-- Fullscreen launcher glass. Heavy enough for readable labels over any
-         wallpaper or application, still translucent so KWin's blur shows. -->
-    <Color x:Key="LauncherBackdropColor">#C2F2F2F2</Color>
+    <!-- The launcher uses the same dark translucent overlay in both themes. -->
+    <Color x:Key="LauncherBackdropColor">#4D0F1012</Color>
     <Color x:Key="SurfaceRaisedColor">#FFFFFFFF</Color>
     <Color x:Key="SurfaceRaisedSubtleColor">#0F000000</Color>
     <Color x:Key="SurfaceInputSubtleColor">#12FFFFFF</Color>
@@ -150,6 +149,7 @@
       <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
       <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
       <SolidColorBrush x:Key="LauncherBackdropBrush" Color="{StaticResource LauncherBackdropColor}" />
+      <SolidColorBrush x:Key="LauncherSolidBackdropBrush" Color="#FF171717" />
       <SolidColorBrush x:Key="LauncherSearchSurfaceBrush" Color="#EBFFFFFF" />
       <SolidColorBrush x:Key="LauncherSearchBorderBrush" Color="#24000000" />
       <SolidColorBrush x:Key="LauncherTileHoverBrush" Color="#12000000" />
@@ -356,6 +356,7 @@
       <SolidColorBrush x:Key="SurfaceBaseBrush" Color="{StaticResource SurfaceBaseColor}" />
             <SolidColorBrush x:Key="SurfaceBaseSolidBrush" Color="{StaticResource SurfaceBaseColorSolid}" />
       <SolidColorBrush x:Key="LauncherBackdropBrush" Color="{StaticResource LauncherBackdropColor}" />
+      <SolidColorBrush x:Key="LauncherSolidBackdropBrush" Color="#FF171717" />
       <SolidColorBrush x:Key="LauncherSearchSurfaceBrush" Color="#D41F2127" />
       <SolidColorBrush x:Key="LauncherSearchBorderBrush" Color="#2EFFFFFF" />
       <SolidColorBrush x:Key="LauncherTileHoverBrush" Color="#16FFFFFF" />

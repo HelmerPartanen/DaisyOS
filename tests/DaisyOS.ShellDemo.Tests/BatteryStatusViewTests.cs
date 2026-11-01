@@ -15,11 +15,11 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class BatteryStatusViewTests
 {
     [AvaloniaTheory]
-    [InlineData(75, "#FFFFFF", false)]
-    [InlineData(75, "#FFFFFF", true)]
+    [InlineData(75, "#CCF5F5F5", false)]
+    [InlineData(75, "#CC000000", true)]
     [InlineData(19, "#FFCC00", false)]
     [InlineData(19, "#FFCC00", true)]
-    public void DischargingBatteryUsesWhiteOrWarningFill(int percentage, string expected, bool light)
+    public void DischargingBatteryUsesIconColorOrWarningFill(int percentage, string expected, bool light)
     {
         var view = new BatteryStatusView
         {
@@ -46,7 +46,7 @@ public sealed class BatteryStatusViewTests
             var baseBrush = Assert.IsAssignableFrom<ISolidColorBrush>(icon.BaseBrush);
             var baseColor = baseBrush.Color;
             var background = light ? 240 : 32;
-            var alpha = baseColor.A / 255d * baseBrush.Opacity * 0.35;
+            var alpha = baseColor.A / 255d * baseBrush.Opacity * 0.6;
             var expectedEmpty = (int)Math.Round(background * (1 - alpha) + baseColor.R * alpha);
             Assert.InRange((int)pixels.GetPixel(19, 30).Red, expectedEmpty - 2, expectedEmpty + 2);
         }
@@ -76,7 +76,7 @@ public sealed class BatteryStatusViewTests
             var wrapped = status.FindControl<BatteryLevelIcon>("LevelIcon")!;
             Assert.Equal(24, status.IconWidth);
             Assert.Equal(18, status.IconHeight);
-            Assert.Equal(Colors.White, Assert.IsAssignableFrom<ISolidColorBrush>(standalone.FillBrush).Color);
+            Assert.Equal(Color.Parse(light ? "#CC000000" : "#CCF5F5F5"), Assert.IsAssignableFrom<ISolidColorBrush>(standalone.FillBrush).Color);
             Assert.Equal(Assert.IsAssignableFrom<ISolidColorBrush>(wrapped.FillBrush).Color,
                 Assert.IsAssignableFrom<ISolidColorBrush>(standalone.FillBrush).Color);
             Assert.Equal(Assert.IsAssignableFrom<ISolidColorBrush>(wrapped.BaseBrush).Color,
@@ -161,7 +161,7 @@ public sealed class BatteryStatusViewTests
             var body = icon.FindControl<Avalonia.Controls.Shapes.Path>("BatteryBody")!;
             Assert.NotNull(body.Data);
             Assert.Equal(icon.BaseBrush, body.Fill);
-            Assert.Equal(0.35, body.Opacity, 2);
+            Assert.Equal(0.6, body.Opacity, 2);
         }
         finally { window.Close(); }
     }
