@@ -5,6 +5,7 @@ using Avalonia.Controls.Presenters;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.VisualTree;
+using Avalonia.Threading;
 using Xunit;
 
 namespace DaisyOS.ShellDemo.Tests;
@@ -34,7 +35,7 @@ public sealed class TrackpadScrollingTests
             Send(scroll, window, new Vector(0, 1)); // Reversal applies immediately.
             Assert.Equal(113, scroll.Offset.Y);
             Send(scroll, window, default, end: true);
-            Assert.Equal(113, scroll.Offset.Y); // Release adds no delayed distance.
+            Assert.Equal(113, scroll.Offset.Y); // Momentum begins on the next frame.
             Send(scroll, window, new Vector(0, -1), precise: false);
             Assert.Equal(163, scroll.Offset.Y); // Mouse wheels retain their 50px step.
             Send(scroll, window, new Vector(0, -2), modifiers: KeyModifiers.Shift);
@@ -48,7 +49,7 @@ public sealed class TrackpadScrollingTests
     {
         var content = new StackPanel();
         for (var i = 0; i < 20; i++) content.Children.Add(new Border { Height = 100 });
-        var scroll = new ScrollViewer { Content = content, VerticalSnapPointsType = SnapPointsType.Mandatory };
+        var scroll = new ScrollViewer { Content = content, VerticalSnapPointsType = SnapPointsType.Mandatory, IsScrollInertiaEnabled = false };
         var window = new Window { Width = 500, Height = 300, Content = scroll };
         window.Show();
         try
@@ -83,13 +84,55 @@ public sealed class TrackpadScrollingTests
         finally { window.Close(); }
     }
 
+    [AvaloniaTheory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task ReleaseContinuesScrollingOnlyWhenInertiaIsEnabled(bool enabled)
+    {
+        var scroll = new ScrollViewer
+        {
+            IsScrollInertiaEnabled = enabled,
+            Content = new Border { Height = 10000 }
+        };
+        var window = new Window { Width = 500, Height = 300, Content = scroll };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            for (ulong time = 16; time <= 80; time += 16)
+                Send(scroll, window, new Vector(0, -4), timestamp: time);
+            var released = scroll.Offset.Y;
+            Send(scroll, window, new Vector(0, -1), end: true, timestamp: 88);
+            released += 4; // Final motion and release can share a Wayland frame.
+            Assert.Equal(released, scroll.Offset.Y);
+            await Task.Delay(100);
+            Dispatcher.UIThread.RunJobs();
+            if (enabled) Assert.True(scroll.Offset.Y > released);
+            else Assert.Equal(released, scroll.Offset.Y);
+
+            // A new finger movement stops the previous fling immediately.
+            Send(scroll, window, new Vector(0, 1), timestamp: 200);
+            var interrupted = scroll.Offset.Y;
+            await Task.Delay(100);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(interrupted, scroll.Offset.Y);
+
+            // Holding still before lifting must not revive old momentum.
+            Send(scroll, window, default, end: true, timestamp: 400);
+            await Task.Delay(100);
+            Dispatcher.UIThread.RunJobs();
+            Assert.Equal(interrupted, scroll.Offset.Y);
+        }
+        finally { window.Close(); }
+    }
+
     private static void Send(Control source, Window window, Vector delta, bool precise = true,
-        bool end = false, KeyModifiers modifiers = KeyModifiers.None)
+        bool end = false, KeyModifiers modifiers = KeyModifiers.None, ulong timestamp = 0)
     {
         if (source is ScrollViewer)
             source = source.GetVisualDescendants().OfType<ScrollContentPresenter>().First();
         using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
-        source.RaiseEvent(new PointerWheelEventArgs(source, pointer, window, new Point(50, 50), 0,
+        source.RaiseEvent(new PointerWheelEventArgs(source, pointer, window, new Point(50, 50), timestamp,
             new PointerPointProperties(), modifiers, delta) { IsPrecise = precise, IsScrollEnd = end });
     }
 

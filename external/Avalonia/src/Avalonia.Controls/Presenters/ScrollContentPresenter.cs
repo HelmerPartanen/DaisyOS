@@ -6,6 +6,7 @@ using Avalonia.Input;
 using Avalonia.Input.GestureRecognizers;
 using Avalonia.Layout;
 using Avalonia.Reactive;
+using Avalonia.Threading;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
 
@@ -80,6 +81,11 @@ namespace Avalonia.Controls.Presenters
         public static readonly StyledProperty<bool> IsScrollChainingEnabledProperty =
             ScrollViewer.IsScrollChainingEnabledProperty.AddOwner<ScrollContentPresenter>();
 
+        private readonly Queue<(ulong Time, Vector Delta)> _wheelSamples = new();
+        private DispatcherTimer? _wheelInertiaTimer;
+        private Vector _wheelVelocity;
+        private long _wheelInertiaTime;
+
         private bool _arranging;
         private Size _extent;
         private IDisposable? _logicalScrollSubscription;
@@ -121,6 +127,9 @@ namespace Avalonia.Controls.Presenters
             AddHandler(InputElement.ScrollGestureEvent, OnScrollGesture);
             AddHandler(InputElement.ScrollGestureEndedEvent, OnScrollGestureEnded);
             AddHandler(InputElement.ScrollGestureInertiaStartingEvent, OnScrollGestureInertiaStartingEnded);
+
+            AddHandler(PointerPressedEvent, (_, _) => StopWheelInertia(),
+                Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
 
             this.GetObservable(ChildProperty).Subscribe(UpdateScrollableSubscription);
         }
@@ -327,6 +336,12 @@ namespace Avalonia.Controls.Presenters
             AttachToScrollViewer();
         }
 
+        protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
+        {
+            StopWheelInertia();
+            base.OnDetachedFromVisualTree(e);
+        }
+
         /// <summary>
         /// Locates the first <see cref="ScrollViewer"/> ancestor and binds to it. Properties which have been set through other means are not bound.
         /// </summary>
@@ -530,6 +545,8 @@ namespace Avalonia.Controls.Presenters
 
         private void OnScrollGesture(object? sender, ScrollGestureEventArgs e)
         {
+            StopWheelInertia();
+
             if (Extent.Height > Viewport.Height || Extent.Width > Viewport.Width)
             {
                 var scrollable = Child as ILogicalScrollable;
@@ -698,6 +715,13 @@ namespace Avalonia.Controls.Presenters
         /// <inheritdoc/>
         protected override void OnPointerWheelChanged(PointerWheelEventArgs e)
         {
+            if (!e.IsPrecise || !e.IsScrollEnd)
+            {
+                _wheelInertiaTimer?.Stop();
+                if (!e.IsPrecise)
+                    _wheelSamples.Clear();
+            }
+
             if (Extent.Height > Viewport.Height || Extent.Width > Viewport.Width)
             {
                 var scrollable = Child as ILogicalScrollable;
@@ -747,17 +771,117 @@ namespace Avalonia.Controls.Presenters
                     x = Math.Min(x, Extent.Width - Viewport.Width);
                 }
 
+                var previousOffset = Offset;
+                if (e.IsPrecise)
+                {
+                    if (e.IsScrollEnd)
+                    {
+                        // A Wayland frame may contain final motion and axis_stop.
+                        if (x != Offset.X || y != Offset.Y)
+                            RecordWheelSample(e.Timestamp, new Vector(x, y) - Offset);
+                        SetCurrentValue(OffsetProperty, new Vector(x, y));
+                        if (StartWheelInertia(e.Timestamp))
+                        {
+                            e.Handled = true;
+                            return;
+                        }
+                    }
+                    else
+                    {
+                        RecordWheelSample(e.Timestamp, new Vector(x, y) - Offset);
+                    }
+                }
+
                 // Track fingers continuously. Snap only after release, to the
                 // nearest point rather than jumping a whole item per sample.
                 Vector newOffset = e.IsPrecise && !e.IsScrollEnd
                     ? new Vector(x, y)
                     : SnapOffset(new Vector(x, y), delta, !e.IsPrecise);
 
-                bool offsetChanged = newOffset != Offset;
+                bool offsetChanged = newOffset != previousOffset;
                 SetCurrentValue(OffsetProperty, newOffset);
 
                 e.Handled = !IsScrollChainingEnabled || offsetChanged;
             }
+        }
+
+        private void RecordWheelSample(ulong time, Vector delta)
+        {
+            if (_wheelSamples.Count > 0)
+            {
+                var last = _wheelSamples.Last();
+                if (time < last.Time || time - last.Time > 100 ||
+                    delta.X * last.Delta.X + delta.Y * last.Delta.Y < 0)
+                    _wheelSamples.Clear();
+            }
+            _wheelSamples.Enqueue((time, delta));
+            while (_wheelSamples.Count > 32 ||
+                (_wheelSamples.Count > 1 && time - _wheelSamples.Peek().Time > 80))
+                _wheelSamples.Dequeue();
+        }
+
+        private bool StartWheelInertia(ulong time)
+        {
+            if (_wheelSamples.Count == 0)
+                return false;
+            var first = _wheelSamples.Peek();
+            var last = _wheelSamples.Last();
+            var distance = new Vector();
+            foreach (var sample in _wheelSamples)
+                distance += sample.Delta;
+            _wheelSamples.Clear();
+            if (!(_owner?.IsScrollInertiaEnabled ?? ScrollViewer.GetIsScrollInertiaEnabled(this)) ||
+                time < last.Time || time - last.Time > 100)
+                return false;
+
+            // Include a sample interval and any pause before release. Offsets
+            // already use pixels or logical item units, so retain those units.
+            _wheelVelocity = distance / Math.Max(16, (double)(time - first.Time) + 8);
+            if (_wheelVelocity.Length < 0.01)
+                return false;
+            if (_wheelInertiaTimer == null)
+            {
+                _wheelInertiaTimer = new DispatcherTimer(DispatcherPriority.Render)
+                {
+                    Interval = TimeSpan.FromMilliseconds(16)
+                };
+                _wheelInertiaTimer.Tick += OnWheelInertiaTick;
+            }
+            _wheelInertiaTime = Environment.TickCount64;
+            _wheelInertiaTimer.Start();
+            return true;
+        }
+
+        private void OnWheelInertiaTick(object? sender, EventArgs e)
+        {
+            if (!(_owner?.IsScrollInertiaEnabled ?? ScrollViewer.GetIsScrollInertiaEnabled(this)))
+            {
+                StopWheelInertia();
+                return;
+            }
+            var now = Environment.TickCount64;
+            var elapsed = Math.Min(64, now - _wheelInertiaTime);
+            _wheelInertiaTime = now;
+            var decay = Math.Exp(-elapsed / 250.0);
+            var previous = Offset;
+            SetCurrentValue(OffsetProperty, previous + _wheelVelocity * (250 * (1 - decay)));
+            _wheelVelocity *= decay;
+            if (Offset.X == previous.X)
+                _wheelVelocity = new Vector(0, _wheelVelocity.Y);
+            if (Offset.Y == previous.Y)
+                _wheelVelocity = new Vector(_wheelVelocity.X, 0);
+            if (_wheelVelocity.Length < 0.01)
+            {
+                StopWheelInertia();
+                SetCurrentValue(OffsetProperty, SnapOffset(Offset, default, false));
+            }
+        }
+
+        private void StopWheelInertia()
+        {
+            _wheelInertiaTimer?.Stop();
+            _wheelSamples.Clear();
+            _wheelVelocity = default;
         }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
@@ -813,6 +937,7 @@ namespace Avalonia.Controls.Presenters
 
         private void ChildChanged(AvaloniaPropertyChangedEventArgs e)
         {
+            StopWheelInertia();
             UpdateScrollableSubscription((Control?)e.NewValue);
 
             if (e.OldValue != null)
