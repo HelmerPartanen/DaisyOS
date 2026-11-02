@@ -255,6 +255,8 @@ configure_kwin_for_daisyos() {
   # KWin starts so its overview never attempts to render a separate wallpaper.
   kwriteconfig6 --file kwinrc --group Plugins --key overviewEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key windowviewEnabled false
+  # KWin Zoom owns the built-in three-finger desktop magnification gesture.
+  kwriteconfig6 --file kwinrc --group Plugins --key zoomEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overviewEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v2Enabled false
   kwriteconfig6 --file kwinrc --group Plugins --key daisyos-task-overview-v3Enabled false

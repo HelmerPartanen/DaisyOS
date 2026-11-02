@@ -88,17 +88,18 @@
   <Grid Background="Transparent">
     <Grid x:Name="LauncherContentGrid">
       <Grid Margin="24">
-      <Border x:Name="LauncherRootBorder" Classes="LauncherBackdrop"
+      <controls:ShellFrameBorder x:Name="LauncherRootBorder"
               MaxWidth="{DynamicResource LauncherPanelMaxWidth}" MaxHeight="{DynamicResource LauncherPanelMaxHeight}"
               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-              CornerRadius="{DynamicResource RadiusSurface}"
-              BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              Background="{DynamicResource ShellFrameOuterEdgeBrush}" Padding="1"
+              CornerRadius="{DynamicResource RoundedXXL}"
               BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
               RenderTransformOrigin="50%,50%" ClipToBounds="False">
-
-      <Border x:Name="LauncherPanelClip" ClipToBounds="True"
-              BorderBrush="{DynamicResource ShellFrameInnerHighlightBrush}" BorderThickness="1"
-              CornerRadius="{DynamicResource RadiusSurfaceInner}">
+      <controls:ShellFrameBorder x:Name="LauncherInnerFrame" Background="Transparent"
+              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
+              BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+      <Border x:Name="LauncherPanelClip" Classes="LauncherBackdrop" ClipToBounds="True"
+              CornerRadius="{DynamicResource RoundedXXLDoubleInset}">
       <Grid x:Name="LauncherInteractiveContent"
             Margin="22"
             Background="Transparent"
@@ -239,7 +240,7 @@
                 </ItemsControl.ItemsPanel>
               </controls:LauncherItemsControl>
 
-              <controls:LauncherItemsControl x:Name="ApplicationGrid" ItemsSource="{Binding PageApps}"
+              <controls:LauncherItemsControl x:Name="ApplicationGrid"
                             Width="{Binding PageGridWidth}" Height="{Binding PageGridHeight}"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
                             ItemTemplate="{StaticResource LauncherTileTemplate}">
@@ -313,7 +314,8 @@
       </Grid>
 
       </Border>
-      </Border>
+      </controls:ShellFrameBorder>
+      </controls:ShellFrameBorder>
       </Grid>
 
       <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"

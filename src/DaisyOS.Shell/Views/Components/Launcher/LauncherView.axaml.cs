@@ -34,8 +34,10 @@ public partial class LauncherView : UserControl
     private readonly Border _launcherRoot;
     private readonly Grid _launcherStage;
     private readonly Grid _pageViewport;
-    private readonly ItemsControl _applicationGrid;
-    private readonly ItemsControl _outgoingPageGrid;
+    private ItemsControl _applicationGrid;
+    private ItemsControl _outgoingPageGrid;
+    internal ItemsControl CurrentPageGrid => _applicationGrid;
+    internal ItemsControl NeighbourPageGrid => _outgoingPageGrid;
     private Border? _powerMenu;
     private Border? _appContextMenu;
     private readonly MenuItem? _appContextUninstallItem;
@@ -61,8 +63,8 @@ public partial class LauncherView : UserControl
     {
         if (UseSolidBackdrop == solid) return;
         UseSolidBackdrop = solid;
-        var root = _launcherRoot;
-        root?.Classes.Set("SolidBackdrop", solid);
+        var fill = this.FindControl<Border>("LauncherPanelClip");
+        fill?.Classes.Set("SolidBackdrop", solid);
         BackdropStyleChanged?.Invoke(this, EventArgs.Empty);
     }
 
@@ -504,12 +506,14 @@ public partial class LauncherView : UserControl
         var direction = offset < 0 ? 1 : -1;
         var index = ViewModel.PageIndex + direction;
         var valid = index >= 0 && index < ViewModel.PageCount;
-        if (_dragNeighbour != index || neighbour.ItemsSource is null)
+        var changed = _dragNeighbour != index || neighbour.ItemsSource is null;
+        if (changed)
         {
             _dragNeighbour = index;
             neighbour.ItemsSource = valid ? ViewModel.GetPageApps(index) : null;
         }
         neighbour.IsVisible = valid;
+        if (valid && changed) neighbour.UpdateLayout();
         // Resist pulling beyond the first or last page.
         var visibleOffset = valid ? offset : 80 * offset / (Math.Abs(offset) + 80);
         current.Opacity = neighbour.Opacity = 1;
@@ -548,7 +552,15 @@ public partial class LauncherView : UserControl
             _committingDrag = true;
             _pageDragging = false;
             _pageDragOffset = 0;
-            if (commit) ViewModel.GoToPage(targetPage);
+            if (commit)
+            {
+                // Keep the page the user is already looking at. Rebinding the
+                // old current grid here reused its icon visuals at the exact
+                // handoff frame and could flash another application's icon.
+                (_applicationGrid, _outgoingPageGrid) = (_outgoingPageGrid, _applicationGrid);
+                _dragNeighbour = -1;
+                ViewModel.GoToPage(targetPage);
+            }
             else OnPageChanged(); // Restore transforms and hit testing even when the index stays unchanged.
             _committingDrag = false;
         }
@@ -607,11 +619,17 @@ public partial class LauncherView : UserControl
         var direction = Math.Sign(ViewModel.PageIndex - _displayedPageIndex);
         _displayedPageIndex = ViewModel.PageIndex;
         _displayedPage = ViewModel.GetPageApps(ViewModel.PageIndex);
+        // A promoted swipe neighbour already owns this exact page snapshot.
+        // Avoid resetting its containers or their image sources at settlement.
+        if (!ReferenceEquals(incoming.ItemsSource, _displayedPage)) incoming.ItemsSource = _displayedPage;
         var generation = ++_pageTransitionGeneration;
         GuiMotion.Cancel(incoming);
         GuiMotion.Cancel(outgoing);
         incoming.Opacity = 1;
         incoming.RenderTransform = null;
+        // Complete recycled tile bindings and arrangement before removing the
+        // already-painted neighbour at a swipe commit. No empty grid frame.
+        if (IsEffectivelyVisible) incoming.UpdateLayout();
         outgoing.IsVisible = false;
         outgoing.ItemsSource = null;
         UpdatePageIndicators();
@@ -624,6 +642,9 @@ public partial class LauncherView : UserControl
         outgoing.IsVisible = true;
         outgoing.Opacity = 1;
         outgoing.RenderTransform = null;
+        // Realize both pages before the first animated frame. Deferred layout
+        // otherwise lets recycled containers briefly disappear during paging.
+        outgoing.UpdateLayout();
         // Move only the tiles: the material, search, dots, and footer stay still.
         var duration = TimeSpan.FromMilliseconds(190);
         await Task.WhenAll(

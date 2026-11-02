@@ -28,6 +28,10 @@ migrates a legacy `[Touchpad]` preference into that default group and leaves
 explicit per-device settings intact. KWin's default-group lookup is in
 [Connection::applyDeviceConfig](https://github.com/KDE/kwin/blob/master/src/backends/libinput/connection.cpp).
 
+## Desktop magnification
+
+DaisyOS disables KWin's Zoom effect (`[Plugins] zoomEnabled=false`) in session setup and bridge installation. This removes its built-in three-finger pinch magnification, including the effect's keyboard magnification actions. Three-finger overview swipes and four-finger launcher pinches remain available. The bridge installer also unloads an already-running Zoom effect.
+
 ## Gesture release behavior
 
 Launcher paging and the three-finger overview swipe track motion directly while

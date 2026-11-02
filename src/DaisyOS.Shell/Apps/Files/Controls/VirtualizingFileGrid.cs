@@ -17,6 +17,7 @@ public class VirtualizingFileGrid : VirtualizingPanel
     private IScrollAnchorProvider? _anchorProvider;
     private int _columns = 1;
     private int _scrollTo = -1;
+    protected virtual bool RealizeEntirePage => false;
     protected virtual double CellWidth => 122;
     protected virtual double CellHeight => 114;
     public int RealizedCount => _realized.Count;
@@ -37,8 +38,8 @@ public class VirtualizingFileGrid : VirtualizingPanel
         _columns = Math.Max(1, (int)(width / CellWidth));
         var height = _viewport.Height > 0 && double.IsFinite(_viewport.Height) ? _viewport.Height : 600;
         var top = Math.Max(0, _viewport.Y);
-        int first = Math.Max(0, (int)(top / CellHeight) - 1) * _columns;
-        int last = Math.Min(Items.Count, ((int)Math.Ceiling((top + height) / CellHeight) + 1) * _columns);
+        int first = RealizeEntirePage ? 0 : Math.Max(0, (int)(top / CellHeight) - 1) * _columns;
+        int last = RealizeEntirePage ? Items.Count : Math.Min(Items.Count, ((int)Math.Ceiling((top + height) / CellHeight) + 1) * _columns);
         foreach (var pair in _realized.ToArray())
             if ((pair.Key < first || pair.Key >= last) && pair.Key != _scrollTo && !pair.Value.IsKeyboardFocusWithin)
                 Recycle(pair.Key);

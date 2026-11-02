@@ -99,6 +99,8 @@ fi
 grep -Fq 'daisyos-shell' "$overview_root/contents/ui/ScreenView.qml"
 grep -Fq 'Bento.layout' "$overview_root/contents/ui/ScreenView.qml"
 grep -Fq 'windowviewEnabled false' "$repo_root/scripts/install-kwin-window-bridge.sh"
+grep -Fq 'zoomEnabled false' "$repo_root/scripts/install-kwin-window-bridge.sh"
+grep -Fq 'org.kde.kwin.Effects.unloadEffect zoom' "$repo_root/scripts/install-kwin-window-bridge.sh"
 grep -Fq 'KWin/Effect --install' "$repo_root/scripts/install-kwin-window-bridge.sh"
 
 echo "KWin window bridge and task overview package checks passed."

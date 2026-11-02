@@ -96,6 +96,8 @@ if command -v kwriteconfig6 >/dev/null 2>&1; then
   kwriteconfig6 --file kwinrc --group Plugins --key "${overview_id}Enabled" true
   kwriteconfig6 --file kwinrc --group Plugins --key overviewEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key windowviewEnabled false
+  # KWin Zoom owns the built-in three-finger desktop magnification gesture.
+  kwriteconfig6 --file kwinrc --group Plugins --key zoomEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
   kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
   kwriteconfig6 --file kglobalshortcutsrc --group plasmashell --key 'activate application launcher' 'none,none,Activate Application Launcher'
@@ -160,6 +162,7 @@ except Exception as error:
 # command scripts work, but no long-lived bridge observes added/removed/state
 # events until the compositor itself is restarted.
 if command -v qdbus6 >/dev/null 2>&1; then
+  qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.unloadEffect zoom >/dev/null 2>&1 || true
   for legacy_overview_id in "${legacy_overview_ids[@]}"; do
     if command -v kwriteconfig6 >/dev/null 2>&1; then
       kwriteconfig6 --file kwinrc --group Plugins --key "${legacy_overview_id}Enabled" false

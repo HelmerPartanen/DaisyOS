@@ -87,7 +87,7 @@ public sealed class LauncherPagingTests
             launcher.CloseImmediate();
             launcher.AnimateIn();
             Assert.Equal(0, model.PageIndex);
-            var outgoing = launcher.FindControl<ItemsControl>("OutgoingPageGrid")!;
+            var outgoing = launcher.NeighbourPageGrid;
             Assert.False(outgoing.IsVisible);
             Assert.Null(outgoing.ItemsSource);
         }
@@ -106,7 +106,7 @@ public sealed class LauncherPagingTests
         try
         {
             window.UpdateLayout();
-            var grid = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
+            var grid = launcher.CurrentPageGrid;
             Button[] Tiles() => grid.GetVisualDescendants().OfType<Button>()
                 .Where(button => button.Classes.Contains("LauncherTile") && button.IsEffectivelyVisible).ToArray();
             void CheckBindings(Button[] tiles)
@@ -197,7 +197,7 @@ public sealed class LauncherPagingTests
             Scroll(-32, 4000);
             Scroll(0, 4200, true); // A stationary hold removes flick intent.
             Assert.Equal(0, model.PageIndex);
-            Assert.True(launcher.FindControl<ItemsControl>("ApplicationGrid")!.IsHitTestVisible);
+            Assert.True(launcher.CurrentPageGrid.IsHitTestVisible);
         }
         finally { window.Close(); }
     }
@@ -290,8 +290,8 @@ public sealed class LauncherPagingTests
         try
         {
             window.UpdateLayout();
-            var incoming = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
-            var outgoing = launcher.FindControl<ItemsControl>("OutgoingPageGrid")!;
+            var incoming = launcher.CurrentPageGrid;
+            var outgoing = launcher.NeighbourPageGrid;
             var dots = launcher.FindControl<StackPanel>("LauncherPageIndicators")!;
             var firstDot = dots.Children[0];
             var previousApps = model.PageApps.ToArray();
@@ -326,8 +326,8 @@ public sealed class LauncherPagingTests
         {
             window.UpdateLayout();
             var viewport = launcher.FindControl<Grid>("LauncherPageViewport")!;
-            var current = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
-            var neighbour = launcher.FindControl<ItemsControl>("OutgoingPageGrid")!;
+            var current = launcher.CurrentPageGrid;
+            var neighbour = launcher.NeighbourPageGrid;
             using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
             ulong time = 1000;
             void Scroll(double x, bool end = false) => viewport.RaiseEvent(new PointerWheelEventArgs(
@@ -349,11 +349,15 @@ public sealed class LauncherPagingTests
             Scroll(-220);
             Scroll(0, true);
             Assert.Equal(1, model.PageIndex);
+            current = launcher.CurrentPageGrid;
+            neighbour = launcher.NeighbourPageGrid;
             Assert.Null(current.RenderTransform);
-            Assert.True(current.IsHitTestVisible);
+            Assert.True(launcher.CurrentPageGrid.IsHitTestVisible);
             Scroll(220);
             Scroll(0, true);
             Assert.Equal(0, model.PageIndex);
+            current = launcher.CurrentPageGrid;
+            neighbour = launcher.NeighbourPageGrid;
             Scroll(160); // Resist dragging past the first page.
             Assert.Equal(80d * 160 / 240, current.RenderTransform!.Value.M31, 5);
             Assert.False(neighbour.IsVisible);
@@ -421,7 +425,7 @@ public sealed class LauncherPagingTests
         {
             window.UpdateLayout();
             var viewport = launcher.FindControl<Grid>("LauncherPageViewport")!;
-            var current = launcher.FindControl<ItemsControl>("ApplicationGrid")!;
+            var current = launcher.CurrentPageGrid;
             using var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true);
             ulong time = 1000;
             void Scroll(Vector delta, bool end = false) => viewport.RaiseEvent(new PointerWheelEventArgs(
@@ -437,7 +441,7 @@ public sealed class LauncherPagingTests
             Scroll(new Vector(-60, 0));
             launcher.BeginInteractiveReveal(false); // Pinching interrupts page motion safely.
             Assert.Null(current.RenderTransform);
-            Assert.False(launcher.FindControl<ItemsControl>("OutgoingPageGrid")!.IsVisible);
+            Assert.False(launcher.NeighbourPageGrid.IsVisible);
             launcher.EndInteractiveReveal(true, () => { });
             Scroll(new Vector(0, -220)); // A new swipe may select the other axis.
             Scroll(default, true);

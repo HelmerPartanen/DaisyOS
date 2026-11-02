@@ -50,7 +50,7 @@ public sealed class UsabilityTests
             window.UpdateLayout();
 
             Assert.DoesNotContain(model.PageApps, app => firstPage.Contains(app));
-            Assert.Equal(model.PageApps.Count, launcher.FindControl<ItemsControl>("ApplicationGrid")!.ItemCount);
+            Assert.Equal(model.PageApps.Count, launcher.CurrentPageGrid.ItemCount);
         }
         finally { window.Close(); }
     }
