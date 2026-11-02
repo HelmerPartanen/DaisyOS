@@ -732,6 +732,7 @@ public partial class LauncherView : UserControl
         });
         Focusable = true;
         AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, RoutingStrategies.Tunnel);
+        AddHandler(InputElement.PointerReleasedEvent, OnEmptySpacePointerReleased, RoutingStrategies.Tunnel);
         AddHandler(InputElement.LostFocusEvent, OnLostFocus, RoutingStrategies.Tunnel);
 
         var powerButton = this.FindControl<Button>("PowerButton");
@@ -1230,8 +1231,18 @@ public partial class LauncherView : UserControl
             return;
         }
 
-        // Keep search immediately ready for typing while clearing any stale tile focus.
+        // The default pointer focus handler would focus the launcher after
+        // this tunnel handler, immediately undoing the search focus.
         FocusSearchAtEnd();
+        e.Handled = true;
+    }
+
+    private void OnEmptySpacePointerReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        // Avalonia also applies pointer focus on release. Preserve the search
+        // focus for the entire click, while leaving buttons and text editing alone.
+        if (e.Source is Visual source && !IsInteractive(source) && IsWithinInteractiveSurface(source))
+            e.Handled = true;
     }
 
     private static bool IsInteractive(Visual source) =>

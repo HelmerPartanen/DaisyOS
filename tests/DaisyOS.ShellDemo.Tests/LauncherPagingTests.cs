@@ -15,6 +15,38 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class LauncherPagingTests
 {
     [AvaloniaFact]
+    public void ClickingEmptyLauncherSpaceKeepsSearchFocusedThroughoutTheClick()
+    {
+        var launcher = new LauncherView(new LauncherViewModel(null, Array.Empty<AppEntry>()));
+        var window = new Window { Width = 1280, Height = 900, Content = launcher };
+        window.Show();
+        try
+        {
+            window.UpdateLayout();
+            var search = launcher.GetVisualDescendants().OfType<TextBox>()
+                .Single(input => input.Name == "SearchInput");
+            var content = launcher.FindControl<Grid>("LauncherInteractiveContent")!;
+            var point = content.TranslatePoint(new Point(8, 8), window)!.Value;
+            window.MouseMove(point);
+            var hit = window.InputHitTest(point) as Visual;
+            Assert.True(hit is not null, $"Empty-space point {point}; window {window.Bounds}; content {content.Bounds}");
+            Assert.True(launcher.IsWithinInteractiveContent(hit!));
+            search.Focus();
+            var focusLosses = 0;
+            search.LostFocus += (_, _) => focusLosses++;
+            for (var i = 0; i < 3; i++)
+            {
+                window.MouseDown(point, MouseButton.Left);
+                Assert.True(search.IsFocused);
+                window.MouseUp(point, MouseButton.Left);
+                Assert.True(search.IsFocused);
+            }
+            Assert.Equal(0, focusLosses);
+        }
+        finally { launcher.CloseImmediate(); window.Close(); }
+    }
+
+    [AvaloniaFact]
     public void ResolvingAQueuedSearchDoesNotReapplyItAfterPageNavigation()
     {
         var model = new LauncherViewModel(null, Enumerable.Range(0, 3000)
