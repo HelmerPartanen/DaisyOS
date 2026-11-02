@@ -45,7 +45,7 @@ public sealed class WidgetLibraryLayoutTests
                 var area = library.FindControl<Grid>("PreviewArea")!;
                 var panel = library.FindControl<Control>($"{category}PreviewsPanel")!;
                 var cards = panel.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("PreviewCard")).ToArray();
-                Assert.Equal(category is "Photos" or "Clock" ? 3 : 2, cards.Length);
+                Assert.Equal(category is "Photos" or "Clock" or "Media" ? 3 : 2, cards.Length);
                 Assert.Equal(cards.Length, panel.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("SizeBadge")));
                 var rectangles = cards.Select(card =>
                 {
@@ -66,7 +66,11 @@ public sealed class WidgetLibraryLayoutTests
                 if (category == "Calendar")
                     Assert.InRange(cards[1].Bounds.Width / mediumWidth, 4d / 3 - 0.02, 4d / 3 + 0.02);
                 if (category == "Media")
+                {
+                    Assert.Equal("5,6", cards[2].Tag);
                     Assert.InRange(cards[1].Bounds.Width / mediumWidth, 5d / 3 - 0.02, 5d / 3 + 0.02);
+                    Assert.InRange(cards[2].Bounds.Height / mediumHeight, 2.98, 3.02);
+                }
                 if (category == "Photos")
                 {
                     Assert.Empty(panel.GetVisualDescendants().OfType<Image>());

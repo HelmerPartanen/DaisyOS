@@ -63,8 +63,11 @@ public partial class WidgetLibraryOverlay : UserControl
             var parts = spans.Split(',');
             double width = int.Parse(parts[0]) * cellWidth;
             double height = int.Parse(parts[1]) * cellHeight;
-            card.Width = width * scale;
-            card.Height = height * scale;
+            var cardScale = card.FindAncestorOfType<Grid>() is not null && card.GetVisualAncestors().OfType<Grid>().Any(g => g.Name == "MediaPreviewsPanel")
+                ? Math.Clamp(Math.Min((area.Bounds.Width - 36) / (10 * cellWidth), (area.Bounds.Height - 100) / (6 * cellHeight)), 0, 1)
+                : scale;
+            card.Width = width * cardScale;
+            card.Height = height * cardScale;
             if (card.Child is Viewbox { Child: Grid content })
             {
                 content.Width = width;
@@ -232,6 +235,12 @@ public partial class WidgetLibraryOverlay : UserControl
         {
             StartDragForPreview("media", 5, 2, card, e);
         }
+    }
+
+    private void OnMediaExtraLargePressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control card)
+            StartDragForPreview("media", 5, DaisyOS.Shell.DesktopWidgets.MediaWidget.ExtraLargeRows, card, e);
     }
 
     private void OnPhotosMediumPressed(object? sender, PointerPressedEventArgs e)

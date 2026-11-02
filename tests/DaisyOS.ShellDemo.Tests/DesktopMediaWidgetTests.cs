@@ -7,6 +7,7 @@ using System.IO;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DaisyOS.Shell.DesktopWidgets;
 using Xunit;
 
@@ -78,6 +79,12 @@ public sealed class DesktopMediaWidgetTests
             await Task.Delay(450);
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
+            var title = widget.FindControl<DaisyOS.Shell.Controls.MarqueeText>("LargeTitle")!;
+            var titleText = Assert.Single(title.GetVisualDescendants().OfType<TextBlock>());
+            var artist = widget.FindControl<TextBlock>("LargeArtist")!;
+            Assert.Equal(Avalonia.Media.TextAlignment.Left, titleText.TextAlignment);
+            Assert.Equal(artist.TranslatePoint(default, widget)!.Value.X,
+                titleText.TranslatePoint(default, widget)!.Value.X, 1);
             var track = widget.FindControl<Border>("LargeProgressTrack")!;
             var fill = widget.FindControl<Border>("LargeProgressFill")!;
             Assert.True(track.Bounds.Width > 0);
@@ -193,9 +200,8 @@ public sealed class DesktopMediaWidgetTests
             Assert.Equal(artwork.Bounds.Width, artwork.Bounds.Height, 2);
             Assert.True(artwork.Bounds.Width > 280);
             Assert.Equal(new CornerRadius(14), artwork.CornerRadius);
-            var title = widget.FindControl<TextBlock>("LargeTitle")!;
+            var title = widget.FindControl<DaisyOS.Shell.Controls.MarqueeText>("LargeTitle")!;
             var artist = widget.FindControl<TextBlock>("LargeArtist")!;
-            Assert.Equal(Avalonia.Media.TextAlignment.Left, title.TextAlignment);
             Assert.Equal(Avalonia.Media.TextAlignment.Left, artist.TextAlignment);
             Assert.Equal(artwork.TranslatePoint(default, widget)!.Value.X,
                 title.TranslatePoint(default, widget)!.Value.X, 1);

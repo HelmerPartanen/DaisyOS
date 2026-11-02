@@ -206,6 +206,8 @@ public sealed class DesktopDragController
 
     public void CancelDrag(DesktopViewModel? viewModel = null, Action? invalidatePanel = null)
     {
+        if (_pressedItem == null && _draggedItem == null && ActiveSession == null) return;
+
         if (_draggedItem != null)
         {
             _draggedItem.IsDragging = false;

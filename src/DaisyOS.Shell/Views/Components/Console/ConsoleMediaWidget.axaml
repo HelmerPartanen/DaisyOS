@@ -107,7 +107,7 @@
 
       <!-- Track Info -->
       <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="2" Margin="12,0,16,0">
-        <TextBlock x:Name="MediaTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
+        <controls:MarqueeText x:Name="MediaTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="Bold" Foreground="{DynamicResource ContentPrimaryBrush}"/>
         <TextBlock x:Name="MediaArtist" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
       </StackPanel>
 

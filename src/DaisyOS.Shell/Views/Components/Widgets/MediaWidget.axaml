@@ -70,8 +70,7 @@
               </Border>
 
               <StackPanel Grid.Column="1" Margin="10,0,8,0" Spacing="1" VerticalAlignment="Center">
-                <TextBlock x:Name="MediaTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}"
-                           TextTrimming="CharacterEllipsis" MaxLines="1"/>
+                <controls:MarqueeText x:Name="MediaTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}"/>
                 <TextBlock x:Name="MediaArtist" FontSize="{DynamicResource TypeSizeCaption}"
                            Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
               </StackPanel>

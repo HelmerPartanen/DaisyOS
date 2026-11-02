@@ -179,7 +179,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             // Let the rename editor own caret placement and text selection.
             if (sourceVisual is TextBox || sourceVisual?.FindAncestorOfType<TextBox>() is not null)
                 return;
-            if (sourceVisual?.FindAncestorOfType<Button>() is { Name: "RemoveWidgetButton" })
+            if (sourceVisual is Button || sourceVisual?.FindAncestorOfType<Button>() is not null)
             {
                 return;
             }
@@ -236,6 +236,11 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             var surface = (Control?)this.FindControl<Grid>("InteractionSurface") ?? this;
             Point posInSurface = e.GetPosition(surface);
             var wasDragging = _dragController.State == DragState.Reordering;
+            if (!e.GetCurrentPoint(surface).Properties.IsLeftButtonPressed)
+            {
+                _dragController.OnPointerCaptureLost(_viewModel, InvalidateReorderPanel);
+                return;
+            }
 
             _dragController.OnPointerMoved(
                 posInSurface,

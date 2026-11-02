@@ -11,21 +11,23 @@
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
     </Style>
     <Style Selector="StackPanel#LargeMetadata">
-      <Setter Property="HorizontalAlignment" Value="Center" />
-      <Setter Property="Margin" Value="32,0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Margin" Value="0,0,36,0" />
+    </Style>
+    <Style Selector="controls|MarqueeText.mediaMetadata">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
     </Style>
     <Style Selector="TextBlock.mediaMetadata">
-      <Setter Property="HorizontalAlignment" Value="Center" />
-      <Setter Property="TextAlignment" Value="Center" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="TextAlignment" Value="Left" />
     </Style>
     <!-- The artwork is inset 18px inside the 32px outer frame: concentric 14px corners. -->
     <Style Selector="Grid.portrait StackPanel#LargeMetadata">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
       <Setter Property="Margin" Value="0,0,40,0" />
     </Style>
-    <Style Selector="Grid.portrait TextBlock.mediaMetadata">
+    <Style Selector="Grid.portrait controls|MarqueeText.mediaMetadata">
       <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="TextAlignment" Value="Left" />
     </Style>
     <Style Selector="desktopWidgets|MediaWidget">
       <Setter Property="Transitions">
@@ -170,8 +172,8 @@
         <!-- Full-width metadata leaves room for longer song titles. -->
         <Grid x:Name="MediumInfoHost" VerticalAlignment="Bottom" Margin="16,14">
           <StackPanel Spacing="2" VerticalAlignment="Center">
-            <TextBlock x:Name="MediumTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
-                       Foreground="White" TextTrimming="CharacterEllipsis" MaxLines="1" />
+            <controls:MarqueeText x:Name="MediumTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
+                       Foreground="White" />
             <TextBlock x:Name="MediumArtist" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Normal"
                        Foreground="{DynamicResource WhiteAlpha85Brush}" TextTrimming="CharacterEllipsis" MaxLines="1" />
           </StackPanel>
@@ -221,8 +223,8 @@
               RowSpacing="10" VerticalAlignment="Center">
           <Grid Grid.Row="0">
             <StackPanel x:Name="LargeMetadata" VerticalAlignment="Center" Spacing="2">
-              <TextBlock x:Name="LargeTitle" Classes="mediaMetadata" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
-                         Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"
+              <controls:MarqueeText x:Name="LargeTitle" Classes="mediaMetadata" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBody}" FontWeight="SemiBold"
+                         Foreground="{DynamicResource ContentPrimaryBrush}"
                           />
               <TextBlock x:Name="LargeArtist" Classes="mediaMetadata" FontSize="{DynamicResource TypeSizeCaption}"
                          Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"

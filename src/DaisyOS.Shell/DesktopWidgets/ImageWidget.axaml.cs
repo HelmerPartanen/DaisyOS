@@ -26,6 +26,8 @@ public partial class ImageWidget : UserControl
     private int _currentIndex;
     private int _activeLayer; // 0: ImageLayerA, 1: ImageLayerB
     private bool _isPickingImages;
+    private Point? _placeholderPress;
+    private IPointer? _placeholderPointer;
     private readonly DispatcherTimer _timer = new() { Interval = TimeSpan.FromSeconds(5) };
 
     private int _columnSpan = 3;
@@ -268,11 +270,30 @@ public partial class ImageWidget : UserControl
         await PickImagesAsync();
     }
 
-    private async void OnPlaceholderPressed(object? sender, PointerPressedEventArgs e)
+    private void OnPlaceholderPressed(object? sender, PointerPressedEventArgs e)
     {
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed) return;
-        e.Handled = true;
-        await PickImagesAsync();
+        _placeholderPress = e.GetPosition(this);
+        _placeholderPointer = e.Pointer;
+    }
+
+    private void OnPlaceholderReleased(object? sender, PointerReleasedEventArgs e)
+    {
+        var start = _placeholderPress;
+        var matches = _placeholderPointer == e.Pointer;
+        _placeholderPress = null;
+        _placeholderPointer = null;
+        if (!matches || start is null || e.InitialPressMouseButton != MouseButton.Left) return;
+        var delta = e.GetPosition(this) - start.Value;
+        if (delta.X * delta.X + delta.Y * delta.Y >= 36) return;
+        // Let the desktop finish its pointer release before opening a modal picker.
+        Dispatcher.UIThread.Post(async () => await PickImagesAsync());
+    }
+
+    private void OnPlaceholderCaptureLost(object? sender, PointerCaptureLostEventArgs e)
+    {
+        _placeholderPress = null;
+        _placeholderPointer = null;
     }
 
     private void OnPreviousClicked(object? sender, RoutedEventArgs e)

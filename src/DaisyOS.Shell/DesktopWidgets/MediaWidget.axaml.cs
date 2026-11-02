@@ -305,13 +305,13 @@ public partial class MediaWidget : UserControl
         var playTip = _isPlaying ? "Pause" : "Play";
 
         // 1. Medium Layout Updates (Full bleed cover + bottom left text / hover controls)
-        if (this.FindControl<TextBlock>("MediumTitle") is { } mTitle) mTitle.Text = titleText;
+        if (this.FindControl<DaisyOS.Shell.Controls.MarqueeText>("MediumTitle") is { } mTitle) mTitle.Text = titleText;
         if (this.FindControl<TextBlock>("MediumArtist") is { } mArtist) mArtist.Text = artistText;
         if (this.FindControl<DaisyIcon>("MediumPlayPauseGlyph") is { } mGlyph) mGlyph.Icon = playIcon;
         if (this.FindControl<Button>("MediumPlayPauseButton") is { } mBtn) ToolTip.SetTip(mBtn, playTip);
 
         // 2. Large Layout Updates
-        if (this.FindControl<TextBlock>("LargeTitle") is { } lTitle) lTitle.Text = titleText;
+        if (this.FindControl<DaisyOS.Shell.Controls.MarqueeText>("LargeTitle") is { } lTitle) lTitle.Text = titleText;
         if (this.FindControl<TextBlock>("LargeArtist") is { } lArtist) lArtist.Text = artistText;
         if (this.FindControl<DaisyIcon>("LargePlayPauseGlyph") is { } lGlyph) lGlyph.Icon = playIcon;
         if (this.FindControl<Button>("LargePlayPauseButton") is { } lBtn) ToolTip.SetTip(lBtn, playTip);
@@ -483,11 +483,13 @@ public partial class MediaWidget : UserControl
         var bar = new Border
         {
             Width = 3,
-            Height = Math.Max(3, 24 * idleScale),
+            Height = 24,
+            RenderTransformOrigin = new RelativePoint(0.5, 0.5, RelativeUnit.Relative),
+            RenderTransform = new ScaleTransform(1, Math.Max(0.125, idleScale)),
             CornerRadius = new CornerRadius(999),
             ClipToBounds = true,
         };
-        Canvas.SetTop(bar, (28 - bar.Height) / 2);
+        Canvas.SetTop(bar, 2);
 
         var tintLayer = new Border
         {
@@ -560,8 +562,7 @@ public partial class MediaWidget : UserControl
 
     private static void SetSpectrumBarScale(Border bar, double scale, double canvasHeight)
     {
-        bar.Height = Math.Max(bar.Width, 24 * scale);
-        Canvas.SetTop(bar, (canvasHeight - bar.Height) / 2);
+        ((ScaleTransform)bar.RenderTransform!).ScaleY = Math.Clamp(scale, 0.125, 1);
     }
 
     private static async Task<(Bitmap Bitmap, byte[] Bytes)?> LoadArtworkAsync(string? path, CancellationToken cancellationToken)
