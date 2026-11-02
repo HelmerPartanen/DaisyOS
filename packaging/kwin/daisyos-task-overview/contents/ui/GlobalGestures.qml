@@ -67,7 +67,11 @@ Item {
 
     function sendPinch(opening, progress, finished, commit) {
         if (overview.visible) return;
-        var message = { opening: opening, progress: progress, finished: finished, commit: commit };
+        var handler = opening ? pinchIn : pinchOut;
+        var now = gestureClock();
+        Flick.update(handler.flick, progress, now);
+        var message = { opening: opening, progress: progress, finished: finished, commit: commit,
+                        velocity: Flick.velocity(handler.flick, now) };
         // Keep terminal messages in order, but replace stale motion samples.
         var tail = pending.length ? pending[pending.length - 1] : null;
         if (tail && !tail.finished && !finished && tail.opening === opening)
@@ -101,8 +105,9 @@ Item {
         fingerCount: 4
         direction: KWinComponents.PinchGestureHandler.Contracting
         property bool tracking: false
+        property var flick: Flick.createTracker()
         onProgressChanged: {
-            if (progress > 0) tracking = true;
+            if (!tracking && progress > 0) { flick = Flick.createTracker(); tracking = true; }
             if (tracking) gestures.sendPinch(true, progress, false, false);
         }
         onActivated: {
@@ -120,8 +125,9 @@ Item {
         fingerCount: 4
         direction: KWinComponents.PinchGestureHandler.Expanding
         property bool tracking: false
+        property var flick: Flick.createTracker()
         onProgressChanged: {
-            if (progress > 0) tracking = true;
+            if (!tracking && progress > 0) { flick = Flick.createTracker(); tracking = true; }
             if (tracking) gestures.sendPinch(false, progress, false, false);
         }
         onActivated: {

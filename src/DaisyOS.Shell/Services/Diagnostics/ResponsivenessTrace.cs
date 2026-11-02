@@ -12,6 +12,9 @@ public static class ResponsivenessTrace
     private static readonly ConcurrentDictionary<string, long> Pending = new();
     private static readonly SemaphoreSlim FlushGate = new(1);
     private static readonly Stopwatch Clock = Stopwatch.StartNew();
+    private static readonly TimeSpan CaptureDuration = TimeSpan.FromSeconds(
+        int.TryParse(Environment.GetEnvironmentVariable("DAISYOS_RESPONSIVENESS_SECONDS"), out var seconds)
+            ? Math.Clamp(seconds, 1, 600) : 30);
     private static int _count;
     public static bool Enabled => !string.IsNullOrWhiteSpace(Output);
     public static void Begin(string operation)
@@ -30,7 +33,8 @@ public static class ResponsivenessTrace
         using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
         try
         {
-            while (await timer.WaitForNextTickAsync(token))
+            while (Clock.Elapsed < CaptureDuration && Volatile.Read(ref _count) < 100000 &&
+                   await timer.WaitForNextTickAsync(token))
             {
                 Mark("runtime.gc.heap-bytes", durationMs: GC.GetTotalMemory(false));
                 Mark("runtime.gc.gen2-count", durationMs: GC.CollectionCount(2));
@@ -43,7 +47,7 @@ public static class ResponsivenessTrace
     }
     public static void Mark(string stage, string? operation = null, double? durationMs = null)
     {
-        if (!Enabled || Interlocked.Increment(ref _count) > 100000) return;
+        if (!Enabled || Clock.Elapsed >= CaptureDuration || Interlocked.Increment(ref _count) > 100000) return;
         Events.Enqueue(new TraceEntry(Clock.Elapsed.TotalMilliseconds, stage, operation, durationMs, Environment.CurrentManagedThreadId));
     }
     public static IDisposable Measure(string stage, string? operation = null) => Enabled ? new Scope(stage, operation) : Empty.Instance;

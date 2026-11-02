@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Reflection;
+using Pointer = Avalonia.Input.Pointer;
 using System.Text.Json;
 using Avalonia;
 using Avalonia.Controls;
@@ -60,6 +62,9 @@ try
     File.WriteAllText(output, JsonSerializer.Serialize(new
     {
         protocol = 2,
+        shellBuildConfiguration = typeof(App).Assembly.GetCustomAttribute<AssemblyConfigurationAttribute>()?.Configuration,
+        shellAssemblySha256 = Convert.ToHexString(global::System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(typeof(App).Assembly.Location))),
+        presentationMeasured = false,
         mode = "headless Skia CPU preparation and render tick; animations disabled; no KWin presentation",
         catalogSize, samples, coldConstructionOpenRenderMs = coldMs, visibleTiles = tiles,
         metrics = metrics.ToDictionary(x => x.Key, x => Summary(x.Value)),

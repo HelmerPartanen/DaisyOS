@@ -46,7 +46,7 @@ public partial class LauncherView
         ApplyStageTransform(stage, reduced ? 1 : 0.88 + 0.12 * _revealProgress, 0);
     }
 
-    public void EndInteractiveReveal(bool visible, Action completed)
+    public void EndInteractiveReveal(bool visible, Action completed, double velocity = 0)
     {
         if (!_revealInteractive) return;
         _revealInteractive = false;
@@ -55,7 +55,7 @@ public partial class LauncherView
         var generation = ++_revealGeneration;
         var from = _revealProgress;
         var target = visible ? 1d : 0d;
-        var duration = Math.Clamp(220 * Math.Abs(target - from), 80, 220);
+        var duration = GestureSettlement.Duration(target - from, velocity);
         void Finish()
         {
             if (generation != _revealGeneration) return;
@@ -73,9 +73,11 @@ public partial class LauncherView
         void Frame(TimeSpan now)
         {
             if (generation != _revealGeneration) return;
+            if (!IsEffectivelyVisible) { CancelInteractiveReveal(); return; }
             start ??= now;
             var t = Math.Clamp((now - start.Value).TotalMilliseconds / duration, 0, 1);
-            SetRevealProgress(from + (target - from) * (1 - Math.Pow(1 - t, 3)));
+            SetRevealProgress(GestureSettlement.Position(from, target, velocity,
+                (now - start.Value).TotalMilliseconds, duration));
             if (t >= 1) Finish();
             else host.RequestAnimationFrame(Frame);
         }

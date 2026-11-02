@@ -3,13 +3,13 @@
     <AssemblyName>DaisyOS.PerformanceBenchmark</AssemblyName>
     <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
-    <ShellOutput>$(MSBuildThisFileDirectory)../../src/DaisyOS.Shell/bin/Debug/net10.0</ShellOutput>
+    <ShellOutput Condition="'$(ShellOutput)' == ''">$(MSBuildThisFileDirectory)../../src/DaisyOS.Shell/bin/$(Configuration)/net10.0</ShellOutput>
     <AvaloniaOutput>$(MSBuildThisFileDirectory)../../external/Avalonia/src</AvaloniaOutput>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="$(ShellOutput)/*.dll" />
-    <Reference Include="$(AvaloniaOutput)/Headless/Avalonia.Headless/bin/Debug/net10.0/Avalonia.Headless.dll" />
-    <Reference Include="$(AvaloniaOutput)/Avalonia.Fonts.Inter/bin/Debug/net10.0/Avalonia.Fonts.Inter.dll" />
+    <Reference Include="$(AvaloniaOutput)/Headless/Avalonia.Headless/bin/$(Configuration)/net10.0/Avalonia.Headless.dll" />
+    <Reference Include="$(AvaloniaOutput)/Avalonia.Fonts.Inter/bin/$(Configuration)/net10.0/Avalonia.Fonts.Inter.dll" />
     <None Include="$(ShellOutput)/runtimes/linux-x64/native/*" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

@@ -9,6 +9,30 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public class LauncherIconLoaderTests
 {
+    [AvaloniaFact]
+    public async Task GamingSuspensionCancelsCatalogWorkAndResumeDoesNotStartABurst()
+    {
+        using var loader = new LauncherIconLoader();
+        var items = Enumerable.Range(0, 32).Select(i =>
+            new LauncherItemViewModel(new AppEntry($"suspended-{i}", $"Item {i}", "", "notes", false))).ToArray();
+        loader.Preload(items, 1);
+        var pending = loader.WhenReady;
+        loader.SetBackgroundSuspended(true, []);
+        await WaitForCompletion(pending);
+        Assert.All(items, item => Assert.Null(item.IconBitmap));
+        loader.Preload(items, 1);
+        await WaitForCompletion(loader.WhenReady);
+        Assert.All(items, item => Assert.Null(item.IconBitmap));
+        loader.SetBackgroundSuspended(false, []);
+        Dispatcher.UIThread.RunJobs();
+        Assert.All(items, item => Assert.Null(item.IconBitmap));
+        // A deliberately requested visible tile can still load during gaming.
+        loader.SetBackgroundSuspended(true, []);
+        loader.Register(items[0], 1);
+        await WaitForIcon(items[0], loader.WhenReady);
+        Assert.All(items.Skip(1), item => Assert.Null(item.IconBitmap));
+    }
+
     [Fact]
     public void SystemMonitorUsesNativeThemeIcons()
     {
@@ -93,6 +117,14 @@ public class LauncherIconLoaderTests
         await cancelled;
         Assert.All(old, item => Assert.Null(item.IconBitmap));
         Assert.Null(current.IconBitmap);
+    }
+
+    private static async Task WaitForCompletion(Task completion)
+    {
+        for (var i = 0; i < 250 && !completion.IsCompleted; i++)
+        { await Task.Delay(20); Dispatcher.UIThread.RunJobs(); }
+        Assert.True(completion.IsCompleted);
+        await completion;
     }
 
     private static async Task WaitForIcon(LauncherItemViewModel item, Task completion)

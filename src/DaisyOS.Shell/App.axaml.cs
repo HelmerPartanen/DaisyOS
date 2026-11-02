@@ -678,6 +678,7 @@ public partial class App : Application
             return regions;
         });
         _launcherBlur = launcherBlur;
+        shell.Launcher.SetBackgroundWorkSuspended(SessionState.GamingMode || HasFullscreenWindow());
         shell.Launcher.OpenStateChanged += (_, _) => launcherBlur.Invalidate();
         shell.Launcher.BackdropStyleChanged += (_, _) => launcherBlur.RefreshImmediately();
         _blurEffects.Add(new KWinBlur(systemFlyoutSurface, systemFlyoutSurface, () =>
@@ -1398,6 +1399,7 @@ public partial class App : Application
         _launcherReturnWindowId = _compositorWindows?.Windows
             .FirstOrDefault(window => window.IsActive)?.Id;
         _launcherLaunchedApp = false;
+        _shellView.Launcher.SetBackgroundWorkSuspended(SessionState.GamingMode || HasFullscreenWindow());
         _shellView.Launcher.SetSolidBackdrop(SessionState.GamingMode || HasFullscreenWindow());
         _shellView.ShowLauncher(interactive);
         LauncherVisibilityChanged?.Invoke(this, true);
@@ -1434,7 +1436,8 @@ public partial class App : Application
             _launcherPinchTimeout.Start();
             return;
         }
-        FinishLauncherPinch(update.Commit ? update.Opening : !update.Opening);
+        FinishLauncherPinch(update.Commit ? update.Opening : !update.Opening,
+            ((update.Opening ? 1 : 0) - _launcherPinchStartProgress) * update.Velocity);
     }
 
     private void OnLauncherPinchTimeout(object? sender, EventArgs e)
@@ -1442,7 +1445,7 @@ public partial class App : Application
         if (_launcherPinchOpening is { } opening) FinishLauncherPinch(!opening);
     }
 
-    private void FinishLauncherPinch(bool visible)
+    private void FinishLauncherPinch(bool visible, double velocity = 0)
     {
         _launcherPinchTimeout?.Stop();
         _launcherPinchOpening = null;
@@ -1450,7 +1453,7 @@ public partial class App : Application
         {
             if (visible) _shellView?.Launcher.FocusSearch();
             else HideLauncher(immediate: true);
-        });
+        }, velocity);
     }
 
     private void RestoreLauncherFocus(string? windowId)
@@ -1597,6 +1600,7 @@ public partial class App : Application
                 Volatile.Write(ref _gameTelemetryWindowPid,
                     kwinBridge.Windows.FirstOrDefault(window => window.IsActive)?.ProcessId ?? 0);
                 _recentPrefetch.SetSuspended(SessionState.GamingMode || kwinBridge.HasFullscreenWindow);
+                shell.Launcher.SetBackgroundWorkSuspended(SessionState.GamingMode || kwinBridge.HasFullscreenWindow);
                 foreach (var window in kwinBridge.Windows.Where(window => window.IsActive)) _recentPrefetch.Observe(window);
                 shell.Taskbar.SetCompositorWindows(kwinBridge.Windows);
                 CompositorWindowsChanged?.Invoke(this, EventArgs.Empty);
@@ -1905,6 +1909,7 @@ public partial class App : Application
 
     private void OnGamingPrefetchPolicyChanged(object? sender, EventArgs e)
     {
+        _shellView?.Launcher.SetBackgroundWorkSuspended(SessionState.GamingMode || HasFullscreenWindow());
         _recentPrefetch.SetSuspended(SessionState.GamingMode ||
             (_compositorWindows is KWinWindowBridge bridge && bridge.HasFullscreenWindow));
         if (_shellView?.IsLauncherVisible == true)

@@ -119,7 +119,7 @@ TestCase {
         compare(overview.phase, overview.phaseIdle);
         verify(!overview.visible);
     }
-    function test_closeImmediatelyMovesAfterRelease() {
+    function test_closeMovesAfterReleaseWithZeroInitialVelocity() {
         overview.configuration = { AnimationDuration: 280, ReduceMotion: true };
         overview.activate();
         overview.handleSessionReady(view);
@@ -129,9 +129,9 @@ TestCase {
         overview.updateGesture(0.2);
         overview.endGesture(true, 0);
         wait(60);
-        // Outward easing should already cover meaningful distance, rather
-        // than stalling near the release position with cubic acceleration.
-        verify(overview.transitionProgress < 0.65);
+        // A stationary release starts with zero speed, then moves toward the
+        // endpoint without a jump or a velocity discontinuity.
+        verify(overview.transitionProgress < 0.8);
         tryCompare(overview, "phase", overview.phaseIdle);
     }
 }

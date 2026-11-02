@@ -18,6 +18,7 @@ internal sealed class LauncherIconLoader : IDisposable
     private int _generation;
     private volatile int _preloadGeneration;
     private Task _preloadCompletion = Task.CompletedTask;
+    private bool _backgroundSuspended;
     private sealed class Request(int generation, string iconName, bool isLight)
     {
         public readonly string IconName = iconName;
@@ -41,8 +42,20 @@ internal sealed class LauncherIconLoader : IDisposable
         request.Completion = LoadAsync(item, request, scaling);
     }
     public Task WhenReady => Task.WhenAll(_requests.Values.Select(request => request.Completion).Append(_preloadCompletion));
+    public void SetBackgroundSuspended(bool suspended, IEnumerable<LauncherItemViewModel> visibleItems)
+    {
+        if (_backgroundSuspended == suspended) return;
+        _backgroundSuspended = suspended;
+        if (!suspended) return; // Resume only on a subsequent explicit Preload.
+        ++_preloadGeneration;
+        var visible = visibleItems.ToHashSet();
+        foreach (var pair in _requests.ToArray())
+            if (pair.Value.Finished == 0 && !visible.Contains(pair.Key)) Unregister(pair.Key);
+    }
+
     public void Preload(IEnumerable<LauncherItemViewModel> items, double scaling)
     {
+        if (_backgroundSuspended) return;
         var ordered = new List<LauncherItemViewModel>();
         var catalog = new HashSet<LauncherItemViewModel>();
         foreach (var item in items)
@@ -64,12 +77,12 @@ internal sealed class LauncherIconLoader : IDisposable
         const int batchSize = 4;
         for (var offset = 0; offset < items.Count; offset += batchSize)
         {
-            if (generation != _preloadGeneration) return;
+            if (_backgroundSuspended || generation != _preloadGeneration) return;
             var start = offset;
             Task[] batch = [];
             await Dispatcher.UIThread.InvokeAsync(() =>
             {
-                if (generation != _preloadGeneration) return;
+                if (_backgroundSuspended || generation != _preloadGeneration) return;
                 var completions = new List<Task>(batchSize);
                 for (var i = start; i < Math.Min(items.Count, start + batchSize); i++)
                 {

@@ -14,7 +14,10 @@ public sealed class LauncherItemsControl : ItemsControl
     protected override void ClearContainerForItemOverride(Control container)
     {
         if (container is ContentPresenter) base.ClearContainerForItemOverride(container);
-        else container.DataContext = null;
+        // The fixed-cell panel hides recycled tiles and bounds its spare pool.
+        // Keep their data context until rebinding to avoid running every tile
+        // binding twice (null, then the next item) on each page/search change.
+        // ContentPresenter containers retain the standard clearing contract.
     }
 
     protected override void PrepareContainerForItemOverride(Control container, object? item, int index)

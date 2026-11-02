@@ -19,6 +19,15 @@ KWinComponents.SceneEffect {
     property bool gestureOpening: true
     property real gestureProgress: 0
     property real gestureStartProgress: 0
+    property real settleFraction: 0
+    property real settleFrom: 0
+    property real settleTo: 1
+    property real settleVelocity: 0
+    onSettleFractionChanged: {
+        if (transitionAnimation.running)
+            transitionProgress = Math.max(0, Math.min(1, Flick.settlePosition(
+                settleFrom, settleTo, settleVelocity, settleFraction * settleDuration, settleDuration)));
+    }
     property int settleDuration: animationDuration
     property int gestureTarget: -1
     property real gestureReleaseVelocity: 0
@@ -41,10 +50,15 @@ KWinComponents.SceneEffect {
     NumberAnimation {
         id: transitionAnimation
         target: effect
-        property: "transitionProgress"
+        property: "settleFraction"
+        from: 0
+        to: 1
         duration: effect.settleDuration
-        easing.type: Easing.OutCubic
-        onFinished: effect.finishTransition()
+        easing.type: Easing.Linear
+        onFinished: {
+            effect.transitionProgress = effect.settleTo;
+            effect.finishTransition();
+        }
     }
 
     Timer {
@@ -105,7 +119,8 @@ KWinComponents.SceneEffect {
     }
 
     function endGesture(commit, releaseVelocity) {
-        gestureReleaseVelocity = isFinite(releaseVelocity) ? releaseVelocity : 0;
+        gestureReleaseVelocity = isFinite(releaseVelocity)
+            ? (gestureOpening ? 1 : -1) * releaseVelocity : 0;
         if (!gestureTracking) return;
         gestureTracking = false;
         var target = commit ? (gestureOpening ? 1 : 0) : (gestureOpening ? 0 : 1);
@@ -131,8 +146,13 @@ KWinComponents.SceneEffect {
             transitionProgress = targetProgress;
             finishTransition();
         } else {
-            transitionAnimation.from = displayed;
-            transitionAnimation.to = targetProgress;
+            settleFrom = displayed;
+            settleTo = targetProgress;
+            // Discrete actions retain the existing cubic-out curve. Gestures
+            // carry their measured velocity into the first settling frame.
+            settleVelocity = isFinite(releaseVelocity) ? releaseVelocity
+                : 3 * (targetProgress - displayed) / settleDuration;
+            settleFraction = 0;
             transitionAnimation.start();
         }
     }

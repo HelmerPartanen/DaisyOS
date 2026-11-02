@@ -51,3 +51,14 @@ function settleDuration(distance, speed, baseDuration) {
     return Math.max(80, Math.min(220, Math.round(Math.abs(distance) /
         Math.max(Math.abs(speed), 1 / Math.max(1, baseDuration)))));
 }
+
+// Same finite Hermite settlement as the shell's GestureSettlement.Position.
+// Speed is position units per millisecond; the endpoint has zero velocity.
+function settlePosition(from, to, speed, elapsed, duration) {
+    if (duration <= 0 || elapsed >= duration) return to;
+    if (elapsed <= 0 || from === to) return from;
+    var t = Math.max(0, Math.min(1, elapsed / duration));
+    var distance = to - from;
+    var tangent = distance * Math.max(-1, Math.min(3, speed * duration / distance));
+    return from + distance * t * t * (3 - 2 * t) + tangent * t * (1 - t) * (1 - t);
+}

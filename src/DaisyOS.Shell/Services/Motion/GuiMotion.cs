@@ -27,6 +27,8 @@ public static class GuiMotion
         public CancellationTokenSource? Animation;
         public CancellationTokenSource? Visibility;
         public bool? RequestedVisible;
+        public Vector TranslationVelocity;
+        public double ScaleVelocity;
     }
     private static readonly ConditionalWeakTable<Control, State> States = new();
 
@@ -178,6 +180,8 @@ public static class GuiMotion
         state.Animation?.Cancel();
         state.Animation?.Dispose();
         state.Animation = null;
+        state.TranslationVelocity = default;
+        state.ScaleVelocity = 0;
         // Clear the transform before restoring opacity so observers never see an
         // opaque frame that is still going through a render transform.
         content.RenderTransform = null;
@@ -202,6 +206,7 @@ public static class GuiMotion
         var startOpacity = interrupted || !entering ? content.Opacity : fadeOnEnter ? 0 : 1;
         var startX = interrupted ? content.RenderTransform?.Value.M31 ?? 0 : entering ? offset.X : 0;
         var startY = interrupted ? content.RenderTransform?.Value.M32 ?? 0 : entering ? offset.Y : 0;
+        var startVelocity = interrupted ? state.TranslationVelocity : default;
         state.Animation?.Cancel();
         state.Animation?.Dispose();
         using var current = CancellationTokenSource.CreateLinkedTokenSource(cancellation);
@@ -242,9 +247,16 @@ public static class GuiMotion
             void Frame(TimeSpan timestamp)
             {
                 if (current.IsCancellationRequested || !ReferenceEquals(state.Animation, current)) return;
+                if (!content.IsEffectivelyVisible || TopLevel.GetTopLevel(content) != frameHost)
+                {
+                    completion.TrySetResult();
+                    return;
+                }
                 var elapsed = lastFrame is { } previous
                     ? Math.Max(0, (timestamp - previous).TotalSeconds) : 0;
                 lastFrame = timestamp;
+                if (elapsed > 0)
+                    Diagnostics.ResponsivenessTrace.Mark("motion.frame.interval", "shell", elapsed * 1000);
                 animationElapsed += elapsed;
                 if (animationElapsed >= duration.TotalSeconds)
                 {
@@ -254,8 +266,14 @@ public static class GuiMotion
                 }
                 var progress = Math.Clamp(animationElapsed / duration.TotalSeconds, 0, 1);
                 var eased = easing.Ease(progress);
-                x = startX + (targetX - startX) * eased;
-                y = startY + (targetY - startY) * eased;
+                var previousX = x;
+                var previousY = y;
+                x = interrupted ? GestureSettlement.Position(startX, targetX, startVelocity.X,
+                    animationElapsed * 1000, duration.TotalMilliseconds) : startX + (targetX - startX) * eased;
+                y = interrupted ? GestureSettlement.Position(startY, targetY, startVelocity.Y,
+                    animationElapsed * 1000, duration.TotalMilliseconds) : startY + (targetY - startY) * eased;
+                if (elapsed > 0)
+                    state.TranslationVelocity = new Vector(x - previousX, y - previousY) / (elapsed * 1000);
                 opacity = startOpacity + (targetOpacity - startOpacity) * eased;
                 transform.X = x;
                 transform.Y = y;
@@ -267,6 +285,8 @@ public static class GuiMotion
         }
         if (!ReferenceEquals(state.Animation, current)) return;
         state.Animation = null;
+        state.TranslationVelocity = default;
+        state.ScaleVelocity = 0;
         content.RenderTransform = !entering && preserveExitPosition
             ? new TranslateTransform(offset.X, offset.Y)
             : null;
@@ -286,6 +306,7 @@ public static class GuiMotion
         var state = GetState(content);
         var interrupted = state.Animation is not null;
         var startScale = interrupted ? content.RenderTransform?.Value.M11 ?? 1 : entering ? closedScale : 1;
+        var startVelocity = interrupted ? state.ScaleVelocity : 0;
         var startOpacity = interrupted || !entering ? content.Opacity : 0;
         state.Animation?.Cancel();
         state.Animation?.Dispose();
@@ -316,9 +337,16 @@ public static class GuiMotion
             void Frame(TimeSpan timestamp)
             {
                 if (current.IsCancellationRequested || !ReferenceEquals(state.Animation, current)) return;
+                if (!content.IsEffectivelyVisible || TopLevel.GetTopLevel(content) != frameHost)
+                {
+                    completion.TrySetResult();
+                    return;
+                }
                 var elapsed = lastFrame is { } previous
                     ? Math.Max(0, (timestamp - previous).TotalSeconds) : 0;
                 lastFrame = timestamp;
+                if (elapsed > 0)
+                    Diagnostics.ResponsivenessTrace.Mark("motion.frame.interval", "shell", elapsed * 1000);
                 animationElapsed += elapsed;
                 if (animationElapsed >= duration.TotalSeconds)
                 {
@@ -328,7 +356,9 @@ public static class GuiMotion
                 }
                 var progress = Math.Clamp(animationElapsed / duration.TotalSeconds, 0, 1);
                 var eased = easing.Ease(progress);
-                var scale = startScale + (targetScale - startScale) * eased;
+                var scale = interrupted ? GestureSettlement.Position(startScale, targetScale, startVelocity,
+                    animationElapsed * 1000, duration.TotalMilliseconds) : startScale + (targetScale - startScale) * eased;
+                if (elapsed > 0) state.ScaleVelocity = (scale - transform.ScaleX) / (elapsed * 1000);
                 transform.ScaleX = scale;
                 transform.ScaleY = scale;
                 content.Opacity = Math.Clamp(startOpacity + (targetOpacity - startOpacity) * eased, 0, 1);
@@ -339,6 +369,8 @@ public static class GuiMotion
         }
         if (!ReferenceEquals(state.Animation, current)) return;
         state.Animation = null;
+        state.TranslationVelocity = default;
+        state.ScaleVelocity = 0;
         content.RenderTransform = entering ? null : new ScaleTransform(closedScale, closedScale);
         content.Opacity = entering ? 1 : 0;
     }

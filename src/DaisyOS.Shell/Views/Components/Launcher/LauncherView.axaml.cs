@@ -356,10 +356,21 @@ public partial class LauncherView : UserControl
 
     private bool _catalogIconsDirty = true;
     private bool _catalogPreloadQueued;
+    private bool _backgroundWorkSuspended;
+
+    public void SetBackgroundWorkSuspended(bool suspended)
+    {
+        if (_backgroundWorkSuspended == suspended) return;
+        _backgroundWorkSuspended = suspended;
+        _catalogIconsDirty = true;
+        _icons.SetBackgroundSuspended(suspended, IsOpen ? ViewModel.PageApps : []);
+        // Leaving a game does not trigger a catalog decode burst. Visible tiles
+        // still register on demand; the next open can preload the catalog.
+    }
 
     private void ScheduleCatalogIconPreload()
     {
-        if (_catalogPreloadQueued || !_catalogIconsDirty) return;
+        if (_backgroundWorkSuspended || _catalogPreloadQueued || !_catalogIconsDirty) return;
         _catalogPreloadQueued = true;
         Dispatcher.UIThread.Post(() =>
         {
@@ -370,7 +381,7 @@ public partial class LauncherView : UserControl
 
     private void PreloadCatalogIcons()
     {
-        if (!_catalogIconsDirty || _iconsReclaimed && !IsOpen) return;
+        if (_backgroundWorkSuspended || !_catalogIconsDirty || _iconsReclaimed && !IsOpen) return;
         _catalogIconsDirty = false;
         _iconsReclaimed = false;
         // Queue currently visible page tiles ahead of off-screen pages for instant first-frame icons.
@@ -394,6 +405,8 @@ public partial class LauncherView : UserControl
         {
             if (!view.IsVisible)
             {
+                view.CancelPageDrag();
+                view.CancelInteractiveReveal();
                 view.ClosePowerMenu();
                 view.CloseAppContextMenu();
             }
@@ -544,13 +557,15 @@ public partial class LauncherView : UserControl
             Finish();
             return;
         }
-        var settleDuration = Math.Clamp(Math.Abs(to - from) / Math.Max(4, Math.Abs(velocity)), 120, 240);
+        var settleDuration = GestureSettlement.Duration(to - from, velocity, 120, 240);
         void Frame(TimeSpan time)
         {
             if (generation != _dragGeneration) return;
+            if (!IsEffectivelyVisible) { CancelPageDrag(); return; }
             start ??= time;
             var t = Math.Clamp((time - start.Value).TotalMilliseconds / settleDuration, 0, 1);
-            _pageDragOffset = from + (to - from) * (1 - Math.Pow(1 - t, 3));
+            _pageDragOffset = Math.Clamp(GestureSettlement.Position(from, to, velocity,
+                (time - start.Value).TotalMilliseconds, settleDuration), -PageStride, PageStride);
             RenderPageDrag(_pageDragOffset);
             if (t >= 1) Finish();
             else host.RequestAnimationFrame(Frame);
@@ -751,6 +766,7 @@ public partial class LauncherView : UserControl
         AddHandler(InputElement.KeyDownEvent, OnLauncherTunnelKeyDown, RoutingStrategies.Tunnel);
         AddHandler(InputElement.TextInputEvent, OnLauncherTunnelTextInput, RoutingStrategies.Tunnel);
 
+        DetachedFromVisualTree += (_, _) => { CancelPageDrag(); CancelInteractiveReveal(); };
         ViewModel = viewModel ?? new LauncherViewModel((Application.Current as App)?.SessionState);
         Loc.RefreshOnChange(this, () => { foreach (var item in ViewModel.AllApps) item.UpdateApp(item.App); _ = ViewModel.ReloadApplicationsAsync(); });
         ViewModel.AllApps.CollectionChanged += (_, _) =>

@@ -6,7 +6,6 @@ using Avalonia.Input;
 using Avalonia.Input.GestureRecognizers;
 using Avalonia.Layout;
 using Avalonia.Reactive;
-using Avalonia.Threading;
 using Avalonia.Utilities;
 using Avalonia.VisualTree;
 
@@ -82,9 +81,10 @@ namespace Avalonia.Controls.Presenters
             ScrollViewer.IsScrollChainingEnabledProperty.AddOwner<ScrollContentPresenter>();
 
         private readonly Queue<(ulong Time, Vector Delta)> _wheelSamples = new();
-        private DispatcherTimer? _wheelInertiaTimer;
+        private int _wheelInertiaGeneration;
+        private bool _wheelInertiaActive;
         private Vector _wheelVelocity;
-        private long _wheelInertiaTime;
+        private TimeSpan? _wheelInertiaTime;
 
         private bool _arranging;
         private Size _extent;
@@ -128,6 +128,10 @@ namespace Avalonia.Controls.Presenters
             AddHandler(InputElement.ScrollGestureEndedEvent, OnScrollGestureEnded);
             AddHandler(InputElement.ScrollGestureInertiaStartingEvent, OnScrollGestureInertiaStartingEnded);
 
+            IsEffectivelyVisibleChanged += (_, _) =>
+            {
+                if (!IsEffectivelyVisible) StopWheelInertia();
+            };
             AddHandler(PointerPressedEvent, (_, _) => StopWheelInertia(),
                 Interactivity.RoutingStrategies.Tunnel, handledEventsToo: true);
 
@@ -717,7 +721,8 @@ namespace Avalonia.Controls.Presenters
         {
             if (!e.IsPrecise || !e.IsScrollEnd)
             {
-                _wheelInertiaTimer?.Stop();
+                ++_wheelInertiaGeneration;
+                _wheelInertiaActive = false;
                 if (!e.IsPrecise)
                     _wheelSamples.Clear();
             }
@@ -823,7 +828,7 @@ namespace Avalonia.Controls.Presenters
         private bool StartWheelInertia(ulong time)
         {
             if (_wheelSamples.Count == 0)
-                return false;
+                return _wheelInertiaActive;
             var first = _wheelSamples.Peek();
             var last = _wheelSamples.Last();
             var distance = new Vector();
@@ -837,31 +842,52 @@ namespace Avalonia.Controls.Presenters
             // Include a sample interval and any pause before release. Offsets
             // already use pixels or logical item units, so retain those units.
             _wheelVelocity = distance / Math.Max(16, (double)(time - first.Time) + 8);
-            if (_wheelVelocity.Length < 0.01)
+            if (!HasWheelVelocity() || !IsEffectivelyVisible || TopLevel.GetTopLevel(this) is not { } host)
                 return false;
-            if (_wheelInertiaTimer == null)
+            _wheelInertiaTime = null;
+            _wheelInertiaActive = true;
+            var generation = ++_wheelInertiaGeneration;
+            // One callback chain per fling. Invalidated callbacks never enqueue
+            // another frame, so hidden/idle viewers do not keep rendering alive.
+            void Frame(TimeSpan timestamp)
             {
-                _wheelInertiaTimer = new DispatcherTimer(DispatcherPriority.Render)
-                {
-                    Interval = TimeSpan.FromMilliseconds(16)
-                };
-                _wheelInertiaTimer.Tick += OnWheelInertiaTick;
+                if (generation != _wheelInertiaGeneration || !_wheelInertiaActive)
+                    return;
+                AdvanceWheelInertia(timestamp);
+                if (generation == _wheelInertiaGeneration && _wheelInertiaActive)
+                    host.RequestAnimationFrame(Frame);
             }
-            _wheelInertiaTime = Environment.TickCount64;
-            _wheelInertiaTimer.Start();
+            host.RequestAnimationFrame(Frame);
             return true;
         }
 
-        private void OnWheelInertiaTick(object? sender, EventArgs e)
+        private bool HasWheelVelocity()
         {
-            if (!(_owner?.IsScrollInertiaEnabled ?? ScrollViewer.GetIsScrollInertiaEnabled(this)))
+            var velocity = _wheelVelocity;
+            if (Child is ILogicalScrollable { IsLogicalScrollEnabled: true } logical)
+            {
+                var size = Bounds.Size / logical.Viewport;
+                velocity = new Vector(velocity.X * size.X, velocity.Y * size.Y);
+            }
+            return double.IsFinite(velocity.X) && double.IsFinite(velocity.Y) && velocity.Length >= 0.01;
+        }
+
+        private void AdvanceWheelInertia(TimeSpan timestamp)
+        {
+            if (!_wheelInertiaActive) return;
+            if (!IsEffectivelyVisible ||
+                !(_owner?.IsScrollInertiaEnabled ?? ScrollViewer.GetIsScrollInertiaEnabled(this)))
             {
                 StopWheelInertia();
                 return;
             }
-            var now = Environment.TickCount64;
-            var elapsed = Math.Min(64, now - _wheelInertiaTime);
-            _wheelInertiaTime = now;
+            var elapsed = _wheelInertiaTime is { } previousTime
+                ? Math.Max(0, (timestamp - previousTime).TotalMilliseconds) : 0;
+            _wheelInertiaTime = timestamp;
+            if (elapsed == 0)
+                return;
+            // Integrate exponential decay analytically. Equal elapsed time gives
+            // equal travel at 60/120/180 Hz, including a delayed frame.
             var decay = Math.Exp(-elapsed / 250.0);
             var previous = Offset;
             SetCurrentValue(OffsetProperty, previous + _wheelVelocity * (250 * (1 - decay)));
@@ -870,7 +896,7 @@ namespace Avalonia.Controls.Presenters
                 _wheelVelocity = new Vector(0, _wheelVelocity.Y);
             if (Offset.Y == previous.Y)
                 _wheelVelocity = new Vector(_wheelVelocity.X, 0);
-            if (_wheelVelocity.Length < 0.01)
+            if (!HasWheelVelocity())
             {
                 StopWheelInertia();
                 SetCurrentValue(OffsetProperty, SnapOffset(Offset, default, false));
@@ -879,13 +905,17 @@ namespace Avalonia.Controls.Presenters
 
         private void StopWheelInertia()
         {
-            _wheelInertiaTimer?.Stop();
+            ++_wheelInertiaGeneration;
+            _wheelInertiaActive = false;
             _wheelSamples.Clear();
             _wheelVelocity = default;
+            _wheelInertiaTime = null;
         }
 
         protected override void OnPropertyChanged(AvaloniaPropertyChangedEventArgs change)
         {
+            if (change.Property == IsVisibleProperty && !IsVisible)
+                StopWheelInertia();
             if (change.Property == OffsetProperty)
             {
                 if (!_arranging)

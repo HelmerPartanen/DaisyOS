@@ -4,6 +4,14 @@ import "../contents/ui/FlickMotion.js" as Flick
 
 TestCase {
     name: "FlickMotion"
+    function test_settlementPreservesVelocityAndHasAnExactEndpoint() {
+        var dt = 0.001;
+        var speed = (Flick.settlePosition(0, 1, 0.002, dt, 200)) / dt;
+        fuzzyCompare(speed, 0.002, 0.000001);
+        compare(Flick.settlePosition(0, 1, 0.002, 200, 200), 1);
+        compare(Flick.settlePosition(1, 0, -0.002, 200, 200), 0);
+        verify(Flick.settlePosition(0.5, 1, -0.001, 1, 200) < 0.5);
+    }
     function test_singleSampleFlickAndPause() {
         var tracker = Flick.createTracker();
         Flick.update(tracker, 0.12, 1000);

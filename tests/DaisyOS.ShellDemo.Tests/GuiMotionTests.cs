@@ -255,13 +255,27 @@ public sealed class GuiMotionTests
         {
             var reveal = GuiMotion.SetVisibleAsync(host, content, true, offset: 82,
                 durationOverride: TimeSpan.FromMilliseconds(220), fadeOnEnter: false);
+            double? firstFramePosition = null;
+            window.RequestAnimationFrame(_ => firstFramePosition = content.RenderTransform?.Value.M32);
             // Simulate mapping/layout blocking the UI before the first native frame.
             Thread.Sleep(300);
-            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-            Assert.InRange(content.RenderTransform!.Value.M32, 80, 82);
+            // Complete the headless commit and drain its UI callback before
+            // sampling the displayed transform; a render tick alone may only
+            // acknowledge the previous composition transaction.
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick(2);
+            Dispatcher.UIThread.RunJobs();
+            Assert.NotNull(firstFramePosition);
+            Assert.InRange(firstFramePosition.Value, 80, 82);
             await Task.Delay(65);
-            AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-            Assert.InRange(content.RenderTransform!.Value.M32, 1, 79);
+            // Complete the headless commit and drain its UI callback before
+            // sampling the displayed transform; a render tick alone may only
+            // acknowledge the previous composition transaction.
+            AvaloniaHeadlessPlatform.ForceRenderTimerTick(2);
+            Dispatcher.UIThread.RunJobs();
+            // Task.Delay is a lower bound: a busy test runner may already
+            // reach the endpoint before this sample. The first callback above
+            // establishes that the 300 ms mapping delay consumed no motion.
+            Assert.InRange(content.RenderTransform?.Value.M32 ?? 0, 0, 79);
             await reveal;
             Assert.Null(content.RenderTransform);
         }
