@@ -1,111 +1,128 @@
 # DaisyOS
 
-DaisyOS is an Arch Linux-based desktop operating-system experience with a
-custom C#/.NET and Avalonia shell. It combines a desktop, dock, launcher,
-System Bar, Settings, Files, notifications, onboarding, system controls, and a
-safe live-media recovery path.
+DaisyOS is an Arch Linux-based desktop operating system with a custom C#/.NET 10 and Avalonia shell, tailored for Wayland and managed by KWin. It delivers a cohesive, responsive experience featuring a desktop grid with interactive widgets, unified bottom chrome, application launcher, notification center, Lock Screen with media integration, system settings, native files app, and first-party applications.
 
-## Project status
+---
 
-**Current milestone: bootable live-ISO alpha — complete.**
+## Highlights & Features
 
-The source-bound live-alpha acceptance gate passed on 2026-07-16 with a fresh
-1.5 GiB image. The same immutable ISO passed repository and embedded-payload
-verification, BIOS and UEFI graphical boot, runtime-service checks, 60-second
-stability holds, supervised shell recovery, and the real Restart and Shut down
-menu actions. The accepted image had SHA-256
-`dfe2ac9ee2083cc9520021766cd0cb007182553430cf533624371a1cee158621`.
-That file has since been replaced locally by a newer compositor candidate, so
-the path alone must not be treated as acceptance evidence.
+- **Custom Avalonia Desktop Shell**: A pure Wayland layer-shell experience hosting the desktop grid, widgets, taskbar/dock, and system status bar.
+- **Interactive Widgets**: Interactive desktop widgets for Clock (Sweep, Digital, Analog, Glow), Calendar, Media playback with audio spectrum analyzer, and Photos. Includes an Apple-inspired carousel Widget Gallery featuring 3D ambient floating perspective tilt and trackpad gesture swiping.
+- **Native Applications Suite**:
+  - **Files (`DaisyOS.Files`)**: Clean dual-pane file management with Quick Look integration.
+  - **Settings (`DaisyOS.Settings`)**: Unified system controls for displays, audio, networks, Bluetooth, appearance, and accessibility.
+  - **Mail (`DaisyOS.Mail`)**, **Notes (`DaisyOS.Notes`)**, **Disk Manager (`DaisyOS.DiskManager`)**, **App Installer (`DaisyOS.AppInstaller`)**, and **Installer (`DaisyOS.Installer`)**.
+  - **DaisyOS Continuity (`DaisyOS.Continuity`)**: Multi-device pairing and synchronization service.
+- **Dual-Theme Semantic Design System**: Full Light and Dark themes backed by design token contracts, semantic color tokens, WCAG AA compliance, and fluid motion physics (`GuiMotion`).
+- **Compositor Integration**: Native C++ KWin decoration plugins, blur mask integration, and custom effects in `src/native/`.
 
-This completes the non-installing live-ISO alpha milestone. DaisyOS is not yet
-an installable or production-security-ready operating system.
+---
 
-The current development profile advances the next candidate to a KWin-managed
-session with working wallpaper rendering and compositor-owned application
-windows. The first 1.8 GiB rebuild (SHA-256
-`fab605bc60919f1e040dbaf7570f05501cdd4c6930f3eedf44b8eb07ee091e17`)
-was rejected after a stronger framebuffer review exposed a mostly black frame
-behind a narrow wallpaper fragment. The obsolete full-screen GPU vibrancy host
-was removed, and the corrected payload produces a full 1280x800 KWin desktop
-in the VM. A new production ISO must still pass the complete acceptance gate
-before it supersedes the accepted alpha.
+## Quick Start for Contributors
 
-### Recent Shell Improvements
+### Prerequisites
 
-- **Daily workflow improvements**: Faster Launcher search activation, Files tab and search shortcuts, safer Notes autosave and close behavior, keyboard file picking, cancellable Wi-Fi connection, and responsive App Store results. See [keyboard shortcuts](docs/daisyos-keyboard-shortcuts.md) and [UX validation coverage](docs/validation/ux-polish-2026-09-30.md) for tested behavior and remaining native desktop checks.
-- **Refined Dual-Theme Engine**: Added a daytime paper-inspired Light Theme (`#F4F5F7` base, soft charcoal `#1F2328` text, crisp white cards, 7% subtle hover overlays) alongside a normalized Dark Theme (`#1E1E1E` chrome, 8% white hover highlights).
-- **Ultra-Fast 6K Wallpaper Extraction**: Optimized `WallpaperColorExtractor` with strided 64x64 grid sampling and seed caching, reducing cold extraction time on 6K/8K images from ~4s to ~15ms (<0.01ms cached).
-- **High-Contrast Shell Controls**: Redesigned `SearchBar` and `CaptionClose` buttons for 1:1 color matching with Settings buttons and title bar controls. Synchronized audio spectrum visualizer bars with media control accents.
-- **Automated Test Gate**: Passed all 82 unit, service, ViewModel, and color contrast tests (`dotnet test`).
+- **OS**: Linux (Arch Linux recommended; Fedora / Ubuntu supported for development).
+- **.NET SDK**: .NET 10.0+ (`dotnet --version`).
+- **Native Toolchain**: `gcc` / `clang`, `cmake` (3.25+), `ninja` or `make`, `pkg-config`.
+- **System Libraries**: `wayland-client`, `wayland-protocols`, `kwin` dev headers (KWin 6.x), `libpulse`, `bluez`, `polkit-agent-1`.
 
-See [ROADMAP.md](ROADMAP.md) for detailed progress and
-[docs/iso-build.md](docs/iso-build.md) for the live-image workflow.
+### Build & Run
 
-## Build and test the shell
-
-Requirements include the .NET 10 SDK on Linux.
+Clone the repository and build the primary solution:
 
 ```bash
+# Clone with submodules if any
+git clone https://github.com/helmeri/SnapOS.git
+cd SnapOS
+
+# Restore and build the solution
 dotnet restore
 dotnet build
-dotnet test
+```
+
+#### Running the Shell
+
+To run the shell locally in mock service mode:
+```bash
 dotnet run --project src/DaisyOS.Shell
 ```
 
-Run the complete repository gate with:
+To run against real system services (PulseAudio/PipeWire, BlueZ, NetworkManager):
+```bash
+DAISYOS_SHELL_SERVICES=real dotnet run --project src/DaisyOS.Shell
+```
+
+#### Testing in a Nested KWin Compositor
+
+You can run the full shell safely inside a nested Wayland window without altering your desktop session:
+```bash
+scripts/publish-shell.sh --fast
+scripts/run-kwin-prototype.sh
+```
+
+#### Native Development Session (Hot Reloading)
+
+When logged into the dedicated `daisy-native-development` Wayland session:
+```bash
+# Rebuilds the shell and standalone apps and replaces only the layer-shell process:
+daisyos-native-development restart
+
+# Check memory status and protected memory limits:
+daisyos-native-development memory status
+```
+
+---
+
+## Running Tests
+
+DaisyOS enforces strict design tokens, architecture contracts, and headless UI tests.
 
 ```bash
+# Run design token and core contract tests
+dotnet test tests/DaisyOS.Tests/DaisyOS.Tests.csproj
+
+# Run headless shell UI and widget layout tests
+dotnet test tests/DaisyOS.ShellDemo.Tests/DaisyOS.ShellDemo.Tests.csproj
+
+# Run shell component tests
+dotnet test tests/DaisyOS.Shell.Tests/DaisyOS.Shell.Tests.csproj
+
+# Run all automated test suites
 scripts/test.sh
 ```
 
-## Build a live ISO
+> **Design Token Notice**: XAML views must use token references (`{DynamicResource TypeSize...}`, `{DynamicResource IconSize...}`). Hardcoded numeric font sizes or icon sizes will fail `DesignTokenContractTests`.
 
-On an Arch Linux host with `archiso`, QEMU, ImageMagick, and `socat`:
+---
 
-```bash
-scripts/publish-shell.sh
-scripts/copy-shell-to-iso.sh
-sudo scripts/build-iso.sh
-scripts/validate-live-iso-alpha.sh out/DaisyOS-YYYY.MM.DD-x86_64.iso
+## Repository Structure
+
+```
+├── docs/                     # Architecture, specifications, keyboard shortcuts, and audits
+├── os/                       # ArchISO profiles, systemd service units, and OS configs
+├── scripts/                  # Build, test, packaging, and developer helper scripts
+├── src/
+│   ├── DaisyOS.Shell/        # Primary desktop shell, window overlay managers, and widgets
+│   ├── DaisyOS.System/       # Linux hardware & service integrations (Audio, Bluetooth, Network, Displays)
+│   ├── DaisyOS.Core/         # Shared models, contracts, and storage primitives
+│   ├── DaisyOS.Files/        # Files file-manager application
+│   ├── DaisyOS.Settings/     # System settings application
+│   ├── DaisyOS.Mail/         # Mail client application
+│   ├── DaisyOS.Notes/        # Notes application
+│   ├── DaisyOS.DiskManager/  # Disk storage and partition manager
+│   ├── DaisyOS.AppInstaller/ # AppImage / package installer application
+│   ├── DaisyOS.Installer/    # System installation wizard
+│   ├── DaisyOS.Continuity/   # Device continuity service and pairing dialogs
+│   └── native/               # KWin C++ plugins (frame effect, window menus, busy cursor)
+└── tests/
+    ├── DaisyOS.Tests/            # Design tokens, contracts, and backend unit tests
+    ├── DaisyOS.ShellDemo.Tests/  # Headless Avalonia UI, widget library, and layout tests
+    └── DaisyOS.Shell.Tests/      # Shell service and interaction tests
 ```
 
-ISO assembly needs temporary administrator access for the isolated Arch image
-filesystem. VM tests attach no writable disk. Never test future installer or
-partitioning work on a physical disk before it has passed explicit VM review.
+---
 
-## Alpha scope
+## Contributing Guidelines
 
-The bootable live alpha is intended to prove that the disposable image boots
-and provides a stable DaisyOS desktop preview. It includes bounded shell crash
-recovery and real live-session service wiring.
-
-It intentionally does not claim:
-
-- Installation to disk—the installer remains mock-only.
-- Signed public package distribution or safe update installation.
-- Rollback, disk encryption, Secure Boot, or production authentication.
-- Compatibility with every GPU, Wi-Fi adapter, display, or physical computer.
-- Production readiness as a primary daily-driver operating system.
-
-## Contributing
-
-We welcome contributions! Please read our [**Contributing Guide**](CONTRIBUTING.md) for details on our code style ([`.editorconfig`](.editorconfig)), safe local build instructions, common development commands, and pull request procedures.
-
-## Repository layout
-
-- `src/DaisyOS.Shell` — desktop shell and system-app surfaces
-- `src/DaisyOS.System` — guarded Linux service integrations
-- `src/DaisyOS.Core` — shared models and infrastructure
-- `src/DaisyOS.Installer` — safe mock-only installer UI
-- `os/archiso/DaisyOS` — live ISO profile
-- `scripts` — build, packaging, recovery, and acceptance automation
-- `tests` — unit, ViewModel, service, and headless UI tests
-- `docs` — architecture, testing, security, compositor, and release guidance
-
-## Safety
-
-DaisyOS development defaults to mock-safe destructive services. Real power and
-system integration should be exercised only in the disposable live VM or an
-explicitly prepared test environment. The project does not run disk formatting
-or automatic package upgrades.
+Please see [CONTRIBUTING.md](CONTRIBUTING.md) for code formatting, pull request workflows, and development guidelines.
