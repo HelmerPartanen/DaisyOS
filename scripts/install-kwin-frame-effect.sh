@@ -62,13 +62,22 @@ cmake_generator=()
 if command -v ninja >/dev/null 2>&1; then
   cmake_generator=(-G Ninja)
 fi
+ecm_fresh=()
+if [[ -f "$cache_root/ecm-build/CMakeCache.txt" ]] &&
+   { grep -Eq '^CMAKE_MAKE_PROGRAM:FILEPATH=.*-NOTFOUND$' "$cache_root/ecm-build/CMakeCache.txt" ||
+     { ! command -v ninja >/dev/null 2>&1 && grep -Eq '^CMAKE_GENERATOR:INTERNAL=Ninja$' "$cache_root/ecm-build/CMakeCache.txt"; }; }; then
+  ecm_fresh=(--fresh)
+fi
 checkout_pinned https://github.com/KDE/extra-cmake-modules.git "$ecm_source" "$ecm_commit"
-cmake -S "$ecm_source" -B "$cache_root/ecm-build" "${cmake_generator[@]}" \
+cmake "${ecm_fresh[@]}" -S "$ecm_source" -B "$cache_root/ecm-build" "${cmake_generator[@]}" \
   -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX="$ecm_prefix"
 cmake --build "$cache_root/ecm-build"
 cmake --install "$cache_root/ecm-build"
 
 checkout_pinned https://github.com/KhronosGroup/Vulkan-Headers.git "$vulkan_source" "$vulkan_headers_commit"
+# Clean the effect build tree so Qt AUTOMOC always regenerates moc metadata
+# against the currently installed KWin headers on compositor upgrades.
+rm -rf -- "$build_dir"
 cmake -S "$source_dir" -B "$build_dir" "${cmake_generator[@]}" \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH="$ecm_prefix" \
@@ -76,6 +85,7 @@ cmake -S "$source_dir" -B "$build_dir" "${cmake_generator[@]}" \
 cmake --build "$build_dir"
 
 install -d -m 0755 "$plugin_dir"
+rm -f -- "$plugin_dir/kwin4_effect_shapecorners.so"
 # Never truncate a shared object mapped by the running compositor. Publish
 # complete files atomically, then reload the effect after its config is ready.
 atomic_install() {
