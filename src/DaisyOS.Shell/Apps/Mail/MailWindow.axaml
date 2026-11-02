@@ -1,0 +1,124 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:c="clr-namespace:DaisyOS.Shell.Controls"
+        xmlns:m="clr-namespace:DaisyOS.Shell.Apps.Mail"
+        x:Class="DaisyOS.Shell.Apps.Mail.MailWindow"
+        Title="Mail" Width="1380" Height="860" MinWidth="1000" MinHeight="600"
+        WindowStartupLocation="CenterScreen" WindowDecorations="None" Classes="SidebarAppWindow"
+        TextOptions.TextRenderingMode="Antialias" Background="{DynamicResource SurfaceBaseSolidBrush}">
+  <Window.Styles>
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
+    <StyleInclude Source="avares://DaisyOS.Shell/Apps/Mail/MailStyles.axaml" />
+  </Window.Styles>
+  <Grid ColumnDefinitions="240,*">
+    <Border Background="{DynamicResource SurfaceRaisedSubtleBrush}" Padding="12,12,8,12">
+      <Grid RowDefinitions="Auto,Auto,Auto,Auto,*,Auto" RowSpacing="{DynamicResource Space3}">
+        <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space3}" Margin="10,4,0,8">
+          <c:DaisyIcon Icon="mail-01" Size="{DynamicResource IconSizeMedium}" VerticalAlignment="Center" />
+          <TextBlock Text="Mail" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" />
+        </StackPanel>
+        <Button Grid.Row="1" x:Name="ComposeButton" Classes="Primary Small Flexible" Click="ComposeClicked" HorizontalAlignment="Stretch">
+          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}">
+            <c:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeStandard}" />
+            <TextBlock Text="New message" />
+          </StackPanel>
+        </Button>
+        <ComboBox x:Name="Accounts" Grid.Row="2" HorizontalAlignment="Stretch" SelectionChanged="AccountChanged"
+                  AutomationProperties.Name="Mail account" ToolTip.Tip="Switch mail account" />
+        <TextBlock Grid.Row="3" Text="Mailboxes" Classes="MailCaption" Margin="10,8,0,0" />
+        <ListBox x:Name="Folders" Grid.Row="4" Classes="MailList" SelectionChanged="FolderChanged" AutomationProperties.Name="Mailboxes">
+          <ListBox.ItemTemplate>
+            <DataTemplate DataType="m:MailFolder">
+              <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space3}">
+                <c:DaisyIcon Icon="folder" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+              </Grid>
+            </DataTemplate>
+          </ListBox.ItemTemplate>
+        </ListBox>
+        <StackPanel Grid.Row="5" Spacing="{DynamicResource SidebarItemGap}">
+          <Button x:Name="DraftsNavigation" Classes="SettingsNavItem" Click="DraftsClicked" IsEnabled="False">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space3}"><c:DaisyIcon Icon="file-text" Size="{DynamicResource IconSizeMedium}" /><TextBlock Text="Local drafts" /></StackPanel>
+          </Button>
+          <Button x:Name="AddAccountButton" Classes="SettingsNavItem" Click="AddAccountClicked">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space3}"><c:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeMedium}" /><TextBlock Text="Add account" /></StackPanel>
+          </Button>
+          <Button Classes="SettingsNavItem" Click="AccountsClicked">
+            <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space3}"><c:DaisyIcon Icon="settings-01" Size="{DynamicResource IconSizeMedium}" /><TextBlock Text="Manage accounts" /></StackPanel>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+    <Grid Grid.Column="1" x:Name="MainLayout" RowDefinitions="Auto,Auto,*,Auto">
+      <c:AppWindowTitleBar x:Name="Chrome" />
+      <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="{DynamicResource Space6}" Margin="24,12,24,20">
+        <TextBlock x:Name="FolderTitle" Text="Inbox" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold" VerticalAlignment="Center" />
+        <c:SearchBar x:Name="Search" Grid.Column="1" Height="{DynamicResource SearchHeightStandard}"
+                     PlaceholderText="Search mail" ToolTip.Tip="Search loaded mail. Press Enter to search the whole mailbox."
+                     AutomationProperties.Name="Search mail" />
+      </Grid>
+      <Grid Grid.Row="2" ColumnDefinitions="300,1,*" Margin="24,0,24,0">
+        <Grid RowDefinitions="Auto,*,Auto" RowSpacing="{DynamicResource Space3}" Margin="0,0,16,0">
+          <Grid ColumnDefinitions="*,Auto" MinHeight="40">
+            <StackPanel x:Name="MessageFilters" IsEnabled="False" Orientation="Horizontal" Spacing="{DynamicResource Space3}" VerticalAlignment="Center">
+              <CheckBox x:Name="UnreadOnly" Content="Unread" IsCheckedChanged="FilterChanged" />
+              <CheckBox x:Name="StarredOnly" Content="Starred" IsCheckedChanged="FilterChanged" />
+            </StackPanel>
+            <Button x:Name="RefreshButton" IsEnabled="False" Grid.Column="1" Classes="IconButton Subtle" Click="RefreshClicked" ToolTip.Tip="Refresh (F5)" AutomationProperties.Name="Refresh mail">
+              <c:DaisyIcon Icon="arrows-clockwise" Size="{DynamicResource IconSizeMedium}" />
+            </Button>
+          </Grid>
+          <Grid Grid.Row="1">
+            <ListBox x:Name="Messages" Classes="MailList" SelectionChanged="MessageChanged" AutomationProperties.Name="Messages">
+              <ListBox.ItemTemplate>
+                <DataTemplate DataType="m:MailItem">
+                  <StackPanel Spacing="{DynamicResource Space1}">
+                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space2}">
+                      <TextBlock Text="{Binding Sender}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <c:DaisyIcon Grid.Column="1" Icon="star" Size="{DynamicResource IconSizeSmall}" IsVisible="{Binding Starred}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                    </Grid>
+                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space2}">
+                      <Ellipse Width="6" Height="6" Fill="{DynamicResource ActionPrimaryBrush}" IsVisible="{Binding Unread}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Subject}" FontSize="{DynamicResource TypeSizeBodySmall}" TextTrimming="CharacterEllipsis" />
+                    </Grid>
+                    <TextBlock Text="{Binding Preview}" Classes="MailSecondary" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding Stamp}" Classes="MailCaption" />
+                  </StackPanel>
+                </DataTemplate>
+              </ListBox.ItemTemplate>
+            </ListBox>
+            <TextBlock x:Name="MessageListEmpty" Text="Add an account to see your mail." Classes="MailSecondary" TextWrapping="Wrap" Margin="12,24" IsHitTestVisible="False" />
+          </Grid>
+          <Button x:Name="LoadOlderButton" IsEnabled="False" Grid.Row="2" Classes="Subtle Small" Content="Load older messages" Click="LoadMoreClicked" HorizontalAlignment="Stretch" />
+        </Grid>
+        <Border Grid.Column="1" Background="{DynamicResource StrokeSubtleBrush}" />
+        <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" ResizeDirection="Columns" Background="Transparent" AutomationProperties.Name="Resize message list" />
+        <Grid Grid.Column="2" RowDefinitions="Auto,*" Margin="24,0,0,0" RowSpacing="{DynamicResource Space6}">
+          <WrapPanel x:Name="MessageActions" IsEnabled="False" IsVisible="False" ItemSpacing="{DynamicResource Space2}" LineSpacing="{DynamicResource Space2}">
+            <Button Classes="Primary Small" Click="ReplyClicked"><StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}"><c:DaisyIcon Icon="mail-reply-01" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="Reply" /></StackPanel></Button>
+            <Button Content="Forward" Classes="Secondary Small" Click="ForwardClicked" />
+            <Button Classes="IconButton Subtle" ToolTip.Tip="Archive" AutomationProperties.Name="Archive message" Click="ArchiveClicked"><c:DaisyIcon Icon="archive" Size="{DynamicResource IconSizeMedium}" /></Button>
+            <Button Classes="IconButton Subtle" ToolTip.Tip="Move to Trash" AutomationProperties.Name="Move message to Trash" Click="TrashClicked"><c:DaisyIcon Icon="trash" Size="{DynamicResource IconSizeMedium}" /></Button>
+            <Button Classes="IconButton Subtle" ToolTip.Tip="More actions" AutomationProperties.Name="More message actions">
+              <c:DaisyIcon Icon="dots-three" Size="{DynamicResource IconSizeMedium}" />
+              <Button.Flyout><MenuFlyout><MenuItem Header="Reply all" Click="ReplyAllClicked" /><MenuItem Header="Star / unstar" Click="StarClicked" /><MenuItem Header="Mark unread" Click="UnreadClicked" /><MenuItem Header="Move to folder…" Click="MoveClicked" /></MenuFlyout></Button.Flyout>
+            </Button>
+          </WrapPanel>
+          <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+            <StackPanel x:Name="ReaderContent" Spacing="{DynamicResource Space6}" MaxWidth="760" HorizontalAlignment="Stretch">
+              <TextBlock x:Name="Subject" Text="Welcome to Mail" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />
+              <TextBlock x:Name="Sender" Text="Your inbox, at home in DaisyOS." Classes="MailSecondary" TextWrapping="Wrap" />
+              <SelectableTextBlock x:Name="Body" Text="Add an account to read and send mail. Connect Google, Microsoft, or your school and work mail using IMAP."
+                                   TextWrapping="Wrap" FontSize="{DynamicResource TypeSizeBodyLarge}" Foreground="{DynamicResource ContentPrimaryBrush}" LineHeight="24" />
+              <StackPanel x:Name="Attachments" Spacing="{DynamicResource Space2}" />
+            </StackPanel>
+          </ScrollViewer>
+        </Grid>
+      </Grid>
+      <Grid Grid.Row="3" ColumnDefinitions="*,Auto" Height="48" Margin="24,0,24,0" ColumnSpacing="{DynamicResource Space3}">
+        <TextBlock x:Name="Status" Text="Ready" Classes="MailCaption" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Text, RelativeSource={RelativeSource Self}}" />
+        <Button Grid.Column="1" x:Name="CancelOperation" Classes="Subtle Small" Content="Cancel" Click="CancelClicked" IsVisible="False" VerticalAlignment="Center" />
+      </Grid>
+    </Grid>
+  </Grid>
+</Window>

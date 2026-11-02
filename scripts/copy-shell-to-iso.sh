@@ -19,7 +19,7 @@ fi
 
 "$repo_root/scripts/check-game-telemetry-payload.sh" "$publish_dir"
 
-for application in Files Notes Settings DiskManager AppInstaller; do
+for application in Files Mail Notes Settings DiskManager AppInstaller; do
   if [[ ! -x "$publish_dir/apps/$application/DaisyOS.$application" ]]; then
     echo "Standalone $application is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
     exit 1
@@ -46,7 +46,7 @@ cp -a "$publish_dir"/. "$iso_shell_dir"/
 iso_root="$repo_root/os/archiso/DaisyOS/airootfs"
 "$repo_root/scripts/install-memory-resilience.sh" --root "$iso_root" --no-disk-swap --no-package --no-activate
 mkdir -p "$iso_root/usr/local/bin" "$iso_root/usr/share/applications" "$iso_root/usr/share/dbus-1/services"
-for application in Files Notes Settings DiskManager AppInstaller; do
+for application in Files Mail Notes Settings DiskManager AppInstaller; do
   lower="${application,,}"
   printf '#!/usr/bin/env bash\nset -euo pipefail\nexec /opt/DaisyOS/shell/apps/%s/DaisyOS.%s "$@"\n' "$application" "$application" > "$iso_root/usr/local/bin/daisyos-$lower"
   chmod +x "$iso_root/usr/local/bin/daisyos-$lower" "$iso_shell_dir/apps/$application/DaisyOS.$application"

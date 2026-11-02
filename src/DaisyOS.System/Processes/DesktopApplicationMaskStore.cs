@@ -22,6 +22,7 @@ public static class DesktopApplicationMaskStore
     {
         ["calculator"] = "org.daisyos.calculator.desktop",
         ["calendar"] = "org.daisyos.calendar.desktop",
+        ["mail"] = "org.daisyos.mail.desktop",
         ["notes"] = "org.daisyos.notes.desktop",
         ["files"] = "org.daisyos.files.desktop",
         ["settings"] = "org.daisyos.settings.desktop",

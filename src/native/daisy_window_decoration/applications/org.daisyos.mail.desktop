@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Mail
+Name[fi]=Sähköposti
+Comment=Read and send email
+Exec=daisyos-mail %u
+Icon=org.daisyos.mail
+StartupWMClass=org.daisyos.mail
+Categories=Network;Email;
+MimeType=x-scheme-handler/mailto;

@@ -489,7 +489,7 @@ ensure_shell_binary() {
     # edits are applied deliberately with `daisyos-native-development restart`,
     # which keeps the full build off the interactive boot path.
     if verify_shell_binary; then
-      for application in Files Notes Settings DiskManager AppInstaller; do
+      for application in Files Mail Notes Settings DiskManager AppInstaller; do
         if [[ ! -x "$source_root/src/DaisyOS.$application/bin/${DAISYOS_APP_CONFIGURATION:-Release}/net10.0/DaisyOS.$application" ]]; then
           dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --disable-build-servers -m:1 -v:minimal >> "$session_log" 2>&1 || return 1
         fi
@@ -500,7 +500,7 @@ ensure_shell_binary() {
     fi
 
     if repair_shell_build && verify_shell_binary; then
-      for application in Files Notes Settings DiskManager AppInstaller; do
+      for application in Files Mail Notes Settings DiskManager AppInstaller; do
         dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --disable-build-servers -m:1 -v:minimal >> "$session_log" 2>&1 || return 1
       done
       "$source_root/scripts/install-system-apps.sh" >> "$session_log" 2>&1 || return 1
@@ -519,7 +519,7 @@ ensure_shell_binary() {
 
   log_message "Building DaisyOS Native Development from $source_root."
   dotnet build "$source_root/src/DaisyOS.Shell/DaisyOS.Shell.csproj" -c "$shell_configuration" --disable-build-servers -m:1 -v:minimal >> "$session_log" 2>&1 || return 1
-  for application in Files Notes Settings DiskManager AppInstaller; do
+  for application in Files Mail Notes Settings DiskManager AppInstaller; do
     dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --disable-build-servers -m:1 -v:minimal >> "$session_log" 2>&1 || return 1
   done
   "$source_root/scripts/install-system-apps.sh" >> "$session_log" 2>&1

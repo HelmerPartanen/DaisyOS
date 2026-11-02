@@ -4,7 +4,7 @@ repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 test_root="$(mktemp -d)"
 trap 'rm -rf "$test_root"' EXIT
 DBUS_SESSION_BUS_ADDRESS= HOME="$test_root/home" XDG_DATA_HOME="$test_root/data" "$repo_root/scripts/install-system-apps.sh"
-for application in Files Notes Settings DiskManager AppInstaller; do
+for application in Files Mail Notes Settings DiskManager AppInstaller; do
   lower="${application,,}"
   [[ -x "$test_root/home/.local/bin/daisyos-$lower" ]]
   rg -q "^Exec=\".*DaisyOS.$application\"" "$test_root/data/applications/org.daisyos.$lower.desktop"

@@ -253,6 +253,7 @@
       <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png</Bitmap>
       <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files.png</Bitmap>
       <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
+      <Bitmap x:Key="AppIconMail">avares://DaisyOS.Shell/Assets/AppIcons/Mail.png</Bitmap>
       <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes.png</Bitmap>
       <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Light.png</Bitmap>
       <Bitmap x:Key="AppIconAppInstaller">avares://DaisyOS.Shell/Assets/AppIcons/AppInstaller.png</Bitmap>
@@ -269,7 +270,7 @@
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
       <Color x:Key="SurfaceBaseColor">#00000000</Color>
-    <Color x:Key="SurfaceBaseColorSolid">#FF0F0F0F</Color>
+    <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <!-- Fullscreen launcher glass. See the light theme for the contract. -->
       <Color x:Key="LauncherBackdropColor">#1A000000</Color>
       <Color x:Key="SurfaceRaisedColor">#FF202020</Color>
@@ -458,6 +459,7 @@
       <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png</Bitmap>
       <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files.png</Bitmap>
       <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
+      <Bitmap x:Key="AppIconMail">avares://DaisyOS.Shell/Assets/AppIcons/Mail.png</Bitmap>
       <Bitmap x:Key="AppIconNotes">avares://DaisyOS.Shell/Assets/AppIcons/Notes.png</Bitmap>
       <Bitmap x:Key="AppIconDiskManager">avares://DaisyOS.Shell/Assets/AppIcons/Disk_Manager_Dark.png</Bitmap>
       <Bitmap x:Key="AppIconAppInstaller">avares://DaisyOS.Shell/Assets/AppIcons/AppInstaller.png</Bitmap>

@@ -60,6 +60,7 @@ public static class DesktopItemLoader
             "calendar" or "calendaricon" or "calendar_dark" or "calendar_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png",
             "files" or "filesicon" or "files_dark" or "files_light" or "filemanager" or "file-manager" or "file_manager" => "avares://DaisyOS.Shell/Assets/AppIcons/Files.png",
             "launcher" or "launchericon" or "launcher_dark" or "launcher_light" or "start" => "avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png",
+            "mail" or "org.daisyos.mail" => "avares://DaisyOS.Shell/Assets/AppIcons/Mail.png",
             "notes" or "notesicon" or "notes_dark" or "notes_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Notes.png",
             "settings" or "settingsicon" or "settings_dark" or "settings_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Settings.png",
             "uikit" or "ui-kit" or "uikit_dark" or "uikit_light" => "avares://DaisyOS.Shell/Assets/AppIcons/UiKit.png",

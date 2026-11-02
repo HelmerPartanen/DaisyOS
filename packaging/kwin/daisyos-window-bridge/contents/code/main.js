@@ -11,6 +11,7 @@ var daisyAppIds = {};
 
 var daisyAppTitles = {
     "settings": "settings",
+    "mail": "mail",
     "notes": "notes",
     "calendar": "calendar",
     "calculator": "calculator",
@@ -25,6 +26,7 @@ var daisyAppTitles = {
 var daisyAppIdsByWaylandAppId = {
     "org.daisyos.desktopservices": "desktop-services",
     "org.daisyos.settings": "settings",
+    "org.daisyos.mail": "mail",
     "org.daisyos.notes": "notes",
     "org.daisyos.calendar": "calendar",
     "org.daisyos.calculator": "calculator",
@@ -271,7 +273,7 @@ function observeWindow(window) {
 function enforceClientDecorations(window) {
     if (!window) return;
     var appId = stringValue(window.desktopFileName).toLowerCase();
-    var customFrameApps = ["files", "settings", "notes"];
+    var customFrameApps = ["files", "settings", "notes", "mail"];
     if (customFrameApps.indexOf(appId.replace(/^org\.daisyos\./, "")) >= 0 ||
         customFrameApps.indexOf(daisyAppId(window)) >= 0) {
         window.noBorder = true;

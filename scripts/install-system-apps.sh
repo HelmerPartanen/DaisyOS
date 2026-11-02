@@ -6,7 +6,7 @@ app_configuration="${DAISYOS_APP_CONFIGURATION:-Release}"
 "$repo_root/scripts/install-files-app.sh" "${1:-$repo_root/src/DaisyOS.Files/bin/$app_configuration/net10.0/DaisyOS.Files}"
 python3 "$repo_root/scripts/install-user-gaming-integration.py"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-for application in Notes Settings DiskManager AppInstaller; do
+for application in Mail Notes Settings DiskManager AppInstaller; do
   binary="$repo_root/src/DaisyOS.$application/bin/$app_configuration/net10.0/DaisyOS.$application"
   if [[ $# -gt 0 ]]; then binary="$(dirname "$1")/../$application/DaisyOS.$application"; fi
   [[ -x "$binary" ]] || { echo "Build DaisyOS.$application before installing it: $binary" >&2; exit 1; }

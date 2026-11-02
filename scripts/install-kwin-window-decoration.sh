@@ -68,6 +68,7 @@ done
 
 for required in \
   "$app_icon_dir/Settings.png" \
+  "$app_icon_dir/Mail.png" \
   "$app_icon_dir/Notes.png" \
   "$app_icon_dir/Calendar.png" \
   "$app_icon_dir/Calculator.png" \
@@ -77,6 +78,7 @@ for required in \
   "$app_icon_dir/UiKit.png" \
   "$app_icon_dir/AppInstaller.png" \
   "$application_dir/org.daisyos.settings.desktop" \
+  "$application_dir/org.daisyos.mail.desktop" \
   "$application_dir/org.daisyos.notes.desktop" \
   "$application_dir/org.daisyos.calendar.desktop" \
   "$application_dir/org.daisyos.calculator.desktop" \
@@ -145,6 +147,7 @@ install -m 0755 "$plugin_source" "$install_root/org.daisyos.decoration.so"
 # resolve the exact DaisyOS artwork instead of the generic KWin fallback.
 declare -A app_icons=(
   [settings]=Settings.png
+  [mail]=Mail.png
   [notes]=Notes.png
   [calendar]=Calendar.png
   [calculator]=Calculator.png

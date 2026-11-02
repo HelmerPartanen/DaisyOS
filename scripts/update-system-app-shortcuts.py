@@ -13,7 +13,7 @@ desktop = Path.home() / 'Desktop'
 if shutil.which('xdg-user-dir'):
     result = subprocess.run(['xdg-user-dir', 'DESKTOP'], capture_output=True, text=True, timeout=2)
     if result.returncode == 0 and result.stdout.strip(): desktop = Path(result.stdout.strip())
-for app in ('Files', 'Notes', 'Settings', 'DiskManager', 'AppInstaller'):
+for app in ('Files', 'Mail', 'Notes', 'Settings', 'DiskManager', 'AppInstaller'):
     shortcut = desktop / f'org.daisyos.{app.lower()}.desktop'
     if not shortcut.is_file(): continue
     text = shortcut.read_text()

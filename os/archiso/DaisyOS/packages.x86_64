@@ -72,3 +72,7 @@ wine
 wine-gecko
 wine-mono
 winetricks
+
+# Mail credential storage
+libsecret
+gnome-keyring

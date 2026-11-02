@@ -2154,6 +2154,9 @@ public partial class App : Application
             case "settings":
                 ShowSettings();
                 return true;
+            case "mail":
+                LaunchMail();
+                return true;
             case "notes":
                 ShowNotes();
                 return true;
@@ -2556,6 +2559,15 @@ public partial class App : Application
 
     /// <summary>Opens one instance of the native DaisyOS Notes app.</summary>
     public void ShowNotes() => LaunchNotes(false);
+
+    private async void LaunchMail()
+    {
+        HideLauncher(restoreFocus: false);
+        var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.mail");
+        var result = await PackagedApplicationLauncher.LaunchAsync("Mail");
+        if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
+        if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
+    }
 
     /// <summary>Opens Notes and creates a new note in its own application process.</summary>
     public void ShowNewNote() => LaunchNotes(true);
@@ -3421,6 +3433,6 @@ public partial class App : Application
                (0.0722 * Linearize(color.B));
     }
 
-    private static readonly string[] NativeAppIds = ["notes", "calendar", "calculator", "settings", "files", "uikit", "appstore", "taskmanager", "diskmanager", "appinstaller"];
+    private static readonly string[] NativeAppIds = ["mail", "notes", "calendar", "calculator", "settings", "files", "uikit", "appstore", "taskmanager", "diskmanager", "appinstaller"];
 
 }
