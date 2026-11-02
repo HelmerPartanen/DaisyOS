@@ -3,9 +3,8 @@ set -Eeuo pipefail
 
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 
-# KDecoration 6.7 cannot attach a decoration to a client-side-decorated
-# window. This compositor shader is therefore the compatibility path which
-# clips third-party CSD surfaces and paints DaisyOS' neutral double frame.
+# KWin scene primitives style server- and client-decorated windows alike,
+# without redirecting client content through an offscreen shader.
 source_dir="$repo_root/src/native/kwin_frame_effect"
 ecm_commit="68483132b87f4d7b953aec94ef51d1234d41f937"
 vulkan_headers_commit="6802bb4733b63ed5efd3adb308a6c885ef180ea1"
@@ -24,7 +23,7 @@ manifest_path="${stamp_path}.sha256"
 kwin_version="$(kwin_wayland --version 2>/dev/null || true)"
 expected_version="$(
   { printf '%s\n' "$ecm_commit" "$vulkan_headers_commit" "$kwin_version";
-    sha256sum "$repo_root/scripts/install-kwin-frame-effect.sh" "$source_dir"/{CMakeLists.txt,frameeffect.cpp,frame.frag,metadata.json,resources.qrc} | cut -d ' ' -f 1;
+    sha256sum "$repo_root/scripts/install-kwin-frame-effect.sh" "$source_dir"/{CMakeLists.txt,frameeffect.cpp,metadata.json} | cut -d ' ' -f 1;
   } | sha256sum | cut -d ' ' -f 1
 )"
 if [[ "${1:-}" == --check ]]; then
@@ -108,8 +107,14 @@ def color(key, fallback):
     value = config.get("Decoration", key, fallback=fallback)
     if not re.fullmatch(r"#[0-9a-fA-F]{8}", value): value = fallback
     return value[0] + value[3:], int(value[1:3], 16)
-outer, outer_alpha = color("ShellFrameOuterEdge", "#99000000")
-inner, inner_alpha = color("ShellFrameInnerHighlight", "#1AFFFFFF")
+surface = config.get("Decoration", "SurfaceBase", fallback="#FF121214")
+try:
+    rgb = tuple(int(surface[i:i + 2], 16) for i in (3, 5, 7))
+    light = sum(rgb) > 3 * 128
+except ValueError:
+    light = False
+outer, outer_alpha = color("WindowBorder", "#26000000" if light else "#26FFFFFF")
+inner, inner_alpha = "#000000", 0
 print(outer, outer_alpha, inner, inner_alpha)
 PYCOLORS
 )
@@ -117,8 +122,8 @@ kwriteconfig6 --file kwinrc --group Round-Corners --key OutlineColor --type stri
 kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveOutlineColor --type string "$frame_outer_rgb"
 kwriteconfig6 --file kwinrc --group Round-Corners --key ActiveOutlineAlpha "$frame_outer_alpha"
 kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveOutlineAlpha "$frame_outer_alpha"
-kwriteconfig6 --file kwinrc --group Round-Corners --key SecondOutlineThickness 1
-kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveSecondOutlineThickness 1
+kwriteconfig6 --file kwinrc --group Round-Corners --key SecondOutlineThickness 0
+kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveSecondOutlineThickness 0
 kwriteconfig6 --file kwinrc --group Round-Corners --key SecondOutlineColor --type string "$frame_inner_rgb"
 kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveSecondOutlineColor --type string "$frame_inner_rgb"
 kwriteconfig6 --file kwinrc --group Round-Corners --key ActiveSecondOutlineAlpha "$frame_inner_alpha"
@@ -151,7 +156,7 @@ mv -f -- "${manifest_path}.tmp" "$manifest_path"
 printf '%s\n' "$expected_version" > "${stamp_path}.tmp"
 mv -f -- "${stamp_path}.tmp" "$stamp_path"
 
-echo "Installed the DaisyOS window-frame compositor effect (embedded shader)."
+echo "Installed the DaisyOS window-frame compositor effect (native scene outlines)."
 if command -v qdbus6 >/dev/null 2>&1; then
   loaded="$(timeout 3 qdbus6 org.kde.KWin /Effects org.kde.kwin.Effects.isEffectLoaded daisyframe 2>/dev/null || true)"
   plugin_version="$(python3 -c 'import json, sys; print(json.load(open(sys.argv[1]))["KPlugin"]["Version"])' "$source_dir/metadata.json")"
@@ -163,7 +168,7 @@ if command -v qdbus6 >/dev/null 2>&1; then
     echo "Log out and back into DaisyOS to load DaisyFrame $plugin_version." >&2
   else
     echo "The files are installed, but KWin has NOT loaded the effect in this session." >&2
-    echo "Log out and back into DaisyOS. If it remains missing, check the KWin journal for DaisyFrame or shader errors." >&2
+    echo "Log out and back into DaisyOS. If it remains missing, check the KWin journal for DaisyFrame errors." >&2
   fi
 else
   echo "Live KWin activation could not be checked because qdbus6 is unavailable. Restart the DaisyOS session once."

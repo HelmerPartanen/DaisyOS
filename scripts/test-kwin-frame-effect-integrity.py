@@ -15,14 +15,14 @@ commits = [re.search(r'^' + name + r'="([a-f0-9]+)"', source, re.M)[1]
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 inputs = [installer] + [root / 'src/native/kwin_frame_effect' / name
-    for name in ('CMakeLists.txt', 'frameeffect.cpp', 'frame.frag', 'metadata.json', 'resources.qrc')]
+    for name in ('CMakeLists.txt', 'frameeffect.cpp', 'metadata.json')]
 version = 'kwin 6.8.1'
 fingerprint = hashlib.sha256(('\n'.join(commits + [version] + [digest(p) for p in inputs]) + '\n').encode()).hexdigest()
 with tempfile.TemporaryDirectory(prefix='daisy-frame-integrity-') as temporary:
     home = Path(temporary)
     plugin = home / '.local/lib/qt6/plugins/kwin/effects/plugins/daisyframe.so'
     plugin.parent.mkdir(parents=True)
-    plugin.write_text('fixture plugin with embedded shader\n')
+    plugin.write_text('fixture native scene plugin\n')
     data = home / 'data'
     stamp = data / 'daisyos/kwin-frame-effect.version'
     stamp.parent.mkdir(parents=True)
@@ -40,7 +40,7 @@ with tempfile.TemporaryDirectory(prefix='daisy-frame-integrity-') as temporary:
     check(True)
     plugin.write_text('corrupt plugin\n')
     check(False)
-    plugin.write_text('fixture plugin with embedded shader\n')
+    plugin.write_text('fixture native scene plugin\n')
     check(True)
     stamp.write_text('old upstream effect\n')
     check(False)
@@ -50,4 +50,4 @@ with tempfile.TemporaryDirectory(prefix='daisy-frame-integrity-') as temporary:
     binary.write_text('#!/bin/sh\nprintf "kwin 6.8.1\\n"\n')
     manifest.unlink()
     check(False)
-    print('PASS: embedded-plugin integrity, upstream migration, KWin upgrades and missing metadata')
+    print('PASS: native-plugin integrity, upstream migration, KWin upgrades and missing metadata')

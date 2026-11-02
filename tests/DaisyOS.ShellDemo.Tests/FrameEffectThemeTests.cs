@@ -9,10 +9,30 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class FrameEffectThemeTests
 {
+    [AvaloniaFact]
+    public void NativeFrameRadiusUsesTheWindowThemeToken()
+    {
+        var app = Application.Current!;
+        var hadPrevious = app.Resources.TryGetValue("AppWindowCornerRadiusValue", out var previous);
+        try
+        {
+            app.Resources["AppWindowCornerRadiusValue"] = 19d;
+            var method = typeof(WindowDecorationThemeService).GetMethod("BuildFrameEffectConfig", global::System.Reflection.BindingFlags.Static | global::System.Reflection.BindingFlags.NonPublic)!;
+            var values = ((IReadOnlyList<KeyValuePair<string, string>>)method.Invoke(null, [app])!).ToDictionary(pair => pair.Key, pair => pair.Value);
+            Assert.Equal("19", values["Size"]);
+            Assert.Equal("19", values["InactiveCornerRadius"]);
+        }
+        finally
+        {
+            if (hadPrevious) app.Resources["AppWindowCornerRadiusValue"] = previous;
+            else app.Resources.Remove("AppWindowCornerRadiusValue");
+        }
+    }
+
     [AvaloniaTheory]
     [InlineData(false)]
     [InlineData(true)]
-    public void CompositorFrameColorsMatchSemanticTokensIncludingOpacity(bool light)
+    public void SingleWindowBorderMatchesDefaultStrokeInBothThemes(bool light)
     {
         var app = Application.Current!;
         var previous = app.RequestedThemeVariant;
@@ -23,7 +43,10 @@ public sealed class FrameEffectThemeTests
             var method = typeof(WindowDecorationThemeService).GetMethod("BuildFrameEffectConfig", global::System.Reflection.BindingFlags.Static | global::System.Reflection.BindingFlags.NonPublic)!;
             var values = ((IReadOnlyList<KeyValuePair<string, string>>)method.Invoke(null, [app])!).ToDictionary(pair => pair.Key, pair => pair.Value);
             Assert.Equal("1", values["OutlineThickness"]);
-            Assert.Equal("1", values["SecondOutlineThickness"]);
+            Assert.Equal("0", values["SecondOutlineThickness"]);
+            Assert.Equal("0", values["InactiveSecondOutlineThickness"]);
+            Assert.Equal("0", values["ActiveSecondOutlineAlpha"]);
+            Assert.Equal("0", values["InactiveSecondOutlineAlpha"]);
             Assert.Equal("DaisyOS Lock Screen,DaisyOS Lock Wallpaper", values["Exclusions"]);
             Assert.Equal("true", values["IncludeNormalWindows"]);
             Assert.Equal("true", values["IncludeDialogs"]);
@@ -32,8 +55,7 @@ public sealed class FrameEffectThemeTests
             Assert.Equal("false", values["DisableOutlineFullScreen"]);
             foreach (var (token, rgbKey, activeAlpha, inactiveRgb, inactiveAlpha) in new[]
             {
-                ("ShellFrameOuterEdgeColor", "OutlineColor", "ActiveOutlineAlpha", "InactiveOutlineColor", "InactiveOutlineAlpha"),
-                ("ShellFrameInnerHighlightColor", "SecondOutlineColor", "ActiveSecondOutlineAlpha", "InactiveSecondOutlineColor", "InactiveSecondOutlineAlpha")
+                ("StrokeDefaultColor", "OutlineColor", "ActiveOutlineAlpha", "InactiveOutlineColor", "InactiveOutlineAlpha")
             })
             {
                 Assert.True(app.TryGetResource(token, theme, out var resource));

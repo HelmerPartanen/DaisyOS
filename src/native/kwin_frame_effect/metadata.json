@@ -1,9 +1,9 @@
 {
     "KPlugin": {
         "Name": "Daisy Window Frame",
-        "Description": "DaisyOS rounded windows with two inset frame bands",
+        "Description": "DaisyOS native window clipping and nested scene outlines",
         "License": "GPL-2.0-or-later",
-        "Version": "1.1",
+        "Version": "2.0",
         "EnabledByDefault": false
     },
     "org.kde.kwin.effect": { "exclusiveGroup": "", "internal": false }
