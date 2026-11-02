@@ -16,24 +16,9 @@
     </Style>
     <!-- Selection is a quiet Files-style surface; accent is reserved for actions and focus. -->
 
-    <Style Selector="Border.NavBadge">
-      <Setter Property="Width" Value="28" />
-      <Setter Property="Height" Value="28" />
-      <Setter Property="CornerRadius" Value="14" />
-      <Setter Property="VerticalAlignment" Value="Center" />
-      <Setter Property="HorizontalAlignment" Value="Center" />
-      <Setter Property="ClipToBounds" Value="True" />
-    </Style>
-    <Style Selector="Border.NavBadge controls|DaisyIcon">
-      <Setter Property="Size" Value="16" />
-      <Setter Property="Foreground" Value="#FFFFFFFF" />
-      <Setter Property="HorizontalAlignment" Value="Center" />
-      <Setter Property="VerticalAlignment" Value="Center" />
-    </Style>
-
     <Style Selector="controls|DaisyIcon.NavIcon">
-      <Setter Property="Size" Value="16" />
-      <Setter Property="Foreground" Value="#FFFFFFFF" />
+      <Setter Property="Size" Value="{DynamicResource IconSizeMedium}" />
+      <Setter Property="Width" Value="24" />
       <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="VerticalAlignment" Value="Center" />
     </Style>
@@ -42,10 +27,8 @@
       <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
       <Setter Property="FontWeight" Value="Medium" />
       <Setter Property="VerticalAlignment" Value="Center" />
-      <Setter Property="Margin" Value="12,0,0,0" />
-    </Style>
-    <Style Selector="Button.SettingsNavItem controls|DaisyIcon.NavIcon, Button.SettingsNavItem.Active controls|DaisyIcon.NavIcon">
-      <Setter Property="Foreground" Value="#FFFFFFFF" />
+      <Setter Property="Margin" Value="10,0,0,0" />
+      <Setter Property="TextTrimming" Value="CharacterEllipsis" />
     </Style>
     <Style Selector="Button.SettingsNavItem.Active TextBlock.NavLabel">
       <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
@@ -247,138 +230,108 @@
           </StackPanel>
           <StackPanel x:Name="NavigationItems" Spacing="{DynamicResource SidebarItemGap}">
           <Button x:Name="NavSystem" Classes="Large SettingsNavItem Active" Click="OnNavCategoryClicked" Tag="System">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#8E8E93">
-                <controls:DaisyIcon Icon="gear-six" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_6725E7BBCD28}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="gear-six" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_6725E7BBCD28}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavDisplays" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Displays">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#007AFF">
-                <controls:DaisyIcon Icon="monitor" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_5A3452EB50BC}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="monitor" Classes="NavIcon" Foreground="{DynamicResource FileLocationDesktopBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_5A3452EB50BC}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavSound" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Sound">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#FF2D55">
-                <controls:DaisyIcon Icon="speaker-high" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_46124E023603}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="speaker-high" Classes="NavIcon" Foreground="{DynamicResource AccentOptionPinkBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_46124E023603}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavNetwork" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Network">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#007AFF">
-                <controls:DaisyIcon Icon="wifi-02" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_337253F2E8D4}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="wifi-02" Classes="NavIcon" Foreground="{DynamicResource FileLocationDesktopBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_337253F2E8D4}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavEthernet" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Ethernet">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#0A84FF">
-                <controls:DaisyIcon Icon="ethernet" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_681E12098D28}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="ethernet" Classes="NavIcon" Foreground="{DynamicResource FileLocationDownloadsBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_681E12098D28}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavBluetooth" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Bluetooth">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#007AFF">
-                <controls:DaisyIcon Icon="bluetooth" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_8BB29098B369}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="bluetooth" Classes="NavIcon" Foreground="{DynamicResource FileLocationPicturesBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_8BB29098B369}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavContinuity" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Continuity">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#FF9500">
-                <controls:DaisyIcon Icon="continuity" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_8971F58F9CCF}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="continuity" Classes="NavIcon" Foreground="{DynamicResource AccentOptionOrangeBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_8971F58F9CCF}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavAppearance" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Appearance">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#AF52DE">
-                <controls:DaisyIcon Icon="palette" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_3907FA7F8072}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="palette" Classes="NavIcon" Foreground="{DynamicResource AccentOptionPurpleBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_3907FA7F8072}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavNotifications" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Notifications">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#FF3B30">
-                <controls:DaisyIcon Icon="bell" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_788011833A5A}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="bell" Classes="NavIcon" Foreground="{DynamicResource AccentOptionRedBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_788011833A5A}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavApps" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Apps">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#5856D6">
-                <controls:DaisyIcon Icon="squares-four" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_89DD748442C1}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="squares-four" Classes="NavIcon" Foreground="{DynamicResource AccentOptionPurpleBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_89DD748442C1}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavStorage" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Storage">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#8E8E93">
-                <controls:DaisyIcon Icon="hard-drives" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_A69C4DECE144}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="hard-drives" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_A69C4DECE144}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavAccessibility" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Accessibility">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#007AFF">
-                <controls:DaisyIcon Icon="person-arms-spread" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_D3368CBFFE23}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="person-arms-spread" Classes="NavIcon" Foreground="{DynamicResource FileLocationDesktopBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_D3368CBFFE23}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavInput" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Input">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#8E8E93">
-                <controls:DaisyIcon Icon="keyboard" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_595D74BA3B2F}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="keyboard" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_595D74BA3B2F}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavDateTime" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="DateTime">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#FF3B30">
-                <controls:DaisyIcon Icon="clock" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_2459EA42894C}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="clock" Classes="NavIcon" Foreground="{DynamicResource AccentOptionRedBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_2459EA42894C}" Classes="NavLabel" />
+            </Grid>
           </Button>
 
           <Button x:Name="NavAbout" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="About">
-            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-              <Border Classes="NavBadge" Background="#8E8E93">
-                <controls:DaisyIcon Icon="info" Classes="NavIcon" />
-              </Border>
-              <TextBlock Text="{DynamicResource Loc_4EFCA0D10C5F}" Classes="NavLabel" />
-            </StackPanel>
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="info" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_4EFCA0D10C5F}" Classes="NavLabel" />
+            </Grid>
           </Button>
           </StackPanel>
           </StackPanel>
