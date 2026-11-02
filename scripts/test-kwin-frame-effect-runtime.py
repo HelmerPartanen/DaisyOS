@@ -43,6 +43,9 @@ def check_frames(count=2, square=False, resized=False):
             assert len(frames) == count, frames
             for frame in frames:
                 assert frame['bands'] == 2, frame
+                assert abs(frame['borderX']) < 0.001 and abs(frame['borderY']) < 0.001, frame
+                assert abs(frame['borderWidth'] - frame['width']) < 0.001, frame
+                assert abs(frame['borderHeight'] - frame['height']) < 0.001, frame
                 caption = frame['caption']
                 original_radii.setdefault(caption, frame['originalRadius'])
                 assert frame['originalRadius'] == original_radii[caption], frame

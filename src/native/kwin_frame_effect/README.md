@@ -1,7 +1,7 @@
 # Daisy window frame
 
 The `daisyframe` plugin uses KWin 6.8's native scene graph: `Window::borderRadius`
-clips client content, and two `OutlinedBorderItem` nodes draw nested bands outside
+clips client content, and two `OutlinedBorderItem` nodes draw inset bands inside
 the frame. KWin handles pixel snapping, color management, opacity, damage and
 window transformations. There is no offscreen texture, custom fragment shader,
 or second corner mask. Both SSD and CSD windows use this path. The decoration
@@ -9,9 +9,9 @@ provides title bars, resize semantics and shadows without duplicating outlines.
 
 The shell configures a single one-pixel border using `StrokeDefaultColor`: dark
 in the light theme, light in the dark theme, with the same opacity as dividers.
-The optional second band is disabled. Because the bands extend outside frame
-geometry, they do not consume client pixels or interfere with input coordinates.
-Tiled and maximized windows are square and omit both external bands to avoid
+The optional second band is disabled. The border overlays the inside edge of the frame without changing window
+geometry or input coordinates.
+Tiled and maximized windows are square and omit both bands to avoid
 seams over neighbouring windows and panels. Fullscreen windows bypass styling.
 Layer-shell, internal and lock-screen surfaces are excluded by native type.
 

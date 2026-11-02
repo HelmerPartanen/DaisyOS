@@ -52,13 +52,17 @@ public:
                     {QStringLiteral("bands"), bands},
                     {QStringLiteral("outerWidth"), frame.outer->outline().thickness()},
                     {QStringLiteral("innerWidth"), frame.inner->outline().thickness()},
-                    {QStringLiteral("width"), frame.inner->innerRect().width()},
-                    {QStringLiteral("height"), frame.inner->innerRect().height()},
+                    {QStringLiteral("width"), w->frameGeometry().width()},
+                    {QStringLiteral("height"), w->frameGeometry().height()},
+                    {QStringLiteral("borderX"), frame.outer->position().x()},
+                    {QStringLiteral("borderY"), frame.outer->position().y()},
+                    {QStringLiteral("borderWidth"), frame.outer->size().width()},
+                    {QStringLiteral("borderHeight"), frame.outer->size().height()},
                 });
             }
             return QString::fromUtf8(QJsonDocument(frames).toJson(QJsonDocument::Compact));
         }
-        return QStringLiteral("DaisyFrame 2.0 (native scene outlines; %1 windows)").arg(m_frames.size());
+        return QStringLiteral("DaisyFrame 2.1 (native scene outlines; %1 windows)").arg(m_frames.size());
     }
     bool isActive() const override { return true; }
     int requestedEffectChainPosition() const override { return 99; }
@@ -128,24 +132,24 @@ private:
         const qreal radius = square ? 0.0 : number(active ? "Size" : "InactiveCornerRadius", 16, 256);
         frame.appliedRadius = KWin::BorderRadius(radius);
         window->setBorderRadius(frame.appliedRadius);
-        // Native outlines expand outwards from their inner rect. Nest the
-        // second rect outside the first band rather than overlaying two rings
-        // on client pixels. Tile/maximize has no outside frame to avoid seams
-        // over neighbouring windows and panels.
+        // Native outlines expand outwards from their inner rect. Inset that
+        // rect by the stroke width so the outer edge stays on the window edge.
+        // Optional second strokes sit further inside and share its centre of
+        // curvature. Keep square/tiled windows free of border seams.
         const qreal outer = square ? 0.0 : number(active ? "OutlineThickness" : "InactiveOutlineThickness", 1, 16);
         const qreal inner = square ? 0.0 : number(active ? "SecondOutlineThickness" : "InactiveSecondOutlineThickness", 1, 16);
         const KWin::RectF rect(QPointF(0, 0), w->frameGeometry().size());
         frame.inner->setOutline(KWin::BorderOutline(inner,
             color(active ? "SecondOutlineColor" : "InactiveSecondOutlineColor",
                 active ? "ActiveSecondOutlineAlpha" : "InactiveSecondOutlineAlpha", QColor(255, 255, 255, 26)),
-            KWin::BorderRadius(radius)));
-        frame.inner->setInnerRect(rect);
+            KWin::BorderRadius(std::max<qreal>(0.0, radius - outer - inner))));
+        frame.inner->setInnerRect(rect.adjusted(outer + inner, outer + inner, -outer - inner, -outer - inner));
         frame.inner->setVisible(inner > 0);
         frame.outer->setOutline(KWin::BorderOutline(outer,
             color(active ? "OutlineColor" : "InactiveOutlineColor",
                 active ? "ActiveOutlineAlpha" : "InactiveOutlineAlpha", QColor(0, 0, 0, 153)),
-            KWin::BorderRadius(radius + inner)));
-        frame.outer->setInnerRect(rect.adjusted(-inner, -inner, inner, inner));
+            KWin::BorderRadius(std::max<qreal>(0.0, radius - outer))));
+        frame.outer->setInnerRect(rect.adjusted(outer, outer, -outer, -outer));
         frame.outer->setVisible(outer > 0);
         if (!m_painted) {
             qInfo() << "DaisyFrame: painting window frames (native scene outlines)";
