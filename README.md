@@ -33,8 +33,8 @@ Clone the repository and build the primary solution:
 
 ```bash
 # Clone with submodules if any
-git clone https://github.com/helmeri/SnapOS.git
-cd SnapOS
+git clone https://github.com/helmeri/DaisyOS.git
+cd DaisyOS
 
 # Restore and build the solution
 dotnet restore
@@ -126,3 +126,9 @@ scripts/test.sh
 ## Contributing Guidelines
 
 Please see [CONTRIBUTING.md](CONTRIBUTING.md) for code formatting, pull request workflows, and development guidelines.
+
+---
+
+## License
+
+DaisyOS is open-source software licensed under the [MIT License](LICENSE).
