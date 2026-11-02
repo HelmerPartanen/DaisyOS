@@ -333,6 +333,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             if (widgetLibrary != null)
             {
                 widgetLibrary.WidgetDragRequested += OnWidgetDragRequested;
+                widgetLibrary.WidgetAddRequested += OnWidgetAddRequested;
             }
 
             ActualThemeVariantChanged += OnThemeVariantChanged;
@@ -348,6 +349,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             if (widgetLibrary != null)
             {
                 widgetLibrary.WidgetDragRequested -= OnWidgetDragRequested;
+                widgetLibrary.WidgetAddRequested -= OnWidgetAddRequested;
             }
 
             if (_app is not null)
@@ -556,6 +558,13 @@ namespace DaisyOS.Shell.Views.Components.Desktop
                 _viewModel,
                 CurrentMetrics,
                 InvalidateReorderPanel);
+        }
+
+        private void OnWidgetAddRequested(string widgetType, int colSpan, int rowSpan)
+        {
+            this.FindControl<WidgetLibraryOverlay>("WidgetLibrary")?.Dismiss();
+            _viewModel.AddNewWidget(widgetType, colSpan, rowSpan, CurrentMetrics);
+            InvalidateReorderPanel();
         }
 
         private void DesktopView_SizeChanged(object? sender, SizeChangedEventArgs e)

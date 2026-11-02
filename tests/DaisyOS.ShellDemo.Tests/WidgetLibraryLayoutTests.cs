@@ -25,7 +25,7 @@ public sealed class WidgetLibraryLayoutTests
     [AvaloniaTheory]
     [InlineData(1024, 768, true)]
     [InlineData(640, 560, false)]
-    public void EveryCategoryFitsWithoutScrollingOrOverlapping(double width, double height, bool dark)
+    public void EveryCategoryShowsOneLiveVariantAtATime(double width, double height, bool dark)
     {
         var library = new WidgetLibraryOverlay();
         library.Resources["MotionDurationEnter"] = TimeSpan.Zero;
@@ -37,47 +37,45 @@ public sealed class WidgetLibraryLayoutTests
         {
             window.UpdateLayout();
             Assert.Contains(library.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Widget Gallery");
-            Assert.Contains(library.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "4 widget families");
-            foreach (var category in new[] { "Clock", "Calendar", "Media", "Photos" })
+            var expected = new Dictionary<string, (Type Widget, string[] Tags)>
+            {
+                ["Clock"] = (typeof(Control), ["3,2", "3,2", "3,2", "3,2"]),
+                ["Calendar"] = (typeof(DaisyOS.Shell.DesktopWidgets.CalendarWidget), ["3,2", "4,2"]),
+                ["Media"] = (typeof(DaisyOS.Shell.DesktopWidgets.MediaWidget), ["3,2", "5,2", "5,6"]),
+                ["Photos"] = (typeof(DaisyOS.Shell.DesktopWidgets.ImageWidget), ["3,2", "4,2", "5,4"]),
+            };
+            var viewport = library.FindControl<Grid>("CarouselViewport")!;
+            var next = library.FindControl<Button>("NextVariantButton")!;
+            var previous = library.FindControl<Button>("PreviousVariantButton")!;
+            foreach (var (category, (widgetType, tags)) in expected)
             {
                 library.FindControl<Button>($"{category}CategoryButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
                 window.UpdateLayout();
-                var area = library.FindControl<Grid>("PreviewArea")!;
-                var panel = library.FindControl<Control>($"{category}PreviewsPanel")!;
-                var cards = panel.GetVisualDescendants().OfType<Border>().Where(b => b.Classes.Contains("PreviewCard")).ToArray();
-                Assert.Equal(category is "Photos" or "Clock" or "Media" ? 3 : 2, cards.Length);
-                Assert.Equal(cards.Length, panel.GetVisualDescendants().OfType<Border>().Count(b => b.Classes.Contains("SizeBadge")));
-                var rectangles = cards.Select(card =>
+                var cards = library.FindControl<Grid>("CarouselTrack")!.Children.OfType<Border>().ToArray();
+                Assert.Equal(tags, cards.Select(card => (string)card.Tag!).ToArray());
+                Assert.Equal(cards.Length, library.FindControl<StackPanel>("PageDots")!.Children.Count);
+                Assert.Empty(library.GetVisualDescendants().OfType<ScrollViewer>());
+                if (widgetType != typeof(Control))
+                    Assert.All(cards, card => Assert.IsType(widgetType, ((Grid)((Viewbox)card.Child!).Child!).Children.Single()));
+                Assert.All(cards, card => Assert.False(((Grid)((Viewbox)card.Child!).Child!).Children.Single().IsHitTestVisible));
+                Assert.False(previous.IsEnabled);
+
+                for (var i = 0; i < cards.Length; i++)
                 {
-                    Assert.True(card.Bounds.Width > 50 && card.Bounds.Height > 50);
-                    var rectangle = new Rect(card.TranslatePoint(default, area)!.Value, card.Bounds.Size);
-                    Assert.True(rectangle.Left >= -0.1 && rectangle.Top >= -0.1 && rectangle.Right <= area.Bounds.Width + 0.1 && rectangle.Bottom <= area.Bounds.Height + 0.1,
-                        $"{category}: {rectangle} exceeds {area.Bounds.Size}");
-                    return rectangle;
-                }).ToArray();
-                for (var i = 0; i < rectangles.Length; i++)
-                    for (var j = i + 1; j < rectangles.Length; j++) Assert.False(rectangles[i].Intersects(rectangles[j]));
-                Assert.Empty(panel.GetVisualDescendants().OfType<ScrollViewer>());
-                Assert.All(cards, card => Assert.Equal(Avalonia.Media.Colors.Transparent,
-                    Assert.IsAssignableFrom<Avalonia.Media.ISolidColorBrush>(card.Background).Color));
-                double mediumWidth = cards[0].Bounds.Width;
-                double mediumHeight = cards[0].Bounds.Height;
-                Assert.InRange(mediumWidth / mediumHeight, 222d / 176 - 0.02, 222d / 176 + 0.02);
-                if (category == "Calendar")
-                    Assert.InRange(cards[1].Bounds.Width / mediumWidth, 4d / 3 - 0.02, 4d / 3 + 0.02);
-                if (category == "Media")
-                {
-                    Assert.Equal("5,6", cards[2].Tag);
-                    Assert.InRange(cards[1].Bounds.Width / mediumWidth, 5d / 3 - 0.02, 5d / 3 + 0.02);
-                    Assert.InRange(cards[2].Bounds.Height / mediumHeight, 2.98, 3.02);
+                    if (i > 0) next.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    window.UpdateLayout();
+                    var active = cards[i];
+                    Assert.Equal(1, active.Opacity);
+                    var group = Assert.IsType<Avalonia.Media.TransformGroup>(active.RenderTransform);
+                    Assert.Contains(group.Children, t => t is Avalonia.Media.Rotate3DTransform);
+                    var rect = new Rect(active.TranslatePoint(default, viewport)!.Value, active.Bounds.Size);
+                    Assert.True(rect.Width > 40 && rect.Height > 40);
+                    Assert.True(rect.Left >= -0.5 && rect.Top >= -0.5 && rect.Right <= viewport.Bounds.Width + 0.5 && rect.Bottom <= viewport.Bounds.Height + 0.5,
+                        $"{category}[{i}]: {rect} exceeds {viewport.Bounds.Size}");
+                    // Every other variant is dimmed and turned away; only one is in focus.
+                    Assert.All(cards.Where(card => card != active), card => Assert.True(card.Opacity < 0.5));
                 }
-                if (category == "Photos")
-                {
-                    Assert.Empty(panel.GetVisualDescendants().OfType<Image>());
-                    Assert.InRange(cards[1].Bounds.Width / mediumWidth, 4d / 3 - 0.02, 4d / 3 + 0.02);
-                    Assert.InRange(cards[2].Bounds.Width / mediumWidth, 5d / 3 - 0.02, 5d / 3 + 0.02);
-                    Assert.InRange(cards[2].Bounds.Height / mediumHeight, 1.98, 2.02);
-                }
+                Assert.False(next.IsEnabled);
                 using var frame = window.CaptureRenderedFrame();
                 Assert.NotNull(frame);
                 frame.Save($"/tmp/daisy-widget-{category}-{width}.png", Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
@@ -86,6 +84,25 @@ public sealed class WidgetLibraryLayoutTests
         finally { window.Close(); }
     }
 
+    [AvaloniaFact]
+    public void AddWidgetReportsTheDisplayedVariant()
+    {
+        var library = new WidgetLibraryOverlay();
+        library.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        var window = new Window { Width = 1024, Height = 768, Content = library };
+        window.Show();
+        try
+        {
+            library.Open();
+            (string, int, int)? request = null;
+            library.WidgetAddRequested += (type, columns, rows) => request = (type, columns, rows);
+            library.FindControl<Button>("PhotosCategoryButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            library.FindControl<Button>("NextVariantButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            library.FindControl<Button>("AddWidgetButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Assert.Equal(("image", 4, 2), request);
+        }
+        finally { window.Close(); }
+    }
     [AvaloniaFact]
     public async Task LibraryScalesInAndReleasesInputBeforeFinishingItsExit()
     {

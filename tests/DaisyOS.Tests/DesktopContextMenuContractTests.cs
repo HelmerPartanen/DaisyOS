@@ -93,13 +93,12 @@ public sealed class DesktopContextMenuContractTests
         var libraryCode = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "Views", "Components", "Widgets", "WidgetLibraryOverlay.axaml.cs"));
         var desktop = File.ReadAllText(Path.Combine(root, "src", "DaisyOS.Shell", "ViewModels", "DesktopViewModel.cs"));
 
-        Assert.Contains("PhotosPreviewsPanel", library);
-        Assert.Contains("OnPhotosMediumPressed", libraryCode);
-        Assert.Contains("OnPhotosLargePressed", libraryCode);
-        Assert.Contains("OnPhotosExtraLargePressed", libraryCode);
-        Assert.Contains("StartDragForPreview(\"image\", 3, 2", libraryCode);
-        Assert.Contains("StartDragForPreview(\"image\", 4, 2", libraryCode);
-        Assert.Contains("StartDragForPreview(\"image\", 5, 4", libraryCode);
+        Assert.Contains("\"Photos\" =>", libraryCode);
+        Assert.Contains("new(\"image\", 3, 2", libraryCode);
+        Assert.Contains("new(\"image\", 4, 2", libraryCode);
+        Assert.Contains("new(\"image\", 5, 4", libraryCode);
+        Assert.Contains("new ImageWidget()", libraryCode);
+        Assert.Contains("PhotosCategoryButton", library);
         Assert.Contains("SupportsExtraLargeSize = true", desktop);
         Assert.Contains("IsSizeExtraLarge => IsMediaWidget ? RowSpan > 2 : ColumnSpan == 5 && RowSpan == 4", desktop);
     }

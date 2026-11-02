@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:desktopWidgets="clr-namespace:DaisyOS.Shell.DesktopWidgets" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="DaisyOS.Shell.Views.Components.Widgets.WidgetLibraryOverlay" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="False" PointerPressed="OnBackdropPointerPressed">
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="DaisyOS.Shell.Views.Components.Widgets.WidgetLibraryOverlay" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="False" Focusable="True" PointerPressed="OnBackdropPointerPressed">
   <UserControl.Styles>
     <Style Selector="Border.WidgetLibraryFrame">
       <Setter Property="Background" Value="{DynamicResource ShellFrameOuterEdgeBrush}" />
@@ -30,10 +30,7 @@
       <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
       <Setter Property="FontWeight" Value="Medium" />
     </Style>
-    <Style Selector="Button.CategoryButton TextBlock, Button.CategoryButton.Active TextBlock">
-      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
-    </Style>
-    <Style Selector="Button.CategoryButton controls|DaisyIcon, Button.CategoryButton.Active controls|DaisyIcon">
+    <Style Selector="Button.CategoryButton TextBlock">
       <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
     </Style>
     <Style Selector="Button.CategoryButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
@@ -44,22 +41,17 @@
     </Style>
     <Style Selector="Border.PreviewCard">
       <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedXXL}" />
-      <Setter Property="RenderTransform" Value="scale(1.0)" />
-      <Setter Property="Transitions">
-        <Transitions>
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationBase}" Easing="{StaticResource MotionEaseMove}" />
-          <BoxShadowsTransition Property="BoxShadow" Duration="{DynamicResource MotionDurationBase}" />
-        </Transitions>
-      </Setter>
-    </Style>
-    <Style Selector="Border.PreviewCard:pointerover">
-      <Setter Property="RenderTransform" Value="scale(1.01)" />
-      <Setter Property="BoxShadow" Value="{DynamicResource ElevationFlyoutShadow}" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
     </Style>
     <Style Selector="TextBlock.WidgetGalleryTitle">
-      <Setter Property="FontSize" Value="{DynamicResource TypeSizeHeading}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeTitle}" />
       <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBlock.VariantTitle">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeSubtitle}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="HorizontalAlignment" Value="Center" />
       <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
     </Style>
     <Style Selector="TextBlock.WidgetGalleryHint">
@@ -77,278 +69,145 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
     </Style>
+    <Style Selector="Button.CarouselNav">
+      <Setter Property="Width" Value="40" />
+      <Setter Property="Height" Value="40" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="VerticalAlignment" Value="Center" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="ZIndex" Value="500" />
+      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEasePress}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.CarouselNav /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="BoxShadow" Value="{DynamicResource ElevationFlyoutShadow}" />
+    </Style>
+    <Style Selector="Button.CarouselNav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
+    </Style>
+    <Style Selector="Button.CarouselNav:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.92)" />
+    </Style>
+    <Style Selector="Button.CarouselNav:disabled">
+      <Setter Property="Opacity" Value="0" />
+      <Setter Property="IsHitTestVisible" Value="False" />
+    </Style>
+    <Style Selector="Button.CarouselNav:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BoxShadow" Value="none" />
+    </Style>
+    <Style Selector="Border.PageDot">
+      <Setter Property="Width" Value="7" />
+      <Setter Property="Height" Value="7" />
+      <Setter Property="Margin" Value="3,0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusPill}" />
+      <Setter Property="Background" Value="{DynamicResource ContentTertiaryBrush}" />
+      <Setter Property="Opacity" Value="0.5" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <DoubleTransition Property="Width" Duration="{DynamicResource MotionDurationSlow}" Easing="{StaticResource MotionEaseMove}" />
+          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationSlow}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Border.PageDot.Active">
+      <Setter Property="Width" Value="20" />
+      <Setter Property="Opacity" Value="1" />
+      <Setter Property="Background" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
   </UserControl.Styles>
   <Grid Background="Transparent" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-    <controls:ShellFrameBorder Classes="WidgetLibraryFrame" Width="820" Height="480" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,58" x:Name="LibraryFrame">
+    <controls:ShellFrameBorder Classes="WidgetLibraryFrame" Width="860" Height="540" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,58" x:Name="LibraryFrame">
       <controls:ShellFrameBorder Classes="WidgetLibraryHighlight">
         <Border x:Name="LibraryCard" Classes="WidgetLibraryCard">
-          <Grid RowDefinitions="Auto,*,Auto" RowSpacing="14">
-            <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+          <Grid ColumnDefinitions="168,*" ColumnSpacing="20">
+            <!-- Families -->
+            <Grid Grid.Column="0" RowDefinitions="Auto,*,Auto" RowSpacing="14">
               <StackPanel Spacing="3">
                 <TextBlock Text="Widget Gallery" Classes="WidgetGalleryTitle" />
-                <TextBlock Text="Choose a style and size, then drag it onto your desktop." Classes="WidgetGalleryHint" />
+                <TextBlock Text="Swipe to compare sizes." Classes="WidgetGalleryHint" />
               </StackPanel>
-              <Border Grid.Column="1" Classes="SizeBadge" VerticalAlignment="Center">
-                <TextBlock Text="4 widget families" />
-              </Border>
-            </Grid>
-            <Grid Grid.Row="1" ColumnDefinitions="160,*" ColumnSpacing="24">
-              <StackPanel Grid.Column="0" Spacing="4" VerticalAlignment="Top">
+              <StackPanel Grid.Row="1" Spacing="4" VerticalAlignment="Top">
                 <Button x:Name="ClockCategoryButton" Classes="CategoryButton Active" Click="OnClockCategoryClicked">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <controls:DaisyIcon Icon="clock" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                    <TextBlock Text="{DynamicResource Loc_93FF9273DE4B}" VerticalAlignment="Center" />
-                  </StackPanel>
+                  <Grid ColumnDefinitions="24,*">
+                    <controls:DaisyIcon Icon="clock" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource AccentOptionOrangeBrush}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_93FF9273DE4B}" VerticalAlignment="Center" />
+                  </Grid>
                 </Button>
                 <Button x:Name="CalendarCategoryButton" Classes="CategoryButton" Click="OnCalendarCategoryClicked">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <controls:DaisyIcon Icon="calendar" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                    <TextBlock Text="{DynamicResource Loc_D5D0A30B517E}" VerticalAlignment="Center" />
-                  </StackPanel>
+                  <Grid ColumnDefinitions="24,*">
+                    <controls:DaisyIcon Icon="calendar" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource AccentOptionRedBrush}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_D5D0A30B517E}" VerticalAlignment="Center" />
+                  </Grid>
                 </Button>
                 <Button x:Name="MediaCategoryButton" Classes="CategoryButton" Click="OnMediaCategoryClicked">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <controls:DaisyIcon Icon="music-note" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                    <TextBlock Text="{DynamicResource Loc_D357175CFE89}" VerticalAlignment="Center" />
-                  </StackPanel>
+                  <Grid ColumnDefinitions="24,*">
+                    <controls:DaisyIcon Icon="music-note" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource AccentOptionPinkBrush}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_D357175CFE89}" VerticalAlignment="Center" />
+                  </Grid>
                 </Button>
                 <Button x:Name="PhotosCategoryButton" Classes="CategoryButton" Click="OnPhotosCategoryClicked">
-                  <StackPanel Orientation="Horizontal" Spacing="10">
-                    <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                    <TextBlock Text="{DynamicResource Loc_5E3147AB51E0}" VerticalAlignment="Center" />
-                  </StackPanel>
+                  <Grid ColumnDefinitions="24,*">
+                    <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource FileLocationPicturesBrush}" HorizontalAlignment="Center" />
+                    <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_5E3147AB51E0}" VerticalAlignment="Center" />
+                  </Grid>
                 </Button>
               </StackPanel>
-              <Grid Grid.Column="1" x:Name="PreviewArea">
-                <Grid x:Name="ClockPreviewsPanel" ColumnDefinitions="*,*,*" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0" IsVisible="True" ColumnSpacing="16">
-                  <Grid Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnClockSweepPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Viewbox Stretch="Uniform">
-                        <Grid Width="222" Height="176">
-                          <desktopWidgets:ClockWidget />
-                        </Grid>
-                      </Viewbox>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Loc_3E0AF27D2BF9}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
-                    </StackPanel>
-                  </Grid>
-                  <Grid Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnClockDigitalPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Viewbox Stretch="Uniform">
-                        <Grid Width="222" Height="176">
-                          <desktopWidgets:DigitalClockWidget />
-                        </Grid>
-                      </Viewbox>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Loc_68B82C427301}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
-                    </StackPanel>
-                  </Grid>
-                  <Grid Grid.Column="2" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnClockAnalogPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Viewbox Stretch="Uniform">
-                        <Grid Width="222" Height="176">
-                          <desktopWidgets:AnalogClockWidget />
-                        </Grid>
-                      </Viewbox>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Loc_AC1EE367E355}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
-                    </StackPanel>
-                  </Grid>
+              <Button Grid.Row="2" x:Name="AddToShelfButton" Classes="CategoryButton" IsVisible="False" Click="OnAddMediaToBottomShelfClicked">
+                <Grid ColumnDefinitions="24,*">
+                  <controls:DaisyIcon Icon="arrow-down-left" Size="{DynamicResource IconSizeStandard}" HorizontalAlignment="Center" />
+                  <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_0C9E7986206D}" FontSize="{DynamicResource TypeSizeCaption}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
                 </Grid>
-                <Grid x:Name="CalendarPreviewsPanel" ColumnDefinitions="3*,4*" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0" IsVisible="False" ColumnSpacing="16">
-                  <Grid Grid.Column="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnCalendarMediumPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Viewbox Stretch="Uniform">
-                        <Grid Width="222" Height="176">
-                          <desktopWidgets:CalendarWidget x:Name="MediumCalendarPreview" />
-                        </Grid>
-                      </Viewbox>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                      <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
-                    </StackPanel>
-                  </Grid>
-                  <Grid Grid.Column="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="12">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnCalendarLargePressed" Tag="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Viewbox Stretch="Uniform">
-                        <Grid Width="296" Height="176">
-                          <desktopWidgets:CalendarWidget x:Name="LargeCalendarPreview" />
-                        </Grid>
-                      </Viewbox>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                      <TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                      <Border Classes="SizeBadge"><TextBlock Text="4 × 2" /></Border>
-                    </StackPanel>
-                  </Grid>
-                </Grid>
-                <Grid x:Name="MediaPreviewsPanel" RowDefinitions="Auto,*" HorizontalAlignment="Stretch" VerticalAlignment="Center" Margin="0" IsVisible="False" RowSpacing="16">
-                  <Button Grid.Row="0" Classes="CategoryButton" HorizontalAlignment="Left" Margin="0" Padding="{DynamicResource ControlPaddingHorizontal}" Click="OnAddMediaToBottomShelfClicked">
-                    <StackPanel Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
-                      <controls:DaisyIcon Icon="arrow-down-left" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                      <TextBlock Text="{DynamicResource Loc_0C9E7986206D}" FontWeight="SemiBold" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                    </StackPanel>
-                  </Button>
-                  <Grid Grid.Row="1" ColumnDefinitions="5*,5*" RowDefinitions="*,*" ColumnSpacing="16" RowSpacing="12">
-                    <Grid Grid.Column="0" Grid.Row="0" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="8">
-                      <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnMediaMediumPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                        <Viewbox Stretch="Uniform">
-                          <Grid Width="222" Height="176">
-                            <controls:WidgetContainer ColumnSpan="3" RowSpan="2" Padding="0">
-                              <Grid Background="{DynamicResource StateHoverBrush}">
-                                <Border Background="{DynamicResource SurfaceCardBrush}" Opacity="0.6" />
-                                <controls:DaisyIcon Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" Opacity="0.3" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                <Border VerticalAlignment="Bottom" Height="76" IsHitTestVisible="False">
-                                  <Border.Background>
-                                    <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
-                                      <GradientStop Color="{DynamicResource TransparentColor}" Offset="0" />
-                                      <GradientStop Color="{DynamicResource BlackAlpha56Color}" Offset="1" />
-                                    </LinearGradientBrush>
-                                  </Border.Background>
-                                </Border>
-                                <Grid VerticalAlignment="Bottom" Margin="14,12" ColumnDefinitions="*,Auto">
-                                  <StackPanel Grid.Column="0" Spacing="6" VerticalAlignment="Center">
-                                    <Border Width="88" Height="12" CornerRadius="4" Background="White" Opacity="0.6" HorizontalAlignment="Left" />
-                                    <Border Width="56" Height="8" CornerRadius="3" Background="White" Opacity="0.38" HorizontalAlignment="Left" />
-                                  </StackPanel>
-                                  <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="2" VerticalAlignment="Bottom">
-                                    <Border Width="2" Height="6" CornerRadius="1" Background="White" Opacity="0.5" />
-                                    <Border Width="2" Height="14" CornerRadius="1" Background="White" Opacity="0.5" />
-                                    <Border Width="2" Height="10" CornerRadius="1" Background="White" Opacity="0.5" />
-                                    <Border Width="2" Height="16" CornerRadius="1" Background="White" Opacity="0.5" />
-                                    <Border Width="2" Height="7" CornerRadius="1" Background="White" Opacity="0.5" />
-                                  </StackPanel>
-                                </Grid>
-                              </Grid>
-                            </controls:WidgetContainer>
-                          </Grid>
-                        </Viewbox>
-                      </Border>
-                      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                        <Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border>
-                      </StackPanel>
-                    </Grid>
-                    <Grid Grid.Column="0" Grid.Row="1" HorizontalAlignment="Stretch" VerticalAlignment="Center" RowDefinitions="*,Auto" RowSpacing="8">
-                      <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnMediaLargePressed" Tag="5,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                        <Viewbox Stretch="Uniform">
-                          <Grid Width="370" Height="176">
-                            <controls:WidgetContainer ColumnSpan="5" RowSpan="2" Padding="0">
-                              <Grid Margin="14" ColumnDefinitions="Auto,*">
-                                <Border Grid.Column="0" Width="128" Height="128" VerticalAlignment="Center" HorizontalAlignment="Left" CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" Background="{DynamicResource StateHoverBrush}" BoxShadow="{DynamicResource ElevationPreview}">
-                                  <controls:DaisyIcon Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" Opacity="0.4" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                                <Grid Grid.Column="1" Margin="14,2,0,2" RowDefinitions="Auto,*,Auto">
-                                  <StackPanel Grid.Row="0" Orientation="Horizontal" Spacing="2" HorizontalAlignment="Right" VerticalAlignment="Top">
-                                    <Border Width="2" Height="6" CornerRadius="1" Background="{DynamicResource ContentPrimaryBrush}" Opacity="0.4" />
-                                    <Border Width="2" Height="14" CornerRadius="1" Background="{DynamicResource ContentPrimaryBrush}" Opacity="0.4" />
-                                    <Border Width="2" Height="10" CornerRadius="1" Background="{DynamicResource ContentPrimaryBrush}" Opacity="0.4" />
-                                    <Border Width="2" Height="16" CornerRadius="1" Background="{DynamicResource ContentPrimaryBrush}" Opacity="0.4" />
-                                    <Border Width="2" Height="7" CornerRadius="1" Background="{DynamicResource ContentPrimaryBrush}" Opacity="0.4" />
-                                  </StackPanel>
-                                  <StackPanel Grid.Row="1" Spacing="6" HorizontalAlignment="Center" VerticalAlignment="Center">
-                                    <Border Width="90" Height="11" CornerRadius="4" Background="{DynamicResource ContentPrimaryBrush}" Opacity="0.45" HorizontalAlignment="Center" />
-                                    <Border Width="60" Height="8" CornerRadius="3" Background="{DynamicResource ContentSecondaryBrush}" Opacity="0.3" HorizontalAlignment="Center" />
-                                  </StackPanel>
-                                  <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="0" HorizontalAlignment="Center" VerticalAlignment="Bottom" IsHitTestVisible="False">
-                                    <Grid Width="40" Height="40">
-                                      <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Grid>
-                                    <Grid Width="40" Height="40">
-                                      <controls:DaisyIcon Icon="pause" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Grid>
-                                    <Grid Width="40" Height="40">
-                                      <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                    </Grid>
-                                  </StackPanel>
-                                </Grid>
-                              </Grid>
-                            </controls:WidgetContainer>
-                          </Grid>
-                        </Viewbox>
-                      </Border>
-                      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" />
-                        <Border Classes="SizeBadge"><TextBlock Text="5 × 2" /></Border>
-                      </StackPanel>
-                    </Grid>
-                    <Grid Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" RowDefinitions="*,Auto" RowSpacing="8">
-                      <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnMediaExtraLargePressed" Tag="5,6" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                        <Viewbox Stretch="Uniform">
-                          <Grid Width="370" Height="528">
-                            <controls:WidgetContainer ColumnSpan="5" RowSpan="6" Padding="18">
-                              <Grid RowDefinitions="*,Auto,Auto" RowSpacing="18">
-                                <Border Background="{DynamicResource StateHoverBrush}" CornerRadius="{DynamicResource RoundedLG}">
-                                  <controls:DaisyIcon Icon="music-note" Weight="Fill" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" Opacity="0.4" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                                </Border>
-                                <StackPanel Grid.Row="1" Spacing="8">
-                                  <Border Width="130" Height="12" CornerRadius="4" Background="{DynamicResource ContentPrimaryBrush}" Opacity="0.45" HorizontalAlignment="Left" />
-                                  <Border Width="90" Height="8" CornerRadius="3" Background="{DynamicResource ContentSecondaryBrush}" Opacity="0.3" HorizontalAlignment="Left" />
-                                </StackPanel>
-                                <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="24" HorizontalAlignment="Center">
-                                  <controls:DaisyIcon Icon="rewind" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                                  <controls:DaisyIcon Icon="pause" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                                  <controls:DaisyIcon Icon="fast-forward" Weight="Fill" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                                </StackPanel>
-                              </Grid>
-                            </controls:WidgetContainer>
-                          </Grid>
-                        </Viewbox>
-                      </Border>
-                      <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><TextBlock Text="{DynamicResource Loc_CC16912B3B97}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" /><Border Classes="SizeBadge"><TextBlock Text="5 × 6" /></Border></StackPanel>
-                    </Grid>
-                  </Grid>
-                </Grid>
-                <Grid x:Name="PhotosPreviewsPanel" ColumnDefinitions="4*,5*" RowDefinitions="*,*" ColumnSpacing="16" RowSpacing="16" IsVisible="False">
-                  <Grid RowDefinitions="*,Auto" RowSpacing="8" Grid.Column="0" Grid.Row="0">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnPhotosMediumPressed" Tag="3,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RoundedXXL}"
-                              ToolTip.Tip="{DynamicResource Loc_8438AB4A44E5}">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="12">
-                          <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
-                          <TextBlock Text="{DynamicResource Loc_640775CB2E83}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
-                        </StackPanel>
-                      </Border>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><TextBlock Text="{DynamicResource Loc_8E588CD18774}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" /><Border Classes="SizeBadge"><TextBlock Text="3 × 2" /></Border></StackPanel>
-                  </Grid>
-                  <Grid RowDefinitions="*,Auto" RowSpacing="8" Grid.Column="0" Grid.Row="1">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnPhotosLargePressed" Tag="4,2" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RoundedXXL}"
-                              ToolTip.Tip="{DynamicResource Loc_8438AB4A44E5}">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="12">
-                          <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
-                          <TextBlock Text="{DynamicResource Loc_640775CB2E83}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
-                        </StackPanel>
-                      </Border>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><TextBlock Text="{DynamicResource Loc_AB80540D98D2}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" /><Border Classes="SizeBadge"><TextBlock Text="4 × 2" /></Border></StackPanel>
-                  </Grid>
-                  <Grid RowDefinitions="*,Auto" RowSpacing="8" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2">
-                    <Border Classes="PreviewCard" CornerRadius="{DynamicResource RoundedXXL}" ClipToBounds="True" PointerPressed="OnPhotosExtraLargePressed" Tag="5,4" HorizontalAlignment="Center" VerticalAlignment="Center" Background="Transparent">
-                      <Border Background="{DynamicResource SurfaceRaisedBrush}" CornerRadius="{DynamicResource RoundedXXL}"
-                              ToolTip.Tip="{DynamicResource Loc_8438AB4A44E5}">
-                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Margin="12">
-                          <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeHero}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
-                          <TextBlock Text="{DynamicResource Loc_640775CB2E83}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" />
-                        </StackPanel>
-                      </Border>
-                    </Border>
-                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" HorizontalAlignment="Center"><TextBlock Text="{DynamicResource Loc_CC16912B3B97}" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentPrimaryBrush}" VerticalAlignment="Center" /><Border Classes="SizeBadge"><TextBlock Text="5 × 4" /></Border></StackPanel>
-                  </Grid>
-                </Grid>
-              </Grid>
+              </Button>
             </Grid>
-            <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="16">
-              <TextBlock Text="Tip: widget sizes align to the desktop grid." Classes="WidgetGalleryHint" VerticalAlignment="Center" />
-              <Button Grid.Column="1" Classes="Primary Small" Content="{DynamicResource Loc_11A6767D5674}" Click="OnDoneClicked" />
+            <!-- Stage: one variant at a time -->
+            <Grid Grid.Column="1" x:Name="PreviewArea" RowDefinitions="Auto,*,Auto,Auto" RowSpacing="12">
+              <StackPanel x:Name="VariantHeader" Spacing="4" HorizontalAlignment="Center">
+                <StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center">
+                  <TextBlock x:Name="VariantTitle" Classes="VariantTitle" VerticalAlignment="Center" />
+                  <Border Classes="SizeBadge" VerticalAlignment="Center"><TextBlock x:Name="VariantSizeText" /></Border>
+                </StackPanel>
+                <TextBlock x:Name="VariantDescription" Classes="WidgetGalleryHint" TextAlignment="Center" HorizontalAlignment="Center" MaxWidth="420" />
+              </StackPanel>
+              <Grid Grid.Row="1" x:Name="CarouselViewport" ClipToBounds="True" Background="Transparent">
+                <Grid x:Name="CarouselTrack" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                <Button x:Name="PreviousVariantButton" Classes="CarouselNav" HorizontalAlignment="Left" Margin="4,0,0,0" Click="OnPreviousVariantClicked" ToolTip.Tip="Previous size">
+                  <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                </Button>
+                <Button x:Name="NextVariantButton" Classes="CarouselNav" HorizontalAlignment="Right" Margin="0,0,4,0" Click="OnNextVariantClicked" ToolTip.Tip="Next size">
+                  <controls:DaisyIcon Icon="caret-right" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                </Button>
+              </Grid>
+              <StackPanel Grid.Row="2" x:Name="PageDots" Orientation="Horizontal" HorizontalAlignment="Center" Height="10" />
+              <Grid Grid.Row="3" ColumnDefinitions="*,Auto,*">
+                <Button Grid.Column="1" x:Name="AddWidgetButton" Classes="Primary Medium" MinWidth="200" Click="OnAddWidgetClicked">
+                  <StackPanel Orientation="Horizontal" Spacing="8">
+                    <controls:DaisyIcon Icon="add-circle" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center" />
+                    <TextBlock Text="Add Widget" VerticalAlignment="Center" />
+                  </StackPanel>
+                </Button>
+                <Button Grid.Column="2" Classes="Ghost Small" HorizontalAlignment="Right" Content="{DynamicResource Loc_11A6767D5674}" Click="OnDoneClicked" />
+              </Grid>
             </Grid>
           </Grid>
         </Border>
