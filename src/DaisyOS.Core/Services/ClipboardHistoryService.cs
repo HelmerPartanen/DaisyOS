@@ -35,7 +35,6 @@ public sealed class ClipboardHistoryService
     {
         if (string.IsNullOrWhiteSpace(text)) return;
 
-        text = text.Trim();
         lock (_lock)
         {
             // Remove existing duplicate if not pinned

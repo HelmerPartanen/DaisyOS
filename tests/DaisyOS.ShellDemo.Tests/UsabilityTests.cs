@@ -39,7 +39,7 @@ public sealed class UsabilityTests
         {
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
-            launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+            launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
             Assert.DoesNotContain(launcher.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Favourites");
             var firstPage = model.PageApps.ToArray();
             Assert.True(model.PageCount > 1);

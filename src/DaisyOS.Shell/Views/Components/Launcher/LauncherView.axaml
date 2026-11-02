@@ -7,15 +7,11 @@
              ClipToBounds="True">
 
   <UserControl.Styles>
-    <!-- A fullscreen launcher needs a fullscreen material. The translucent
-         role keeps the compositor blur visible behind the grid; gaming mode
-         swaps to the opaque role so a running game never pays for a
-         full-output blur sample while the launcher is open. -->
     <Style Selector="Border.LauncherBackdrop">
-      <Setter Property="Background" Value="{DynamicResource LauncherBackdropBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBaseBrush}" />
     </Style>
     <Style Selector="Border.LauncherBackdrop.SolidBackdrop">
-      <Setter Property="Background" Value="{DynamicResource LauncherSolidBackdropBrush}" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceBaseSolidBrush}" />
     </Style>
   </UserControl.Styles>
 
@@ -47,8 +43,7 @@
                 <TextBlock Text="{Binding Initial}"
                            FontSize="{DynamicResource TypeSizeTitle}"
                            FontWeight="SemiBold"
-                           Foreground="{DynamicResource DesktopItemLabelBrush}"
-                           Effect="{DynamicResource DesktopItemLabelShadow}"
+                           Foreground="{DynamicResource ContentPrimaryBrush}"
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center" />
               </Border>
@@ -77,8 +72,7 @@
                      LineHeight="{DynamicResource TypeLineCaption}"
                      FontWeight="Medium"
                      TextAlignment="Center"
-                     Foreground="{DynamicResource DesktopItemLabelBrush}"
-                     Effect="{DynamicResource DesktopItemLabelShadow}"
+                     Foreground="{DynamicResource ContentPrimaryBrush}"
                      TextTrimming="CharacterEllipsis"
                      TextWrapping="Wrap"
                      MaxLines="2"
@@ -91,17 +85,22 @@
     </DataTemplate>
   </UserControl.Resources>
 
-  <Border x:Name="LauncherRootBorder" Classes="LauncherBackdrop"
-          RenderTransformOrigin="50%,50%" ClipToBounds="True">
+  <Grid Background="Transparent">
     <Grid x:Name="LauncherContentGrid">
+      <Grid Margin="24">
+      <Border x:Name="LauncherRootBorder" Classes="LauncherBackdrop"
+              MaxWidth="{DynamicResource LauncherPanelMaxWidth}" MaxHeight="{DynamicResource LauncherPanelMaxHeight}"
+              HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+              CornerRadius="{DynamicResource RadiusSurface}"
+              BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
+              RenderTransformOrigin="50%,50%" ClipToBounds="False">
 
-      <!-- Keep the bottom 82px clear for the bars while the backdrop fills the output. -->
-      <!-- One centred column keeps the search bar, app grid, and utility bar on
-           the same optical axis at every output size. The column is also the
-           launcher's interactive boundary: clicking the surrounding backdrop
-           dismisses it, while every control inside stays live. -->
+      <Border x:Name="LauncherPanelClip" ClipToBounds="True"
+              BorderBrush="{DynamicResource ShellFrameInnerHighlightBrush}" BorderThickness="1"
+              CornerRadius="{DynamicResource RadiusSurfaceInner}">
       <Grid x:Name="LauncherInteractiveContent"
-            MaxWidth="1120" Margin="48,44,48,96"
+            Margin="22"
             Background="Transparent"
             HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
         <Grid.Styles>
@@ -184,13 +183,14 @@
 
         <Grid x:Name="LauncherStage" RowDefinitions="Auto,*,Auto" RenderTransformOrigin="50%,50%">
           <!-- Primary top focal axis: search and top results sit immediately adjacent. -->
-          <Border Grid.Row="0"
+          <Border Grid.Row="0" MaxWidth="480"
                   CornerRadius="{DynamicResource RadiusPill}"
                   BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
-                  HorizontalAlignment="Center"
-                  Margin="0,0,0,22">
+                  HorizontalAlignment="Stretch"
+                  Margin="0,0,0,16">
             <controls:SearchBar x:Name="LauncherSearchBar"
-                                Width="480"
+                                MaxWidth="480"
+                                HorizontalAlignment="Stretch"
                                 Height="{DynamicResource SearchHeightStandard}"
                                 CornerRadius="{DynamicResource RadiusPill}"
                                 Text="{Binding SearchText, Mode=TwoWay}"
@@ -204,12 +204,12 @@
               <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="14,0,0,0">
                 <TextBlock Text="{DynamicResource Loc_9CB965E5630E}" IsVisible="{Binding !HasSearchQuery}"
                            FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold"
-                           Foreground="{DynamicResource DesktopItemLabelBrush}"
-                           Effect="{DynamicResource DesktopItemLabelShadow}" VerticalAlignment="Center" />
+                           Foreground="{DynamicResource ContentPrimaryBrush}"
+                            VerticalAlignment="Center" />
                 <TextBlock Text="{DynamicResource Loc_E978B00DE465}" IsVisible="{Binding HasSearchQuery}"
                            FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold"
-                           Foreground="{DynamicResource DesktopItemLabelBrush}"
-                           Effect="{DynamicResource DesktopItemLabelShadow}" VerticalAlignment="Center" />
+                           Foreground="{DynamicResource ContentPrimaryBrush}"
+                            VerticalAlignment="Center" />
               </StackPanel>
 
               <Border Grid.Column="1"
@@ -219,12 +219,12 @@
                 <Panel>
                   <TextBlock Text="{Binding AllAppsCountText}" IsVisible="{Binding !HasSearchQuery}"
                              FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium"
-                             Foreground="{DynamicResource DesktopItemLabelBrush}"
-                             Effect="{DynamicResource DesktopItemLabelShadow}" />
+                             Foreground="{DynamicResource ContentPrimaryBrush}"
+                              />
                   <TextBlock Text="{Binding SearchResultsCountText}" IsVisible="{Binding HasSearchQuery}"
                              FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium"
-                             Foreground="{DynamicResource DesktopItemLabelBrush}"
-                             Effect="{DynamicResource DesktopItemLabelShadow}" />
+                             Foreground="{DynamicResource ContentPrimaryBrush}"
+                              />
                 </Panel>
               </Border>
             </Grid>
@@ -252,14 +252,12 @@
                           HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <controls:DaisyIcon Icon="magnifying-glass-minus"
                                     Size="{DynamicResource IconSizeHero}"
-                                    Foreground="{DynamicResource DesktopItemLabelBrush}"
-                                    Effect="{DynamicResource DesktopItemLabelShadow}"
+                                    Foreground="{DynamicResource ContentPrimaryBrush}"
                                     HorizontalAlignment="Center" />
                 <TextBlock Text="{DynamicResource Loc_68940BCF6E81}"
                            FontSize="{DynamicResource TypeSizeBodyMedium}"
                            FontWeight="Medium"
-                           Foreground="{DynamicResource DesktopItemLabelBrush}"
-                           Effect="{DynamicResource DesktopItemLabelShadow}"
+                           Foreground="{DynamicResource ContentPrimaryBrush}"
                            HorizontalAlignment="Center" />
               </StackPanel>
             </Grid>
@@ -273,20 +271,19 @@
                 <StackPanel Orientation="Horizontal" Spacing="10" VerticalAlignment="Center">
                   <Border Width="28" Height="28" CornerRadius="{DynamicResource RadiusCircle}"
                           Background="{DynamicResource SurfaceRaisedSubtleBrush}"
-                          Effect="{DynamicResource DesktopItemLabelShadow}">
+                          >
                     <Grid>
                       <TextBlock Text="{Binding UserInitial}" IsVisible="{DynamicResource ProfilePictureMissing}"
                                  FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Bold"
-                                 Foreground="{DynamicResource DesktopItemLabelBrush}"
+                                 Foreground="{DynamicResource ContentPrimaryBrush}"
                                  HorizontalAlignment="Center" VerticalAlignment="Center" />
                       <Ellipse Fill="{DynamicResource ProfilePictureBrush}" />
                     </Grid>
                   </Border>
-                  <TextBlock Text="{Binding UserName}"
+                  <TextBlock Text="{Binding UserName}" MaxWidth="140" TextTrimming="CharacterEllipsis"
                              FontSize="{DynamicResource TypeSizeBodySmall}"
                              FontWeight="Medium"
-                             Foreground="{DynamicResource DesktopItemLabelBrush}"
-                             Effect="{DynamicResource DesktopItemLabelShadow}"
+                             Foreground="{DynamicResource ContentPrimaryBrush}"
                              VerticalAlignment="Center" />
                 </StackPanel>
               </Border>
@@ -306,14 +303,17 @@
                       Click="OnPowerButtonClicked">
                 <controls:DaisyIcon Icon="power"
                                     Size="{DynamicResource IconSizeMedium}"
-                                    Foreground="{DynamicResource DesktopItemLabelBrush}"
-                                    Effect="{DynamicResource DesktopItemLabelShadow}"
+                                    Foreground="{DynamicResource ContentPrimaryBrush}"
                                     HorizontalAlignment="Center"
                                     VerticalAlignment="Center" />
               </Button>
             </Grid>
           </Border>
         </Grid>
+      </Grid>
+
+      </Border>
+      </Border>
       </Grid>
 
       <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
@@ -375,5 +375,5 @@
         </controls:ShellFrameBorder>
       </controls:ShellFrameBorder>
     </Grid>
-  </Border>
+  </Grid>
 </UserControl>

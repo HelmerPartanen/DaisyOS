@@ -59,9 +59,11 @@ public sealed class NotificationPresentationTests
             Assert.False(card.FindControl<Button>("PrimaryAction")!.IsVisible);
             // Pointer hit testing uses the rendered scene, not layout alone.
             using (window.CaptureRenderedFrame()) { }
-            window.MouseMove(new Point(100, 80));
-            window.MouseDown(new Point(100, 80), MouseButton.Left);
-            window.MouseUp(new Point(100, 80), MouseButton.Left);
+            var body = card.GetVisualDescendants().OfType<TextBlock>().Single(text => text.Text == "Body");
+            var bodyPoint = body.TranslatePoint(new Point(4, 4), window)!.Value;
+            window.MouseMove(bodyPoint);
+            window.MouseDown(bodyPoint, MouseButton.Left);
+            window.MouseUp(bodyPoint, MouseButton.Left);
             Assert.Equal(1, opened);
             var dismiss = card.GetVisualDescendants().OfType<Button>().First();
             var point = dismiss.TranslatePoint(new Point(16, 16), window)!.Value;
@@ -76,9 +78,10 @@ public sealed class NotificationPresentationTests
             window.UpdateLayout();
             Assert.True(card.FindControl<Button>("PrimaryAction")!.IsVisible);
             using (window.CaptureRenderedFrame()) { }
-            window.MouseMove(new Point(100, 80));
-            window.MouseDown(new Point(100, 80), MouseButton.Left);
-            window.MouseUp(new Point(100, 80), MouseButton.Left);
+            bodyPoint = body.TranslatePoint(new Point(4, 4), window)!.Value;
+            window.MouseMove(bodyPoint);
+            window.MouseDown(bodyPoint, MouseButton.Left);
+            window.MouseUp(bodyPoint, MouseButton.Left);
             Assert.Equal(1, opened);
         }
         finally { window.Close(); }

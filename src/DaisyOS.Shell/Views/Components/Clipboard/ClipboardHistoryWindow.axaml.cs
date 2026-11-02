@@ -7,6 +7,8 @@ using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.VisualTree;
+using System.Threading.Tasks;
 using DaisyOS.Core.Services;
 using DaisyOS.Shell.Controls;
 
@@ -15,16 +17,23 @@ namespace DaisyOS.Shell.Views.Components.Clipboard;
 public partial class ClipboardHistoryWindow : Window
 {
     private string _filterQuery = string.Empty;
+    private bool _copying;
 
-    public ClipboardHistoryWindow()
+    private readonly ClipboardHistoryService _history;
+
+    public ClipboardHistoryWindow() : this(ClipboardHistoryService.Instance) { }
+
+    internal ClipboardHistoryWindow(ClipboardHistoryService history)
     {
+        _history = history;
         InitializeComponent();
         Loc.RefreshOnChange(this, RefreshList);
 
+        Avalonia.Automation.AutomationProperties.SetName(CloseButton, Loc.Get("Close"));
         CloseButton.Click += (_, _) => Close();
         ClearAllButton.Click += (_, _) =>
         {
-            ClipboardHistoryService.Instance.ClearAll();
+            _history.ClearAll();
             RefreshList();
         };
 
@@ -39,7 +48,8 @@ public partial class ClipboardHistoryWindow : Window
         {
             if (e.Key == Key.Escape)
             {
-                Close();
+                if (!string.IsNullOrEmpty(SearchBox.Text)) SearchBox.Text = string.Empty;
+                else Close();
                 e.Handled = true;
             }
         }, RoutingStrategies.Tunnel);
@@ -54,13 +64,16 @@ public partial class ClipboardHistoryWindow : Window
     public void RefreshList()
     {
         ItemsContainer.Children.Clear();
-        var allItems = ClipboardHistoryService.Instance.GetItems();
+        var allItems = _history.GetItems();
 
         var filtered = string.IsNullOrWhiteSpace(_filterQuery)
             ? allItems
             : allItems.Where(i => i.Text.Contains(_filterQuery, StringComparison.OrdinalIgnoreCase)).ToList();
 
         EmptyState.IsVisible = filtered.Count == 0;
+        EmptyTitle.Text = Loc.Get(string.IsNullOrEmpty(_filterQuery) ? "No clips yet" : "No matching clips");
+        EmptyDetail.Text = Loc.Get(string.IsNullOrEmpty(_filterQuery) ? "Copy text to see it here." : "Try a different search or clear the filter.");
+        ClearAllButton.IsEnabled = allItems.Any(item => !item.IsPinned);
         StatusText.Text = allItems.Count == 1 ? Loc.Get("1 clip saved") : Loc.Format("{0} clips saved", allItems.Count);
 
         foreach (var item in filtered)
@@ -74,9 +87,10 @@ public partial class ClipboardHistoryWindow : Window
     {
         var card = new Border
         {
-            Background = this.FindResource("SurfaceSunkenBrush") as IBrush ?? Brushes.Transparent,
+            Classes = { "ClipCard" },
             CornerRadius = this.FindResource("RoundedMD") as CornerRadius? ?? new CornerRadius(8),
             Padding = new Thickness(12, 8),
+            Focusable = true,
             Cursor = new Cursor(StandardCursorType.Hand)
         };
 
@@ -143,7 +157,7 @@ public partial class ClipboardHistoryWindow : Window
         };
         pinBtn.Click += (s, e) =>
         {
-            ClipboardHistoryService.Instance.TogglePin(item.Id);
+            _history.TogglePin(item.Id);
             RefreshList();
         };
         Grid.SetColumn(pinBtn, 2);
@@ -166,25 +180,56 @@ public partial class ClipboardHistoryWindow : Window
         };
         delBtn.Click += (s, e) =>
         {
-            ClipboardHistoryService.Instance.RemoveClip(item.Id);
+            _history.RemoveClip(item.Id);
             RefreshList();
         };
         Grid.SetColumn(delBtn, 3);
         grid.Children.Add(delBtn);
 
-        // Click card to paste
+        ToolTip.SetTip(pinBtn, Loc.Get(item.IsPinned ? "Unpin" : "Pin"));
+        ToolTip.SetTip(delBtn, Loc.Get("Delete"));
+        Avalonia.Automation.AutomationProperties.SetName(pinBtn, Loc.Get(item.IsPinned ? "Unpin" : "Pin"));
+        Avalonia.Automation.AutomationProperties.SetName(delBtn, Loc.Get("Delete"));
+        Avalonia.Automation.AutomationProperties.SetName(card, item.Preview);
+
+        // Nested actions must not also copy the clip and close the window.
         card.PointerPressed += async (s, e) =>
         {
-            if (e.Source == pinBtn || e.Source == delBtn) return;
-            if (TopLevel.GetTopLevel(this)?.Clipboard is { } cb)
-            {
-                await cb.SetTextAsync(item.Text);
-            }
-            Close();
+            if (!e.GetCurrentPoint(card).Properties.IsLeftButtonPressed ||
+                e.Source is Visual source && source.GetSelfAndVisualAncestors().OfType<Button>().Any()) return;
+            e.Handled = true;
+            await CopyClipAsync(item);
+        };
+        card.KeyDown += async (_, e) =>
+        {
+            if (!ReferenceEquals(e.Source, card) || e.Key is not (Key.Enter or Key.Space)) return;
+            e.Handled = true;
+            await CopyClipAsync(item);
         };
 
         card.Child = grid;
         return card;
+    }
+
+    private async Task CopyClipAsync(ClipboardItem item)
+    {
+        if (_copying) return;
+        _copying = true;
+        try
+        {
+            if (Clipboard is not { } clipboard)
+            {
+                StatusText.Text = Loc.Get("Clipboard is unavailable. Try again.");
+                return;
+            }
+            await clipboard.SetTextAsync(item.Text);
+            Close();
+        }
+        catch (Exception)
+        {
+            StatusText.Text = Loc.Get("Couldn’t copy this clip. Try again.");
+        }
+        finally { _copying = false; }
     }
 
     private static string FormatTimeAgo(DateTimeOffset time)

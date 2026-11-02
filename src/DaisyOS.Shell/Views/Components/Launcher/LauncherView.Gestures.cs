@@ -40,7 +40,7 @@ public partial class LauncherView
         _revealProgress = Math.Clamp(progress, 0, 1);
         var content = _launcherRoot;
         content.Opacity = _revealProgress;
-        // Only transform the content. The full-output material never changes size.
+        // Only transform the content. The panel material and its blur bounds never change size.
         var stage = _launcherStage;
         var reduced = Application.Current is App { ReduceMotionEnabled: true };
         ApplyStageTransform(stage, reduced ? 1 : 0.88 + 0.12 * _revealProgress, 0);

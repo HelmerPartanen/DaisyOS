@@ -12,12 +12,12 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class GuiMotionTests
 {
     [AvaloniaFact]
-    public void LauncherBackdropAndBlurFillOutputWhileContentReservesBottomSafeArea()
+    public void LauncherBlurIsConfinedToTheCenteredPanel()
     {
         var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
             new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
         { IsVisible = false };
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         var overlay = new Grid();
         overlay.Children.Add(launcher);
         var window = new Window { Width = 1280, Height = 900, Content = overlay };
@@ -30,18 +30,20 @@ public sealed class GuiMotionTests
             using var blur = new DaisyOS.Shell.Services.Compositor.KWinBlur(window, launcher, () => [root]);
             var regions = blur.BuildRegions();
             Assert.True(launcher.ClipToBounds);
-            Assert.True(root.ClipToBounds);
-            Assert.Equal(0, regions.Min(region => region.X));
-            Assert.Equal(0, regions.Min(region => region.Y));
-            Assert.Equal((int)Math.Ceiling(window.Bounds.Width),
+            Assert.False(root.ClipToBounds);
+            Assert.True(launcher.FindControl<Border>("LauncherPanelClip")!.ClipToBounds);
+            var panelPosition = root.TranslatePoint(default, window)!.Value;
+            Assert.Equal((int)panelPosition.X, regions.Min(region => region.X));
+            Assert.Equal((int)panelPosition.Y, regions.Min(region => region.Y));
+            Assert.Equal((int)(panelPosition.X + root.Bounds.Width),
                 regions.Max(region => region.X + region.Width));
-            Assert.Equal((int)Math.Ceiling(window.Bounds.Height),
+            Assert.Equal((int)(panelPosition.Y + root.Bounds.Height),
                 regions.Max(region => region.Y + region.Height));
             var content = launcher.FindControl<Grid>("LauncherInteractiveContent")!;
             var contentBottom = content.TranslatePoint(new Point(0, content.Bounds.Height), launcher)!.Value.Y;
             Assert.True(contentBottom <= window.Bounds.Height - 82);
             using var frame = window.CaptureRenderedFrame();
-            frame!.Save("/tmp/daisy-launcher-fullscreen.png");
+            frame!.Save("/tmp/daisy-launcher-panel.png");
         }
         finally { launcher.CloseImmediate(); window.Close(); }
     }
@@ -193,13 +195,13 @@ public sealed class GuiMotionTests
     }
 
     [AvaloniaFact]
-    public async Task LauncherFillsTheOutputAndUsesFadeOnlyMotion()
+    public async Task LauncherKeepsPanelGeometryStationaryDuringInterruptedReveal()
     {
         var launcher = new DaisyOS.Shell.Views.Components.Launcher.LauncherView(
             new DaisyOS.Shell.ViewModels.LauncherViewModel(null, []))
         { IsVisible = false };
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.FromSeconds(1);
-        launcher.Resources["MotionDurationExit"] = TimeSpan.FromSeconds(1);
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.FromSeconds(1);
+        launcher.Resources["MotionDurationShellExit"] = TimeSpan.FromSeconds(1);
         var overlay = new Grid();
         overlay.Children.Add(launcher);
         var window = new Window { Width = 1280, Height = 900, Content = overlay };
@@ -235,7 +237,7 @@ public sealed class GuiMotionTests
             Assert.Equal(1, launcher.Opacity);
             Assert.False(closed);
             launcher.CloseImmediate();
-            launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+            launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
             launcher.AnimateIn();
             Assert.True(launcher.IsVisible);
             Assert.Equal(1, root.Opacity);

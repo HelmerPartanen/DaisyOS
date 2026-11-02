@@ -32,8 +32,11 @@ try
     var model = new LauncherViewModel(new ShellSessionState(Path.Combine(fixture.FullName, "state.json")), apps);
     var view = new LauncherView(model) { IsVisible = false };
     // Measure preparation/render work, excluding intentional animation duration.
+    // Keep generic overrides for comparison with older launcher assemblies.
     view.Resources["MotionDurationEnter"] = TimeSpan.Zero;
     view.Resources["MotionDurationExit"] = TimeSpan.Zero;
+    view.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
+    view.Resources["MotionDurationShellExit"] = TimeSpan.Zero;
     var window = new Window { Width = 1280, Height = 900, Content = view, Background = Brushes.Gray };
     window.Show(); view.AnimateIn(); Tick();
     var coldMs = cold.Elapsed.TotalMilliseconds;

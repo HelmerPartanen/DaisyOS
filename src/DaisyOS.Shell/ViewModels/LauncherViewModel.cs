@@ -49,8 +49,10 @@ public class LauncherViewModel : INotifyPropertyChanged
         rows = Math.Clamp(rows, 1, MaxPageRows);
         var size = columns * rows;
         if (size == _pageSize && columns == _pageColumns && rows == _pageRows) return;
+        var anchor = _selectedFilteredIndex >= 0 ? _selectedFilteredIndex : _pageIndex * _pageSize;
         _pages.Clear();
         _pageSize = size;
+        _pageIndex = anchor / size;
         _pageColumns = columns;
         _pageRows = rows;
         OnPropertyChanged(nameof(PageGridWidth));

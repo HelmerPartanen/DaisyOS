@@ -53,7 +53,7 @@ public partial class LauncherView : UserControl
     public bool IsAppContextMenuVisible => (_appContextMenu ?? this.FindControl<Border>("LauncherAppContextMenuHost"))?.IsVisible == true;
 
     /// <summary>
-    /// Gaming mode and fullscreen clients use an opaque backdrop. A full-output
+    /// Gaming mode and fullscreen clients use an opaque panel. A
     /// KWin blur sample is unnecessary there and competes with the game for
     /// GPU time; the translucent role is only used on the desktop.
     /// </summary>
@@ -66,7 +66,7 @@ public partial class LauncherView : UserControl
         BackdropStyleChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    /// <summary>True when the pointer landed on the live launcher column.</summary>
+    /// <summary>True when the pointer landed inside the launcher content.</summary>
     public bool IsWithinInteractiveContent(Visual source) =>
         this.FindControl<Grid>("LauncherInteractiveContent") is { } content &&
         IsWithin(source, content);
@@ -76,7 +76,7 @@ public partial class LauncherView : UserControl
     /// the dismissal backdrop, including the area around the centred column.
     /// </summary>
     public bool IsWithinInteractiveSurface(Visual source) =>
-        IsWithinInteractiveContent(source) ||
+        (_launcherRoot is { } frame && IsWithin(source, frame)) ||
         (this.FindControl<Border>("MenuBlurHost") is { } powerMenu && IsWithin(source, powerMenu)) ||
         (this.FindControl<Border>("LauncherAppContextMenuHost") is { } appMenu && IsWithin(source, appMenu));
 
@@ -88,10 +88,10 @@ public partial class LauncherView : UserControl
     {
         if (Application.Current is App { ReduceMotionEnabled: true })
             return TimeSpan.Zero;
-        var key = entering ? "MotionDurationEnter" : "MotionDurationExit";
+        var key = entering ? "MotionDurationShellEnter" : "MotionDurationShellExit";
         if (Resources.TryGetResource(key, ActualThemeVariant, out var localOverride) && localOverride is TimeSpan overridden)
             return overridden;
-        return TimeSpan.FromMilliseconds(entering ? 190 : 115);
+        return GuiMotion.ShellSlideDuration(this, entering);
     }
 
     private void AnimateStage(bool entering, TimeSpan duration, bool immediate = false)
@@ -652,18 +652,25 @@ public partial class LauncherView : UserControl
         var multiPage = ViewModel.PageCount > 1;
         host.Opacity = multiPage ? 1 : 0;
         host.IsHitTestVisible = multiPage;
+        host.IsEnabled = multiPage;
         host.Width = multiPage ? double.NaN : 0;
 
         var activeBrush = ResolveIndicatorBrush(active: true);
         var inactiveBrush = ResolveIndicatorBrush(active: false);
 
-        if (host.Children.Count == ViewModel.PageCount)
+        const int maxIndicators = 7;
+        var indicatorCount = Math.Min(maxIndicators, ViewModel.PageCount);
+        var firstPage = Math.Clamp(ViewModel.PageIndex - indicatorCount / 2, 0, ViewModel.PageCount - indicatorCount);
+        if (host.Children.Count == indicatorCount && host.Children.FirstOrDefault() is Button { Tag: int first } && first == firstPage)
         {
             for (var i = 0; i < host.Children.Count; i++)
             {
-                if (host.Children[i] is Button { Content: Border pill })
+                if (host.Children[i] is Button { Content: Border pill } button)
                 {
-                    var isCurrent = i == ViewModel.PageIndex;
+                    var label = Loc.Format("Page {0} of {1}", firstPage + i + 1, ViewModel.PageCount);
+                    Avalonia.Automation.AutomationProperties.SetName(button, label);
+                    ToolTip.SetTip(button, label);
+                    var isCurrent = firstPage + i == ViewModel.PageIndex;
                     pill.Width = isCurrent ? 20 : 7;
                     pill.Background = isCurrent ? activeBrush : inactiveBrush;
                     pill.Opacity = isCurrent ? 0.95 : 0.75;
@@ -677,13 +684,14 @@ public partial class LauncherView : UserControl
             ? TimeSpan.Zero
             : TimeSpan.FromMilliseconds(150);
 
-        for (var index = 0; index < ViewModel.PageCount; index++)
+        for (var index = firstPage; index < firstPage + indicatorCount; index++)
         {
             var page = index;
             var isCurrent = index == ViewModel.PageIndex;
             var button = new Button
             {
                 Classes = { "LauncherPageDotButton" },
+                Tag = index,
                 Height = 24,
                 Padding = new Thickness(5, 8),
                 Content = new Border
@@ -701,7 +709,8 @@ public partial class LauncherView : UserControl
                     }
                 }
             };
-            Avalonia.Automation.AutomationProperties.SetName(button, $"Page {index + 1} of {ViewModel.PageCount}");
+            Avalonia.Automation.AutomationProperties.SetName(button, Loc.Format("Page {0} of {1}", index + 1, ViewModel.PageCount));
+            ToolTip.SetTip(button, Loc.Format("Page {0} of {1}", index + 1, ViewModel.PageCount));
             button.Click += (_, _) => ViewModel.GoToPage(page);
             host.Children.Add(button);
         }

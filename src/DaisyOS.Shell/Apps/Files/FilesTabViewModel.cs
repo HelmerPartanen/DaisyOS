@@ -507,7 +507,10 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
 
     public async Task RefreshAsync()
     {
-        if (CurrentSession is { } session) await ReconcileAsync(session);
+        if (HasLoadError && !IsLoading)
+            await NavigateToAsync(CurrentPath, addHistory: false);
+        else if (CurrentSession is { } session)
+            await ReconcileAsync(session);
     }
 
     private async Task ReconcileAsync(DirectorySession session)

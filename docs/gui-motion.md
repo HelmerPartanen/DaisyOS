@@ -11,11 +11,9 @@ before an action takes effect.
 `GuiMotion` owns an interruptible animation per content control. Reopening a
 closing panel cancels the dismissal and starts from the current visual state.
 Reversals retain the sampled transform and opacity and shorten duration to the
-remaining distance. On first reveal the launcher lays out and prepares its static border images while
-transparent, initializes a fully
-off-screen transform, then becomes visible. It slides opaque through the bottom
-clip edge rather than fading into its resting position. Reversals keep the
-visible host intact. Launcher appearance does not wait for catalog icon decoding;
+remaining distance. The launcher uses a centered panel, bounded to 900 × 600 logical pixels with
+24px outer clearance. Its material fades at fixed geometry while the interior
+uses a subtle scale and translation. Reversals keep the visible host intact. Launcher appearance does not wait for catalog icon decoding;
 existing letter tiles remain visible until icons arrive. Logical visibility changes immediately, so dismissal releases Wayland input
 and keyboard capture before the visual exit completes. Old completions cannot
 hide a reopened panel. Popup contents cancel their animation on detachment.

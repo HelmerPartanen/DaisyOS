@@ -15,6 +15,28 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class FilesPolishTests
 {
+    [AvaloniaFact]
+    public async Task RefreshRetriesAFailedFolderWithoutLosingItsSearch()
+    {
+        var folder = Path.Combine(Path.GetTempPath(), "daisy-refresh-" + Guid.NewGuid());
+        using var tab = new FilesTabViewModel(folder, navigateImmediately: false, watchFiles: false);
+        try
+        {
+            await tab.NavigateToAsync(folder);
+            Assert.True(tab.HasLoadError);
+            tab.SearchQuery = "keep";
+            Directory.CreateDirectory(folder);
+            await File.WriteAllTextAsync(Path.Combine(folder, "keep.txt"), "text");
+            await tab.RefreshAsync();
+            await tab.ViewUpdateTask;
+            Assert.False(tab.HasLoadError);
+            Assert.False(tab.IsLoading);
+            Assert.Equal("keep", tab.SearchQuery);
+            Assert.Single(tab.FilteredEntries);
+        }
+        finally { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+    }
+
     [AvaloniaTheory]
     [InlineData(false, 740, 100)]
     [InlineData(true, 1040, 100)]

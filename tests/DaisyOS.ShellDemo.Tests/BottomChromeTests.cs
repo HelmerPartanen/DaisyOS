@@ -165,8 +165,8 @@ public sealed class BottomChromeTests
         var shell = new ShellView();
         shell.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         shell.Resources["MotionDurationShellExit"] = TimeSpan.Zero;
-        shell.Launcher.Resources["MotionDurationEnter"] = TimeSpan.FromMilliseconds(200);
-        shell.Launcher.Resources["MotionDurationExit"] = TimeSpan.FromMilliseconds(200);
+        shell.Launcher.Resources["MotionDurationShellEnter"] = TimeSpan.FromMilliseconds(200);
+        shell.Launcher.Resources["MotionDurationShellExit"] = TimeSpan.FromMilliseconds(200);
 
         shell.SetBottomBarAutoHide(true, true, true);
         Assert.False(shell.Taskbar.IsVisible);

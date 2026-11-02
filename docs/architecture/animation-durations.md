@@ -1,7 +1,7 @@
 Small hover/focus feedback:     100–140ms
 Menu / flyout open:             160–200ms
 Menu / flyout close:            100–140ms
-Launcher open (full-height):    220ms
+Launcher open (centered panel):    220ms
 Launcher close:                 130–170ms
 Notification toast in:          180–220ms
 Notification toast out:         140–180ms

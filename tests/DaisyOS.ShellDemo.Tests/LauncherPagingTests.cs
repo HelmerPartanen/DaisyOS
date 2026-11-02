@@ -100,7 +100,7 @@ public sealed class LauncherPagingTests
         var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
             .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
         var launcher = new LauncherView(model);
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         var window = new Window { Width = 1280, Height = 900, Content = launcher };
         window.Show();
         try
@@ -173,7 +173,7 @@ public sealed class LauncherPagingTests
         var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
             .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
         var launcher = new LauncherView(model);
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         var window = new Window { Width = 1280, Height = 900, Content = launcher };
         window.Show();
         try
@@ -284,7 +284,7 @@ public sealed class LauncherPagingTests
             .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray();
         var model = new LauncherViewModel(null, apps);
         var launcher = new LauncherView(model);
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.FromMilliseconds(240);
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.FromMilliseconds(240);
         var window = new Window { Width = 1280, Height = 900, Content = launcher };
         window.Show();
         try
@@ -302,7 +302,7 @@ public sealed class LauncherPagingTests
             Assert.Same(firstDot, dots.Children[0]);
             model.GoToPage(0);
             Assert.Equal(-launcher.FindControl<Grid>("LauncherPageViewport")!.Bounds.Width, incoming.RenderTransform!.Value.M31);
-            launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+            launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
             model.GoToPage(1);
             Assert.False(outgoing.IsVisible);
             Assert.Null(outgoing.ItemsSource);
@@ -319,7 +319,7 @@ public sealed class LauncherPagingTests
             .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray();
         var model = new LauncherViewModel(null, apps);
         var launcher = new LauncherView(model);
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         var window = new Window { Width = 1280, Height = 900, Content = launcher };
         window.Show();
         try
@@ -368,7 +368,7 @@ public sealed class LauncherPagingTests
     {
         var model = new LauncherViewModel(null, [new AppEntry("app", "App", "", "", false)]);
         var launcher = new LauncherView(model);
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         var window = new Window { Width = 1280, Height = 900, Content = launcher };
         window.Show();
         try
@@ -391,13 +391,13 @@ public sealed class LauncherPagingTests
             Assert.True(launcher.IsHitTestVisible);
             launcher.BeginInteractiveReveal(false);
             launcher.UpdateInteractiveReveal(0.6);
-            launcher.Resources["MotionDurationEnter"] = TimeSpan.FromMilliseconds(220);
-            launcher.Resources["MotionDurationExit"] = TimeSpan.FromMilliseconds(220);
+            launcher.Resources["MotionDurationShellEnter"] = TimeSpan.FromMilliseconds(220);
+            launcher.Resources["MotionDurationShellExit"] = TimeSpan.FromMilliseconds(220);
             launcher.EndInteractiveReveal(false, () => Assert.Fail("Interrupted close must not complete"));
             Assert.Equal(false, launcher.RevealSettlingTarget);
             Assert.Equal(0.6, launcher.BeginInteractiveReveal(true));
             Assert.Equal(0.6, material.Opacity); // Catch an in-flight close without a jump.
-            launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+            launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
             launcher.EndInteractiveReveal(true, () => { });
             Assert.Equal(1, material.Opacity);
             Assert.True(launcher.IsHitTestVisible);
@@ -414,7 +414,7 @@ public sealed class LauncherPagingTests
         var model = new LauncherViewModel(null, Enumerable.Range(0, 100)
             .Select(i => new AppEntry($"app-{i}", $"App {i:00}", "", "", false)).ToArray());
         var launcher = new LauncherView(model);
-        launcher.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         var window = new Window { Width = 1280, Height = 900, Content = launcher };
         window.Show();
         try
@@ -536,7 +536,7 @@ public sealed class LauncherPagingTests
         {
             window.UpdateLayout();
             Assert.True(model.PageRows <= 5);
-            Assert.Equal(5, model.PageRows);
+            Assert.Equal(3, model.PageRows);
 
             var searchBar = launcher.FindControl<DaisyOS.Shell.Controls.SearchBar>("LauncherSearchBar")!;
             Assert.True(Application.Current!.Resources.TryGetResource("SearchHeightStandard", null, out var expected));
