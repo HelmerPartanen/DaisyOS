@@ -39,15 +39,16 @@ public partial class LocalSendWindow : UserControl
         QueueFiles(paths ?? []);
         IsOpen = true;
         IsVisible = true;
-        _isSending = false;
-        SendButton.Classes.Remove("Loading");
-        SendButton.Content = Loc.Get("Send");
+        SendButton.Classes.Set("Loading", _isSending);
+        SendButton.Content = Loc.Get(_isSending ? "Sending…" : "Send");
+        UpdateSendAction();
         _service?.RequestDiscoveryRefresh(forceSubnetProbe: true);
         Dispatcher.UIThread.Post(() => DevicesList.Focus(), DispatcherPriority.Input);
     }
 
     public void QueueFiles(IEnumerable<string> paths)
     {
+        if (_isSending) return;
         var files = paths.Where(File.Exists).Distinct(StringComparer.Ordinal).ToArray();
         if (files.Length > 0)
         {
@@ -180,7 +181,8 @@ public partial class LocalSendWindow : UserControl
 
     private void UpdateSendAction()
     {
-        SendButton.IsEnabled = _service is not null && _selectedDevice is not null && _queuedPaths.Count > 0;
+        ChooseFilesButton.IsEnabled = !_isSending;
+        SendButton.IsEnabled = !_isSending && _service is not null && _selectedDevice is not null && _queuedPaths.Count > 0;
         SelectedDeviceText.Text = _selectedDevice is null ? string.Empty : _selectedDevice.Alias;
     }
 
@@ -195,13 +197,14 @@ public partial class LocalSendWindow : UserControl
     private async Task SendSelectedAsync()
     {
         if (_isSending || _service is null || _selectedDevice is null || _queuedPaths.Count == 0) return;
+        var paths = _queuedPaths.ToArray();
         _isSending = true;
-        SendButton.IsEnabled = false;
+        UpdateSendAction();
         SendButton.Classes.Add("Loading");
         SendButton.Content = Loc.Get("Sending…");
         try
         {
-            await _service.SendAsync(_selectedDevice, _queuedPaths);
+            await _service.SendAsync(_selectedDevice, paths);
             (Application.Current as App)?.Feedback.Show(Loc.Get("LocalSend transfer completed."));
             Dismiss();
         }
@@ -215,6 +218,7 @@ public partial class LocalSendWindow : UserControl
         {
             _isSending = false;
             SendButton.Classes.Remove("Loading");
+            UpdateSendAction();
         }
     }
 
@@ -240,11 +244,13 @@ public partial class LocalSendWindow : UserControl
     {
         if (TopLevel.GetTopLevel(this) is not { } topLevel) return;
         if (Application.Current is not App app) return;
-        var files = await app.PickFilesAsync(topLevel, new DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerOptions(
-            "Choose files to share", true, false, []));
+        var files = await app.PickFilesAsync(topLevel, CreateFilePickerOptions());
         QueueFiles(files ?? []);
         if (_queuedPaths.Count > 0) DevicesList.Focus(NavigationMethod.Directional);
     }
+
+    internal DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerOptions CreateFilePickerOptions() =>
+        new("Choose files to share", true, false, [], InitialSelection: _queuedPaths.ToArray());
 
     private void OnRefreshDevicesClicked(object? sender, RoutedEventArgs e)
     {

@@ -1,10 +1,11 @@
 using Avalonia;
 using Avalonia.Controls;
+using Path = Avalonia.Controls.Shapes.Path;
 using Avalonia.Media;
 
 namespace DaisyOS.Shell.Controls;
 
-/// <summary>Renders and independently colors the three bands from wifi-02.svg.</summary>
+/// <summary>Renders the three independently colored bands of the system Wi-Fi glyph.</summary>
 public sealed class WifiSignalIcon : Viewbox
 {
     public static readonly StyledProperty<int> SignalPercentProperty =
@@ -16,9 +17,9 @@ public sealed class WifiSignalIcon : Viewbox
     public static readonly StyledProperty<double> InactiveBandOpacityProperty =
         AvaloniaProperty.Register<WifiSignalIcon, double>(nameof(InactiveBandOpacity), 1d);
 
-    private readonly DaisyIcon _outerBand;
-    private readonly DaisyIcon _innerBand;
-    private readonly DaisyIcon _dot;
+    private readonly Path _outerBand;
+    private readonly Path _innerBand;
+    private readonly Path _dot;
 
     static WifiSignalIcon()
     {
@@ -34,9 +35,12 @@ public sealed class WifiSignalIcon : Viewbox
         Height = 18;
         Stretch = Stretch.Uniform;
 
-        _outerBand = CreateBand(new Rect(0, 0, 22, 6.5));
-        _innerBand = CreateBand(new Rect(0, 6.5, 22, 5));
-        _dot = CreateBand(new Rect(0, 11.5, 22, 5.5));
+        // These are the individual paths from the bundled wifi-02 glyph. Drawing
+        // each path once avoids overlapping copies of the complete SVG, whose
+        // per-layer clipping and opacity can be lost by the SVG renderer.
+        _outerBand = CreateBand("M1 5.5C1 5.5 4 1 11 1C18 1 21 5.5 21 5.5", true);
+        _innerBand = CreateBand("M5 9.5C5 9.5 7 7 11 7C15 7 17 9.5 17 9.5", true);
+        _dot = CreateBand("M8.57969 14.0797L10.2929 15.7929C10.6834 16.1834 11.3166 16.1834 11.7071 15.7929L13.4203 14.0797C13.7574 13.7426 13.8042 13.2125 13.4415 12.9032C12.9508 12.4848 12.137 12 11 12C9.86297 12 9.04915 12.4848 8.55854 12.9032C8.19584 13.2125 8.24262 13.7426 8.57969 14.0797Z", false);
         Child = new Canvas { Width = 22, Height = 17, Children = { _outerBand, _innerBand, _dot } };
     }
 
@@ -64,27 +68,30 @@ public sealed class WifiSignalIcon : Viewbox
         set => SetValue(InactiveBandOpacityProperty, Math.Clamp(value, 0, 1));
     }
 
-    private static DaisyIcon CreateBand(Rect clip) => new()
+    private static Path CreateBand(string data, bool stroked) => new()
     {
-        Icon = "wifi-02",
+        Data = Geometry.Parse(data),
         Width = 22,
         Height = 17,
-        Clip = new RectangleGeometry(clip)
+        Stretch = Stretch.None,
+        StrokeThickness = stroked ? 2 : 0,
+        StrokeLineCap = PenLineCap.Round,
+        IsHitTestVisible = false
     };
 
     private void UpdateBandBrushes()
     {
         var signal = SignalPercent;
-        SetBandBrush(_dot, signal > 0);
-        SetBandBrush(_innerBand, signal >= 34);
-        SetBandBrush(_outerBand, signal >= 67);
+        SetBandBrush(_dot, signal > 0, stroked: false);
+        SetBandBrush(_innerBand, signal >= 34, stroked: true);
+        SetBandBrush(_outerBand, signal >= 67, stroked: true);
     }
 
-    private void SetBandBrush(DaisyIcon band, bool isActive)
+    private void SetBandBrush(Path band, bool isActive, bool stroked)
     {
         var brush = isActive ? ActiveBrush : InactiveBrush;
-        if (brush is null) return;
-        band.Foreground = brush;
+        if (stroked) band.Stroke = brush;
+        else band.Fill = brush;
         band.Opacity = isActive ? 1 : InactiveBandOpacity;
     }
 }

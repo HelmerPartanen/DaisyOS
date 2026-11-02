@@ -637,6 +637,7 @@
   <x:Double x:Key="ButtonHeightSmall">32</x:Double>
   <x:Double x:Key="ButtonHeightMedium">36</x:Double>
   <x:Double x:Key="ButtonHeightLarge">42</x:Double>
+  <x:Double x:Key="WifiInactiveBandOpacity">0.3</x:Double>
   <x:Double x:Key="QuickSettingsControlHeight">44</x:Double>
   <x:Double x:Key="QuickSettingsPanelContentHeight">304</x:Double>
   <x:Double x:Key="ControlHeightComfortable">32</x:Double>

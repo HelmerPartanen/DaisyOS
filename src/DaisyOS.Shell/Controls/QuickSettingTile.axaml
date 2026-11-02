@@ -110,7 +110,7 @@
     <Style Selector="controls|WifiSignalIcon.QuickSettingWifiIcon">
       <Setter Property="ActiveBrush" Value="{DynamicResource ContentSecondaryBrush}" />
       <Setter Property="InactiveBrush" Value="{DynamicResource ContentTertiaryBrush}" />
-      <Setter Property="InactiveBandOpacity" Value="0.3" />
+      <Setter Property="InactiveBandOpacity" Value="{DynamicResource WifiInactiveBandOpacity}" />
     </Style>
     <Style Selector="ToggleButton.QuickSetting:checked controls|WifiSignalIcon.QuickSettingWifiIcon">
       <Setter Property="ActiveBrush" Value="{DynamicResource ActionPrimaryBrush}" />

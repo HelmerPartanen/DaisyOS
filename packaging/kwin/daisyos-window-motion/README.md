@@ -4,12 +4,16 @@ KWin 6 JavaScript effect, installed by `scripts/install-kwin-window-bridge.sh`
 (or independently by `scripts/install-kwin-window-motion.sh`).
 
 - Open/unhide: 180 ms, 96% to full size with a fade.
-- Close/hide: 140 ms, full size to 96% with a fade.
-- Minimize/restore: reversible 200 ms scale, translation and fade toward the
+- Close/hide: 140 ms fade in place, preserving the resting window edges.
+- Minimize/restore: interruptible 200 ms scale, translation and fade toward the
   taskbar icon when KWin supplies icon geometry; subtle downward motion otherwise.
 - Maximize/restore: 220 ms size and position interpolation, bypassed during
   interactive move/resize. Grabbing a window immediately cancels any remaining
   transform so it follows the pointer.
+
+All transitions share scale, translation and opacity channels. Interruptions use
+KWin's `retarget` operation, preserving the current painted values rather than
+cancelling and resetting to native geometry before a new transition.
 
 All timings use KWin's animation speed setting. DaisyOS Reduce Motion disables
 new transitions and cancels running transitions through effect reconfiguration.

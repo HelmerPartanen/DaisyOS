@@ -54,44 +54,61 @@ class DaisyWindowMotion {
         delete w.daisyOldGeometry;
         delete w.daisyGeometrySource;
     }
+    transition(w, kind, showing, from, to, milliseconds, curve) {
+        const duration = animationTime(milliseconds);
+        // KWin retargets from the current painted value. Cancelling first
+        // discards the active transform and exposes unanimated geometry for
+        // the first minimize/close frame.
+        if (w.daisyMotion && w.daisyMotion.length === 3) {
+            const ids = w.daisyMotion;
+            const scale = retarget(ids[0], {value1: to.sx, value2: to.sy}, duration);
+            const position = retarget(ids[1], {value1: to.x, value2: to.y}, duration);
+            const opacity = retarget(ids[2], to.opacity, duration);
+            if (scale && position && opacity) {
+                w.daisyMotionKind = kind;
+                w.daisyMotionShowing = showing;
+                return;
+            }
+        }
+        this.stop(w);
+        w.daisyMotionKind = kind;
+        w.daisyMotionShowing = showing;
+        w.daisyMotion = animate({ window: w, duration: duration, curve: curve,
+            // A running opening/minimize may be retargeted to a close. Keep
+            // the deleted surface available until that same timeline ends.
+            keepAlive: true,
+            animations: [
+                {type: Effect.Scale, from: {value1: from.sx, value2: from.sy}, to: {value1: to.sx, value2: to.sy}},
+                {type: Effect.Translation, from: {value1: from.x, value2: from.y}, to: {value1: to.x, value2: to.y}},
+                {type: Effect.Opacity, from: from.opacity, to: to.opacity}
+            ] });
+    }
     presence(w, showing, role) {
         role = role || Effect.WindowAddedGrabRole;
         if (!this.allowed(w, role) || (showing && !w.visible)) { this.stop(w); return; }
-        if (role !== Effect.WindowClosedGrabRole && w.daisyMotion && w.daisyMotionKind === "presence"
-            && redirect(w.daisyMotion, showing === w.daisyMotionShowing ? Effect.Forward : Effect.Backward)) return;
-        this.stop(w);
-        // Start at the actual source endpoint; only reverse an already running timeline.
-        w.daisyMotionKind = "presence";
-        w.daisyMotionShowing = showing;
         const fileWindow = /(^|[\s.])(?:org\.daisyos\.)?files(?:[\s.]|$)/i.test(String(w.windowClass || w.desktopFileName || ""));
-        // Files opens without a zoom pulse; keep the app's everyday motion quiet.
-        const presenceAnimations = [{ type: Effect.Opacity, from: showing ? 0 : 1, to: showing ? 1 : 0 }];
-        if (!fileWindow) presenceAnimations.unshift({ type: Effect.Scale, from: showing ? 0.96 : 1, to: showing ? 1 : 0.96 });
-        w.daisyMotion = animate({ window: w, duration: animationTime(fileWindow ? (showing ? 120 : 100) : (showing ? 180 : 140)),
-            curve: fileWindow ? (showing ? QEasingCurve.OutCubic : QEasingCurve.InCubic) : QEasingCurve.InOutCubic,
-            keepAlive: role === Effect.WindowClosedGrabRole, animations: presenceAnimations });
+        const normal = {sx: 1, sy: 1, x: 0, y: 0, opacity: 1};
+        const hidden = {sx: fileWindow ? 1 : 0.96, sy: fileWindow ? 1 : 0.96, x: 0, y: 0, opacity: 0};
+        // Closing fades in place. A center-scale exit moved every edge before
+        // dismissal, which looked like the application first changed position.
+        const closed = {sx: 1, sy: 1, x: 0, y: 0, opacity: 0};
+        this.transition(w, "presence", showing, showing ? hidden : normal, showing ? normal : closed,
+            fileWindow ? (showing ? 120 : 100) : (showing ? 180 : 140),
+            showing ? QEasingCurve.OutCubic : QEasingCurve.InCubic);
     }
     minimize(w) {
         const showing = !w.minimized;
         const role = showing ? Effect.WindowUnminimizedGrabRole : Effect.WindowMinimizedGrabRole;
         if (!this.allowed(w, role)) { this.stop(w); return; }
-        if (w.daisyMotion && w.daisyMotionKind === "minimize"
-            && redirect(w.daisyMotion, showing === w.daisyMotionShowing ? Effect.Forward : Effect.Backward)) return;
-        this.stop(w);
         const g = w.geometry, icon = w.iconGeometry;
         const target = icon && icon.width > 0 && icon.height > 0;
         const scale = target ? Math.max(0.08, Math.min(0.25, icon.width / g.width, icon.height / g.height)) : 0.94;
         const dx = target ? icon.x + icon.width / 2 - g.x - g.width / 2 : 0;
         const dy = target ? icon.y + icon.height / 2 - g.y - g.height / 2 : 12;
-        w.daisyMotionKind = "minimize";
-        w.daisyMotionShowing = showing;
-        w.daisyMotion = animate({ window: w, duration: animationTime(200),
-            curve: QEasingCurve.InOutCubic, keepAlive: false,
-            animations: [{ type: Effect.Scale, from: showing ? scale : 1, to: showing ? 1 : scale },
-                         { type: Effect.Translation,
-                           from: {value1: showing ? dx : 0, value2: showing ? dy : 0},
-                           to: {value1: showing ? 0 : dx, value2: showing ? 0 : dy} },
-                         { type: Effect.Opacity, from: showing ? 0 : 1, to: showing ? 1 : 0 }] });
+        const normal = {sx: 1, sy: 1, x: 0, y: 0, opacity: 1};
+        const minimized = {sx: scale, sy: scale, x: dx, y: dy, opacity: 0};
+        this.transition(w, "minimize", showing, showing ? minimized : normal, showing ? normal : minimized,
+            200, QEasingCurve.InOutCubic);
     }
     manage(w) {
         if (this.windows.has(w)) return;
@@ -114,16 +131,12 @@ class DaisyWindowMotion {
             delete w.daisyOldGeometry;
             if (!old || !w.visible || !this.allowed(w, Effect.WindowAddedGrabRole)
                 || g.width <= 0 || g.height <= 0) return;
-            w.daisyMotionKind = "geometry";
+            this.transition(w, "geometry", true,
+                {sx: old.width / g.width, sy: old.height / g.height,
+                 x: old.x - g.x + (old.width - g.width) / 2,
+                 y: old.y - g.y + (old.height - g.height) / 2, opacity: 1},
+                {sx: 1, sy: 1, x: 0, y: 0, opacity: 1}, 220, QEasingCurve.OutCubic);
             w.daisyGeometrySource = old;
-            w.daisyMotion = animate({ window: w, duration: animationTime(220),
-                curve: QEasingCurve.OutCubic, keepAlive: false,
-                animations: [{ type: Effect.Size,
-                    from: {value1: old.width, value2: old.height}, to: {value1: g.width, value2: g.height} },
-                    { type: Effect.Translation,
-                      from: {value1: old.x - g.x + (old.width - g.width) / 2,
-                             value2: old.y - g.y + (old.height - g.height) / 2},
-                      to: {value1: 0, value2: 0} }] });
         });
         w.windowFrameGeometryChanged.connect((window, old) => {
             if (w.daisyMotionKind === "geometry" && w.daisyGeometrySource &&

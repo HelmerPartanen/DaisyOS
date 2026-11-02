@@ -139,7 +139,8 @@
                     IsVisible="False"
                     SignalPercent="0"
                     ActiveBrush="{DynamicResource ContentSecondaryBrush}"
-                    InactiveBrush="{DynamicResource ContentTertiaryBrush}"/>
+                    InactiveBrush="{DynamicResource ContentTertiaryBrush}"
+                    InactiveBandOpacity="{DynamicResource WifiInactiveBandOpacity}"/>
 
                 <controls:DaisyIcon
                     x:Name="SystemBarEthernetIcon"

@@ -729,8 +729,11 @@ public partial class QuickSettings : UserControl
         status = StabilizeWifiStatus(status);
         var changed = !HasSameWifiRows(_lastWifiStatus, status);
         _lastWifiStatus = status;
-        if (changed && _currentPage == QuickSettingsPage.WifiNetworks)
-            RenderWifiNetworks(host, status);
+        if (_currentPage == QuickSettingsPage.WifiNetworks)
+        {
+            if (changed) RenderWifiNetworks(host, status);
+            else UpdateWifiSignalStrengths(host, status);
+        }
     }
 
     private WirelessNetworkStatus StabilizeWifiStatus(WirelessNetworkStatus status)
@@ -804,23 +807,47 @@ public partial class QuickSettings : UserControl
         }
     }
 
-    private Button CreateWifiNetworkButton(WirelessNetworkInfo network)
+    private sealed class WifiNetworkRow(WirelessNetworkInfo network, WifiSignalIcon icon, TextBlock detail)
     {
-        var idleDetail = network.IsActive ? "Connected"
+        public WirelessNetworkInfo Network { get; set; } = network;
+        public WifiSignalIcon Icon { get; } = icon;
+        public TextBlock Detail { get; } = detail;
+    }
+
+    private static string WifiNetworkDetail(WirelessNetworkInfo network) =>
+        network.IsActive ? "Connected"
             : !network.IsAvailable ? "Not in range"
             : network.IsKnown ? $"Known network · {network.SignalPercent}%"
             : $"{network.Security} · {network.SignalPercent}%";
+
+    private static void UpdateWifiSignalStrengths(StackPanel host, WirelessNetworkStatus status)
+    {
+        var networks = status.Networks.ToDictionary(network => network.Ssid, StringComparer.Ordinal);
+        foreach (var button in host.Children.OfType<Button>())
+        {
+            if (button.Tag is not WifiNetworkRow row || !networks.TryGetValue(row.Network.Ssid, out var network)) continue;
+            row.Network = network;
+            row.Icon.SignalPercent = network.SignalPercent;
+            if (!network.IsActive && !button.Classes.Contains("Loading"))
+                row.Detail.Text = WifiNetworkDetail(network);
+        }
+    }
+
+    private Button CreateWifiNetworkButton(WirelessNetworkInfo network)
+    {
+        var idleDetail = WifiNetworkDetail(network);
         var content = new Grid { ColumnDefinitions = new ColumnDefinitions("20,*,20") };
         var signalIcon = new WifiSignalIcon
         {
             SignalPercent = network.SignalPercent,
             Width = 18,
             Height = 18,
-            ActiveBrush = this.FindResource("ContentSecondaryBrush") as IBrush ?? Brushes.White,
-            InactiveBrush = this.FindResource("ContentTertiaryBrush") as IBrush ?? Brushes.Gray,
             VerticalAlignment = VerticalAlignment.Center,
             HorizontalAlignment = HorizontalAlignment.Center
         };
+        signalIcon.Bind(WifiSignalIcon.ActiveBrushProperty, this.GetResourceObservable("ContentSecondaryBrush"));
+        signalIcon.Bind(WifiSignalIcon.InactiveBrushProperty, this.GetResourceObservable("ContentTertiaryBrush"));
+        signalIcon.Bind(WifiSignalIcon.InactiveBandOpacityProperty, this.GetResourceObservable("WifiInactiveBandOpacity"));
         content.Children.Add(signalIcon);
 
         var textPanel = new StackPanel
@@ -860,9 +887,11 @@ public partial class QuickSettings : UserControl
         Grid.SetColumn(textPanel, 1);
         content.Children.Add(textPanel);
 
+        var row = new WifiNetworkRow(network, signalIcon, detail);
         var button = new Button
         {
-            Content = content
+            Content = content,
+            Tag = row
         };
         button.Classes.Add("ShellButton");
         button.Classes.Add("AudioOutputItem");
@@ -915,7 +944,7 @@ public partial class QuickSettings : UserControl
                     {
                         button.IsEnabled = true;
                         button.Classes.Remove("Loading");
-                        detail.Text = idleDetail;
+                        detail.Text = WifiNetworkDetail(row.Network);
                         ReportFailure("Couldn’t disconnect from that Wi-Fi network.");
                         return;
                     }
@@ -940,7 +969,7 @@ public partial class QuickSettings : UserControl
                     {
                         button.IsEnabled = true;
                         button.Classes.Remove("Loading");
-                        detail.Text = idleDetail;
+                        detail.Text = WifiNetworkDetail(row.Network);
                         ReportFailure("Couldn’t connect to that Wi-Fi network.");
                         return;
                     }
@@ -976,7 +1005,7 @@ public partial class QuickSettings : UserControl
                     _wirelessNetworkService,
                     network.Ssid,
                     network.Security,
-                    signalPercent: network.SignalPercent);
+                    signalPercent: row.Network.SignalPercent);
 
                 var parentWindow = VisualRoot as Window ?? TopLevel.GetTopLevel(this) as Window;
                 if (parentWindow is not null)
@@ -996,7 +1025,7 @@ public partial class QuickSettings : UserControl
                 {
                     button.IsEnabled = true;
                     button.Classes.Remove("Loading");
-                    detail.Text = idleDetail;
+                    detail.Text = WifiNetworkDetail(row.Network);
                 }
             };
         }

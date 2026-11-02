@@ -1388,7 +1388,17 @@ public partial class FilesWindow : Window
             return;
         }
 
-        (Application.Current as App)?.ShowLocalSend([entry.Path]);
+        var paths = GetLocalSendPaths(entry);
+        if (paths.Count > 0) (Application.Current as App)?.ShowLocalSend(paths);
+    }
+
+    internal IReadOnlyList<string> GetLocalSendPaths(FileEntryViewModel contextEntry)
+    {
+        var selected = _viewModel.ActiveTab?.SelectedItems;
+        IEnumerable<FileEntryViewModel> entries = selected?.Contains(contextEntry) == true
+            ? selected : [contextEntry];
+        return entries.Where(entry => !entry.IsDirectory).Select(entry => entry.Path)
+            .Distinct(StringComparer.Ordinal).ToArray();
     }
 
     private void OnCompressEntryContextClicked(object? sender, RoutedEventArgs e)

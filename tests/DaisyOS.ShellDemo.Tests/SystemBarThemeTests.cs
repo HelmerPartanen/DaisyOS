@@ -4,6 +4,7 @@ using Avalonia.Headless.XUnit;
 using Avalonia.Media;
 using Avalonia.Styling;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Services.Theming;
@@ -28,7 +29,7 @@ public sealed class SystemBarThemeTests
                     new WirelessRadioStatus(true, true, ""), new BluetoothStatus(true, true, false, [], "")]);
             bar.FindControl<BatteryStatusView>("SystemBarBattery")!.ChargePercent = 75;
             var wifi = bar.FindControl<WifiSignalIcon>("SystemBarWifiIcon")!;
-            var bands = ((Canvas)wifi.Child!).Children.OfType<DaisyIcon>().ToArray();
+            var bands = wifi.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().ToArray();
             var battery = bar.FindControl<BatteryStatusView>("SystemBarBattery")!.FindControl<BatteryLevelIcon>("LevelIcon")!;
             // Check target resource values independently of theme crossfades.
             foreach (var control in new Control[] { wifi, battery }.Concat(bands))
@@ -43,8 +44,8 @@ public sealed class SystemBarThemeTests
                 var rgb = theme == ThemeVariant.Light ? "000000" : "F5F5F5";
                 Assert.Equal(Color.Parse("#CC" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(wifi.ActiveBrush).Color);
                 Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(wifi.InactiveBrush).Color);
-                Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(bands[0].Foreground).Color);
-                Assert.Equal(Color.Parse("#CC" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(bands[1].Foreground).Color);
+                Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(bands[0].Stroke).Color);
+                Assert.Equal(Color.Parse("#CC" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(bands[1].Stroke).Color);
                 Assert.Equal(Color.Parse("#CC" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(battery.FillBrush).Color);
             }
         }

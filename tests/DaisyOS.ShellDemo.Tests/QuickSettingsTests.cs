@@ -95,8 +95,13 @@ public sealed class QuickSettingsTests
     }
 
     [AvaloniaTheory]
+    [InlineData(0, 0.3, 0.3, 0.3)]
     [InlineData(20, 0.3, 0.3, 1.0)]
+    [InlineData(33, 0.3, 0.3, 1.0)]
+    [InlineData(34, 0.3, 1.0, 1.0)]
     [InlineData(50, 0.3, 1.0, 1.0)]
+    [InlineData(66, 0.3, 1.0, 1.0)]
+    [InlineData(67, 1.0, 1.0, 1.0)]
     [InlineData(80, 1.0, 1.0, 1.0)]
     public void WifiSignalKeepsUnavailableBandsVisibleAtLowerOpacity(
         int signalPercent, double expectedOuter, double expectedInner, double expectedDot)
@@ -114,14 +119,13 @@ public sealed class QuickSettingsTests
         try
         {
             Avalonia.Threading.Dispatcher.UIThread.RunJobs();
-            var bands = icon.GetVisualDescendants().OfType<DaisyIcon>().ToArray();
+            var bands = icon.GetVisualDescendants().OfType<Avalonia.Controls.Shapes.Path>().ToArray();
             Assert.Equal(3, bands.Length);
-            Assert.All(bands, band => Assert.Equal("wifi-02", band.Icon));
             Assert.Equal(expectedOuter, bands[0].Opacity);
             Assert.Equal(expectedInner, bands[1].Opacity);
             Assert.Equal(expectedDot, bands[2].Opacity);
             Assert.All(bands, band => Assert.Equal(blue.Color,
-                Assert.IsAssignableFrom<ISolidColorBrush>(band.Foreground).Color));
+                Assert.IsAssignableFrom<ISolidColorBrush>(band.Stroke ?? band.Fill).Color));
         }
         finally { window.Close(); }
     }
