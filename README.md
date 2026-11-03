@@ -1,7 +1,5 @@
 <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/2e5c54f0-1579-4417-bed3-29d772725dff" />
 DaisyOS is an Arch Linux-based desktop operating system with a custom C#/.NET 10 and Avalonia shell, tailored for Wayland and managed by KWin. It delivers a cohesive, responsive experience featuring a desktop grid with interactive widgets, unified bottom chrome, application launcher, notification center, Lock Screen with media integration, system settings, native files app, and first-party applications.
-<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d7700922-30a6-4a7e-b664-7816c2ed36eb" />
-
 
 ---
 
@@ -17,7 +15,8 @@ DaisyOS is an Arch Linux-based desktop operating system with a custom C#/.NET 10
 - **Dual-Theme Semantic Design System**: Full Light and Dark themes backed by design token contracts, semantic color tokens, WCAG AA compliance, and fluid motion physics (`GuiMotion`).
 - **Compositor Integration**: Native C++ KWin decoration plugins, blur mask integration, and custom effects in `src/native/`.
 
----
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/d7700922-30a6-4a7e-b664-7816c2ed36eb" />
+
 
 ## Quick Start for Contributors
 
