@@ -24,7 +24,7 @@ internal static class MailOAuth
         $"http://{(provider == "Microsoft" ? "localhost" : "127.0.0.1")}:{port}/";
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(45) };
     private static string TokenEndpoint(MailAccount a) => a.Provider == "Google" ? "https://oauth2.googleapis.com/token" : "https://login.microsoftonline.com/common/oauth2/v2.0/token";
-    public static async Task<string> SignInAsync(MailAccount a, CancellationToken ct)
+    public static async Task<string> SignInAsync(MailAccount a, CancellationToken ct, Action<string>? progress = null)
     {
         if (string.IsNullOrWhiteSpace(a.ClientId)) throw new MailSignInUnavailableException("Sign-in isn’t available in this version of Mail. Please update Mail or contact your system administrator.");
         var probe = new TcpListener(IPAddress.Loopback, 0); probe.Start();
@@ -54,12 +54,13 @@ internal static class MailOAuth
         context.Response.ContentType = "text/plain; charset=utf-8";
         await context.Response.OutputStream.WriteAsync(bytes, ct); context.Response.Close();
         if (!valid || string.IsNullOrEmpty(code)) throw new IOException("Sign-in was declined or the sign-in response was invalid.");
-        return await ExchangeAsync(a, new() { ["grant_type"] = "authorization_code", ["code"] = code, ["redirect_uri"] = redirect, ["code_verifier"] = verifier }, null, ct, nonce);
+        return await ExchangeAsync(a, new() { ["grant_type"] = "authorization_code", ["code"] = code, ["redirect_uri"] = redirect, ["code_verifier"] = verifier }, null, ct, nonce, progress);
     }
     public static async Task<string> RefreshAsync(MailAccount a, string refresh, CancellationToken ct) =>
         await ExchangeAsync(a, new() { ["grant_type"] = "refresh_token", ["refresh_token"] = refresh }, refresh, ct);
-    private static async Task<string> ExchangeAsync(MailAccount a, Dictionary<string, string> fields, string? previous, CancellationToken ct, string? nonce = null)
+    private static async Task<string> ExchangeAsync(MailAccount a, Dictionary<string, string> fields, string? previous, CancellationToken ct, string? nonce = null, Action<string>? progress = null)
     {
+        progress?.Invoke("authorization");
         fields["client_id"] = a.ClientId;
         if (a.Provider == "Google" && MailProviderRegistration.Load().GoogleClientSecret is { Length: > 0 } clientSecret) fields["client_secret"] = clientSecret;
         using var response = await Http.PostAsync(TokenEndpoint(a), new FormUrlEncodedContent(fields), ct);
@@ -67,13 +68,28 @@ internal static class MailOAuth
         using var data = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
         if (nonce is not null)
         {
+            progress?.Invoke("permissions");
+            if (data.RootElement.TryGetProperty("scope", out var granted))
+                RequireMailPermission(a.Provider, granted.GetString() ?? "");
+            progress?.Invoke("identity");
             var token = data.RootElement.GetProperty("id_token").GetString() ?? throw new IOException("Missing account identity.");
             var endpoint = a.Provider == "Google" ? "https://www.googleapis.com/oauth2/v3/certs" : "https://login.microsoftonline.com/common/discovery/v2.0/keys";
             MailIdentity.Apply(a, token, nonce, await Http.GetStringAsync(endpoint, ct));
         }
         var refresh = data.RootElement.TryGetProperty("refresh_token", out var r) ? r.GetString() : previous;
         if (string.IsNullOrEmpty(refresh)) throw new IOException("The provider did not grant offline access. Sign in again and allow offline access.");
+        progress?.Invoke("keyring");
         await MailSecrets.RunAsync("store", a.Id, refresh, ct);
         return data.RootElement.GetProperty("access_token").GetString()!;
     }
+    internal static void RequireMailPermission(string provider, string granted)
+    {
+        var scopes = granted.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var allowed = provider == "Google"
+            ? scopes.Contains("https://mail.google.com/", StringComparer.Ordinal)
+            : scopes.Any(s => s.Equals("https://outlook.office.com/IMAP.AccessAsUser.All", StringComparison.OrdinalIgnoreCase))
+              && scopes.Any(s => s.Equals("https://outlook.office.com/SMTP.Send", StringComparison.OrdinalIgnoreCase));
+        if (!allowed) throw new MailSignInUnavailableException("Mail access wasn’t granted. Sign in again and allow Mail to read and send email on the permission screen.");
+    }
+
 }

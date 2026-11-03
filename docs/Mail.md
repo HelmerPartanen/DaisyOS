@@ -142,3 +142,10 @@ The installation is independent of browser sign-in configuration.
 values or launching a browser. `DaisyOS.Mail --pin-to-taskbar` uses the desktop
 settings service and preserves existing taskbar order. Provider configuration can
 be shipped with `-p:DaisyMailProviderConfig=<file>`; see the registration guide.
+
+Sign-in failures identify the failing step (authorization, identity verification,
+keyring, receiving, sending, or saving). Unexpected failures also write
+`last-sign-in-error.txt` in the mail data directory, containing only the timestamp,
+step and exception type. No credentials, email addresses or provider responses
+are recorded. On Google’s permission screen, grant the requested mail access;
+identity-only consent cannot connect a mailbox.

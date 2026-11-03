@@ -38,14 +38,19 @@ public sealed class MailService : IAsyncDisposable
         if (!_imap.IsConnected) await _imap.ConnectAsync(a.ImapHost, a.ImapPort, SecureSocketOptions.SslOnConnect, ct);
         if (!_imap.IsAuthenticated) await AuthenticateAsync(a, _imap, ct);
     }
-    public async Task ValidateAsync(MailAccount a, string password, CancellationToken ct)
+    public async Task ValidateAsync(MailAccount a, string password, CancellationToken ct, Action<string>? progress = null)
     {
         await _gate.WaitAsync(ct);
         try
         {
-            if (a.Provider != "IMAP") { _accessToken = await MailOAuth.SignInAsync(a, ct); _tokenTime = DateTimeOffset.UtcNow; }
+            // Select the account before accepting its token, so ConnectAsync keeps it.
+            if (_imap.IsConnected) await _imap.DisconnectAsync(true, ct);
+            _account = a; _accessToken = null;
+            if (a.Provider != "IMAP") { _accessToken = await MailOAuth.SignInAsync(a, ct, progress); _tokenTime = DateTimeOffset.UtcNow; }
             else await MailSecrets.RunAsync("store", a.Id, password, ct);
+            progress?.Invoke("incoming");
             await ConnectAsync(a, ct);
+            progress?.Invoke("outgoing");
             using var smtp = new SmtpClient { Timeout = 30000 };
             await smtp.ConnectAsync(a.SmtpHost, a.SmtpPort, a.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect : SecureSocketOptions.StartTls, ct);
             await AuthenticateAsync(a, smtp, ct);

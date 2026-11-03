@@ -6,6 +6,23 @@ namespace DaisyOS.Tests;
 public sealed class MailRegistrationTests
 {
     [Theory]
+    [InlineData("Google", "openid email profile")]
+    [InlineData("Google", "https://mail.google.com/.invalid")]
+    [InlineData("Microsoft", "https://outlook.office.com/IMAP.AccessAsUser.All")]
+    public void PartialConsentCannotConnectMailbox(string provider, string scopes)
+    {
+        Assert.Throws<MailSignInUnavailableException>(() => MailOAuth.RequireMailPermission(provider, scopes));
+    }
+
+    [Theory]
+    [InlineData("Google", "openid email https://mail.google.com/")]
+    [InlineData("Microsoft", "https://outlook.office.com/SMTP.Send https://outlook.office.com/IMAP.AccessAsUser.All")]
+    public void MailConsentAllowsMailboxValidation(string provider, string scopes)
+    {
+        MailOAuth.RequireMailPermission(provider, scopes);
+    }
+
+    [Theory]
     [InlineData("Google", "127.0.0.1")]
     [InlineData("Microsoft", "localhost")]
     public void BrowserCallbackUsesProviderCompatibleLoopback(string provider, string host)
