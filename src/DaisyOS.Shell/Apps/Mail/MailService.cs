@@ -174,12 +174,15 @@ public sealed class MailService : IAsyncDisposable
     public static MimeMessage BuildMessage(MailAccount a, MailDraft draft)
     {
         var message = new MimeMessage(); message.From.Add(new MailboxAddress(a.Name, a.Email));
-        message.To.AddRange(InternetAddressList.Parse(draft.To));
-        if (!string.IsNullOrWhiteSpace(draft.Cc)) message.Cc.AddRange(InternetAddressList.Parse(draft.Cc));
-        if (!string.IsNullOrWhiteSpace(draft.Bcc)) message.Bcc.AddRange(InternetAddressList.Parse(draft.Bcc));
+        var options = ParserOptions.Default.Clone(); options.AllowAddressesWithoutDomain = false;
+        if (!string.IsNullOrWhiteSpace(draft.To)) message.To.AddRange(InternetAddressList.Parse(options, draft.To));
+        if (!string.IsNullOrWhiteSpace(draft.Cc)) message.Cc.AddRange(InternetAddressList.Parse(options, draft.Cc));
+        if (!string.IsNullOrWhiteSpace(draft.Bcc)) message.Bcc.AddRange(InternetAddressList.Parse(options, draft.Bcc));
+        if (!message.To.Mailboxes.Concat(message.Cc.Mailboxes).Concat(message.Bcc.Mailboxes).Any())
+            throw new FormatException("Add at least one email address.");
         message.Subject = draft.Subject; message.InReplyTo = draft.InReplyTo;
         message.MessageId = MimeKit.Utils.MimeUtils.GenerateMessageId();
-        var body = new BodyBuilder { TextBody = draft.Body };
+        var body = new BodyBuilder { TextBody = draft.Body + (string.IsNullOrEmpty(draft.QuotedBody) ? "" : "\n\n" + draft.QuotedBody) };
         foreach (var path in draft.Attachments) body.Attachments.Add(path);
         message.Body = body.ToMessageBody(); return message;
     }

@@ -3,6 +3,7 @@ using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Services.Motion;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
@@ -28,6 +29,8 @@ public partial class MailWindow : Window
     private string? _serverQuery;
     private int _generation;
     private bool _busy;
+    private bool _plainText;
+    private bool _htmlReady;
     private bool _ready;
     private bool _updatingMessages;
     private MailAccount? Account => Accounts.SelectedItem as MailAccount;
@@ -38,7 +41,28 @@ public partial class MailWindow : Window
     {
         InitializeComponent();
         _service = new MailService(_storage);
-        _chrome = new SystemAppWindowChrome(this, Chrome, RootLayout, normalRowDefinitions: "Auto,*", fullscreenRowDefinitions: "0,*");
+        _chrome = new SystemAppWindowChrome(this, Chrome, MainPaneLayout, normalRowDefinitions: "Auto,*", fullscreenRowDefinitions: "0,*");
+        HtmlBody.Rendered += success =>
+        {
+            _htmlReady = success;
+            Body.IsVisible = !success || _plainText;
+            HtmlBody.IsVisible = success && !_plainText;
+            if (!success && _message?.HtmlBody is not null) Status.Text = "Styled view unavailable. Showing message text.";
+        };
+        HtmlBody.LinkClicked += async value =>
+        {
+            try
+            {
+                if (!MailHtmlDocument.IsExternalLink(value)) return;
+                if (value.StartsWith("mailto:", StringComparison.OrdinalIgnoreCase)) await OpenMailtoAsync(value);
+                else global::System.Diagnostics.Process.Start(new global::System.Diagnostics.ProcessStartInfo(value) { UseShellExecute = true });
+            }
+            catch { Status.Text = "Couldn’t open this link."; }
+        };
+        Composer.Dismissed += () => { Composer.IsVisible = false; ReaderPane.IsVisible = true; UpdateDraftAvailability(); };
+        Composer.DraftSaved += UpdateDraftAvailability;
+        Composer.Sent += value => Status.Text = value;
+        Closing += (_, e) => { if (!Composer.TryClose()) e.Cancel = true; };
         AccountSetup.Service = _service;
         AccountSetup.Connected = SaveAccountAsync;
         Search.PropertyChanged += (_, change) =>
@@ -70,7 +94,7 @@ public partial class MailWindow : Window
             await Task.CompletedTask;
         };
         _refresh.Tick += async (_, _) => { if (!_busy && Account is not null) await RefreshAsync(); };
-        Closed += async (_, _) => { AccountSetup.Cancel(); _refresh.Stop(); _lifetime.Cancel(); _operation?.Cancel(); _chrome.Dispose(); await _service.DisposeAsync(); _lifetime.Dispose(); };
+        Closed += async (_, _) => { AccountSetup.Cancel(); _refresh.Stop(); _lifetime.Cancel(); _operation?.Cancel(); _chrome.Dispose(); HtmlBody.Dispose(); await _service.DisposeAsync(); _lifetime.Dispose(); };
     }
     private async Task RunAsync(string label, Func<CancellationToken, Task> action)
     {
@@ -85,6 +109,8 @@ public partial class MailWindow : Window
     }
     private void ClearReader()
     {
+        HtmlBody.Clear(); HtmlBody.IsVisible = false; Body.IsVisible = true;
+        _plainText = _htmlReady = false; TextViewToggle.IsVisible = false; TextViewToggle.Header = "View plain text";
         _message = null; MessageActions.IsEnabled = false; Attachments.Children.Clear();
         GuiMotion.Cancel(ReaderContent);
         MessageActions.IsVisible = false; Sender.IsVisible = false;
@@ -173,6 +199,12 @@ public partial class MailWindow : Window
             if (gen != _generation || Selected != item) return;
             _message = message; ReaderContent.IsVisible = true; MessageActions.IsEnabled = true; MessageActions.IsVisible = true; Sender.IsVisible = true;
             Body.Text = MailText.Read(message);
+            if (!string.IsNullOrWhiteSpace(message.HtmlBody))
+            {
+                TextViewToggle.IsVisible = true;
+                HtmlBody.IsVisible = true;
+                HtmlBody.Show(message);
+            }
             Sender.Text = message.From + "\nTo: " + message.To + (message.Cc.Count > 0 ? "\nCc: " + message.Cc : "") + "\n" + message.Date.ToLocalTime().ToString("f");
             foreach (var attachment in message.Attachments)
             {
@@ -183,13 +215,25 @@ public partial class MailWindow : Window
             }
             _ = GuiMotion.RevealAsync(ReaderContent, new Point(0, 4),
                 ReaderContent.TryFindResource("MotionDurationBase", out var motionDuration) && motionDuration is TimeSpan duration ? duration : null);
-            Status.Text = "Message opened. Remote images are blocked.";
+            Status.Text = "Message opened.";
             if (item.Unread)
             {
                 try { await _service.FlagAsync(a, f.Path, item.Uid, MessageFlags.Seen, true, ct, item.UidValidity); item.Unread = false; SaveCache(a, f); }
                 catch (Exception ex) { Status.Text = "Message opened; could not mark it read: " + ex.Message; }
             }
         });
+    }
+    private void TextViewClicked(object? sender, RoutedEventArgs e)
+    {
+        _plainText = !_plainText;
+        TextViewToggle.Header = _plainText ? "View styled message" : "View plain text";
+        Body.IsVisible = _plainText || !_htmlReady;
+        HtmlBody.IsVisible = !_plainText && _htmlReady;
+    }
+    private async void CopyTextClicked(object? sender, RoutedEventArgs e)
+    {
+        try { if (Clipboard is { } clipboard) await clipboard.SetTextAsync(Body.Text ?? ""); }
+        catch { Status.Text = "Couldn’t copy message text."; }
     }
     private void SaveCache(MailAccount a, MailFolder f)
     {
@@ -247,6 +291,7 @@ public partial class MailWindow : Window
             await AddAccountAsync();
             return;
         }
+        if (!Composer.TryClose()) return;
         draft ??= new MailDraft { AccountId = a.Id };
         if (_message is { } message && mode != "new")
         {
@@ -274,10 +319,11 @@ public partial class MailWindow : Window
             var prefix = mode == "forward" ? "Fwd:" : "Re:";
             draft.Subject = (message.Subject ?? "").StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? message.Subject ?? "" : prefix + " " + message.Subject;
             draft.InReplyTo = mode == "forward" ? null : message.MessageId;
-            draft.Body = "\n\nOn " + message.Date.ToLocalTime().ToString("f") + ", " + message.From + " wrote:\n" +
+            draft.QuotedBody = "On " + message.Date.ToLocalTime().ToString("f") + ", " + message.From + " wrote:\n" +
                 string.Join("\n", (Body.Text ?? "").Split('\n').Select(l => "> " + l));
         }
-        await MailDialogs.ComposeAsync(this, _service, _storage, a, draft, s => Status.Text = s);
+        Composer.IsVisible = true; ReaderPane.IsVisible = false;
+        Composer.Open(_service, _storage, a, draft, mode switch { "reply" => "Reply", "all" => "Reply to all", "forward" => "Forward", _ => "New message" });
         UpdateDraftAvailability();
     }
     public async Task OpenMailtoAsync(string value)
@@ -297,6 +343,9 @@ public partial class MailWindow : Window
     private void UpdateAccountPresentation()
     {
         var hasAccounts = _accounts.Count > 0;
+        NavigationSidebar.IsVisible = hasAccounts;
+        Grid.SetColumn(MainPaneLayout, hasAccounts ? 1 : 0);
+        Grid.SetColumnSpan(MainPaneLayout, hasAccounts ? 1 : 2);
         MailWorkspace.IsVisible = hasAccounts;
         AccountSetup.IsVisible = !hasAccounts;
         if (!hasAccounts) ClearReader();
@@ -325,6 +374,7 @@ public partial class MailWindow : Window
     }
     private async void AccountsClicked(object? sender, RoutedEventArgs e)
     {
+        if (!Composer.TryClose()) return;
         var dialog = MailDialogs.Window("Mail accounts", 520, 440); MailDialogs.FollowTheme(dialog, this);
         var layout = new MailDialogLayout(dialog, "Mail accounts"); var panel = layout.Form;
         var list = new ListBox { Classes = { "MailList" }, ItemsSource = _accounts.ToArray(), MaxHeight = 220 }; panel.Children.Add(list);
@@ -356,6 +406,7 @@ public partial class MailWindow : Window
     }
     private async void DraftsClicked(object? sender, RoutedEventArgs e)
     {
+        if (!Composer.TryClose()) return;
         if (Account is not { } a) return;
         try
         {

@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:DaisyOS.Shell.Controls" xmlns:t="clr-namespace:DaisyOS.Shell.Services.Theming"
+             x:Class="DaisyOS.Shell.Apps.Mail.MailComposer" UseLayoutRounding="True">
+  <UserControl.Resources>
+    <ResourceDictionary><ResourceDictionary.MergedDictionaries>
+      <ResourceInclude Source="avares://DaisyOS.Shell/Styles/PlainTextInputStyles.axaml" />
+    </ResourceDictionary.MergedDictionaries></ResourceDictionary>
+  </UserControl.Resources>
+  <UserControl.Styles>
+    <Style Selector="TextBox">
+      <Setter Property="Theme" Value="{StaticResource PlainTextInputTheme}" />
+      <Setter Property="t:ThemeTransitionPolicy.Enabled" Value="False" />
+      <Setter Property="Transitions"><Transitions /></Setter>
+      <Setter Property="MinHeight" Value="{DynamicResource HitTargetStandard}" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+    </Style>
+    <Style Selector="TextBox /template/ TextPresenter, TextBox /template/ Border, TextBox /template/ ScrollViewer, TextBox /template/ ScrollContentPresenter">
+      <Setter Property="t:ThemeTransitionPolicy.Enabled" Value="False" />
+      <Setter Property="Transitions"><Transitions /></Setter>
+    </Style>
+    <Style Selector="Border.ComposeRow">
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeSubtleBrush}" />
+      <Setter Property="BorderThickness" Value="0,0,0,1" />
+      <Setter Property="Padding" Value="0,4" />
+    </Style>
+    <Style Selector="Border.ComposeRow:focus-within">
+      <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    </Style>
+  </UserControl.Styles>
+  <Grid RowDefinitions="Auto,Auto,*,Auto,Auto,Auto" Background="{DynamicResource SurfaceBaseSolidBrush}">
+    <Grid ColumnDefinitions="*,Auto" Margin="0,0,0,12">
+      <StackPanel Spacing="{DynamicResource Space1}">
+        <TextBlock x:Name="Heading" Text="New message" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold" />
+        <TextBlock x:Name="FromLabel" Classes="MailCaption" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+      <Button Grid.Column="1" x:Name="CloseComposer" Classes="IconButton Subtle" Click="CloseClicked" ToolTip.Tip="Save draft and close (Esc)" AutomationProperties.Name="Save draft and close">
+        <c:DaisyIcon Icon="x" Size="{DynamicResource IconSizeStandard}" />
+      </Button>
+    </Grid>
+    <ScrollViewer Grid.Row="1" MaxHeight="240" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel x:Name="AddressFields">
+      <Border Classes="ComposeRow">
+        <Grid ColumnDefinitions="80,*,Auto">
+          <TextBlock Text="To" Classes="MailSecondary" VerticalAlignment="Center" />
+          <TextBox Grid.Column="1" x:Name="ToField" PlaceholderText="Email address" AutomationProperties.Name="To" />
+          <Button Grid.Column="2" x:Name="MoreRecipients" Classes="IconButton Subtle" ToolTip.Tip="Add more recipients" AutomationProperties.Name="Add more recipients">
+            <c:DaisyIcon Icon="user-plus" Size="{DynamicResource IconSizeStandard}" />
+            <Button.Flyout><MenuFlyout>
+              <MenuItem Header="Add copy recipients" Click="CopyRecipientsClicked" />
+              <MenuItem Header="Add hidden recipients" Click="HiddenRecipientsClicked" />
+            </MenuFlyout></Button.Flyout>
+          </Button>
+        </Grid>
+      </Border>
+      <Border x:Name="CopyRow" Classes="ComposeRow" IsVisible="False">
+        <Grid ColumnDefinitions="80,*"><TextBlock Text="Copy to" Classes="MailSecondary" VerticalAlignment="Center" ToolTip.Tip="Everyone can see these addresses." /><TextBox Grid.Column="1" x:Name="CcField" PlaceholderText="People who should receive a copy" AutomationProperties.Name="Copy recipients" ToolTip.Tip="These people receive a copy. Everyone can see their addresses." /></Grid>
+      </Border>
+      <Border x:Name="HiddenRow" Classes="ComposeRow" IsVisible="False">
+        <Grid ColumnDefinitions="80,*"><TextBlock Text="Hidden copy" Classes="MailSecondary" VerticalAlignment="Center" ToolTip.Tip="Other recipients cannot see these addresses." /><TextBox Grid.Column="1" x:Name="BccField" PlaceholderText="Addresses hidden from other recipients" AutomationProperties.Name="Hidden copy recipients" ToolTip.Tip="These people receive a copy without sharing their addresses with other recipients." /></Grid>
+      </Border>
+      <Border Classes="ComposeRow">
+        <Grid ColumnDefinitions="80,*"><TextBlock Text="Subject" Classes="MailSecondary" VerticalAlignment="Center" /><TextBox Grid.Column="1" x:Name="SubjectField" PlaceholderText="Add a subject" AutomationProperties.Name="Subject" /></Grid>
+      </Border>
+    </StackPanel>
+    </ScrollViewer>
+    <TextBox Grid.Row="2" x:Name="ComposeBody" AcceptsReturn="True" TextWrapping="Wrap" VerticalContentAlignment="Top"
+             MinHeight="0" Margin="0,16,0,8" Padding="0" PlaceholderText="Write your message…" AutomationProperties.Name="Message"
+             ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto" />
+    <ScrollViewer Grid.Row="3" MaxHeight="120" HorizontalScrollBarVisibility="Disabled">
+    <StackPanel Spacing="{DynamicResource Space2}">
+      <Button x:Name="QuoteToggle" Classes="Subtle Small Flexible" Content="Show original message" Click="QuoteClicked" HorizontalAlignment="Left" IsVisible="False" />
+      <Border x:Name="QuotePreview" IsVisible="False">
+        <Border BorderBrush="{DynamicResource StrokeStrongBrush}" BorderThickness="2,0,0,0" Padding="12,0,0,0"><SelectableTextBlock x:Name="QuotedText" Classes="MailSecondary" TextWrapping="Wrap" /></Border>
+      </Border>
+      <ScrollViewer MaxHeight="72" HorizontalScrollBarVisibility="Disabled"><WrapPanel x:Name="AttachmentChips" ItemSpacing="{DynamicResource Space2}" LineSpacing="{DynamicResource Space2}" /></ScrollViewer>
+    </StackPanel>
+    </ScrollViewer>
+    <TextBlock Grid.Row="4" x:Name="ComposeError" IsVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource StatusDangerBrush}" FontSize="{DynamicResource TypeSizeBodySmall}" Margin="0,8,0,0" />
+    <Grid Grid.Row="5" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="{DynamicResource Space2}" Margin="0,12,0,0">
+      <Button x:Name="SendButton" Content="Send" Classes="Primary Small" Click="SendClicked" ToolTip.Tip="Send (Ctrl+Enter)" />
+      <Button Grid.Column="1" x:Name="AttachButton" Classes="IconButton Subtle" Click="AttachClicked" ToolTip.Tip="Attach files" AutomationProperties.Name="Attach files"><c:DaisyIcon Icon="paperclip" Size="{DynamicResource IconSizeMedium}" /></Button>
+      <TextBlock Grid.Column="2" x:Name="DraftStatus" Classes="MailCaption" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
+      <Button Grid.Column="3" x:Name="DiscardButton" Classes="IconButton Subtle" Click="DiscardClicked" ToolTip.Tip="Discard draft" AutomationProperties.Name="Discard draft"><c:DaisyIcon Icon="trash" Size="{DynamicResource IconSizeMedium}" /></Button>
+    </Grid>
+  </Grid>
+</UserControl>

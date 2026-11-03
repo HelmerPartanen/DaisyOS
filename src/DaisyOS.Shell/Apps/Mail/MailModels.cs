@@ -45,8 +45,19 @@ public sealed record MailDraft
     public string Bcc { get; set; } = "";
     public string Subject { get; set; } = "";
     public string Body { get; set; } = "";
+    public string QuotedBody { get; set; } = "";
     public string? InReplyTo { get; set; }
     public List<string> Attachments { get; set; } = [];
+    internal void SeparateLegacyQuote()
+    {
+        if (!string.IsNullOrEmpty(QuotedBody) || string.IsNullOrEmpty(InReplyTo)) return;
+        var boundary = Body.IndexOf("\n\nOn ", StringComparison.Ordinal);
+        if (boundary < 0) return;
+        var lineEnd = Body.IndexOf('\n', boundary + 2);
+        if (lineEnd < 0 || !Body[(boundary + 2)..lineEnd].EndsWith(" wrote:", StringComparison.Ordinal)
+            || lineEnd + 1 >= Body.Length || Body[lineEnd + 1] != '>') return;
+        QuotedBody = Body[(boundary + 2)..]; Body = Body[..boundary];
+    }
     public override string ToString() => string.IsNullOrWhiteSpace(Subject) ? "Untitled draft" : Subject;
 }
 [JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]

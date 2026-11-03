@@ -45,6 +45,19 @@
     <Style Selector="ListBox.MailList ListBoxItem:focus-visible">
       <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
     </Style>
+    <!-- Navigation shares the system app row height, inset, glyph column and radius. -->
+    <Style Selector="ListBox.MailFolders ListBoxItem">
+      <Setter Property="MinHeight" Value="{DynamicResource InputHeightStandard}" />
+      <Setter Property="Padding" Value="9,0" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+    </Style>
+    <Style Selector="ListBox.MailFolders ListBoxItem TextBlock">
+      <Setter Property="FontWeight" Value="Medium" />
+    </Style>
+    <Style Selector="Border#NavigationSidebar Button.SettingsNavItem:disabled /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
     <!-- Keep glyph, selection and caret layers stable while the field's border
          continues to use the shared hover/focus transitions. -->
     <Style Selector="TextBox, TextBox /template/ TextPresenter">

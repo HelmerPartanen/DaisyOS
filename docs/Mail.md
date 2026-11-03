@@ -66,15 +66,38 @@ Provider references: [Google OpenID Connect](https://developers.google.com/ident
   Unread, Archive, Trash and Move perform real operations. Trash moves messages;
   Mail does not permanently expunge a mailbox. Archive/Trash require server special
   folders; use Move for a provider without those mappings.
-- Compose supports To/Cc/Bcc, plain text, file attachments and attachment removal.
+- Compose opens inside the reading pane, with inline recipient/subject rows, a
+  bounded writing area and a fixed Send/Attach footer. Extra recipients are
+  optional: **Copy to** shares their addresses; **Hidden copy** keeps them private
+  from the other recipients. Both are available from **Add more recipients**.
+  Replies keep the original message separately, collapsed behind **Show original
+  message**; the original remains part of the sent message and saved draft.
+  Drafts autosave and also save when closing or switching composers. Esc closes
+  the composer, Ctrl+S saves, and Ctrl+Enter sends. Opening a blank composer and
+  closing it without edits does not create an empty draft. File attachments can
+  be removed using their chips. The message editor owns its scroll viewport;
+  stable reusable input chrome keeps focus/caret insets and surfaces fixed.
   Drafts save locally every three seconds and when closing. Drafts on this device
   lets you resume or delete them. Attachment references must remain accessible.
 - Attachment buttons save to a user-selected destination and do not launch files.
 - Accounts lets you remove a saved sign-in, local drafts and cache. Remote mail is
   preserved.
 
-Mail displays plain text, converting HTML-only messages to text. Remote images,
-HTML scripting and tracking requests do not run. Forward quotes the message text and includes the original `.eml` when it has
+Mail prefers the HTML alternative when available, preserving sender CSS, tables,
+colours, linked stylesheets and inline/CID images. Remote HTTP(S) images load as
+part of the message and may notify their hosts that it was opened. A disposable,
+ephemeral WebKitGTK renderer returns pixels and link rectangles to the Avalonia
+reader; scripts, forms, frames, media, local file access and in-app navigation
+are blocked by the document policy. Links are native keyboard-accessible controls
+and open in the default browser; mail links open Compose. **More → View plain
+text** provides selectable text; **Copy message text** copies the text alternative.
+Plain messages remain native selectable text. If rendering is unavailable or a
+message exceeds layout limits, its text remains readable. The helper requires
+`webkit2gtk-4.1` and XWayland at runtime; `scripts/build-mail-renderer.sh` builds it
+with `cc` and `pkg-config`, and the shell project includes it in build/publish.
+The application window and reader scrolling remain native Avalonia controls.
+
+Forward quotes the message text and includes the original `.eml` when it has
 attachments, preserving their contents. There is no rich
 HTML editor, calendar integration, conversation grouping, automatic provider
 discovery, push/IDLE subscription, or background service when the app is closed.
