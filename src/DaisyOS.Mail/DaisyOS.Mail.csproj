@@ -1,4 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings></PropertyGroup>
  <ItemGroup><ProjectReference Include="../DaisyOS.Shell/DaisyOS.Shell.csproj" /></ItemGroup>
+ <PropertyGroup>
+  <DaisyMailProviderConfig Condition="'$(DaisyMailProviderConfig)' == ''">$(DAISYOS_MAIL_PROVIDER_CONFIG)</DaisyMailProviderConfig>
+ </PropertyGroup>
+ <ItemGroup Condition="'$(DaisyMailProviderConfig)' != ''">
+  <None Include="$(DaisyMailProviderConfig)" Link="mail-providers.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+ </ItemGroup>
+ <Target Name="ValidateMailRegistrationFile" BeforeTargets="PrepareForBuild" Condition="'$(DaisyMailProviderConfig)' != ''">
+  <Error Condition="!Exists('$(DaisyMailProviderConfig)')" Text="DaisyMailProviderConfig does not identify an existing provider registration file." />
+ </Target>
 </Project>

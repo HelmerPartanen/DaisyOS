@@ -9,41 +9,47 @@ dotnet run --project src/DaisyOS.Mail
 
 ## Connecting accounts
 
-Install `libsecret` (provides `secret-tool`) and run an unlocked Secret Service keyring
-such as GNOME Keyring or KWallet's Secret Service. Passwords and refresh tokens are
-stored there; there is no plaintext credential fallback.
+When no account is saved, Mail shows only an account sign-in page. Choose **Continue
+with Google** or **Continue with Microsoft** and finish signing in in your system
+browser. These choices support Gmail/Google Workspace and Outlook/Microsoft 365,
+including school accounts hosted by either provider. The same chooser is used by
+Add account after you have connected a mailbox.
 
-Google and Microsoft sign-in uses your system browser with PKCE, a random state,
-and a temporary loopback callback. Mail does not ship another application's OAuth
-identity. Register your own application before using browser sign-in:
+Mail obtains your email address from the provider’s signed identity response;
+there are no password, server, or OAuth configuration fields in the product UI.
+Mail only opens the inbox after sign-in and mailbox validation succeed. Removing
+the last account returns to this sign-in page. Empty mailbox illustrations and
+reader instructions are not displayed. The first available message opens directly.
+Existing saved IMAP accounts continue to work; new manual IMAP setup is not exposed.
+Other providers are not currently available through this browser-only setup.
 
-- Google: create a **Desktop app** OAuth client in Google Cloud, configure the
-  consent screen, enable Gmail access, and allow your test accounts. Set
-  `DAISYOS_MAIL_GOOGLE_CLIENT_ID`. If the desktop client requires its issued secret,
-  also set `DAISYOS_MAIL_GOOGLE_CLIENT_SECRET` in the process environment. The
-  requested `https://mail.google.com/` scope is restricted; distributing to external
-  users requires Google's verification process.
-- Microsoft: register a public desktop application in Entra, support the intended
-  organization/personal account types, allow a loopback redirect, and grant
-  delegated `IMAP.AccessAsUser.All`, `SMTP.Send`, and `offline_access`. Set
-  `DAISYOS_MAIL_MICROSOFT_CLIENT_ID`. Tenant policy must permit IMAP and SMTP AUTH;
-  administrator consent may be required.
-- Alternatively enter the client ID in Add account. Client IDs are public metadata.
-- Other IMAP: provide your address, incoming TLS server/port (normally 993), outgoing
-  SMTP server/port (587 with required STARTTLS, or 465 with TLS), and a provider
-  password or app password. This includes iCloud, Yahoo and many hosted domains.
-  Incoming STARTTLS on port 143 is not currently supported.
-- `.edu` is a domain suffix, not a mail protocol: choose Google or Microsoft if your
-  school uses them, or ask IT for IMAP/SMTP settings. Accounts whose administrators
-  prohibit these protocols cannot connect with this client.
+### Distributor configuration
 
-Both incoming and outgoing authentication are tested before an account is saved.
-Provider verification, consent and live mailbox access cannot be verified without
-registered OAuth clients and user test accounts.
+Follow [the one-time registration and installation guide](Mail_Registration.md).
 
-Provider references:
-[Google IMAP/SMTP](https://developers.google.com/workspace/gmail/imap/imap-smtp),
-[Google XOAUTH2](https://developers.google.com/workspace/gmail/imap/xoauth2-protocol),
+The distributor must register Mail’s own desktop OAuth applications and configure
+the app-owned registration file, or `DAISYOS_MAIL_GOOGLE_CLIENT_ID` and
+`DAISYOS_MAIL_MICROSOFT_CLIENT_ID` in the process environment. Google desktop clients that require their issued secret also need
+`DAISYOS_MAIL_GOOGLE_CLIENT_SECRET`. These values are never requested from users.
+No third-party application identity is shipped or borrowed. A build without its
+provider registration displays a nontechnical availability message instead of
+opening a website that cannot connect the account.
+
+Google scopes: `openid email profile https://mail.google.com/`. Microsoft scopes:
+`openid email profile offline_access https://outlook.office.com/IMAP.AccessAsUser.All
+https://outlook.office.com/SMTP.Send`. Configure desktop loopback redirects and
+consent for the intended accounts. Provider verification and organization policies
+still apply. The system also needs an unlocked Secret Service keyring and
+`secret-tool` from libsecret. Refresh tokens are kept in that keyring.
+
+Sign-in uses PKCE, state and nonce validation. Identity tokens are verified against
+provider RSA signing keys, including issuer, audience, lifetime and nonce checks,
+before selecting an email address. Mail tests incoming and outgoing authentication
+before saving the account. Live provider sign-in and delivery require registered
+applications and test accounts and have not been verified by the acceptance runner.
+
+Provider references: [Google OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect),
+[Microsoft ID token claims](https://learn.microsoft.com/en-us/entra/identity-platform/id-token-claims-reference),
 [Microsoft OAuth for IMAP/SMTP](https://learn.microsoft.com/en-us/exchange/client-developer/legacy-protocols/how-to-authenticate-an-imap-pop-smtp-application-by-using-oauth/).
 
 ## Daily use
@@ -96,7 +102,11 @@ dotnet run --project scripts/mail-ui-acceptance
 
 The acceptance runner uses isolated temporary account/cache fixtures and a closed
 loopback port. It checks MIME recipients and attachments, safe HTML conversion,
-mail links, offline reading, draft recovery, invalid account validation, search, filters, selection preservation and compact compose actions, and captures welcome, inbox, compose, account setup, account management, drafts and move screens
+mail links, signed identity validation (including tampering, issuer, audience,
+nonce and expiry rejection), provider-only onboarding, the shared combo-box template,
+fractional-scale text editing, offline reading, draft recovery, search, filters,
+selection preservation and compact compose actions. It captures onboarding, inbox,
+compose, account setup, account management, drafts and move screens
 in both themes at 1000 and 1380 pixels. Screenshots go to `artifacts/mail`.
 It does not authenticate to or send mail through a live provider.
 
@@ -107,11 +117,28 @@ AppWindowTitleBar and semantic button variants. Spacing, typography, surfaces,
 selection states and dialog actions use the DaisyOS theme tokens. Mail’s scoped
 list styles are shared between the main window and its dialogs.
 
-Dialog actions stay fixed while forms scroll. Cc/Bcc and server settings expand
-on demand. Less frequent message actions live in the More actions menu. Filtering
+Dialog actions stay fixed while forms scroll. Cc/Bcc expands on demand.
+Account sign-in is a list of provider buttons rather than a configuration form. Less frequent message actions live in the More actions menu. Filtering
 and refresh preserve the selected message instead of clearing the reader.
 
-Reader changes use a short, interruptible 4 px reveal through GuiMotion. Dialogs
-and menus use the existing MotionBehavior; all respect the system reduced-motion
-setting. Hover, press, focus and theme changes use the existing control transitions.
+Reader changes use a short, interruptible 4 px reveal through GuiMotion. Menus
+use the existing MotionBehavior; both respect the system reduced-motion setting.
+Editable forms stay on an opaque, untransformed surface. Mail excludes TextBox and
+TextPresenter glyph layers from theme brush interpolation while retaining shared
+border hover/focus transitions. Typing and caret behavior are checked at 125% and
+150% scaling; native Wayland/IME rendering still needs interactive verification.
+The sole account dropdown uses the global shared system template and adaptive-width
+behavior, capped to its sidebar width. There is no provider dropdown.
 The acceptance runner captures 32 themed states, including short compose windows.
+
+## Desktop integration and diagnostics
+
+Mail is part of the built-in application catalog, supports email-related launcher
+searches, and is included in the default taskbar order for new users. Existing
+users can install and pin it with `scripts/install-mail-app.sh <binary> --pin`.
+The installation is independent of browser sign-in configuration.
+
+`DaisyOS.Mail --check-sign-in` reports registration readiness without printing
+values or launching a browser. `DaisyOS.Mail --pin-to-taskbar` uses the desktop
+settings service and preserves existing taskbar order. Provider configuration can
+be shipped with `-p:DaisyMailProviderConfig=<file>`; see the registration guide.

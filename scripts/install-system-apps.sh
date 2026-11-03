@@ -18,6 +18,10 @@ for application in Mail Notes Settings DiskManager AppInstaller; do
   fi
   [[ -x "$binary" ]] || { echo "Build DaisyOS.$application before installing it: $binary" >&2; exit 1; }
   binary="$(realpath "$binary")"
+  if [[ "$application" == Mail ]]; then
+    "$repo_root/scripts/install-mail-app.sh" "$binary"
+    continue
+  fi
   lower="${application,,}"
   icon_name="$application"
   [[ "$application" != DiskManager ]] || icon_name=Disk_Manager

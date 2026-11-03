@@ -1,0 +1,21 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:c="clr-namespace:DaisyOS.Shell.Controls" x:Class="DaisyOS.Shell.Apps.Mail.MailAccountSetup"
+             UseLayoutRounding="True">
+  <StackPanel MaxWidth="420" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{DynamicResource Space6}" Margin="{DynamicResource SpaceInset6}">
+    <StackPanel Spacing="{DynamicResource Space3}">
+      <c:DaisyIcon Icon="mail-01" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Left" />
+      <TextBlock Text="Add your email account" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />
+      <TextBlock Text="Choose your provider. You’ll sign in securely in your browser." TextWrapping="Wrap" Foreground="{DynamicResource ContentSecondaryBrush}" />
+    </StackPanel>
+    <StackPanel x:Name="Providers" Spacing="{DynamicResource Space3}">
+      <Button x:Name="GoogleSignIn" Classes="Secondary Flexible" Height="NaN" MinHeight="72" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,12" Click="GoogleClicked" AutomationProperties.Name="Continue with Google">
+        <StackPanel Spacing="{DynamicResource Space1}"><TextBlock Text="Continue with Google" FontWeight="SemiBold" /><TextBlock Text="Gmail · Google Workspace" FontSize="{DynamicResource TypeSizeBodySmall}" Foreground="{DynamicResource ContentSecondaryBrush}" /></StackPanel>
+      </Button>
+      <Button x:Name="MicrosoftSignIn" Classes="Secondary Flexible" Height="NaN" MinHeight="72" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16,12" Click="MicrosoftClicked" AutomationProperties.Name="Continue with Microsoft">
+        <StackPanel Spacing="{DynamicResource Space1}"><TextBlock Text="Continue with Microsoft" FontWeight="SemiBold" /><TextBlock Text="Outlook · Microsoft 365 · Work or school" FontSize="{DynamicResource TypeSizeBodySmall}" Foreground="{DynamicResource ContentSecondaryBrush}" TextWrapping="Wrap" /></StackPanel>
+      </Button>
+    </StackPanel>
+    <TextBlock x:Name="SignInStatus" TextWrapping="Wrap" IsVisible="False" Foreground="{DynamicResource ContentSecondaryBrush}" AutomationProperties.LiveSetting="Polite" />
+    <Button x:Name="CancelSignIn" Content="Cancel sign-in" Classes="Subtle Small" Click="CancelClicked" IsVisible="False" HorizontalAlignment="Left" />
+  </StackPanel>
+</UserControl>

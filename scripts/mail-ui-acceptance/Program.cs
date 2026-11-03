@@ -21,6 +21,18 @@ AppBuilder.Configure<MailQaApp>().UseHeadless(new AvaloniaHeadlessPlatformOption
  .With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" }).SetupWithoutStarting();
 try
 {
+    // Never launch a live provider login from the isolated acceptance runner.
+    var isolatedRegistration = Path.Combine(root, "mail-providers.json");
+    File.WriteAllText(isolatedRegistration, "{}");
+    Environment.SetEnvironmentVariable("DAISYOS_MAIL_PROVIDER_CONFIG", isolatedRegistration);
+    Environment.SetEnvironmentVariable("DAISYOS_MAIL_GOOGLE_CLIENT_ID", null);
+    Environment.SetEnvironmentVariable("DAISYOS_MAIL_MICROSOFT_CLIENT_ID", null);
+    MailIdentityChecks.Run();
+    var registrationFixture = Path.Combine(root, "registration-fixture.json");
+    File.WriteAllText(registrationFixture, "{\"GoogleClientId\":\"123-test.apps.googleusercontent.com\",\"MicrosoftClientId\":\"11111111-1111-1111-1111-111111111111\"}");
+    var provisioned = MailProviderRegistration.Load(registrationFixture, useEnvironment: false);
+    Check(provisioned.GoogleConfigured && provisioned.MicrosoftConfigured, "Provider registration loads from a provisioned file without terminal environment variables");
+    Check(!MailProviderRegistration.Load(isolatedRegistration, useEnvironment: false).GoogleConfigured, "Missing registration cannot masquerade as working sign-in");
     var link = MailText.ParseMailto("mailto:you@example.org?subject=Hello%20world&body=First%0ASecond&cc=copy%40example.org");
     Check(link.To == "you@example.org" && link.Subject == "Hello world" && link.Body.Contains('\n') && link.Cc == "copy@example.org", "Mail links decoded into editable drafts");
     var storage = new MailStorage();
@@ -44,9 +56,18 @@ try
     {
         File.Delete(Path.Combine(storage.Root, "accounts.json"));
         var window = new MailWindow { Width = width, Height = 820, RequestedThemeVariant = theme }; window.Show(); Tick(10);
-        Check(window.FindControl<TextBlock>("Subject")!.Text == "Welcome to Mail", "Useful empty state");
+        Check(!window.FindControl<Grid>("MailWorkspace")!.IsVisible && window.FindControl<MailAccountSetup>("AccountSetup")!.IsVisible, "Only account setup is shown without an account");
+        Check(!window.GetVisualDescendants().OfType<TextBox>().Any(t => t.IsEffectivelyVisible), "Setup has no technical configuration fields");
+        Check(window.FindControl<TextBlock>("Subject")!.Text == "", "No empty reader instructions");
         Check(!window.FindControl<Button>("RefreshButton")!.IsEnabled && !window.FindControl<Button>("DraftsNavigation")!.IsEnabled, "Account-dependent actions are unavailable before setup");
-        Save(window, $"welcome-{theme.Key}-{width}"); window.Close(); Tick(3);
+        Save(window, $"onboarding-{theme.Key}-{width}");
+        var firstMailto = window.OpenMailtoAsync("mailto:first@example.org?subject=First%20message"); Tick(4); firstMailto.GetAwaiter().GetResult();
+        Check(window.OwnedWindows.Count == 0 && !window.FindControl<Grid>("MailWorkspace")!.IsVisible, "Mail links retain setup as the only first-run page");
+        var connected = window.FindControl<MailAccountSetup>("AccountSetup")!.Connected!(account); Tick(20); connected.GetAwaiter().GetResult();
+        Check(window.FindControl<Grid>("MailWorkspace")!.IsVisible && !window.FindControl<MailAccountSetup>("AccountSetup")!.IsVisible, "A saved connection replaces onboarding with the mailbox");
+        var pending = window.OwnedWindows.Single();
+        Check(pending.GetVisualDescendants().OfType<TextBox>().Single(c => c.Name == "ToField").Text == "first@example.org", "Mailto recipient survives account setup");
+        pending.Close(); window.Close(); Tick(3);
         File.WriteAllText(Path.Combine(storage.Root, "accounts.json"), JsonSerializer.Serialize(new[] { account }));
         File.WriteAllText(Path.Combine(storage.Root, "folders-" + account.Id + ".json"), JsonSerializer.Serialize(new[] { new MailFolder("Inbox", "INBOX"), new MailFolder("Archive", "Archive") }));
         var key = MailStorage.CacheKey(account.Id, "INBOX");
@@ -59,6 +80,9 @@ try
         incoming.Body = new TextPart("plain") { Text = "Hey team,\n\nFollowing up on yesterday's graphics architecture sync. Attached are the final surface tokens.\n\nPlease review the compositor changes before Friday.\n\nThanks,\nAlex" };
         incoming.WriteTo(Path.Combine(storage.Root, key + "-1.eml"));
         window = new MailWindow { Width = width, Height = 820, RequestedThemeVariant = theme }; window.Show(); Tick(30);
+        Check(window.FindControl<Grid>("MailWorkspace")!.IsVisible && !window.FindControl<MailAccountSetup>("AccountSetup")!.IsVisible, "Connected accounts open the mailbox workspace");
+        var selector = window.FindControl<ComboBox>("Accounts")!;
+        Check(ComboBoxBehavior.GetUseAdaptiveWidth(selector) && selector.GetVisualDescendants().OfType<Border>().Any(b => b.Name == "Background"), "Account selector uses the shared system combo-box template");
         var messages = window.FindControl<ListBox>("Messages")!;
         Check(messages.ItemCount == 2, "Cached mailbox displayed after connection failure");
         window.FindControl<SearchBar>("Search")!.Text = "Elena"; Tick(3); Check(messages.ItemCount == 1, "Sender search");
@@ -87,6 +111,16 @@ try
         var sendAction = compose.GetVisualDescendants().OfType<Button>().Single(b => b.Content is string label && label == "Send");
         var sendOrigin = sendAction.TranslatePoint(default, compose)!.Value;
         Check(sendOrigin.Y + sendAction.Bounds.Height <= compose.Bounds.Height && sendOrigin.Y >= 0, "Compose actions stay visible without scrolling");
+        var editor = compose.GetVisualDescendants().OfType<TextBox>().Single(c => c.Name == "ComposeBody");
+        Check(!DaisyOS.Shell.Services.Theming.ThemeTransitionPolicy.GetEnabled(editor), "Editable text does not interpolate glyph colors");
+        Check(editor.GetVisualAncestors().OfType<Control>().All(c => c.RenderTransform is null && c.Opacity == 1), "Text inputs have no moving or fading ancestors");
+        foreach (var scaling in new[] { 1.25, 1.5 })
+        {
+            compose.SetRenderScaling(scaling); Tick(4);
+            editor.Focus(); editor.SelectAll(); compose.KeyTextInput("Unicode café 日本語\nSecond line"); Tick(4);
+            Check(editor.Text == "Unicode café 日本語\nSecond line" && editor.CaretIndex == editor.Text.Length, "Typing and caret stay correct at fractional scaling");
+        }
+        editor.Text = "Draft text survives closing."; compose.SetRenderScaling(1); Tick(4);
         compose.Height = 480; Tick(5);
         Save(compose, $"compose-compact-{theme.Key}-{width}");
         sendOrigin = sendAction.TranslatePoint(default, compose)!.Value;
@@ -97,8 +131,11 @@ try
         window.FindControl<Button>("AddAccountButton")!.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Tick(4);
         var connect = window.OwnedWindows.Single();
         Check(connect.Background is SolidColorBrush && connect.ActualThemeVariant == theme, "Account dialog inherits owner theme");
-        connect.GetVisualDescendants().OfType<Button>().Single(c => c.Name == "ConnectAccount").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Tick(4);
-        Check(!string.IsNullOrWhiteSpace(connect.GetVisualDescendants().OfType<TextBlock>().Single(c => c.Name == "AccountStatus").Text) && connect.GetVisualDescendants().OfType<Button>().Single(c => c.Name == "ConnectAccount").IsEnabled, "Invalid account rejected without browser or network");
+        Check(!connect.GetVisualDescendants().OfType<TextBox>().Any(), "Provider chooser never exposes email, password, server or OAuth fields");
+        Check(!connect.GetVisualDescendants().OfType<ComboBox>().Any(), "Provider selection is a direct list of sign-in choices");
+        connect.GetVisualDescendants().OfType<Button>().Single(c => c.Name == "GoogleSignIn").RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent)); Tick(4);
+        var signInMessage = connect.GetVisualDescendants().OfType<TextBlock>().Single(c => c.Name == "SignInStatus").Text!;
+        Check(!signInMessage.Contains("OAuth") && !signInMessage.Contains("client", StringComparison.OrdinalIgnoreCase), "Unavailable sign-in uses nontechnical copy without pretending to connect");
         Save(connect, $"connect-{theme.Key}-{width}"); connect.Close(); Tick(4);
         ClickNavigation(window, "Manage accounts"); Tick(5);
         var manage = window.OwnedWindows.Single();
@@ -125,10 +162,10 @@ try
         folderList.SelectedIndex = 1; Tick(20);
         Check(messages.SelectedItem is null && !window.FindControl<WrapPanel>("MessageActions")!.IsEnabled, "Switching folders clears the previous reader and actions");
         folderList.SelectedIndex = 0; Tick(20);
-        Check(messages.SelectedItem is null && messages.ItemCount == 2, "Returning to a cached folder does not reuse another mailbox selection");
+        Check((messages.SelectedItem as MailItem)?.Uid == 1 && messages.ItemCount == 2, "Returning to a cached folder opens its first message");
         window.Close(); Tick(5);
     }
-    Console.WriteLine("PASS: MIME, HTML safety, cache identity, offline reader, search, filters, draft recovery and 32 themed UI captures.");
+    Console.WriteLine("PASS: signed identity validation, provider-only onboarding, shared dropdowns, fractional-scale editing, MIME, offline reader, draft recovery and 32 themed UI captures.");
 }
 finally { Directory.Delete(root, true); }
 static void ClickNavigation(Window window, string label)

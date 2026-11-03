@@ -49,6 +49,8 @@ public sealed record MailDraft
     public List<string> Attachments { get; set; } = [];
     public override string ToString() => string.IsNullOrWhiteSpace(Subject) ? "Untitled draft" : Subject;
 }
+[JsonSourceGenerationOptions(PropertyNameCaseInsensitive = true)]
+[JsonSerializable(typeof(MailProviderRegistration))]
 [JsonSerializable(typeof(List<MailFolder>))]
 [JsonSerializable(typeof(List<MailAccount>))]
 [JsonSerializable(typeof(List<MailItem>))]

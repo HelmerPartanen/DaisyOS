@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="DaisyOS.Shell.Apps.Mail.MailStyles">
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming" x:Class="DaisyOS.Shell.Apps.Mail.MailStyles">
     <Style Selector="TextBlock.MailSecondary">
       <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
       <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
@@ -44,5 +44,13 @@
     </Style>
     <Style Selector="ListBox.MailList ListBoxItem:focus-visible">
       <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    </Style>
+    <!-- Keep glyph, selection and caret layers stable while the field's border
+         continues to use the shared hover/focus transitions. -->
+    <Style Selector="TextBox, TextBox /template/ TextPresenter">
+      <Setter Property="theming:ThemeTransitionPolicy.Enabled" Value="False" />
+    </Style>
+    <Style Selector="TextBox /template/ TextPresenter">
+      <Setter Property="Transitions"><Transitions /></Setter>
     </Style>
 </Styles>

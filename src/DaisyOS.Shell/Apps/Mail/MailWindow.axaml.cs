@@ -23,6 +23,7 @@ public partial class MailWindow : Window
     private List<MailAccount> _accounts = [];
     private List<MailItem> _items = [];
     private MimeMessage? _message;
+    private MailDraft? _pendingDraft;
     private int _limit = 100;
     private string? _serverQuery;
     private int _generation;
@@ -37,7 +38,9 @@ public partial class MailWindow : Window
     {
         InitializeComponent();
         _service = new MailService(_storage);
-        _chrome = new SystemAppWindowChrome(this, Chrome, MainLayout, normalRowDefinitions: "Auto,Auto,*,Auto", fullscreenRowDefinitions: "0,Auto,*,Auto");
+        _chrome = new SystemAppWindowChrome(this, Chrome, RootLayout, normalRowDefinitions: "Auto,*", fullscreenRowDefinitions: "0,*");
+        AccountSetup.Service = _service;
+        AccountSetup.Connected = SaveAccountAsync;
         Search.PropertyChanged += (_, change) =>
         {
             if (change.Property == SearchBar.TextProperty) SearchChanged();
@@ -60,14 +63,14 @@ public partial class MailWindow : Window
             {
                 _accounts = _storage.Read("accounts", MailJsonContext.Default.ListMailAccount, []);
                 _ready = true; Accounts.ItemsSource = _accounts; Accounts.SelectedIndex = _accounts.Count > 0 ? 0 : -1;
-                if (_accounts.Count == 0) Status.Text = "Add an account to get started.";
+                UpdateAccountPresentation();
                 _refresh.Start();
             }
-            catch (Exception ex) { Status.Text = "Could not load accounts: " + ex.Message; }
+            catch { AccountSetup.ShowError("Couldn’t load your accounts. Please close Mail and try again."); }
             await Task.CompletedTask;
         };
         _refresh.Tick += async (_, _) => { if (!_busy && Account is not null) await RefreshAsync(); };
-        Closed += async (_, _) => { _refresh.Stop(); _lifetime.Cancel(); _operation?.Cancel(); _chrome.Dispose(); await _service.DisposeAsync(); _lifetime.Dispose(); };
+        Closed += async (_, _) => { AccountSetup.Cancel(); _refresh.Stop(); _lifetime.Cancel(); _operation?.Cancel(); _chrome.Dispose(); await _service.DisposeAsync(); _lifetime.Dispose(); };
     }
     private async Task RunAsync(string label, Func<CancellationToken, Task> action)
     {
@@ -85,14 +88,14 @@ public partial class MailWindow : Window
         _message = null; MessageActions.IsEnabled = false; Attachments.Children.Clear();
         GuiMotion.Cancel(ReaderContent);
         MessageActions.IsVisible = false; Sender.IsVisible = false;
-        Subject.Text = Account is null ? "Welcome to Mail" : "Select a message"; Sender.Text = "";
-        Body.Text = Account is null ? "Add an account to read and send mail." : "Choose a message from the list to read it here.";
+        ReaderContent.IsVisible = false;
+        Subject.Text = Sender.Text = Body.Text = "";
     }
     private async void AccountChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (!_ready) return;
         _generation++; _operation?.Cancel();
-        DraftsNavigation.IsEnabled = Account is not null;
+        UpdateDraftAvailability();
         _items = []; ApplyFilter(); Folders.ItemsSource = null; ClearReader();
         var a = Account; if (a is null) return;
         // A cancelled request releases its connection before the next account starts.
@@ -142,9 +145,7 @@ public partial class MailWindow : Window
         }
         finally { _updatingMessages = false; }
         if (previous is not null && Selected is null) ClearReader();
-        MessageListEmpty.IsVisible = visible.Length == 0;
-        MessageListEmpty.Text = Account is null ? "Add an account to see your mail." : text.Length > 0 ? "No matching messages. Press Enter to search the whole mailbox." :
-            UnreadOnly.IsChecked == true || StarredOnly.IsChecked == true ? "No messages match these filters." : "This mailbox is empty.";
+        if (Messages.SelectedItem is null && visible.Length > 0) Messages.SelectedItem = visible[0];
     }
     private async void SearchChanged()
     {
@@ -170,7 +171,7 @@ public partial class MailWindow : Window
         {
             var message = await _service.MessageAsync(a, f.Path, item.Uid, ct, item.UidValidity);
             if (gen != _generation || Selected != item) return;
-            _message = message; MessageActions.IsEnabled = true; MessageActions.IsVisible = true; Sender.IsVisible = true;
+            _message = message; ReaderContent.IsVisible = true; MessageActions.IsEnabled = true; MessageActions.IsVisible = true; Sender.IsVisible = true;
             Body.Text = MailText.Read(message);
             Sender.Text = message.From + "\nTo: " + message.To + (message.Cc.Count > 0 ? "\nCc: " + message.Cc : "") + "\n" + message.Date.ToLocalTime().ToString("f");
             foreach (var attachment in message.Attachments)
@@ -242,8 +243,8 @@ public partial class MailWindow : Window
     {
         if (Account is not { } a)
         {
+            _pendingDraft = draft ?? new MailDraft();
             await AddAccountAsync();
-            if (Account is not null) await ComposeAsync(mode, draft);
             return;
         }
         draft ??= new MailDraft { AccountId = a.Id };
@@ -277,6 +278,7 @@ public partial class MailWindow : Window
                 string.Join("\n", (Body.Text ?? "").Split('\n').Select(l => "> " + l));
         }
         await MailDialogs.ComposeAsync(this, _service, _storage, a, draft, s => Status.Text = s);
+        UpdateDraftAvailability();
     }
     public async Task OpenMailtoAsync(string value)
     {
@@ -287,16 +289,39 @@ public partial class MailWindow : Window
         }
         catch (Exception ex) { Status.Text = "Could not open mail link: " + ex.Message; }
     }
+    private void UpdateDraftAvailability()
+    {
+        try { DraftsNavigation.IsEnabled = Account is { } a && _storage.Read("drafts", MailJsonContext.Default.ListMailDraft, []).Any(d => d.AccountId == a.Id); }
+        catch { DraftsNavigation.IsEnabled = false; }
+    }
+    private void UpdateAccountPresentation()
+    {
+        var hasAccounts = _accounts.Count > 0;
+        MailWorkspace.IsVisible = hasAccounts;
+        AccountSetup.IsVisible = !hasAccounts;
+        if (!hasAccounts) ClearReader();
+    }
+    private Task SaveAccountAsync(MailAccount account)
+    {
+        if (_accounts.Any(a => a.Email.Equals(account.Email, StringComparison.OrdinalIgnoreCase)))
+            throw new MailSignInUnavailableException("This account is already connected. Choose a different account in your browser.");
+        var accounts = _accounts.Append(account).ToList();
+        _storage.Write("accounts", accounts, MailJsonContext.Default.ListMailAccount);
+        _accounts = accounts;
+        Accounts.ItemsSource = _accounts.ToArray(); Accounts.SelectedItem = account;
+        UpdateAccountPresentation();
+        if (_pendingDraft is { } pending)
+        {
+            _pendingDraft = null;
+            Dispatcher.UIThread.Post(async () => await ComposeAsync(draft: pending), DispatcherPriority.Background);
+        }
+        return Task.CompletedTask;
+    }
     private async Task AddAccountAsync()
     {
-        try
-        {
-            var account = await MailDialogs.AddAccountAsync(this, _service);
-            if (account is null) return;
-            _accounts.Add(account); _storage.Write("accounts", _accounts, MailJsonContext.Default.ListMailAccount);
-            Accounts.ItemsSource = _accounts.ToArray(); Accounts.SelectedItem = account;
-        }
-        catch (Exception ex) { Status.Text = "Could not add account: " + ex.Message; }
+        if (_accounts.Count == 0) { UpdateAccountPresentation(); return; }
+        try { await MailDialogs.AddAccountAsync(this, _service, SaveAccountAsync); }
+        catch { Status.Text = "Couldn’t add your account. Please try again."; }
     }
     private async void AccountsClicked(object? sender, RoutedEventArgs e)
     {
@@ -322,6 +347,7 @@ public partial class MailWindow : Window
                 var drafts = _storage.Read("drafts", MailJsonContext.Default.ListMailDraft, []); drafts.RemoveAll(d => d.AccountId == a.Id); _storage.Write("drafts", drafts, MailJsonContext.Default.ListMailDraft);
                 Accounts.ItemsSource = _accounts.ToArray(); Accounts.SelectedIndex = _accounts.Count > 0 ? 0 : -1;
                 list.ItemsSource = _accounts.ToArray(); Status.Text = "Account removed.";
+                UpdateAccountPresentation(); if (_accounts.Count == 0) dialog.Close();
             }
             catch (Exception ex) { Status.Text = "Could not remove account: " + ex.Message; }
             finally { remove.IsEnabled = list.SelectedItem is MailAccount; }
@@ -336,15 +362,15 @@ public partial class MailWindow : Window
             var dialog = MailDialogs.Window("Saved drafts", 540, 420); MailDialogs.FollowTheme(dialog, this);
             var layout = new MailDialogLayout(dialog, "Local drafts"); var panel = layout.Form;
             var drafts = _storage.Read("drafts", MailJsonContext.Default.ListMailDraft, []);
+            if (!drafts.Any(d => d.AccountId == a.Id)) { UpdateDraftAvailability(); return; }
             var list = new ListBox { Classes = { "MailList" }, ItemsSource = drafts.Where(d => d.AccountId == a.Id).ToArray(), MaxHeight = 240 }; panel.Children.Add(list);
-            var empty = MailDialogLayout.Note("No saved drafts for this account."); empty.IsVisible = !drafts.Any(d => d.AccountId == a.Id); panel.Children.Add(empty);
             var delete = MailDialogLayout.Action("Delete draft", "Subtle"); delete.IsEnabled = false; layout.Actions.Children.Add(delete);
             var close = MailDialogLayout.Action("Close"); close.IsCancel = true; close.Click += (_, _) => dialog.Close(); layout.Actions.Children.Add(close);
             var open = MailDialogLayout.Action("Continue writing", "Primary"); open.IsEnabled = false; layout.Actions.Children.Add(open);
             list.SelectionChanged += (_, _) => open.IsEnabled = delete.IsEnabled = list.SelectedItem is MailDraft;
             MailDraft? selected = null;
             open.Click += (_, _) => { selected = list.SelectedItem as MailDraft; if (selected is not null) dialog.Close(); };
-            delete.Click += (_, _) => { if (list.SelectedItem is MailDraft d) { drafts.Remove(d); _storage.Write("drafts", drafts, MailJsonContext.Default.ListMailDraft); list.ItemsSource = drafts.Where(d => d.AccountId == a.Id).ToArray(); empty.IsVisible = !drafts.Any(d => d.AccountId == a.Id); } };
+            delete.Click += (_, _) => { if (list.SelectedItem is MailDraft d) { drafts.Remove(d); _storage.Write("drafts", drafts, MailJsonContext.Default.ListMailDraft); list.ItemsSource = drafts.Where(d => d.AccountId == a.Id).ToArray(); UpdateDraftAvailability(); if (!drafts.Any(d => d.AccountId == a.Id)) dialog.Close(); } };
             await dialog.ShowDialog(this); if (selected is not null) await ComposeAsync(draft: selected);
         }
         catch (Exception ex) { Status.Text = "Could not open drafts: " + ex.Message; }

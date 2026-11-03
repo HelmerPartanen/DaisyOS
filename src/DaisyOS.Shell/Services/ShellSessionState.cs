@@ -11,7 +11,7 @@ public sealed class ShellSessionState
 {
     public static readonly IReadOnlyList<string> DefaultDockOrder =
     [
-        "org.daisyos.files", "org.daisyos.notes", "org.daisyos.calendar",
+        "org.daisyos.files", "org.daisyos.mail", "org.daisyos.notes", "org.daisyos.calendar",
         "org.daisyos.calculator", "org.daisyos.settings", "org.daisyos.appstore",
         "org.daisyos.taskmanager", "org.daisyos.diskmanager", "org.daisyos.uikit"
     ];

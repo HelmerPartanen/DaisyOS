@@ -27,7 +27,8 @@ internal sealed class MailDialogLayout
         Grid.SetRow(Actions, 2); root.Children.Add(Actions);
         window.Styles.Add(new MailStyles());
         window.Content = root;
-        MotionBehavior.SetRevealOnAttach(root, true);
+        // Editable forms stay on an untransformed, opaque text surface.
+        // Moving/fading an ancestor also moves the caret and IME composition layer.
     }
     public static void Token(Control control, AvaloniaProperty property, string key) => control.Bind(property, control.GetResourceObservable(key));
     public static StackPanel Stack(string spacing = "Space4")

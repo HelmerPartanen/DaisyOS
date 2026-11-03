@@ -137,6 +137,15 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
     private static readonly IReadOnlyList<AppEntry> BuiltInSystemApps =
     [
         new(
+            "org.daisyos.mail.desktop",
+            "Mail",
+            "Read and send email",
+            "org.daisyos.mail",
+            IsPinned: false,
+            AppLaunchKind.Internal,
+            Categories: ["Network", "Email"],
+            SearchTerms: ["Email", "Gmail", "Outlook", "Inbox", "Microsoft 365"]),
+        new(
             "org.daisyos.calculator.desktop",
             "Calculator",
             "Perform standard and scientific calculations",

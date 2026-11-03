@@ -111,3 +111,9 @@ packaging/gaming/*
 
 !packaging/librepods/
 !packaging/librepods/**
+
+# Local OAuth registration is provisioned by the distributor, never committed.
+**/mail-providers.json
+/mail-providers.local.json
+!packaging/mail/
+!packaging/mail/mail-providers.example.json

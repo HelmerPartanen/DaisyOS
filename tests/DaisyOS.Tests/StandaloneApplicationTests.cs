@@ -41,6 +41,7 @@ public sealed class StandaloneApplicationTests
         {
             var state = new ShellSessionState(path);
             Assert.Equal(ShellSessionState.DefaultDockOrder, state.DockOrder);
+            Assert.Contains("org.daisyos.mail", state.DockOrder);
             Assert.Equal(ShellSessionState.DefaultDockOrder.Count,
                 ShellSessionState.DefaultDockOrder.Distinct(StringComparer.OrdinalIgnoreCase).Count());
 
@@ -53,6 +54,7 @@ public sealed class StandaloneApplicationTests
     [Theory]
     [InlineData("settings", "Asetukset")]
     [InlineData("files", "Tiedostot")]
+    [InlineData("mail", "Sähköposti")]
     [InlineData("notes", "Muistiinpanot")]
     [InlineData("diskmanager", "Disk Manager")]
     [InlineData("appinstaller", "App Installer")]

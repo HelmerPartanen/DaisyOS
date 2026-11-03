@@ -22,7 +22,7 @@ for app in ('Files', 'Mail', 'Notes', 'Settings', 'DiskManager', 'AppInstaller')
         target = repo / 'src' / f'DaisyOS.{app}' / 'bin' / configuration / 'net10.0' / f'DaisyOS.{app}'
         if not target.is_file(): continue
         # Match a whole Exec value, preserving any customized command or arguments.
-        suffix = ' %U' if app in ('Files', 'AppInstaller') else ''
+        suffix = ' %u' if app == 'Mail' else ' %U' if app in ('Files', 'AppInstaller') else ''
         text = text.replace(f'\nExec="{binary}"{suffix}\n', f'\nExec="{target}"{suffix}\n')
     if text != shortcut.read_text():
         shortcut.write_text(text)

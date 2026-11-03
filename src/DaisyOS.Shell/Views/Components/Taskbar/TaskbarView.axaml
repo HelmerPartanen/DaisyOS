@@ -166,6 +166,16 @@
           </Panel>
         </Button>
 
+        <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="mail" ToolTip.Tip="Mail">
+          <Panel Width="40" Height="40">
+            <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">
+              <Image Classes="AppIcon" Source="{DynamicResource AppIconMail}" Width="26" Height="26"
+                     RenderOptions.BitmapInterpolationMode="HighQuality" IsHitTestVisible="False" />
+            </Grid>
+            <Border Classes="TaskbarWindowIndicator" IsHitTestVisible="False" />
+          </Panel>
+        </Button>
+
         <Button Classes="ShellButton TaskbarApp TaskbarAppIcon" Tag="notes" ToolTip.Tip="{DynamicResource Loc_8A7525B1492F}">
           <Panel Width="40" Height="40">
             <Grid Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center">

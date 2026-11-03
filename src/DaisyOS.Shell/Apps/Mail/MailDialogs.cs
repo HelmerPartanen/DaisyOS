@@ -26,74 +26,21 @@ internal static class MailDialogs
         var binding = dialog.Bind(TopLevel.RequestedThemeVariantProperty, owner.GetObservable(TopLevel.ActualThemeVariantProperty));
         dialog.Closed += (_, _) => binding.Dispose();
     }
-    internal static TextBox Field(StackPanel panel, string label, string text = "", bool password = false)
+    internal static TextBox Field(StackPanel panel, string label, string text = "")
     {
         var group = new StackPanel(); MailDialogLayout.Token(group, StackPanel.SpacingProperty, "Space1");
         var caption = MailDialogLayout.Note(label); group.Children.Add(caption);
-        var box = new TextBox { Name = new string(label.Where(char.IsLetterOrDigit).ToArray()) + "Field", Text = text, PasswordChar = password ? '●' : '\0' };
+        var box = new TextBox { Name = new string(label.Where(char.IsLetterOrDigit).ToArray()) + "Field", Text = text };
         AutomationProperties.SetName(box, label);
         group.Children.Add(box); panel.Children.Add(group); return box;
     }
-    public static async Task<MailAccount?> AddAccountAsync(Window owner, MailService service)
+    public static async Task<MailAccount?> AddAccountAsync(Window owner, MailService service, Func<MailAccount, Task> save)
     {
-        var dialog = Window("Add mail account", height: 720); FollowTheme(dialog, owner);
-        var layout = new MailDialogLayout(dialog, "Add account"); var panel = layout.Form;
-        panel.Children.Add(MailDialogLayout.Note("Choose Google, Microsoft, or your provider’s IMAP settings."));
-        var provider = new ComboBox { ItemsSource = new[] { "Google", "Microsoft", "IMAP" }, SelectedIndex = 0, HorizontalAlignment = HorizontalAlignment.Stretch }; panel.Children.Add(provider);
-        var email = Field(panel, "Email address"); var name = Field(panel, "Your name");
-        var oauthFields = MailDialogLayout.Stack(); panel.Children.Add(oauthFields);
-        var client = Field(oauthFields, "OAuth client ID", Environment.GetEnvironmentVariable("DAISYOS_MAIL_GOOGLE_CLIENT_ID") ?? "");
-        var passwordFields = MailDialogLayout.Stack(); panel.Children.Add(passwordFields);
-        var password = Field(passwordFields, "App password / password", password: true);
-        var servers = MailDialogLayout.Stack();
-        var incoming = Field(servers, "Incoming IMAP server (TLS)", "imap.gmail.com"); var imapPort = Field(servers, "IMAP port", "993");
-        var outgoing = Field(servers, "Outgoing SMTP server", "smtp.gmail.com"); var smtpPort = Field(servers, "SMTP port (587 STARTTLS or 465 TLS)", "587");
-        var advanced = new Expander { Header = "Server settings", Content = servers, HorizontalAlignment = HorizontalAlignment.Stretch }; panel.Children.Add(advanced);
-        var note = MailDialogLayout.Note(); note.Name = "AccountStatus"; panel.Children.Add(note);
-        var cancel = MailDialogLayout.Action("Cancel"); cancel.IsCancel = true; layout.Actions.Children.Add(cancel);
-        var connect = MailDialogLayout.Action("Continue", "Primary"); connect.Name = "ConnectAccount"; layout.Actions.Children.Add(connect);
-        using var stop = new CancellationTokenSource(TimeSpan.FromMinutes(5));
-        cancel.Click += (_, _) => { stop.Cancel(); dialog.Close(); };
-        dialog.Closed += (_, _) => stop.Cancel();
-        void Update()
-        {
-            var p = provider.SelectedItem?.ToString(); var google = p == "Google";
-            incoming.Text = p == "IMAP" ? "" : google ? "imap.gmail.com" : "outlook.office365.com";
-            outgoing.Text = p == "IMAP" ? "" : google ? "smtp.gmail.com" : "smtp.office365.com";
-            client.Text = Environment.GetEnvironmentVariable(google ? "DAISYOS_MAIL_GOOGLE_CLIENT_ID" : "DAISYOS_MAIL_MICROSOFT_CLIENT_ID") ?? "";
-            oauthFields.IsVisible = p != "IMAP" && string.IsNullOrWhiteSpace(client.Text);
-            passwordFields.IsVisible = p == "IMAP"; advanced.IsExpanded = p == "IMAP";
-            connect.Content = p == "IMAP" ? "Connect account" : "Sign in with your browser";
-            note.Text = p == "IMAP" ? "Ask your provider for mail server settings. Some providers require an app password." :
-                string.IsNullOrWhiteSpace(client.Text) ? "Browser sign-in needs a registered OAuth client ID. Setup instructions: docs/Mail.md." : "Continue securely in your browser. Mail never sees your provider password.";
-        }
-        provider.SelectionChanged += (_, _) => Update(); Update();
-        connect.Click += async (_, _) =>
-        {
-            MailAccount? account = null;
-            try
-            {
-                email.Classes.Remove("Error");
-                if (string.IsNullOrWhiteSpace(email.Text))
-                {
-                    email.Classes.Add("Error"); email.Focus(); note.Text = "Enter your email address."; return;
-                }
-                var address = MailboxAddress.Parse(email.Text ?? "");
-                if (address.Address != email.Text?.Trim()) throw new FormatException("Enter an email address without a display name.");
-                if (!int.TryParse(imapPort.Text, out var ip) || ip is < 1 or > 65535 || !int.TryParse(smtpPort.Text, out var sp) || sp is < 1 or > 65535) throw new FormatException("Enter valid server ports.");
-                if (string.IsNullOrWhiteSpace(incoming.Text) || string.IsNullOrWhiteSpace(outgoing.Text)) throw new FormatException("Enter both mail servers.");
-                account = new MailAccount { Email = address.Address, Name = name.Text ?? "", Provider = provider.SelectedItem!.ToString()!, ClientId = client.Text?.Trim() ?? "", ImapHost = incoming.Text.Trim(), ImapPort = ip, SmtpHost = outgoing.Text.Trim(), SmtpPort = sp };
-                connect.IsEnabled = false; provider.IsEnabled = false; note.Text = "Connecting… Complete sign-in in your browser if prompted.";
-                await service.ValidateAsync(account, password.Text ?? "", stop.Token);
-                dialog.Close(account);
-            }
-            catch (Exception ex)
-            {
-                if (account is not null) { try { await MailSecrets.RunAsync("clear", account.Id, null, CancellationToken.None); } catch { } }
-                note.Text = ex is OperationCanceledException ? "Sign-in cancelled or timed out." : ex.Message;
-                connect.IsEnabled = true; provider.IsEnabled = true;
-            }
-        };
+        var dialog = Window("Add account", height: 560); FollowTheme(dialog, owner);
+        var setup = new MailAccountSetup { Service = service };
+        setup.Connected = async account => { await save(account); dialog.Close(account); };
+        dialog.Content = setup;
+        dialog.Closed += (_, _) => setup.Cancel();
         return await dialog.ShowDialog<MailAccount?>(owner);
     }
 
