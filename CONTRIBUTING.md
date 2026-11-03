@@ -1,4 +1,4 @@
-# Contributing to DaisyOS / SnapOS
+# Contributing to DaisyOS
 
 Thank you for contributing to DaisyOS! This guide outlines our engineering standards, architecture, development workflows, and pull request process. These standards ensure smooth collaboration in a multi-person production environment, following best practices seen at Apple and Microsoft.
 
