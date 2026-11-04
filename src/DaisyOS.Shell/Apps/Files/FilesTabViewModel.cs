@@ -286,10 +286,14 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             OnPropertyChanged(nameof(IsSortByDate));
             OnPropertyChanged(nameof(IsSortByType));
             OnPropertyChanged(nameof(IsSortBySize));
+            OnPropertyChanged(nameof(SortArrowIcon));
             ApplyFilterAndSort();
             PreferencesChanged?.Invoke();
         }
     }
+
+    /// <summary>Direction glyph shown on the active column header.</summary>
+    public string SortArrowIcon => _sortAscending ? "arrow-up" : "arrow-down";
 
     public bool SortAscending
     {
@@ -298,6 +302,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
         {
             if (SetProperty(ref _sortAscending, value))
             {
+                OnPropertyChanged(nameof(SortArrowIcon));
                 ApplyFilterAndSort();
                 PreferencesChanged?.Invoke();
             }

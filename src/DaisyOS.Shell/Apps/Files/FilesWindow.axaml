@@ -543,16 +543,16 @@
                 <Panel Grid.Row="0" MinHeight="{DynamicResource InputHeightStandard}" Background="Transparent">
                   <Grid ColumnDefinitions="*,Auto,Auto,Auto" Margin="16,0" VerticalAlignment="Center">
                     <Button Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortByName}" Click="OnSortNameClicked">
-                      <TextBlock Text="{DynamicResource Loc_DCD1D5223F73}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                      <StackPanel Orientation="Horizontal" Spacing="4"><TextBlock Text="{DynamicResource Loc_DCD1D5223F73}" FontSize="{DynamicResource TypeSizeCaption}"/><controls:DaisyIcon Icon="{Binding ActiveTab.SortArrowIcon}" Size="{DynamicResource IconSizeSmall}" VerticalAlignment="Center" IsVisible="{Binding ActiveTab.IsSortByName}"/></StackPanel>
                     </Button>
                     <Button Grid.Column="1" Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortByDate}" Width="160" IsVisible="{Binding ActiveTab.ShowDateColumn}" Click="OnSortDateClicked">
-                      <TextBlock Text="{DynamicResource Loc_EB5E7A5E3D68}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                      <StackPanel Orientation="Horizontal" Spacing="4"><TextBlock Text="{DynamicResource Loc_EB5E7A5E3D68}" FontSize="{DynamicResource TypeSizeCaption}"/><controls:DaisyIcon Icon="{Binding ActiveTab.SortArrowIcon}" Size="{DynamicResource IconSizeSmall}" VerticalAlignment="Center" IsVisible="{Binding ActiveTab.IsSortByDate}"/></StackPanel>
                     </Button>
                     <Button Grid.Column="2" Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortByType}" Width="120" IsVisible="{Binding ActiveTab.ShowTypeColumn}" Click="OnSortTypeClicked">
-                      <TextBlock Text="{DynamicResource Loc_BAADDF70FB5D}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                      <StackPanel Orientation="Horizontal" Spacing="4"><TextBlock Text="{DynamicResource Loc_BAADDF70FB5D}" FontSize="{DynamicResource TypeSizeCaption}"/><controls:DaisyIcon Icon="{Binding ActiveTab.SortArrowIcon}" Size="{DynamicResource IconSizeSmall}" VerticalAlignment="Center" IsVisible="{Binding ActiveTab.IsSortByType}"/></StackPanel>
                     </Button>
                     <Button Grid.Column="3" Classes="ColumnHeader" Classes.SortActive="{Binding ActiveTab.IsSortBySize}" Width="80" IsVisible="{Binding ActiveTab.ShowSizeColumn}" HorizontalAlignment="Right" Click="OnSortSizeClicked">
-                      <TextBlock Text="{DynamicResource Loc_1AF851907331}" FontSize="{DynamicResource TypeSizeCaption}"/>
+                      <StackPanel Orientation="Horizontal" Spacing="4"><TextBlock Text="{DynamicResource Loc_1AF851907331}" FontSize="{DynamicResource TypeSizeCaption}"/><controls:DaisyIcon Icon="{Binding ActiveTab.SortArrowIcon}" Size="{DynamicResource IconSizeSmall}" VerticalAlignment="Center" IsVisible="{Binding ActiveTab.IsSortBySize}"/></StackPanel>
                     </Button>
                   </Grid>
                 </Panel>

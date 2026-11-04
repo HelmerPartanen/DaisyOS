@@ -5,6 +5,7 @@ using Avalonia.Data.Converters;
 using Avalonia.Media.Imaging;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.Services.Notifications;
+using SkiaSharp;
 
 namespace DaisyOS.Shell.Converters;
 
@@ -42,7 +43,7 @@ public sealed class NotificationPreviewValueConverter : IValueConverter
             if (TryDecodeInlineImage(source, out var bytes))
             {
                 using var stream = new MemoryStream(bytes, writable: false);
-                return Bitmap.DecodeToWidth(stream, PreviewDecodeWidth);
+                return DecodeBitmap(stream);
             }
 
             if (!Path.IsPathFullyQualified(source) || !File.Exists(source) || !IsSupportedImage(source))
@@ -57,12 +58,23 @@ public sealed class NotificationPreviewValueConverter : IValueConverter
             }
 
             using var file = File.OpenRead(source);
-            return Bitmap.DecodeToWidth(file, PreviewDecodeWidth);
+            return DecodeBitmap(file);
         }
         catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or ArgumentException or FormatException)
         {
             return null;
         }
+    }
+
+    private static Bitmap? DecodeBitmap(Stream stream)
+    {
+        // The current Avalonia decoder dereferences a null codec for corrupt
+        // input. Validate its header first, and bound full-resolution PNG work.
+        using var codec = SKCodec.Create(stream);
+        if (codec is null || codec.Info.Width <= 0 || codec.Info.Height <= 0 ||
+            (long)codec.Info.Width * codec.Info.Height > 16L * 1024 * 1024) return null;
+        stream.Position = 0;
+        return Bitmap.DecodeToWidth(stream, Math.Min(PreviewDecodeWidth, codec.Info.Width));
     }
 
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>

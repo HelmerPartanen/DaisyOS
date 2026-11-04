@@ -14,11 +14,13 @@ internal sealed record NotificationArtwork(string? AppIconPath, string? PreviewS
         // Resolve identities independently: an unrelated built-in icon name must
         // not win over the sender's installed desktop-entry identity.
         var sourceIcon = ResolveIcon(notification.SourceAppId);
-        if (string.IsNullOrWhiteSpace(sourceIcon)) sourceIcon = ResolveIcon(notification.SourceAppName);
+        var nameIcon = ResolveIcon(notification.SourceAppName);
+        var sourceIsDisplayName = !string.IsNullOrWhiteSpace(notification.SourceAppName)
+            && string.Equals(notification.SourceAppId, notification.SourceAppName, StringComparison.OrdinalIgnoreCase);
         var explicitIcon = ResolveIcon(notification.Icon);
         var image = LocalPath(notification.PreviewImage);
         var hintedIcon = IsApplicationIcon(image, notification, sourceIcon, explicitIcon) ? ResolveIcon(image) : null;
-        return new NotificationArtwork(First(sourceIcon, hintedIcon, explicitIcon),
+        return new NotificationArtwork(First(hintedIcon, sourceIsDisplayName ? null : sourceIcon, explicitIcon, sourceIcon, nameIcon),
             hintedIcon is not null ? null : notification.PreviewImage);
     }
 
@@ -28,6 +30,8 @@ internal sealed record NotificationArtwork(string? AppIconPath, string? PreviewS
     {
         source = LocalPath(source);
         if (string.IsNullOrWhiteSpace(source)) return null;
+        if (Uri.TryCreate(source, UriKind.Absolute, out var uri) && !uri.IsFile)
+            return uri.Scheme == "avares" && Avalonia.Platform.AssetLoader.Exists(uri) ? source : null;
         // An explicit file must not be mistaken for a built-in app merely
         // because its basename is "notes.png" or "mail.png".
         if (Path.IsPathFullyQualified(source)) return File.Exists(source) ? source : null;
@@ -41,11 +45,12 @@ internal sealed record NotificationArtwork(string? AppIconPath, string? PreviewS
         if (string.Equals(image, sourceIcon, StringComparison.Ordinal) || string.Equals(image, explicitIcon, StringComparison.Ordinal)) return true;
         // Named theme icons are application/icon artwork, not image attachments.
         if (!Path.IsPathFullyQualified(image)) return ResolveIcon(image) is not null;
-        var segments = image.Split(Path.DirectorySeparatorChar);
-        if (segments.Contains("icons", StringComparer.OrdinalIgnoreCase) || segments.Contains("pixmaps", StringComparer.OrdinalIgnoreCase)) return true;
+        if (image.Contains("/share/icons/", StringComparison.OrdinalIgnoreCase)
+            || image.Contains("/share/pixmaps/", StringComparison.OrdinalIgnoreCase)
+            || image.StartsWith(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".icons") + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return true;
         // Electron packages commonly put their notification logo here instead
         // of passing app_icon. Do not classify arbitrary square photos as logos.
-        if (segments.Contains("resources", StringComparer.OrdinalIgnoreCase) && segments.Contains("linux", StringComparer.OrdinalIgnoreCase)) return true;
+        if (image.Contains("/resources/linux/", StringComparison.OrdinalIgnoreCase)) return true;
         var name = Normalize(Path.GetFileNameWithoutExtension(image));
         return name.Length > 0 && (name == Normalize(item.SourceAppId) || name == Normalize(item.SourceAppName));
     }
