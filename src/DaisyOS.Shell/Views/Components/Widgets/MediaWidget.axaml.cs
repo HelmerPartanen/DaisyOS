@@ -306,41 +306,23 @@ public partial class MediaWidget : UserControl
         }
     }
 
-    private async void OnMoveToDesktopClicked(object? sender, RoutedEventArgs e)
+    // The shelf can be hosted in a separate native surface. Its owning shell
+    // handles placement, rather than resolving an ancestor after a delayed fade.
+    internal event EventHandler? MoveToDesktopRequested;
+    internal event EventHandler? RemoveRequested;
+
+    private void OnMoveToDesktopClicked(object? sender, RoutedEventArgs e)
     {
         HideContextMenu();
-        Opacity = 0;
-        await Task.Delay(150);
-
-        var shellView = (Application.Current as App)?.ShellView ?? this.FindAncestorOfType<ShellView>();
-        var desktopVm = shellView?.Desktop?.ViewModel;
-        var desktopMetrics = shellView?.Desktop?.CurrentMetrics;
-        if (desktopVm != null)
-        {
-            desktopVm.MoveMediaWidgetToDesktop(desktopMetrics);
-        }
-        else
-        {
-            IsVisible = false;
-        }
+        MoveToDesktopRequested?.Invoke(this, EventArgs.Empty);
+        e.Handled = true;
     }
 
-    private async void OnRemoveWidgetClicked(object? sender, RoutedEventArgs e)
+    private void OnRemoveWidgetClicked(object? sender, RoutedEventArgs e)
     {
         HideContextMenu();
-        Opacity = 0;
-        await Task.Delay(150);
-
-        var shellView = (Application.Current as App)?.ShellView ?? this.FindAncestorOfType<ShellView>();
-        var desktopVm = shellView?.Desktop?.ViewModel;
-        if (desktopVm != null)
-        {
-            desktopVm.RemoveBottomMediaWidget();
-        }
-        else
-        {
-            IsVisible = false;
-        }
+        RemoveRequested?.Invoke(this, EventArgs.Empty);
+        e.Handled = true;
     }
 
     private async Task RunMediaCommandAsync(Func<CancellationToken, Task> command)

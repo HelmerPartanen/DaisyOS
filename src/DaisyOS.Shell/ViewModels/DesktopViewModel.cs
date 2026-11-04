@@ -311,7 +311,6 @@ public class DesktopViewModel : INotifyPropertyChanged
 
     public void MoveMediaWidgetToDesktop(DesktopGridMetrics? metrics = null, int columnSpan = 3, int rowSpan = 2)
     {
-        BottomMediaWidgetVisible = false;
         var existingMedia = Items.FirstOrDefault(i => i.IsMediaWidget);
         if (existingMedia == null)
         {
@@ -319,8 +318,11 @@ public class DesktopViewModel : INotifyPropertyChanged
         }
         else
         {
+            if (metrics != null) CalculateLayout(metrics);
+            BottomMediaWidgetVisible = false;
             SaveLayout();
         }
+        LayoutRequested?.Invoke();
     }
 
     public void RemoveBottomMediaWidget()
@@ -710,7 +712,6 @@ public class DesktopViewModel : INotifyPropertyChanged
             {
                 RemoveWidget(m, null);
             }
-            BottomMediaWidgetVisible = false;
         }
 
         string uniqueSuffix = Guid.NewGuid().ToString("N")[..8];
@@ -777,6 +778,7 @@ public class DesktopViewModel : INotifyPropertyChanged
             CalculateLayout(metrics);
         }
 
+        if (isMedia) BottomMediaWidgetVisible = false;
         SaveLayout();
 
         return item;

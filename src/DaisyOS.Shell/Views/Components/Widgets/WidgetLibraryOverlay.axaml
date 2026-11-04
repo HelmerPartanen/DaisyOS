@@ -1,4 +1,11 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="DaisyOS.Shell.Views.Components.Widgets.WidgetLibraryOverlay" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="False" Focusable="True" PointerPressed="OnBackdropPointerPressed">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/WidgetChromeButtonTheme.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="Border.WidgetLibraryFrame">
       <Setter Property="Background" Value="{DynamicResource ShellFrameOuterEdgeBrush}" />
@@ -84,36 +91,19 @@
       <Setter Property="VerticalAlignment" Value="Center" />
       <Setter Property="Cursor" Value="Hand" />
       <Setter Property="ZIndex" Value="500" />
-      <Setter Property="RenderTransformOrigin" Value="50%,50%" />
+      <Setter Property="Theme" Value="{StaticResource WidgetChromeButtonTheme}" />
       <Setter Property="Transitions">
         <Transitions>
           <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
-          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
-          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEasePress}" />
         </Transitions>
       </Setter>
     </Style>
-    <Style Selector="Button.CarouselNav /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
+    <Style Selector="Button.CarouselNav /template/ Border#WidgetButtonSurface">
       <Setter Property="BoxShadow" Value="{DynamicResource ElevationFlyoutShadow}" />
-    </Style>
-    <Style Selector="Button.CarouselNav:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
-    </Style>
-    <Style Selector="Button.CarouselNav:pressed">
-      <Setter Property="RenderTransform" Value="scale(0.92)" />
     </Style>
     <Style Selector="Button.CarouselNav:disabled">
       <Setter Property="Opacity" Value="0" />
       <Setter Property="IsHitTestVisible" Value="False" />
-    </Style>
-    <Style Selector="Button.CarouselNav:disabled /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderBrush" Value="Transparent" />
-      <Setter Property="BoxShadow" Value="none" />
     </Style>
     <Style Selector="Border.PageDot">
       <Setter Property="Width" Value="7" />

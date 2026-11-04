@@ -147,6 +147,13 @@ namespace DaisyOS.Shell.Views
             MetricsPanel.InitializeMonitor(_metricsMonitor);
             MetricsPanel.PanelVisibilityChanged += (_, visible) => MetricsSurfaceVisibilityChanged?.Invoke(this, visible);
 
+            MediaWidgetContent.MoveToDesktopRequested += (_, _) =>
+            {
+                Desktop.ViewModel.MoveMediaWidgetToDesktop(Desktop.CurrentMetrics);
+                Desktop.InvalidateReorderPanel();
+            };
+            MediaWidgetContent.RemoveRequested += (_, _) => Desktop.ViewModel.RemoveBottomMediaWidget();
+
             Desktop.ViewModel.BottomMediaWidgetVisibilityChanged += (_, visible) =>
             {
                 if (!visible) { _mediaRevealed = false; _mediaAutoHideTimer.Stop(); }

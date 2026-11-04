@@ -4,10 +4,17 @@
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
              x:Class="DaisyOS.Shell.Controls.DesktopItemView"
              x:DataType="vm:DesktopItemViewModel"
-             ClipToBounds="{Binding IsWidgetCard}"
+             ClipToBounds="False"
              Classes.Selected="{Binding IsSelected}"
              Classes.Widget="{Binding IsWidgetCard}"
              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+  <UserControl.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.MergedDictionaries>
+        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/WidgetChromeButtonTheme.axaml" />
+      </ResourceDictionary.MergedDictionaries>
+    </ResourceDictionary>
+  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="controls|DesktopItemView">
       <Setter Property="Transitions">
@@ -100,60 +107,15 @@
       <Setter Property="Height" Value="28" />
       <Setter Property="MinWidth" Value="28" />
       <Setter Property="MinHeight" Value="28" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="11" />
       <Setter Property="HorizontalAlignment" Value="Left" />
       <Setter Property="VerticalAlignment" Value="Top" />
       <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="Template">
-        <ControlTemplate>
-          <Border Name="ButtonBorder"
-                  Width="22"
-                  Height="22"
-                  CornerRadius="11"
-                  Background="{DynamicResource SurfaceRaisedBrush}"
-                  BorderBrush="{DynamicResource StrokeDefaultBrush}"
-                  BorderThickness="1"
-                  BoxShadow="{DynamicResource ElevationItemLift}"
-                  HorizontalAlignment="Center"
-                  VerticalAlignment="Center">
-            <Border.Transitions>
-              <Transitions>
-                <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationFast}" />
-                <BrushTransition Property="BorderBrush" Duration="{DynamicResource MotionDurationFast}" />
-                <BoxShadowsTransition Property="BoxShadow" Duration="{DynamicResource MotionDurationFast}" />
-              </Transitions>
-            </Border.Transitions>
-            <ContentPresenter Name="PART_ContentPresenter"
-                              Content="{TemplateBinding Content}"
-                              Background="Transparent"
-                              BorderThickness="0"
-                              Padding="0"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center" />
-          </Border>
-        </ControlTemplate>
-      </Setter>
-    </Style>
-
-    <Style Selector="Button.WidgetRemoveButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-    </Style>
-    <Style Selector="Button.WidgetRemoveButton:pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-    </Style>
-
-    <Style Selector="Button.WidgetRemoveButton:pointerover /template/ Border#ButtonBorder">
-      <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeStrongBrush}" />
-      <Setter Property="BoxShadow" Value="{DynamicResource ElevationItemDrag}" />
-    </Style>
-
-    <Style Selector="Button.WidgetRemoveButton:pressed /template/ Border#ButtonBorder">
-      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+      <Setter Property="Theme" Value="{StaticResource WidgetChromeButtonTheme}" />
+      <Setter Property="Padding" Value="3" />
     </Style>
 
   </UserControl.Styles>
