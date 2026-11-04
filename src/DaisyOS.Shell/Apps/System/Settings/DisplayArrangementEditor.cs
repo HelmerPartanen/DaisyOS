@@ -15,8 +15,8 @@ internal sealed class DisplayArrangementEditor : UserControl
     private readonly IReadOnlyList<DetectedDisplay> _displays;
     private readonly Dictionary<string, Point> _positions;
     private readonly Canvas _canvas = new() { Height = 180, ClipToBounds = true, Name = "DisplayArrangementCanvas" };
-    private readonly NumericUpDown _x = new() { Name = "DisplayPositionX", Width = 120, Increment = 1, Minimum = -32768, Maximum = 32768, FormatString = "0" };
-    private readonly NumericUpDown _y = new() { Name = "DisplayPositionY", Width = 120, Increment = 1, Minimum = -32768, Maximum = 32768, FormatString = "0" };
+    private readonly NumericUpDown _x = new() { Name = "DisplayPositionX", Width = 180, Increment = 1, Minimum = -32768, Maximum = 32768, FormatString = "0" };
+    private readonly NumericUpDown _y = new() { Name = "DisplayPositionY", Width = 180, Increment = 1, Minimum = -32768, Maximum = 32768, FormatString = "0" };
     private readonly Button _apply;
     private readonly TextBlock _overlap;
     private string _selected;

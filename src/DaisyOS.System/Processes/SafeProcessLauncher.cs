@@ -68,7 +68,7 @@ public sealed class SafeProcessLauncher
         catch (Exception ex) when (ex is InvalidOperationException or Win32Exception)
         {
             _log.Log(LogLevel.Warning, $"Could not launch process: {fileName}", ex);
-            return new AppLaunchResult(false, $"Could not start {fileName}.");
+            return new AppLaunchResult(false, $"Could not start {fileName}: {ex.Message}");
         }
     }
 

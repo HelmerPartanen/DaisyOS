@@ -15,4 +15,5 @@ public sealed record AppImageInspection
     public bool HasEmbeddedMetadata { get; init; }
     public byte[]? IconData { get; init; }
     public string IconExtension { get; init; } = "";
+    public string Architecture { get; init; } = "";
 }

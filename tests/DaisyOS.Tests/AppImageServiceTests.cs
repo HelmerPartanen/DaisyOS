@@ -138,6 +138,69 @@ public sealed class AppImageServiceTests
     }
 
     [Fact]
+    public void ArchitectureValidationMatchesNativeAndRejectsMismatched()
+    {
+        Assert.True(AppImageService.IsArchitectureCompatible(0x3E, global::System.Runtime.InteropServices.Architecture.X64));
+        Assert.True(AppImageService.IsArchitectureCompatible(0x03, global::System.Runtime.InteropServices.Architecture.X64));
+        Assert.False(AppImageService.IsArchitectureCompatible(0xB7, global::System.Runtime.InteropServices.Architecture.X64));
+        Assert.False(AppImageService.IsArchitectureCompatible(0x28, global::System.Runtime.InteropServices.Architecture.X64));
+        Assert.False(AppImageService.IsArchitectureCompatible(0xF3, global::System.Runtime.InteropServices.Architecture.X64));
+
+        Assert.True(AppImageService.IsArchitectureCompatible(0xB7, global::System.Runtime.InteropServices.Architecture.Arm64));
+        Assert.True(AppImageService.IsArchitectureCompatible(0x28, global::System.Runtime.InteropServices.Architecture.Arm64));
+        Assert.False(AppImageService.IsArchitectureCompatible(0x3E, global::System.Runtime.InteropServices.Architecture.Arm64));
+        Assert.False(AppImageService.IsArchitectureCompatible(0x03, global::System.Runtime.InteropServices.Architecture.Arm64));
+    }
+
+    [Fact]
+    public void FormatArchitectureNameReturnsFriendlyNames()
+    {
+        Assert.Equal("x86_64", AppImageService.FormatArchitectureName(0x3E));
+        Assert.Equal("ARM64 (aarch64)", AppImageService.FormatArchitectureName(0xB7));
+        Assert.Equal("x86 (32-bit)", AppImageService.FormatArchitectureName(0x03));
+        Assert.Equal("ARM (armhf)", AppImageService.FormatArchitectureName(0x28));
+        Assert.Equal("RISC-V", AppImageService.FormatArchitectureName(0xF3));
+    }
+
+    [Fact]
+    public async Task InspectAsyncThrowsWhenArchitectureIsIncompatible()
+    {
+        var tempFile = Path.Combine(Path.GetTempPath(), "test-aarch64-" + Guid.NewGuid().ToString("N") + ".AppImage");
+        try
+        {
+            var header = new byte[64];
+            header[0] = 0x7F;
+            header[1] = (byte)'E';
+            header[2] = (byte)'L';
+            header[3] = (byte)'F';
+            header[4] = 2; // 64-bit
+            header[5] = 1; // little-endian
+            header[8] = (byte)'A';
+            header[9] = (byte)'I';
+            header[10] = 2; // Type 2
+            // If host is x64, use aarch64 (0xB7). If host is arm64, use x86_64 (0x3E).
+            ushort incompatibleMachine = global::System.Runtime.InteropServices.RuntimeInformation.OSArchitecture == global::System.Runtime.InteropServices.Architecture.Arm64
+                ? (ushort)0x3E
+                : (ushort)0xB7;
+            header[18] = (byte)(incompatibleMachine & 0xFF);
+            header[19] = (byte)((incompatibleMachine >> 8) & 0xFF);
+
+            await File.WriteAllBytesAsync(tempFile, header);
+            var runner = new ScriptedCommandRunner();
+            var service = new AppImageService(runner);
+
+            var ex = await Assert.ThrowsAsync<AppImageException>(() =>
+                service.InspectAsync(tempFile));
+
+            Assert.Contains("cannot run on your", ex.Message, StringComparison.OrdinalIgnoreCase);
+        }
+        finally
+        {
+            if (File.Exists(tempFile)) File.Delete(tempFile);
+        }
+    }
+
+    [Fact]
     public async Task GetInstalledAsyncReturnsEmptyWhenNoRegistry()
     {
         var tempDir = Path.Combine(Path.GetTempPath(), "daisyos-test-" + Guid.NewGuid().ToString("N"));

@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using DaisyOS.Core;
@@ -39,12 +40,20 @@ public sealed class AppImageService : IAppImageInstallerService
     public async Task<AppImageInspection> InspectAsync(string path, CancellationToken cancellationToken = default)
     {
         var source = ValidateSource(path);
-        var type = await ReadTypeAsync(source, cancellationToken).ConfigureAwait(false);
-        if (type == AppImageType.Unknown)
+        var elfInfo = await ReadElfInfoAsync(source, cancellationToken).ConfigureAwait(false);
+        if (elfInfo.Type == AppImageType.Unknown)
             throw new AppImageException("This file is not an AppImage.");
 
+        if (!IsArchitectureCompatible(elfInfo.Machine))
+        {
+            var appArch = FormatArchitectureName(elfInfo.Machine);
+            var hostArch = FormatHostArchitectureName();
+            throw new AppImageException(
+                $"This AppImage is built for {appArch}, which cannot run on your {hostArch} system. Please download the {hostArch} version.");
+        }
+
         EmbeddedMetadata? embedded = null;
-        if (type == AppImageType.Type2)
+        if (elfInfo.Type == AppImageType.Type2)
         {
             var payload = await FindPayloadAsync(source, cancellationToken).ConfigureAwait(false);
             if (payload is not null)
@@ -66,7 +75,8 @@ public sealed class AppImageService : IAppImageInstallerService
             SizeBytes = file.Length,
             HasEmbeddedMetadata = embedded is not null,
             IconData = embedded?.IconData,
-            IconExtension = embedded?.IconExtension ?? ""
+            IconExtension = embedded?.IconExtension ?? "",
+            Architecture = FormatArchitectureName(elfInfo.Machine)
         };
     }
 
@@ -131,6 +141,10 @@ public sealed class AppImageService : IAppImageInstallerService
                 .Where(item => File.Exists(item.AppImagePath) && File.Exists(item.DesktopFilePath))
                 .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
                 .ToArray();
+            foreach (var item in valid)
+            {
+                MakeExecutable(item.AppImagePath);
+            }
             if (valid.Length != registry.Installations.Count)
             {
                 registry.Installations = valid.ToList();
@@ -229,25 +243,126 @@ public sealed class AppImageService : IAppImageInstallerService
         return source;
     }
 
-    private static async Task<AppImageType> ReadTypeAsync(string path, CancellationToken cancellationToken)
+    private readonly record struct ElfInfo(AppImageType Type, ushort Machine);
+
+    private static async Task<ElfInfo> ReadElfInfoAsync(string path, CancellationToken cancellationToken)
     {
-        var header = new byte[16];
+        var header = new byte[64];
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read,
             bufferSize: 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
         var read = await stream.ReadAsync(header, cancellationToken).ConfigureAwait(false);
-        if (read < 11) return AppImageType.Unknown;
+        if (read < 20) return new ElfInfo(AppImageType.Unknown, 0);
         if (header[0] != 0x7F || header[1] != (byte)'E' || header[2] != (byte)'L' || header[3] != (byte)'F')
-            return AppImageType.Unknown;
+            return new ElfInfo(AppImageType.Unknown, 0);
+
+        var isLittleEndian = header[5] == 1;
+        ushort machine = isLittleEndian
+            ? (ushort)(header[18] | (header[19] << 8))
+            : (ushort)((header[18] << 8) | header[19]);
+
+        var type = AppImageType.Type2;
         if (header[8] == (byte)'A' && header[9] == (byte)'I')
         {
-            return header[10] switch
+            type = header[10] switch
             {
                 1 => AppImageType.Type1,
                 2 => AppImageType.Type2,
                 _ => AppImageType.Type2
             };
         }
-        return AppImageType.Type2;
+
+        return new ElfInfo(type, machine);
+    }
+
+    public static string FormatArchitectureName(ushort eMachine) => eMachine switch
+    {
+        0x3E => "x86_64",
+        0x03 => "x86 (32-bit)",
+        0xB7 => "ARM64 (aarch64)",
+        0x28 => "ARM (armhf)",
+        0xF3 => "RISC-V",
+        0x15 => "PowerPC 64-bit",
+        0x14 => "PowerPC",
+        _ => $"architecture 0x{eMachine:X2}"
+    };
+
+    public static string FormatHostArchitectureName(Architecture hostArch = default)
+    {
+        if (hostArch == default)
+            hostArch = RuntimeInformation.OSArchitecture;
+
+        return hostArch switch
+        {
+            Architecture.X64 => "x86_64",
+            Architecture.Arm64 => "ARM64 (aarch64)",
+            Architecture.X86 => "x86 (32-bit)",
+            Architecture.Arm => "ARM (armhf)",
+            Architecture.RiscV64 => "RISC-V",
+            _ => hostArch.ToString().ToLowerInvariant()
+        };
+    }
+
+    public static bool IsArchitectureCompatible(ushort eMachine, Architecture hostArch = default)
+    {
+        if (hostArch == default)
+            hostArch = RuntimeInformation.OSArchitecture;
+
+        var matches = hostArch switch
+        {
+            Architecture.X64 => eMachine is 0x3E or 0x03,
+            Architecture.Arm64 => eMachine is 0xB7 or 0x28,
+            Architecture.X86 => eMachine is 0x03,
+            Architecture.Arm => eMachine is 0x28,
+            Architecture.RiscV64 => eMachine is 0xF3,
+            _ => false
+        };
+
+        if (matches) return true;
+        return CanEmulateArchitecture(eMachine);
+    }
+
+    private static bool CanEmulateArchitecture(ushort eMachine)
+    {
+        if (!OperatingSystem.IsLinux()) return false;
+        try
+        {
+            const string binfmtDir = "/proc/sys/fs/binfmt_misc";
+            if (!Directory.Exists(binfmtDir)) return false;
+
+            var keywords = eMachine switch
+            {
+                0xB7 => new[] { "aarch64", "arm64" },
+                0x28 => new[] { "arm", "armhf" },
+                0x3E => new[] { "x86_64", "amd64" },
+                0x03 => new[] { "i386", "i686", "x86" },
+                0xF3 => new[] { "riscv64", "riscv" },
+                _ => Array.Empty<string>()
+            };
+
+            if (keywords.Length == 0) return false;
+
+            foreach (var file in Directory.EnumerateFiles(binfmtDir))
+            {
+                var fileName = Path.GetFileName(file);
+                if (fileName is "register" or "status") continue;
+                foreach (var keyword in keywords)
+                {
+                    if (fileName.Contains(keyword, StringComparison.OrdinalIgnoreCase))
+                    {
+                        foreach (var line in File.ReadLines(file))
+                        {
+                            if (string.Equals(line.Trim(), "enabled", StringComparison.OrdinalIgnoreCase))
+                                return true;
+                        }
+                    }
+                }
+            }
+        }
+        catch
+        {
+            // Ignore /proc read issues
+        }
+        return false;
     }
 
     private async Task<Payload?> FindPayloadAsync(string source, CancellationToken cancellationToken)
@@ -658,13 +773,31 @@ public sealed class AppImageService : IAppImageInstallerService
         }
     }
 
-    private static void MakeExecutable(string path)
+    public static void MakeExecutable(string path)
     {
-        if (!OperatingSystem.IsLinux()) return;
-        File.SetUnixFileMode(path,
-            UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-            UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-            UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        if (!OperatingSystem.IsLinux() || !File.Exists(path)) return;
+        try
+        {
+            File.SetUnixFileMode(path,
+                UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
+                UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
+                UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+        }
+        catch
+        {
+            try
+            {
+                using var proc = global::System.Diagnostics.Process.Start(new global::System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = "chmod",
+                    ArgumentList = { "+x", path },
+                    UseShellExecute = false,
+                    CreateNoWindow = true
+                });
+                proc?.WaitForExit(3000);
+            }
+            catch { }
+        }
     }
 
     private static async Task RemoveOwnedDesktopFileAsync(

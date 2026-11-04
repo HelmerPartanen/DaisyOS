@@ -86,9 +86,13 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
         {
             if (_selected is null) return "";
             var size = FormatSize(_selected.SizeBytes);
-            return string.IsNullOrWhiteSpace(_selected.Version)
-                ? size
-                : Loc.Get("Version") + " " + _selected.Version + " • " + size;
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(_selected.Version))
+                parts.Add(Loc.Get("Version") + " " + _selected.Version);
+            if (!string.IsNullOrWhiteSpace(_selected.Architecture))
+                parts.Add(_selected.Architecture);
+            parts.Add(size);
+            return string.Join(" • ", parts);
         }
     }
 
@@ -245,8 +249,15 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
 
     public void Launch(InstalledAppImageViewModel item)
     {
+        AppImageService.MakeExecutable(item.AppImagePath);
         var result = _launcher.Launch(item.AppImagePath);
-        if (!result.Succeeded) SetError(Loc.Get("The application could not be opened. Try again."));
+        if (!result.Succeeded)
+        {
+            var message = !string.IsNullOrWhiteSpace(result.Message)
+                ? result.Message
+                : Loc.Get("The application could not be opened. Try again.");
+            SetError(message);
+        }
     }
 
     private void UpdateSelectedIcon()
