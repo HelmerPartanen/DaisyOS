@@ -17,6 +17,49 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class MediaPolishTests
 {
     [AvaloniaFact]
+    public void RollingTitleAlwaysHasAVisibleCopyAcrossMultipleLoops()
+    {
+        var title = new MarqueeText { Text = "A long title that must repeat without an empty interval", Width = 100 };
+        var window = new Window { Width = 400, Height = 100, Content = title };
+        window.Show();
+        try
+        {
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            var copies = title.GetVisualDescendants().OfType<TextBlock>().ToArray();
+            Assert.Equal(2, copies.Length);
+            Assert.All(copies, copy => Assert.True(copy.IsVisible));
+            var width = copies[0].Bounds.Width;
+            var gap = copies[1].TranslatePoint(default, title)!.Value.X -
+                copies[0].TranslatePoint(default, title)!.Value.X - width;
+            Assert.InRange(gap, 0, 10.01);
+            for (var frame = 0; frame < 1200; frame++)
+            {
+                title.Advance((width + 16) / 28 / 300);
+                Assert.Contains(copies, copy =>
+                {
+                    var x = copy.TranslatePoint(default, title)!.Value.X;
+                    return x < title.Bounds.Width && x + copy.Bounds.Width > 0;
+                });
+            }
+            title.Text = "Short";
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            Assert.False(copies[1].IsVisible);
+            Assert.Equal(0, Assert.IsType<TranslateTransform>(copies[0].RenderTransform).X);
+            title.TextAlignment = TextAlignment.Center;
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            Assert.Equal((title.Bounds.Width - copies[0].DesiredSize.Width) / 2,
+                Assert.IsType<TranslateTransform>(copies[0].RenderTransform).X, precision: 2);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task LongTitleMovesLeftAndStopsWhenItFits()
     {
         var title = new MarqueeText { Text = "A very long track title which should move across its available space", Width = 100 };
@@ -29,7 +72,7 @@ public sealed class MediaPolishTests
             window.UpdateLayout();
             await Task.Delay(200);
             Dispatcher.UIThread.RunJobs();
-            var text = Assert.Single(title.GetVisualDescendants().OfType<TextBlock>());
+            var text = title.GetVisualDescendants().OfType<TextBlock>().First();
             var transform = Assert.IsType<TranslateTransform>(text.RenderTransform);
             Assert.True(transform.X < 0, $"Expected leftward movement, got {transform.X}");
             title.Text = "Short";

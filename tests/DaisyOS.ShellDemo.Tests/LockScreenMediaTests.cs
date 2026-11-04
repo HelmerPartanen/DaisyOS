@@ -111,7 +111,7 @@ public sealed class LockScreenMediaTests
             var collapsedHost = window.FindControl<Grid>("CollapsedMediaHost")!;
             var collapsedBorder = window.FindControl<Border>("CollapsedMediaBorder")!;
             var collapsedArtwork = window.FindControl<Border>("CollapsedArtworkButton")!;
-            var collapsedTitle = window.FindControl<TextBlock>("CollapsedTitleText")!;
+            var collapsedTitle = window.FindControl<DaisyOS.Shell.Controls.MarqueeText>("CollapsedTitleText")!;
             var collapsedArtist = window.FindControl<TextBlock>("CollapsedArtistText")!;
             var credentials = window.FindControl<StackPanel>("CredentialsPanel")!;
             var expandedHost = window.FindControl<Grid>("ExpandedMediaHost")!;
@@ -163,7 +163,7 @@ public sealed class LockScreenMediaTests
             Assert.Equal(0, credentials.Opacity, precision: 2);
             Assert.False(credentials.IsHitTestVisible);
 
-            var expandedTitle = window.FindControl<TextBlock>("ExpandedTitleText")!;
+            var expandedTitle = window.FindControl<DaisyOS.Shell.Controls.MarqueeText>("ExpandedTitleText")!;
             Assert.Equal(TextAlignment.Left, expandedTitle.TextAlignment);
             Assert.Equal(TextAlignment.Left, window.FindControl<TextBlock>("ExpandedArtistText")!.TextAlignment);
 

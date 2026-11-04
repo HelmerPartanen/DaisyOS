@@ -480,17 +480,15 @@
 
                   <StackPanel Grid.Row="1"
                               VerticalAlignment="Center"
-                              HorizontalAlignment="Center"
+                              HorizontalAlignment="Stretch"
                               Spacing="2">
-                    <TextBlock x:Name="CollapsedTitleText"
+                    <controls:MarqueeText x:Name="CollapsedTitleText"
                                Text="{DynamicResource Loc_A92C2C9ABECA}"
                                FontSize="{DynamicResource TypeSizeBody}"
                                FontWeight="SemiBold"
                                Foreground="{DynamicResource ContentPrimaryBrush}"
-                               TextTrimming="CharacterEllipsis"
-                               MaxLines="1"
                                TextAlignment="Center"
-                               HorizontalAlignment="Center" />
+                               HorizontalAlignment="Stretch" />
                     <TextBlock x:Name="CollapsedArtistText"
                                FontSize="{DynamicResource TypeSizeCaption}"
                                Foreground="{DynamicResource ContentSecondaryBrush}"
@@ -636,13 +634,11 @@
                                 VerticalAlignment="Center"
                                 Spacing="2"
                                 Margin="0,0,40,0">
-                      <TextBlock x:Name="ExpandedTitleText"
+                      <controls:MarqueeText x:Name="ExpandedTitleText"
                                  Text="{DynamicResource Loc_A92C2C9ABECA}"
                                  FontSize="{DynamicResource TypeSizeBody}"
                                  FontWeight="SemiBold"
                                  Foreground="{DynamicResource ContentPrimaryBrush}"
-                                 TextTrimming="CharacterEllipsis"
-                                 MaxLines="1"
                                  TextAlignment="Left"
                                  HorizontalAlignment="Stretch" />
                       <TextBlock x:Name="ExpandedArtistText"

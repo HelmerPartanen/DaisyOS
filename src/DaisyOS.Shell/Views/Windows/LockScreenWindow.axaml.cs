@@ -98,7 +98,7 @@ public partial class LockScreenWindow : Window
     private readonly Image _collapsedSourceIcon;
     private readonly DaisyIcon _collapsedSourceGlyph;
     private readonly Canvas _collapsedSpectrumCanvas;
-    private readonly TextBlock _collapsedTitleText;
+    private readonly DaisyOS.Shell.Controls.MarqueeText _collapsedTitleText;
     private readonly TextBlock _collapsedArtistText;
     private readonly Button _collapsedPlayPauseButton;
     private readonly DaisyIcon _collapsedPlayPauseGlyph;
@@ -111,7 +111,7 @@ public partial class LockScreenWindow : Window
     private readonly Image _expandedSourceIcon;
     private readonly DaisyIcon _expandedSourceGlyph;
     private readonly ShellFrameBorder _expandedMediaBorder;
-    private readonly TextBlock _expandedTitleText;
+    private readonly DaisyOS.Shell.Controls.MarqueeText _expandedTitleText;
     private readonly TextBlock _expandedArtistText;
     private readonly Canvas _expandedSpectrumCanvas;
     private readonly TextBlock _expandedElapsedText;
@@ -320,7 +320,7 @@ public partial class LockScreenWindow : Window
         _collapsedSourceIcon = this.FindControl<Image>("CollapsedSourceIcon")!;
         _collapsedSourceGlyph = this.FindControl<DaisyIcon>("CollapsedSourceGlyph")!;
         _collapsedSpectrumCanvas = this.FindControl<Canvas>("CollapsedSpectrumCanvas")!;
-        _collapsedTitleText = this.FindControl<TextBlock>("CollapsedTitleText")!;
+        _collapsedTitleText = this.FindControl<DaisyOS.Shell.Controls.MarqueeText>("CollapsedTitleText")!;
         _collapsedArtistText = this.FindControl<TextBlock>("CollapsedArtistText")!;
         _collapsedPlayPauseButton = this.FindControl<Button>("CollapsedPlayPauseButton")!;
         _collapsedPlayPauseGlyph = this.FindControl<DaisyIcon>("CollapsedPlayPauseGlyph")!;
@@ -333,7 +333,7 @@ public partial class LockScreenWindow : Window
         _expandedSourceIcon = this.FindControl<Image>("ExpandedSourceIcon")!;
         _expandedSourceGlyph = this.FindControl<DaisyIcon>("ExpandedSourceGlyph")!;
         _expandedMediaBorder = this.FindControl<ShellFrameBorder>("ExpandedMediaBorder")!;
-        _expandedTitleText = this.FindControl<TextBlock>("ExpandedTitleText")!;
+        _expandedTitleText = this.FindControl<DaisyOS.Shell.Controls.MarqueeText>("ExpandedTitleText")!;
         _expandedArtistText = this.FindControl<TextBlock>("ExpandedArtistText")!;
         _expandedSpectrumCanvas = this.FindControl<Canvas>("ExpandedSpectrumCanvas")!;
         _expandedElapsedText = this.FindControl<TextBlock>("ExpandedElapsedText")!;

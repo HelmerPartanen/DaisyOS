@@ -80,7 +80,7 @@ public sealed class DesktopMediaWidgetTests
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
             var title = widget.FindControl<DaisyOS.Shell.Controls.MarqueeText>("LargeTitle")!;
-            var titleText = Assert.Single(title.GetVisualDescendants().OfType<TextBlock>());
+            var titleText = title.GetVisualDescendants().OfType<TextBlock>().First();
             var artist = widget.FindControl<TextBlock>("LargeArtist")!;
             Assert.Equal(Avalonia.Media.TextAlignment.Left, titleText.TextAlignment);
             Assert.Equal(artist.TranslatePoint(default, widget)!.Value.X,
