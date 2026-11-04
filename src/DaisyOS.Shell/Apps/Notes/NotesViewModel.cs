@@ -329,12 +329,19 @@ public class NotesViewModel : INotifyPropertyChanged, IDisposable
 
         if (!identical)
         {
-            FilteredNotes.Clear();
+            // Keep surviving rows and their containers alive. Resetting the
+            // collection drops scroll anchors and keyboard focus on pin/reorder.
+            var retained = sorted.ToHashSet();
+            for (var i = FilteredNotes.Count - 1; i >= 0; i--)
+                if (!retained.Contains(FilteredNotes[i])) FilteredNotes.RemoveAt(i);
             for (int i = 0; i < sorted.Count; i++)
             {
                 var note = sorted[i];
                 note.ShowDivider = i < sorted.Count - 1;
-                FilteredNotes.Add(note);
+                if (i < FilteredNotes.Count && ReferenceEquals(FilteredNotes[i], note)) continue;
+                var previous = FilteredNotes.IndexOf(note);
+                if (previous >= 0) FilteredNotes.Move(previous, i);
+                else FilteredNotes.Insert(i, note);
             }
         }
         else
@@ -426,31 +433,75 @@ public class NotesViewModel : INotifyPropertyChanged, IDisposable
         }
     }
 
+    private static readonly SemaphoreSlim ExternalReaders = new(2);
+    private CancellationTokenSource? _externalOpen;
+    private int _externalOpenGeneration;
+
     public void InsertExternalNote(string filePath)
     {
+        ++_externalOpenGeneration;
+        _externalOpen?.Cancel();
+        if (_disposed) return;
         var existing = Notes.FirstOrDefault(note => string.Equals(note.FilePath, filePath, StringComparison.Ordinal));
-        if (existing is not null)
-        {
-            SearchQuery = string.Empty;
-            SelectedNote = existing;
-            return;
-        }
-        if (!File.Exists(filePath))
-        {
-            _operationError = "This note is no longer available. Choose another file.";
-            PublishError();
-            return;
-        }
+        ApplyExternalNote(filePath, existing is null ? ReadExternalNote(filePath) : (existing, string.Empty));
+    }
 
+    internal async Task InsertExternalNoteAsync(string filePath)
+    {
+        if (_disposed) return;
+        var generation = ++_externalOpenGeneration;
+        _externalOpen?.Cancel();
+        using var request = CancellationTokenSource.CreateLinkedTokenSource(_loadLifetime.Token);
+        _externalOpen = request;
+        var selection = SelectedNote;
+        try
+        {
+            var existing = Notes.FirstOrDefault(note => string.Equals(note.FilePath, filePath, StringComparison.Ordinal));
+            if (existing is not null)
+            {
+                ApplyExternalNote(filePath, (existing, string.Empty));
+                return;
+            }
+            await ExternalReaders.WaitAsync(request.Token);
+            (NoteItem? Note, string Error) result;
+            try
+            {
+                result = await Task.Run(() => ReadExternalNote(filePath), request.Token);
+            }
+            finally { ExternalReaders.Release(); }
+            // A late file read must not steal selection after another open or click.
+            if (!request.IsCancellationRequested && generation == _externalOpenGeneration &&
+                ReferenceEquals(selection, SelectedNote)) ApplyExternalNote(filePath, result);
+        }
+        catch (OperationCanceledException) { }
+        finally { if (ReferenceEquals(_externalOpen, request)) _externalOpen = null; }
+    }
+
+    private void ApplyExternalNote(string filePath, (NoteItem? Note, string Error) result)
+    {
+        if (result.Note is { } loaded)
+        {
+            var note = Notes.FirstOrDefault(note => string.Equals(note.FilePath, filePath, StringComparison.Ordinal)) ?? loaded;
+            if (!Notes.Contains(note)) Notes.Add(note);
+            SearchQuery = string.Empty;
+            SelectedNote = note;
+            FilterNotes();
+        }
+        _operationError = result.Error;
+        PublishError();
+    }
+
+    private static (NoteItem? Note, string Error) ReadExternalNote(string filePath)
+    {
+        if (!File.Exists(filePath))
+            return (null, "This note is no longer available. Choose another file.");
         try
         {
             var bytes = File.ReadAllBytes(filePath);
             var format = Documents.FormatDetector.Detect(filePath, bytes);
             if (format.Kind == Documents.DocumentKind.Binary)
             {
-                _operationError = "This file cannot be edited as text. Choose a note or text file.";
-                PublishError();
-                return;
+                return (null, "This file cannot be edited as text. Choose a note or text file.");
             }
             var fileInfo = new FileInfo(filePath);
 
@@ -483,17 +534,11 @@ public class NotesViewModel : INotifyPropertyChanged, IDisposable
                 };
             }
 
-            Notes.Add(note);
-            SearchQuery = string.Empty;
-            SelectedNote = note;
-            FilterNotes();
-            _operationError = string.Empty;
-            PublishError();
+            return (note, string.Empty);
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or Documents.NotePackageException)
         {
-            _operationError = ex is Documents.NotePackageException ? ex.Message : "This note could not be opened. Check that you have permission to read it.";
-            PublishError();
+            return (null, ex is Documents.NotePackageException ? ex.Message : "This note could not be opened. Check that you have permission to read it.");
         }
     }
 

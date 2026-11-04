@@ -125,6 +125,7 @@ public partial class SystemBarView : UserControl
     /// <summary>Shows Quick Settings as an overlay within the shell window.</summary>
     public void ShowQuickSettingsPanel()
     {
+        Services.Diagnostics.ResponsivenessTrace.Feedback(this, "quick-settings");
         HideAppTrayPanel(immediate: true);
         _quickSettings.ShowPanel();
         HideNotificationPanel(immediate: true);
@@ -147,6 +148,7 @@ public partial class SystemBarView : UserControl
 
     public void ShowNotificationPanel()
     {
+        Services.Diagnostics.ResponsivenessTrace.Feedback(this, "notification-center");
         HideAppTrayPanel(immediate: true);
         _ = GuiMotion.SetVisibleAsync(_notifications, NotificationMaterialFrame, true, RaiseFlyoutVisibilityChanged,
             offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
@@ -166,6 +168,7 @@ public partial class SystemBarView : UserControl
 
     public void ShowCalendarPanel()
     {
+        Services.Diagnostics.ResponsivenessTrace.Feedback(this, "calendar");
         HideAppTrayPanel(immediate: true);
         _ = GuiMotion.SetVisibleAsync(_calendar, _calendar, true, RaiseFlyoutVisibilityChanged,
             offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
@@ -185,6 +188,7 @@ public partial class SystemBarView : UserControl
 
     public void ShowAppTrayPanel()
     {
+        Services.Diagnostics.ResponsivenessTrace.Feedback(this, "app-tray");
         HideQuickSettingsPanel(immediate: true);
         HideNotificationPanel(immediate: true);
         HideCalendarPanel(immediate: true);

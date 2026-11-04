@@ -227,7 +227,9 @@ class WSurface : IPersistentWaylandObject, IWSurface, IWaylandFramebufferSurface
     public bool IsFrameCallbackPending => _frameCallback != null;
 
     public virtual PlatformRenderTargetState State =>
-        (Globals != null && WlSurface != null && !IsFrameCallbackPending) ? PlatformRenderTargetState.Ready : default;
+        (Globals != null && WlSurface != null && !IsFrameCallbackPending)
+            ? PlatformRenderTargetState.Ready
+            : PlatformRenderTargetState.NotReadyWillWakeupRenderLoop;
 
     public void RegisterRenderTarget(IDisposable renderTarget) => _activeRenderTargets.Add(renderTarget);
     public void UnregisterRenderTarget(IDisposable renderTarget) => _activeRenderTargets.Remove(renderTarget);
@@ -307,7 +309,9 @@ class WSurface : IPersistentWaylandObject, IWSurface, IWaylandFramebufferSurface
         else
             WlSurface!.SetBufferScale(Math.Max(1, (int)Math.Ceiling(sceneInfo.Scaling)));
 
-        _frameCallback = WlSurface!.Frame(new FrameListener(this));
+        // EGL may use a different event queue for its surface wrapper. Always
+        // dispatch our frame permission on the worker's queue.
+        _frameCallback = WlSurface!.Frame(new FrameListener(this), Connection!.Queue);
     }
 
     class FrameListener(WSurface p) : WlCallback.Listener

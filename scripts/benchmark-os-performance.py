@@ -320,12 +320,20 @@ def make_report(args):
             except (RuntimeError, OSError, TimeoutError, subprocess.TimeoutExpired, ValueError) as error:
                 report["failures"].append(str(error))
         raw = {}
+        report["startupFirstLaunch"] = {}
+        report["startupFirstLaunchBoundary"] = (
+            "First fresh process per app in this run, before discarded warmups. "
+            "Filesystem/driver caches are uncontrolled; this is not verified disk-cold startup.")
         for app, binary in binaries.items():
             values = []
             for run in range(-args.warmups, args.samples):
                 print(f"{app} startup: {'warmup' if run < 0 else str(run + 1) + '/' + str(args.samples)}", flush=True)
                 try:
                     value = startup(binary, app, scratch, uuid.uuid4().hex, logs / f"{app}-{run}.log", args.timeout)
+                    if run == -args.warmups:
+                        report["startupFirstLaunch"][app] = {
+                            "elapsedMs": value, "includedInSummary": args.warmups == 0,
+                            "cacheStateVerified": False}
                     if run >= 0:
                         values.append(value)
                 except (RuntimeError, OSError, TimeoutError, subprocess.TimeoutExpired, ValueError) as error:

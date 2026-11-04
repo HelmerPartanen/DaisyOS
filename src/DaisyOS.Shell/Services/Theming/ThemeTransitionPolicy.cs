@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using Avalonia;
@@ -15,6 +16,7 @@ namespace DaisyOS.Shell.Services.Theming;
 public sealed class ThemeTransitionPolicy : AvaloniaObject
 {
     private static readonly ConditionalWeakTable<Control, State> States = new();
+    private static readonly ConcurrentDictionary<Type, AvaloniaProperty[]> TransitionProperties = new();
     public static readonly AttachedProperty<bool> EnabledProperty =
         AvaloniaProperty.RegisterAttached<ThemeTransitionPolicy, Control, bool>("Enabled");
 
@@ -61,13 +63,13 @@ public sealed class ThemeTransitionPolicy : AvaloniaObject
         private void AddTransitions()
         {
             if (_updating) return;
-            var properties = AvaloniaPropertyRegistry.Instance.GetRegistered(_control.GetType())
+            var properties = TransitionProperties.GetOrAdd(_control.GetType(), static type => AvaloniaPropertyRegistry.Instance.GetRegistered(type)
                 .Where(property => !property.IsDirect && (property.PropertyType == typeof(IBrush) ||
                     (property.PropertyType == typeof(Color) && property.Name != "CurrentColor")))
                 // PopupRoot starts white before its transparent theme applies.
                 // Its native-surface background must never fade into transparency.
-                .Where(property => _control is not PopupRoot || property != TemplatedControl.BackgroundProperty)
-                .Distinct().ToArray();
+                .Where(property => !typeof(PopupRoot).IsAssignableFrom(type) || property != TemplatedControl.BackgroundProperty)
+                .Distinct().ToArray());
             var existing = _control.Transitions;
             _owned.IntersectWith(existing?.Cast<ITransition>() ?? Enumerable.Empty<ITransition>());
             if (_duration <= TimeSpan.Zero || !GetEnabled(_control))

@@ -453,6 +453,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         public void SelectCategory(string category, string? section = null)
         {
+            Services.Diagnostics.ResponsivenessTrace.Feedback(this, "settings-navigation");
             var navigationCategory = category == "InstalledApps" ? "Apps" : category;
             foreach (var button in GetNavigationButtons())
             {

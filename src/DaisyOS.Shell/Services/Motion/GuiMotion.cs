@@ -216,6 +216,15 @@ public static class GuiMotion
         var duration = immediate || Application.Current is App { ReduceMotionEnabled: true }
             ? TimeSpan.Zero
             : durationOverride ?? Duration(content, entering);
+        if (interrupted)
+        {
+            var remaining = Math.Max(
+                Math.Abs(offset.X) > 0 ? Math.Abs((entering ? 0 : offset.X) - startX) / Math.Abs(offset.X) : 0,
+                Math.Abs(offset.Y) > 0 ? Math.Abs((entering ? 0 : offset.Y) - startY) / Math.Abs(offset.Y) : 0);
+            if (entering ? fadeOnEnter : fadeOnExit)
+                remaining = Math.Max(remaining, Math.Abs((entering ? 1 : 0) - startOpacity));
+            duration = RemainingDuration(duration, remaining);
+        }
         if (duration > TimeSpan.Zero && (topLevel ?? TopLevel.GetTopLevel(content)) is { } frameHost)
         {
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -293,6 +302,13 @@ public static class GuiMotion
         content.Opacity = entering || !fadeOnExit ? 1 : 0;
     }
 
+    internal static TimeSpan RemainingDuration(TimeSpan full, double fraction)
+    {
+        if (full <= TimeSpan.Zero || fraction <= 0) return TimeSpan.Zero;
+        return TimeSpan.FromMilliseconds(Math.Min(full.TotalMilliseconds,
+            Math.Max(40, full.TotalMilliseconds * Math.Clamp(fraction, 0, 1))));
+    }
+
     private static async Task AnimateScaleAsync(
         Control content,
         bool entering,
@@ -317,6 +333,13 @@ public static class GuiMotion
         var duration = immediate || Application.Current is App { ReduceMotionEnabled: true }
             ? TimeSpan.Zero
             : durationOverride ?? Duration(content, entering);
+        if (interrupted)
+        {
+            var scaleRange = Math.Abs(1 - closedScale);
+            var remaining = Math.Max(scaleRange > 0 ? Math.Abs((entering ? 1 : closedScale) - startScale) / scaleRange : 0,
+                Math.Abs((entering ? 1 : 0) - startOpacity));
+            duration = RemainingDuration(duration, remaining);
+        }
         if (duration > TimeSpan.Zero && (topLevel ?? TopLevel.GetTopLevel(content)) is { } frameHost)
         {
             var completion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);

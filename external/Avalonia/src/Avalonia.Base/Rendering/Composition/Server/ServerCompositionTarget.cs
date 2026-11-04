@@ -53,6 +53,8 @@ namespace Avalonia.Rendering.Composition.Server
         /// (i.e. the platform will call Wakeup() when ready, no need to keep polling).
         /// </summary>
         internal bool IsWaitingForRenderLoopWakeup { get; private set; }
+        internal bool HasPendingRender => IsEnabled &&
+            (!DirtyRects.IsEmpty || _redrawRequested || _updateRequested);
 
         public ServerCompositionTarget(ServerCompositor compositor, Func<IEnumerable<IPlatformRenderSurface>> surfaces)
             : base(compositor)

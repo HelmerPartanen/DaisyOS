@@ -11,7 +11,9 @@ before an action takes effect.
 `GuiMotion` owns an interruptible animation per content control. Reopening a
 closing panel cancels the dismissal and starts from the current visual state.
 Reversals retain the sampled transform and opacity and shorten duration to the
-remaining distance. The launcher uses a centered panel, bounded to 900 × 600 logical pixels with
+remaining distance (including opacity), with a 40ms floor for nonzero travel
+that never exceeds the original duration. A reversal already at its destination
+settles immediately. The launcher uses a centered panel, bounded to 900 × 600 logical pixels with
 24px outer clearance. Its material fades at fixed geometry while the interior
 uses a subtle scale and translation. Reversals keep the visible host intact. Launcher appearance does not wait for catalog icon decoding;
 existing letter tiles remain visible until icons arrive. Logical visibility changes immediately, so dismissal releases Wayland input
@@ -69,3 +71,13 @@ Application identity and its display name are retained separately. App icons
 remain visible beside an optional image preview. D-Bus replacements update the
 existing card without replaying its entrance, and notification actions and
 closure emit the corresponding freedesktop signals.
+
+## Callback pacing
+
+The native Wayland backend defers animation-only composition batches while all
+targets with pending rendering await platform frame callbacks. Configure and
+lifecycle work bypass this gate; the existing starvation fallback permits
+progress when a compositor withholds frames. UI callback intervals are opt-in
+diagnostics and must not be described as presented FPS. See
+[the smoothness audit](validation/desktop-smoothness-2026-11-04.md) for reproduction
+and hardware acceptance limits.

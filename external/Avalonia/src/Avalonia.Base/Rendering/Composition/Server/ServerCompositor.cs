@@ -22,6 +22,23 @@ namespace Avalonia.Rendering.Composition.Server
     {
         private readonly IRenderLoop _renderLoop;
 
+        // Read only on the render thread. Event-driven platforms can defer
+        // animation-only commits until their surfaces can accept another frame.
+        internal bool AllPendingTargetsWaitingForPlatform
+        {
+            get
+            {
+                var any = false;
+                foreach (var target in _activeTargets)
+                {
+                    if (!target.HasPendingRender) continue;
+                    any = true;
+                    if (!target.IsWaitingForRenderLoopWakeup) return false;
+                }
+                return any;
+            }
+        }
+
         private readonly Queue<CompositionBatch> _batches = new Queue<CompositionBatch>();
         private readonly Queue<Action> _receivedJobQueue = new();
         private readonly Queue<Action> _receivedPostTargetJobQueue = new();

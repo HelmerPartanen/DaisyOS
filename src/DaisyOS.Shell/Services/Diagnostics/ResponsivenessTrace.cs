@@ -27,6 +27,15 @@ public static class ResponsivenessTrace
     {
         if (Pending.TryRemove(operation, out var start)) Mark(stage, operation, Stopwatch.GetElapsedTime(start).TotalMilliseconds);
     }
+    /// <summary>Input handler to the next UI animation callback, not pixel presentation.</summary>
+    public static void Feedback(Avalonia.Controls.Control target, string operation)
+    {
+        if (!Enabled || Avalonia.Controls.TopLevel.GetTopLevel(target) is not { } host) return;
+        var start = Stopwatch.GetTimestamp();
+        Mark("input.received", operation);
+        host.RequestAnimationFrame(_ => Mark("feedback.callback", operation,
+            Stopwatch.GetElapsedTime(start).TotalMilliseconds));
+    }
     public static async Task RunAsync(CancellationToken token)
     {
         if (!Enabled) return;

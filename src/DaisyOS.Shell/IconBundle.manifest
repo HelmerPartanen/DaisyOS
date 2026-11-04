@@ -159,3 +159,11 @@ regular/widget_extralarge2
 
 # AirPods notification and listening controls
 regular/airpods
+# NotificationItem chooses these glyphs at runtime from the Core assembly.
+regular/notification-03
+regular/wifi-01
+regular/battery-medium-01
+regular/download-04
+regular/shield-01
+regular/settings-01
+regular/alert-02

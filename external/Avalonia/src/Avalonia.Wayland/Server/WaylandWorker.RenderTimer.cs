@@ -11,6 +11,7 @@ namespace Avalonia.Wayland.Server;
 partial class WaylandWorker
 {
     private bool _renderLoopWakeupPending = false;
+    private bool _platformRenderWakeupPending;
     private ServerSignaler _renderLoopWakeupSignaler = null!;
     private readonly Stopwatch _clock = Stopwatch.StartNew();
     private TimeSpan? _renderLoopStarvedSince;
@@ -78,7 +79,11 @@ partial class WaylandWorker
         }
     }
     
-    public void WakeupRenderLoop() => _renderLoopWakeupPending = true;
+    public void WakeupRenderLoop()
+    {
+        _renderLoopWakeupPending = true;
+        _platformRenderWakeupPending = true;
+    }
 
     public void AnyThreadWakeupRenderLoop() => _renderLoopWakeupSignaler.Signal();
     
@@ -86,7 +91,10 @@ partial class WaylandWorker
     {
         _renderLoop.WakeupCallback = () =>
         {
-            WakeupRenderLoop();
+            // A new animation batch is not permission to submit another
+            // wl_surface buffer. Frame callbacks and lifecycle jobs bypass
+            // this gate through WakeupRenderLoop instead.
+            _renderLoopWakeupPending = true;
             _wakeupFd.Set();
         };
         
@@ -126,6 +134,8 @@ partial class WaylandWorker
     {
         if (_renderLoopWakeupPending)
         {
+            if (!_platformRenderWakeupPending && Compositor.Server.AllPendingTargetsWaitingForPlatform)
+                return;
             lock (_renderLoopStarvationLock)
             {
                 _renderLoopStarvedSince = null;
@@ -133,6 +143,7 @@ partial class WaylandWorker
             }
 
             _renderLoopWakeupPending = false;
+            _platformRenderWakeupPending = false;
             try
             {
                 _renderLoop.DoTick();

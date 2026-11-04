@@ -94,7 +94,11 @@ static object Summary(List<(double Ms, long Bytes)> values)
 {
     var times = values.Select(x => x.Ms).Order().ToArray();
     var allocations = values.Select(x => x.Bytes).Order().ToArray();
-    return new { p50Ms = times[times.Length / 2], p95Ms = times[(int)Math.Ceiling(times.Length * 0.95) - 1], worstMs = times[^1], medianAllocatedBytes = allocations[allocations.Length / 2] };
+    var median = times[times.Length / 2];
+    var deviations = times.Select(value => Math.Abs(value - median)).Order().ToArray();
+    return new { p50Ms = median, p95Ms = times[(int)Math.Ceiling(times.Length * 0.95) - 1], worstMs = times[^1],
+        madMs = deviations[deviations.Length / 2], rawMs = values.Select(value => value.Ms).ToArray(),
+        medianAllocatedBytes = allocations[allocations.Length / 2] };
 }
 static void Tick() { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Dispatcher.UIThread.RunJobs(); }
 static void LinuxTextIsolation() => DaisyOS.Shell.Services.Theming.LinuxTextLibraryIsolation.EnsureLoaded();

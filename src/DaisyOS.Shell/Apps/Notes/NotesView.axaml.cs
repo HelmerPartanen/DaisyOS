@@ -48,6 +48,7 @@ public partial class NotesView : UserControl
     {
         if (e.PropertyName == nameof(NotesViewModel.SelectedNote))
         {
+            Services.Diagnostics.ResponsivenessTrace.Feedback(this, "notes-selection");
             SyncActiveEditor();
             if (_currentNote is not null)
                 _ = GuiMotion.RevealAsync(_currentNote.IsRichNote ? RichEditor : CodeEditor, 0);
@@ -129,9 +130,9 @@ public partial class NotesView : UserControl
             : topLevel is Window owner
                 ? await new DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerWindow(options).ShowDialog<IReadOnlyList<string>?>(owner)
                 : null;
-        if (files is { Count: > 0 })
+        if (files is { Count: > 0 } && ViewModel is { } model)
         {
-            ViewModel.InsertExternalNote(files[0]);
+            await model.InsertExternalNoteAsync(files[0]);
             SyncActiveEditor();
         }
     }

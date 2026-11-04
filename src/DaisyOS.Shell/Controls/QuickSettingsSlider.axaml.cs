@@ -20,7 +20,7 @@ public partial class QuickSettingsSlider : UserControl
     private readonly Border? _progressThumb;
     public event EventHandler? ValueChanged;
     public static readonly StyledProperty<string> IconProperty =
-        AvaloniaProperty.Register<QuickSettingsSlider, string>(nameof(Icon), "volume_up");
+        AvaloniaProperty.Register<QuickSettingsSlider, string>(nameof(Icon), "speaker-high");
 
     public static readonly StyledProperty<double> MinimumProperty =
         AvaloniaProperty.Register<QuickSettingsSlider, double>(nameof(Minimum), 0d);
