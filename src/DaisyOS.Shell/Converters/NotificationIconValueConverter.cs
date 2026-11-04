@@ -3,6 +3,7 @@ using System.Globalization;
 using Avalonia.Data.Converters;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.ViewModels;
+using DaisyOS.Shell.Services.Notifications;
 
 namespace DaisyOS.Shell.Converters;
 
@@ -31,11 +32,7 @@ public sealed class NotificationIconValueConverter : IValueConverter
             return null;
         }
 
-        var path = DesktopItemLoader.ResolveApplicationIconPath([
-            notification.Icon,
-            notification.SourceAppId,
-            RemoveDesktopSuffix(notification.SourceAppId)
-        ]);
+        var path = NotificationArtwork.Resolve(notification).AppIconPath;
 
         return string.IsNullOrWhiteSpace(path) ? null : DesktopItemLoader.LoadBitmapSafe(path);
     }
@@ -43,8 +40,4 @@ public sealed class NotificationIconValueConverter : IValueConverter
     public object? ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture) =>
         throw new NotSupportedException();
 
-    private static string? RemoveDesktopSuffix(string? value) =>
-        value?.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase) == true
-            ? value[..^".desktop".Length]
-            : value;
 }

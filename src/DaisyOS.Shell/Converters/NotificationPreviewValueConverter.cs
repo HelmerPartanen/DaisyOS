@@ -3,6 +3,8 @@ using System.Globalization;
 using System.IO;
 using Avalonia.Data.Converters;
 using Avalonia.Media.Imaging;
+using DaisyOS.Core.Models;
+using DaisyOS.Shell.Services.Notifications;
 
 namespace DaisyOS.Shell.Converters;
 
@@ -22,7 +24,7 @@ public sealed class NotificationPreviewValueConverter : IValueConverter
 
     public object? Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        var source = value as string;
+        var source = value is NotificationItem notification ? NotificationArtwork.Resolve(notification).PreviewSource : value as string;
         if (_cachedSource != source)
         {
             _cachedSource = source;

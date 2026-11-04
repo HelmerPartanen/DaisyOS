@@ -26,7 +26,7 @@
           <ListBox.ItemTemplate>
             <DataTemplate DataType="m:MailFolder">
               <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space3}">
-                <c:DaisyIcon Icon="folder" Width="24" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                <c:DaisyIcon Icon="{Binding Icon}" Width="24" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentSecondaryBrush}" />
                 <TextBlock Grid.Column="1" Text="{Binding Name}" FontSize="{DynamicResource TypeSizeBodySmall}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
               </Grid>
             </DataTemplate>
@@ -50,9 +50,9 @@
       <c:AppWindowTitleBar x:Name="Chrome" />
       <m:MailAccountSetup x:Name="AccountSetup" Grid.Row="1" />
       <Grid x:Name="MailWorkspace" Grid.Row="1" RowDefinitions="Auto,*,Auto" IsVisible="False">
-      <Grid Grid.Row="0" ColumnDefinitions="*,*" ColumnSpacing="{DynamicResource Space6}" Margin="24,12,24,20">
+      <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space6}" Margin="24,12,24,16">
         <TextBlock x:Name="FolderTitle" Text="Inbox" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold" VerticalAlignment="Center" />
-        <c:SearchBar x:Name="Search" Grid.Column="1" Height="{DynamicResource SearchHeightStandard}"
+        <c:SearchBar x:Name="Search" Grid.Column="1" Width="380" Height="{DynamicResource SearchHeightStandard}"
                      PlaceholderText="Search mail" ToolTip.Tip="Search loaded mail. Press Enter to search the whole mailbox."
                      AutomationProperties.Name="Search mail" />
       </Grid>
@@ -72,16 +72,14 @@
               <ListBox.ItemTemplate>
                 <DataTemplate DataType="m:MailItem">
                   <StackPanel Spacing="{DynamicResource Space1}">
-                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="{DynamicResource Space2}">
-                      <TextBlock Text="{Binding Sender}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                      <c:DaisyIcon Grid.Column="1" Icon="star" Size="{DynamicResource IconSizeSmall}" IsVisible="{Binding Starred}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                    <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="{DynamicResource Space2}">
+                      <Ellipse Width="8" Height="8" Fill="{DynamicResource ActionPrimaryBrush}" IsVisible="{Binding Unread}" VerticalAlignment="Center" />
+                      <TextBlock Grid.Column="1" Text="{Binding Sender}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                      <c:DaisyIcon Grid.Column="2" Icon="star" Size="{DynamicResource IconSizeSmall}" IsVisible="{Binding Starred}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                      <TextBlock Grid.Column="3" Text="{Binding Stamp}" Classes="MailCaption" />
                     </Grid>
-                    <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space2}">
-                      <Ellipse Width="6" Height="6" Fill="{DynamicResource ActionPrimaryBrush}" IsVisible="{Binding Unread}" VerticalAlignment="Center" />
-                      <TextBlock Grid.Column="1" Text="{Binding Subject}" FontSize="{DynamicResource TypeSizeBodySmall}" TextTrimming="CharacterEllipsis" />
-                    </Grid>
+                    <TextBlock Text="{Binding Subject}" FontWeight="{Binding ReadWeight}" FontSize="{DynamicResource TypeSizeBodySmall}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding Preview}" Classes="MailSecondary" MaxLines="2" TextWrapping="Wrap" TextTrimming="CharacterEllipsis" />
-                    <TextBlock Text="{Binding Stamp}" Classes="MailCaption" />
                   </StackPanel>
                 </DataTemplate>
               </ListBox.ItemTemplate>

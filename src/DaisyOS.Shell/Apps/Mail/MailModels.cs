@@ -17,6 +17,19 @@ public sealed record MailAccount
 }
 public sealed record MailFolder(string Name, string Path)
 {
+    /// <summary>Glyph that tells the user what kind of mailbox this is, from its name.</summary>
+    [JsonIgnore]
+    public string Icon => Name.ToLowerInvariant() switch
+    {
+        var n when n.Contains("inbox") => "mail-01",
+        var n when n.Contains("sent") => "arrow-up-right",
+        var n when n.Contains("draft") => "file-text",
+        var n when n.Contains("trash") || n.Contains("deleted") || n.Contains("bin") => "trash",
+        var n when n.Contains("archive") || n.Contains("all mail") => "archive",
+        var n when n.Contains("star") || n.Contains("flagged") => "star",
+        var n when n.Contains("spam") || n.Contains("junk") => "shield-check",
+        _ => "folder",
+    };
     public override string ToString() => Name;
 }
 public sealed record MailItem : global::System.ComponentModel.INotifyPropertyChanged
@@ -30,9 +43,10 @@ public sealed record MailItem : global::System.ComponentModel.INotifyPropertyCha
     public string Sender { get; set; } = "";
     public string Address { get; set; } = "";
     public DateTimeOffset Date { get; set; }
-    public bool Unread { get => _unread; set { _unread = value; PropertyChanged?.Invoke(this, new(nameof(Heading))); PropertyChanged?.Invoke(this, new(nameof(Unread))); } }
+    public bool Unread { get => _unread; set { _unread = value; PropertyChanged?.Invoke(this, new(nameof(Heading))); PropertyChanged?.Invoke(this, new(nameof(Unread))); PropertyChanged?.Invoke(this, new(nameof(ReadWeight))); } }
     public bool Starred { get => _starred; set { _starred = value; PropertyChanged?.Invoke(this, new(nameof(Heading))); PropertyChanged?.Invoke(this, new(nameof(Starred))); } }
     public string Preview { get; set; } = "";
+    [JsonIgnore] public global::Avalonia.Media.FontWeight ReadWeight => Unread ? global::Avalonia.Media.FontWeight.SemiBold : global::Avalonia.Media.FontWeight.Normal;
     public string Heading => (Unread ? "●  " : "") + Sender + (Starred ? "  ★" : "");
     public string Stamp => Date.ToLocalTime().ToString("MMM d · HH:mm");
 }

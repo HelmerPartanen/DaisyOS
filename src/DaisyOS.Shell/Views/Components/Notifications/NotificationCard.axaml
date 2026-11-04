@@ -11,7 +11,7 @@
   <StackPanel x:Name="MotionContent" Spacing="8">
    <Grid ColumnDefinitions="32,*,Auto,32" ColumnSpacing="8">
     <Panel Width="32" Height="32">
-     <Image Source="{Binding Converter={StaticResource AppIcon}}" Stretch="Uniform"
+     <Image x:Name="ApplicationIcon" Source="{Binding Converter={StaticResource AppIcon}}" Stretch="Uniform"
             IsVisible="{Binding Converter={StaticResource AppIcon}, ConverterParameter=Visible}"
             RenderOptions.BitmapInterpolationMode="HighQuality" />
      <controls:DaisyIcon Icon="{Binding EffectiveSystemIconGlyph}" Size="{DynamicResource IconSizeLarge}"
@@ -22,7 +22,7 @@
                FontSize="{DynamicResource TypeSizeCaption}" FontWeight="Medium" Foreground="{DynamicResource ContentSecondaryBrush}" />
     <TextBlock Grid.Column="2" Text="{Binding CreatedAt.LocalDateTime, StringFormat='{}{0:HH:mm}'}" VerticalAlignment="Center"
                FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentTertiaryBrush}" />
-    <Button Grid.Column="3" Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Padding="0"
+    <Button Grid.Column="3" Classes="IconButton Small"
             ToolTip.Tip="{DynamicResource Loc_B7BB3F342402}" AutomationProperties.Name="{DynamicResource Loc_B7BB3F342402}" Click="OnDismissClicked">
      <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeStandard}" Foreground="{DynamicResource ContentSecondaryBrush}" />
     </Button>
@@ -34,9 +34,9 @@
                Foreground="{DynamicResource ContentSecondaryBrush}" TextWrapping="Wrap" MaxLines="4" TextTrimming="CharacterEllipsis"
                IsVisible="{Binding Body, Converter={x:Static StringConverters.IsNotNullOrEmpty}}" />
    </StackPanel>
-   <Border IsVisible="{Binding PreviewImage, Converter={StaticResource Preview}, ConverterParameter=Visible}"
+   <Border x:Name="PreviewFrame" IsVisible="{Binding Converter={StaticResource Preview}, ConverterParameter=Visible}"
            CornerRadius="{DynamicResource RoundedMD}" ClipToBounds="True" Height="96">
-    <Image Source="{Binding PreviewImage, Converter={StaticResource Preview}}" Stretch="UniformToFill"
+    <Image x:Name="PreviewImage" Source="{Binding Converter={StaticResource Preview}}" Stretch="Uniform"
            RenderOptions.BitmapInterpolationMode="HighQuality" />
    </Border>
    <Grid ColumnDefinitions="*,*" ColumnSpacing="8" IsVisible="{Binding HasActionButtons}">
