@@ -138,15 +138,17 @@ void DaisyDecoration::watchThemeFile()
 {
     const auto configDirectory = QStandardPaths::writableLocation(QStandardPaths::GenericConfigLocation);
     const auto configPath = configDirectory + QStringLiteral("/daisyos-window-decorationrc");
+    const auto kwinPath = configDirectory + QStringLiteral("/kwinrc");
     m_themeWatcher = std::make_unique<QFileSystemWatcher>();
     m_themeWatcher->addPath(configDirectory);
     if (QFileInfo::exists(configPath)) {
         m_themeWatcher->addPath(configPath);
     }
+    if (QFileInfo::exists(kwinPath)) m_themeWatcher->addPath(kwinPath);
 
-    const auto reload = [this, configPath] {
-        if (!m_themeWatcher->files().contains(configPath) && QFileInfo::exists(configPath)) {
-            m_themeWatcher->addPath(configPath);
+    const auto reload = [this, configPath, kwinPath] {
+        for (const auto &path : {configPath, kwinPath}) {
+            if (!m_themeWatcher->files().contains(path) && QFileInfo::exists(path)) m_themeWatcher->addPath(path);
         }
         QTimer::singleShot(0, this, &DaisyDecoration::reloadTheme);
     };
@@ -184,8 +186,12 @@ void DaisyDecoration::reloadTheme()
     const auto kwinConfig = KSharedConfig::openConfig(QStringLiteral("kwinrc"));
     kwinConfig->reparseConfiguration();
     const KConfigGroup corners(kwinConfig, QStringLiteral("Round-Corners"));
-    m_activeCornerRadius = std::clamp(corners.readEntry("Size", m_frameMetrics.cornerRadius), 0.0, 256.0);
-    m_inactiveCornerRadius = std::clamp(corners.readEntry("InactiveCornerRadius", m_activeCornerRadius), 0.0, 256.0);
+    const auto radius = [&corners](const char *key) {
+        const qreal value = corners.readEntry(key, 16.0);
+        return std::isfinite(value) ? std::clamp(value, 0.0, 256.0) : 16.0;
+    };
+    m_activeCornerRadius = radius("Size");
+    m_inactiveCornerRadius = radius("InactiveCornerRadius");
 
     updateLayout();
     update();

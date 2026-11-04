@@ -54,3 +54,13 @@ set(DAISY_KDECORATION_PLUGIN_DIR
     CACHE PATH "KDecoration3 plugin directory")
 install(TARGETS daisy_window_decoration
     LIBRARY DESTINATION "${DAISY_KDECORATION_PLUGIN_DIR}")
+
+option(DAISY_BUILD_DECORATION_TESTS "Build titlebar pixel clipping regression checks" OFF)
+if(DAISY_BUILD_DECORATION_TESTS)
+    enable_testing()
+    add_executable(titlebar_clip_test tests/titlebar_clip_test.cpp daisyframestyle.cpp)
+    target_include_directories(titlebar_clip_test PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(titlebar_clip_test PRIVATE Qt6::Core Qt6::Gui KDecoration3::KDecoration)
+    add_test(NAME titlebar_clip COMMAND titlebar_clip_test)
+    set_tests_properties(titlebar_clip PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
+endif()

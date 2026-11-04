@@ -42,8 +42,9 @@ cmake_generator=()
 if command -v ninja >/dev/null 2>&1; then
   cmake_generator=(-G Ninja)
 fi
-cmake -S "$plugin_source" -B "$temp_dir/build" "${cmake_generator[@]}" -DCMAKE_BUILD_TYPE=Debug >/dev/null
+cmake -S "$plugin_source" -B "$temp_dir/build" "${cmake_generator[@]}" -DCMAKE_BUILD_TYPE=Debug -DDAISY_BUILD_DECORATION_TESTS=ON >/dev/null
 cmake --build "$temp_dir/build" >/dev/null
+ctest --test-dir "$temp_dir/build" --output-on-failure
 [[ -f "$temp_dir/build/org.daisyos.decoration.so" ]]
 grep -a -Fq 'org.daisyos.decoration' "$temp_dir/build/org.daisyos.decoration.so"
 
