@@ -17,6 +17,31 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class MediaPolishTests
 {
     [AvaloniaFact]
+    public void ArtworkTintIsOpaqueAndClearingItRestoresTheExistingMaterial()
+    {
+        foreach (var widget in new UserControl[]
+        {
+            new DaisyOS.Shell.DesktopWidgets.MediaWidget(),
+            new DaisyOS.Shell.Views.Components.Widgets.MediaWidget(),
+            new DaisyOS.Shell.Views.Components.Console.ConsoleMediaWidget()
+        })
+        {
+            var tint = widget.FindControl<Border>(widget is DaisyOS.Shell.Views.Components.Console.ConsoleMediaWidget
+                ? "MediaFrame" : "ArtworkTint")!;
+            var field = widget.GetType().GetField("_artworkTint", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            var update = widget.GetType().GetMethod("UpdateTintLayer", BindingFlags.NonPublic | BindingFlags.Instance)!;
+            field.SetValue(widget, Color.FromRgb(180, 80, 40));
+            update.Invoke(widget, null);
+            var solid = Assert.IsAssignableFrom<ISolidColorBrush>(tint.Background);
+            Assert.Equal(byte.MaxValue, solid.Color.A);
+            Assert.Equal(1, solid.Opacity);
+            field.SetValue(widget, null);
+            update.Invoke(widget, null);
+            Assert.Equal(0, Assert.IsAssignableFrom<ISolidColorBrush>(tint.Background).Color.A);
+        }
+    }
+
+    [AvaloniaFact]
     public void RollingTitleAlwaysHasAVisibleCopyAcrossMultipleLoops()
     {
         var title = new MarqueeText { Text = "A long title that must repeat without an empty interval", Width = 100 };

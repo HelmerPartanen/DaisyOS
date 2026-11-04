@@ -122,6 +122,10 @@ public sealed class LockScreenMediaTests
             Assert.False(expandedHost.IsVisible);
             Assert.Equal("Let it happen", collapsedTitle.Text);
             Assert.Equal("Tame Impala", collapsedArtist.Text);
+            Assert.Equal(byte.MaxValue, Assert.IsAssignableFrom<ISolidColorBrush>(
+                window.FindControl<Border>("CollapsedArtworkTint")!.Background).Color.A);
+            Assert.Equal(byte.MaxValue, Assert.IsAssignableFrom<ISolidColorBrush>(
+                window.FindControl<Border>("ExpandedArtworkTint")!.Background).Color.A);
             Assert.Equal(354, collapsedBorder.Bounds.Width);
             Assert.Equal(160, collapsedBorder.Bounds.Height);
 

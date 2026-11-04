@@ -1247,11 +1247,9 @@ public partial class LockScreenWindow : Window
 
     private void UpdateMediaTintLayers()
     {
-        IBrush brush = _artworkTint is { } color
-            ? new SolidColorBrush(Color.FromArgb(ArtworkColorExtractor.DefaultTintAlpha, color.R, color.G, color.B))
-            : Brushes.Transparent;
-
+        var brush = MediaWidgetMaterial.CreateTint(this, _artworkTint);
         _collapsedArtworkTint.Background = brush;
+        this.FindControl<Border>("ExpandedArtworkTint")!.Background = brush;
     }
 
     private void UpdateSpectrumBarTint()

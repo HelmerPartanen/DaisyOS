@@ -85,7 +85,7 @@
     </Style>
   </UserControl.Styles>
 
-  <Border x:Name="MediaFrame"
+  <Border x:Name="MediaFrame" CornerRadius="{DynamicResource RoundedMD}"
           Height="48"
           Background="Transparent"
           ClipToBounds="False">

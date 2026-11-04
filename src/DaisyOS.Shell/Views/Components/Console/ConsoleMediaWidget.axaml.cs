@@ -259,19 +259,10 @@ public partial class ConsoleMediaWidget : UserControl
 
     private void UpdateTintLayer()
     {
-        var tintLayer = this.FindControl<Border>("ArtworkTint");
-        if (tintLayer is null) return;
-        
-        if (_artworkTint is { } color)
-        {
-            var isLightMode = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light;
-            byte alpha = isLightMode ? (byte)76 : (byte)128;
-            tintLayer.Background = new SolidColorBrush(Color.FromArgb(alpha, color.R, color.G, color.B));
-        }
-        else
-        {
-            tintLayer.Background = Brushes.Transparent;
-        }
+        var frame = this.FindControl<Border>("MediaFrame");
+        if (frame is null) return;
+        var strength = ActualThemeVariant == Avalonia.Styling.ThemeVariant.Light ? 76f / 255 : 128f / 255;
+        frame.Background = DaisyOS.Shell.Services.Media.MediaWidgetMaterial.CreateTint(this, _artworkTint, strength);
     }
 
     private Border CreateSpectrumBar(double idleScale)

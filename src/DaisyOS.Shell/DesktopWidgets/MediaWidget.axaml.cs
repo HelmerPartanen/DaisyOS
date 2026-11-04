@@ -466,16 +466,7 @@ public partial class MediaWidget : UserControl
         var tintLayer = this.FindControl<Border>("ArtworkTint");
         if (tintLayer == null) return;
 
-        if (_artworkTint is { } color)
-        {
-            tintLayer.Background = new SolidColorBrush(Color.FromArgb(
-                DaisyOS.Shell.Services.Media.ArtworkColorExtractor.DefaultTintAlpha,
-                color.R, color.G, color.B));
-        }
-        else
-        {
-            tintLayer.Background = Brushes.Transparent;
-        }
+        tintLayer.Background = DaisyOS.Shell.Services.Media.MediaWidgetMaterial.CreateTint(this, _artworkTint);
     }
 
     private Border CreateSpectrumBar(double idleScale)

@@ -625,6 +625,7 @@
                     CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
                     ClipToBounds="True">
               <Grid>
+                <Border x:Name="ExpandedArtworkTint" Background="Transparent" IsHitTestVisible="False" />
                 <Grid Margin="20,14,20,14"
                       RowDefinitions="Auto,Auto,Auto"
                       RowSpacing="10">
