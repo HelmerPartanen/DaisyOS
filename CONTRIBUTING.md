@@ -123,6 +123,7 @@ scripts/publish-shell.sh
 - All code must comply with the root [`.editorconfig`](.editorconfig).
 - Run `dotnet format --verify-no-changes` before opening a pull request.
 - Keep line endings normalized to LF (enforced via [`.gitattributes`](.gitattributes)).
+- Use the shared `AppToolbar`, `ToolbarAction`, and `IconButton` styles for application toolbars and icon-only actions. See [Application toolbars](docs/app-toolbars.md); update shared styles instead of copying them into an app.
 
 ### B. Repository Hygiene
 - **No binary build artifacts in Git:** Never commit object files (`.o`), shared libraries (`.so`, `.dll`), test logs (`.trx`), or compiled caches (`__pycache__`, `CMakeCache.txt`).

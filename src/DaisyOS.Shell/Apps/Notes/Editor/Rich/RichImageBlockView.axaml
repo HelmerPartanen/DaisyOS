@@ -3,22 +3,6 @@
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
              x:Class="DaisyOS.Shell.Apps.Notes.Editor.Rich.RichImageBlockView">
 
-  <UserControl.Styles>
-    <Style Selector="Button.PillAction">
-      <Setter Property="Height" Value="{DynamicResource ControlHeightCompact}" />
-      <Setter Property="Padding" Value="8,0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-    </Style>
-    <Style Selector="Button.PillAction:pointerover">
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
-    </Style>
-    <Style Selector="Button.PillAction.Active">
-      <Setter Property="Background" Value="{DynamicResource ActionPrimarySubtleBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
-    </Style>
-  </UserControl.Styles>
 
   <StackPanel x:Name="RootContainer" Spacing="8" Margin="0,12" HorizontalAlignment="Stretch">
     <!-- Image with interactive handles and adorners -->
@@ -44,56 +28,53 @@
               IsHitTestVisible="True">
         <Panel>
           <!-- Top Floating Action Pill Toolbar -->
-          <Border HorizontalAlignment="Center"
+          <Border Classes="AppToolbar" HorizontalAlignment="Center"
                   VerticalAlignment="Top"
                   Margin="0,8,0,0"
-                  Background="{DynamicResource SurfaceGlassSolidBrush}"
                   BorderBrush="{DynamicResource StrokeDefaultBrush}"
                   BorderThickness="1"
-                  CornerRadius="{DynamicResource RadiusSurface}"
-                  Padding="{DynamicResource SpaceInset1}"
                   MaxWidth="{Binding #ImageBorder.Bounds.Width}"
                   BoxShadow="{DynamicResource ElevationFlyoutShadow}">
             <WrapPanel ItemSpacing="4" LineSpacing="4">
               <!-- Alignment controls -->
-              <Button x:Name="AlignLeftBtn" Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_94A69331C723}" Click="OnAlignLeftClicked">
+              <Button x:Name="AlignLeftBtn" Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_94A69331C723}" Click="OnAlignLeftClicked" AutomationProperties.Name="{DynamicResource Loc_94A69331C723}">
                 <controls:DaisyIcon Icon="text-align-left" Size="{DynamicResource IconSizeSmall}" />
               </Button>
-              <Button x:Name="AlignCenterBtn" Classes="PillAction Active" ToolTip.Tip="{DynamicResource Loc_12C2425371B2}" Click="OnAlignCenterClicked">
+              <Button x:Name="AlignCenterBtn" Classes="IconButton Small Active" ToolTip.Tip="{DynamicResource Loc_12C2425371B2}" Click="OnAlignCenterClicked" AutomationProperties.Name="{DynamicResource Loc_12C2425371B2}">
                 <controls:DaisyIcon Icon="text-align-center" Size="{DynamicResource IconSizeSmall}" />
               </Button>
-              <Button x:Name="AlignRightBtn" Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_9B0274C13C1C}" Click="OnAlignRightClicked">
+              <Button x:Name="AlignRightBtn" Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_9B0274C13C1C}" Click="OnAlignRightClicked" AutomationProperties.Name="{DynamicResource Loc_9B0274C13C1C}">
                 <controls:DaisyIcon Icon="text-align-right" Size="{DynamicResource IconSizeSmall}" />
               </Button>
-              <Button x:Name="AlignFullBtn" Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_827E684A942F}" Click="OnAlignFullClicked">
+              <Button x:Name="AlignFullBtn" Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_827E684A942F}" Click="OnAlignFullClicked" AutomationProperties.Name="{DynamicResource Loc_827E684A942F}">
                 <controls:DaisyIcon Icon="arrow-expand-01" Size="{DynamicResource IconSizeSmall}" />
               </Button>
 
               <Rectangle Width="1" Height="16" Fill="{DynamicResource StrokeDefaultBrush}" VerticalAlignment="Center" Margin="2,0" />
 
               <!-- Radius Presets -->
-              <Button Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_8328A86E6441}" Click="OnRadius0Clicked">
+              <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_8328A86E6441}" Click="OnRadius0Clicked">
                 <TextBlock Text="0" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" />
               </Button>
-              <Button Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_B0C3D382397D}" Click="OnRadius8Clicked">
+              <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_B0C3D382397D}" Click="OnRadius8Clicked">
                 <TextBlock Text="8" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" />
               </Button>
-              <Button Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_E04AB8BEFE55}" Click="OnRadius16Clicked">
+              <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_E04AB8BEFE55}" Click="OnRadius16Clicked">
                 <TextBlock Text="16" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" />
               </Button>
 
               <Rectangle Width="1" Height="16" Fill="{DynamicResource StrokeDefaultBrush}" VerticalAlignment="Center" Margin="2,0" />
 
               <!-- Move Up / Move Down -->
-              <Button Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_ABA357D73D3C}" Click="OnMoveUpClicked">
+              <Button Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_ABA357D73D3C}" Click="OnMoveUpClicked" AutomationProperties.Name="{DynamicResource Loc_ABA357D73D3C}">
                 <controls:DaisyIcon Icon="arrow-up" Size="{DynamicResource IconSizeSmall}" />
               </Button>
-              <Button Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_F2DABA87A9A7}" Click="OnMoveDownClicked">
+              <Button Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_F2DABA87A9A7}" Click="OnMoveDownClicked" AutomationProperties.Name="{DynamicResource Loc_F2DABA87A9A7}">
                 <controls:DaisyIcon Icon="arrow-down" Size="{DynamicResource IconSizeSmall}" />
               </Button>
 
               <!-- Delete -->
-              <Button Classes="PillAction" ToolTip.Tip="{DynamicResource Loc_3691FF40984E}" Click="OnDeleteClicked">
+              <Button Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_3691FF40984E}" Click="OnDeleteClicked" AutomationProperties.Name="{DynamicResource Loc_3691FF40984E}">
                 <controls:DaisyIcon Icon="trash" Size="{DynamicResource IconSizeSmall}" Foreground="{DynamicResource StatusDangerBrush}" />
               </Button>
             </WrapPanel>

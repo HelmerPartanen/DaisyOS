@@ -300,7 +300,7 @@ public partial class DaisyFilePickerWindow : Window
 
     private void AddBreadcrumb(string name, string path)
     {
-        var button = new Button { Content = name, Tag = path, Padding = new Thickness(7, 2), MinWidth = 0, Background = Brushes.Transparent };
+        var button = new Button { Content = name, Tag = path, Classes = { "Subtle", "ToolbarAction", "Flexible" }, Padding = new Thickness(7, 0), MinWidth = 0, Background = Brushes.Transparent };
         button.Click += (_, _) => OpenFolder(path);
         Breadcrumbs.Children.Add(button);
     }

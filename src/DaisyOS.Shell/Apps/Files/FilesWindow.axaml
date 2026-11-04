@@ -30,7 +30,6 @@
       <Setter Property="MinWidth" Value="0" />
       <Setter Property="MaxWidth" Value="{DynamicResource FilesBreadcrumbMaxWidth}" />
       <Setter Property="Padding" Value="8,0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RadiusControlInner}" />
       <Setter Property="Background" Value="Transparent" />
       <Setter Property="BorderThickness" Value="0" />
       <Setter Property="HorizontalContentAlignment" Value="Left" />
@@ -42,36 +41,6 @@
     </Style>
     <Style Selector="Button.FilesBreadcrumb.Current /template/ ContentPresenter#PART_ContentPresenter">
       <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
-    </Style>
-    <Style Selector="Border.FilesToolbar Button, Border.FilesToolbar ToggleButton">
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
-    </Style>
-    <Style Selector="Border.FilesToolbar Button /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
-    </Style>
-    <Style Selector="Border.FilesToolbar ToggleButton /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
-    </Style>
-    <Style Selector="ToggleButton.FilesHiddenToggle">
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="ToggleButton.FilesHiddenToggle /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="ToggleButton.FilesHiddenToggle:not(:checked):pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
-    </Style>
-    <Style Selector="ToggleButton.FilesHiddenToggle:not(:checked):pressed /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
-    </Style>
-    <Style Selector="ToggleButton.FilesHiddenToggle:checked">
-      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
-    </Style>
-    <Style Selector="ToggleButton.FilesHiddenToggle:checked /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}" />
-    </Style>
-    <Style Selector="ToggleButton.FilesHiddenToggle:checked:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource ActionSecondaryHoverBrush}" />
     </Style>
     <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
     <Style Selector="Button.SettingsNavItem.DragOver /template/ ContentPresenter#PART_ContentPresenter">
@@ -388,16 +357,12 @@
 
                         <!-- Right Aligned Close Button -->
                         <Button Grid.Column="2"
-                                Classes="ShellButton"
-                                Width="18"
+                                Classes="ShellButton IconButton"
                                 Height="18"
-                                Padding="0"
-                                CornerRadius="{DynamicResource RadiusControl}"
                                 HorizontalAlignment="Right"
-                                VerticalAlignment="Center"
-                                MinWidth="0" Click="OnCloseTabClicked"
+                                VerticalAlignment="Center" Click="OnCloseTabClicked"
                                 Tag="{Binding}"
-                                ToolTip.Tip="{DynamicResource Loc_F271892DC1C3}">
+                                ToolTip.Tip="{DynamicResource Loc_F271892DC1C3}" AutomationProperties.Name="{DynamicResource Loc_F271892DC1C3}">
                           <controls:DaisyIcon Icon="x"
                                      Size="{DynamicResource IconSizeSmall}"
                                      Foreground="{DynamicResource ContentSecondaryBrush}"/>
@@ -409,14 +374,12 @@
               </ItemsControl>
 
               <!-- Standard Shell Ghost New Tab Button (Transparent at rest, StateHoverBrush on hover) -->
-              <Button Grid.Column="1" Classes="ShellButton"
-                      Width="32"
-                      Height="{DynamicResource ControlHeightStandard}"
+              <Button Grid.Column="1" Classes="ShellButton IconButton"
+                      Height="32"
                       Margin="6,0,0,0"
-                      CornerRadius="{DynamicResource RoundedMD}"
                       VerticalAlignment="Center"
                       Click="OnNewTabClicked"
-                      ToolTip.Tip="{DynamicResource Loc_85B3159CE44F}">
+                      ToolTip.Tip="{DynamicResource Loc_85B3159CE44F}" AutomationProperties.Name="{DynamicResource Loc_85B3159CE44F}">
                 <controls:DaisyIcon Icon="plus"
                            Size="{DynamicResource IconSizeStandard}"
                            Foreground="{DynamicResource ContentSecondaryBrush}" />
@@ -443,27 +406,25 @@
             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12" Margin="14,8" VerticalAlignment="Center">
 
               <!-- All 4 Nav Controls (Back, Forward, Up, Refresh) using identical ShellButton ghost style -->
+              <Border x:Name="NavigationToolbar" Classes="AppToolbar">
               <StackPanel Orientation="Horizontal" Spacing="4" VerticalAlignment="Center">
-                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnBackClicked" IsEnabled="{Binding ActiveTab.CanGoBack}" ToolTip.Tip="{DynamicResource Loc_76900F1BFD16}">
+                <Button Classes="ShellButton IconButton" Height="32" Click="OnBackClicked" IsEnabled="{Binding ActiveTab.CanGoBack}" ToolTip.Tip="{DynamicResource Loc_76900F1BFD16}" AutomationProperties.Name="{DynamicResource Loc_76900F1BFD16}">
                   <controls:DaisyIcon Icon="arrow-left" Size="{DynamicResource IconSizeStandard}"/>
                 </Button>
-                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnForwardClicked" IsEnabled="{Binding ActiveTab.CanGoForward}" ToolTip.Tip="{DynamicResource Loc_F1C65E14817E}">
+                <Button Classes="ShellButton IconButton" Height="32" Click="OnForwardClicked" IsEnabled="{Binding ActiveTab.CanGoForward}" ToolTip.Tip="{DynamicResource Loc_F1C65E14817E}" AutomationProperties.Name="{DynamicResource Loc_F1C65E14817E}">
                   <controls:DaisyIcon Icon="arrow-right" Size="{DynamicResource IconSizeStandard}"/>
                 </Button>
-                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnUpClicked" IsEnabled="{Binding ActiveTab.CanGoUp}" ToolTip.Tip="{DynamicResource Loc_AD18290855A2}">
+                <Button Classes="ShellButton IconButton" Height="32" Click="OnUpClicked" IsEnabled="{Binding ActiveTab.CanGoUp}" ToolTip.Tip="{DynamicResource Loc_AD18290855A2}" AutomationProperties.Name="{DynamicResource Loc_AD18290855A2}">
                   <controls:DaisyIcon Icon="arrow-up" Size="{DynamicResource IconSizeStandard}"/>
                 </Button>
-                <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnRefreshClicked" ToolTip.Tip="{DynamicResource Loc_2B9CBC5BD2E2}">
+                <Button Classes="ShellButton IconButton" Height="32" Click="OnRefreshClicked" ToolTip.Tip="{DynamicResource Loc_2B9CBC5BD2E2}" AutomationProperties.Name="{DynamicResource Loc_2B9CBC5BD2E2}">
                   <controls:DaisyIcon Icon="arrows-clockwise" Size="{DynamicResource IconSizeStandard}"/>
                 </Button>
               </StackPanel>
 
+              </Border>
               <!-- Breadcrumb Address Box -->
-              <Border Grid.Column="1"
-                      Background="{DynamicResource SurfaceRaisedSubtleBrush}"
-                      CornerRadius="{DynamicResource RoundedMD}"
-                      Height="40"
-                      Padding="9,0"
+              <Border x:Name="BreadcrumbToolbar" Classes="AppToolbar" Grid.Column="1"
                       PointerPressed="OnBreadcrumbBackgroundPressed">
                 <Border.ContextMenu>
                   <ContextMenu>
@@ -499,7 +460,7 @@
                                    Foreground="{DynamicResource ContentTertiaryBrush}"
                                    VerticalAlignment="Center"
                                    HorizontalAlignment="Center"/>
-                        <Button Classes="FilesBreadcrumb"
+                        <Button Classes="FilesBreadcrumb ToolbarAction"
                                 Classes.Current="{Binding IsCurrent}"
                                 Tag="{Binding Path}" ToolTip.Tip="{Binding Path}"
                                 Click="OnBreadcrumbClicked">
@@ -525,35 +486,35 @@
                 </Grid>
               </Border>
 
-              <Border x:Name="SearchTools" Classes="FilesToolbar" Grid.Column="2"
-                      MinWidth="220" Background="{DynamicResource SurfaceRaisedSubtleBrush}" CornerRadius="{DynamicResource RoundedMD}" MinHeight="{DynamicResource InputHeightStandard}" Padding="4"
+              <Border x:Name="SearchTools" Classes="AppToolbar" Grid.Column="2"
+                      MinWidth="220"
                       ClipToBounds="False" ZIndex="10">
                 <StackPanel Orientation="Horizontal" Spacing="2" VerticalAlignment="Center" HorizontalAlignment="Center">
                   <controls:ToolbarSearchPopover x:Name="FilesSearch"
                                                  Text="{Binding ActiveTab.SearchQuery, Mode=TwoWay}"
                                                  PlaceholderText="{DynamicResource Loc_86326F17936B}" />
-                  <ToggleButton Classes="ShellButton FilesHiddenToggle" Width="32" Height="{DynamicResource ControlHeightStandard}" Padding="0"
-                                IsChecked="{Binding ActiveTab.ShowHiddenFiles, Mode=TwoWay}" ToolTip.Tip="{DynamicResource Loc_B5EDE7FB45DF}">
+                  <ToggleButton Classes="ShellButton FilesHiddenToggle IconButton" Height="32"
+                                IsChecked="{Binding ActiveTab.ShowHiddenFiles, Mode=TwoWay}" ToolTip.Tip="{DynamicResource Loc_B5EDE7FB45DF}" AutomationProperties.Name="{DynamicResource Loc_B5EDE7FB45DF}">
                     <Grid>
                       <controls:DaisyIcon Icon="eye" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding !ActiveTab.ShowHiddenFiles}"/>
                       <controls:DaisyIcon Icon="view-off" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding ActiveTab.ShowHiddenFiles}"/>
                     </Grid>
                   </ToggleButton>
                   <Rectangle Width="1" Height="20" Fill="{DynamicResource StrokeDefaultBrush}" Margin="3,0"/>
-                  <Button x:Name="SortButton" Classes="ShellButton" MinWidth="58" Height="{DynamicResource ControlHeightStandard}" Padding="6,0" VerticalContentAlignment="Center" Click="OnSortNameClicked" ToolTip.Tip="{DynamicResource Loc_588A08236C7E}">
+                  <Button x:Name="SortButton" Classes="ShellButton ToolbarAction" MinWidth="58" Height="{DynamicResource ControlHeightStandard}" Padding="6,0" VerticalContentAlignment="Center" Click="OnSortNameClicked" ToolTip.Tip="{DynamicResource Loc_588A08236C7E}">
                     <Grid ColumnDefinitions="16,Auto" ColumnSpacing="5" VerticalAlignment="Center">
                       <controls:DaisyIcon Icon="sort-ascending" Size="{DynamicResource IconSizeStandard}" VerticalAlignment="Center"/>
                       <TextBlock Grid.Column="1" Text="{DynamicResource Loc_BEC69036AA27}" FontSize="{DynamicResource TypeSizeCaption}" VerticalAlignment="Center"/>
                     </Grid>
                   </Button>
                   <Rectangle Width="1" Height="20" Fill="{DynamicResource StrokeDefaultBrush}" Margin="3,0"/>
-                  <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnToggleViewModeClicked" ToolTip.Tip="{DynamicResource Loc_14326E4C4DD5}">
+                  <Button Classes="ShellButton IconButton" Height="32" Click="OnToggleViewModeClicked" ToolTip.Tip="{DynamicResource Loc_14326E4C4DD5}" AutomationProperties.Name="{DynamicResource Loc_14326E4C4DD5}">
                     <Grid>
                       <controls:DaisyIcon Icon="squares-four" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding !ActiveTab.IsGridView}"/>
                       <controls:DaisyIcon Icon="list-view" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding ActiveTab.IsGridView}"/>
                     </Grid>
                   </Button>
-                  <Button Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}" Click="OnTogglePreviewPaneClicked" ToolTip.Tip="{DynamicResource Loc_454C908A49FB}">
+                  <Button Classes="ShellButton IconButton" Height="32" Click="OnTogglePreviewPaneClicked" ToolTip.Tip="{DynamicResource Loc_454C908A49FB}" AutomationProperties.Name="{DynamicResource Loc_454C908A49FB}">
                     <controls:DaisyIcon Icon="sidebar-simple" Size="{DynamicResource IconSizeStandard}"/>
                   </Button>
                 </StackPanel>

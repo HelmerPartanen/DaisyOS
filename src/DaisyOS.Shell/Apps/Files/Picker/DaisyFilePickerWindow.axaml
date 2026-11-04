@@ -1,15 +1,5 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerWindow" Width="960" Height="680" MinWidth="760" MinHeight="540" WindowStartupLocation="CenterOwner" WindowDecorations="Full" Background="{DynamicResource SurfaceBaseSolidBrush}" xmlns:picker="clr-namespace:DaisyOS.Shell.Apps.Files.Picker">
   <Window.Styles>
-    <Style Selector="Button.PickerIconButton">
-      <Setter Property="Width" Value="32" />
-      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
-    <Style Selector="Button.PickerIconButton:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
-    </Style>
     <Style Selector="Button.PickerSidebarItem">
       <Setter Property="Height" Value="42" />
       <Setter Property="Padding" Value="12,0" />
@@ -68,20 +58,21 @@
       </ScrollViewer>
     </Border>
     <Grid Grid.Column="1" RowDefinitions="58,*,Auto">
-      <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*,200" Margin="14,9" ColumnSpacing="6"
-            Background="{DynamicResource SurfaceRaisedSubtleBrush}">
-        <Button x:Name="BackButton" Classes="PickerIconButton" Click="OnBackClicked" ToolTip.Tip="{DynamicResource Loc_4AE57F86C932}" AutomationProperties.Name="{DynamicResource Loc_76900F1BFD16}">
+      <Grid Grid.Row="0" ColumnDefinitions="Auto,*,200" Margin="14,9" ColumnSpacing="6">
+        <Border Classes="AppToolbar"><StackPanel Orientation="Horizontal" Spacing="4">
+        <Button x:Name="BackButton" Classes="PickerIconButton IconButton" Click="OnBackClicked" ToolTip.Tip="{DynamicResource Loc_4AE57F86C932}" AutomationProperties.Name="{DynamicResource Loc_76900F1BFD16}">
           <controls:DaisyIcon Icon="chevron-left" Size="{DynamicResource IconSizeStandard}" />
         </Button>
-        <Button x:Name="UpButton" Grid.Column="1" Classes="PickerIconButton" Click="OnUpClicked" ToolTip.Tip="{DynamicResource Loc_A5B93B0B215F}" AutomationProperties.Name="{DynamicResource Loc_158F5A01EF8C}">
+        <Button x:Name="UpButton" Classes="PickerIconButton IconButton" Click="OnUpClicked" ToolTip.Tip="{DynamicResource Loc_A5B93B0B215F}" AutomationProperties.Name="{DynamicResource Loc_158F5A01EF8C}">
           <controls:DaisyIcon Icon="arrow-up" Size="{DynamicResource IconSizeStandard}" />
         </Button>
-        <Border Grid.Column="2" Height="32" CornerRadius="{DynamicResource RoundedSM}" ClipToBounds="True" Background="{DynamicResource SurfaceInputBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1">
+        </StackPanel></Border>
+        <Border x:Name="PickerBreadcrumbToolbar" Classes="AppToolbar" Grid.Column="1">
           <ScrollViewer HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
             <StackPanel x:Name="Breadcrumbs" Orientation="Horizontal" Margin="8,0" VerticalAlignment="Center" Spacing="2" />
           </ScrollViewer>
         </Border>
-        <controls:SearchBar x:Name="SearchBox" Grid.Column="3" Height="{DynamicResource SearchHeightStandard}" MinHeight="{DynamicResource SearchHeightStandard}" PlaceholderText="{DynamicResource Loc_86326F17936B}" />
+        <controls:SearchBar x:Name="SearchBox" Grid.Column="2" Height="{DynamicResource SearchHeightStandard}" MinHeight="{DynamicResource SearchHeightStandard}" PlaceholderText="{DynamicResource Loc_86326F17936B}" />
       </Grid>
       <Border Grid.Row="1">
         <Grid RowDefinitions="Auto,*">
@@ -91,10 +82,10 @@
               <TextBlock x:Name="FolderSummary" Margin="0,2,0,0" FontSize="{DynamicResource TypeSizeCaption}" TextWrapping="Wrap" Foreground="{DynamicResource ContentSecondaryBrush}" />
             </StackPanel>
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
-              <Button Classes="PickerIconButton" Click="OnToggleViewClicked" ToolTip.Tip="{DynamicResource Loc_6487C181016A}">
+              <Button Classes="PickerIconButton IconButton" Click="OnToggleViewClicked" ToolTip.Tip="{DynamicResource Loc_6487C181016A}" AutomationProperties.Name="{DynamicResource Loc_6487C181016A}">
                 <controls:DaisyIcon x:Name="ViewModeIcon" Icon="list-view" Size="{DynamicResource IconSizeStandard}" />
               </Button>
-              <Button x:Name="SortButton" Classes="PickerIconButton" Click="OnSortMenuClicked" ToolTip.Tip="{DynamicResource Loc_00FBDA14747A}">
+              <Button x:Name="SortButton" Classes="PickerIconButton IconButton" Click="OnSortMenuClicked" ToolTip.Tip="{DynamicResource Loc_00FBDA14747A}" AutomationProperties.Name="{DynamicResource Loc_00FBDA14747A}">
                 <controls:DaisyIcon Icon="sort-ascending" Size="{DynamicResource IconSizeStandard}" />
                 <Button.ContextMenu>
                   <ContextMenu x:Name="SortMenu">
@@ -206,7 +197,7 @@
                         </Grid>
                       </Border>
                       <TextBlock Text="{Binding Name}" MaxWidth="120" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
-                      <Button Classes="PickerIconButton" Width="24" Height="24" Padding="0" Click="OnRemoveSelectionClicked" ToolTip.Tip="{DynamicResource Loc_C3812FC4ACB8}">
+                      <Button Classes="PickerIconButton IconButton" Height="24" Click="OnRemoveSelectionClicked" ToolTip.Tip="{DynamicResource Loc_C3812FC4ACB8}" AutomationProperties.Name="{DynamicResource Loc_C3812FC4ACB8}">
                         <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeSmall}" />
                       </Button>
                     </StackPanel>

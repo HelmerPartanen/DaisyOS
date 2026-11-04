@@ -93,6 +93,7 @@
         <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" ResizeDirection="Columns" Background="Transparent" AutomationProperties.Name="Resize message list" />
         <Grid Grid.Column="2" Margin="24,0,0,0">
         <Grid x:Name="ReaderPane" RowDefinitions="Auto,*" RowSpacing="{DynamicResource Space6}">
+          <Border Classes="AppToolbar" HorizontalAlignment="Left" IsVisible="{Binding #MessageActions.IsVisible}">
           <WrapPanel x:Name="MessageActions" IsEnabled="False" IsVisible="False" ItemSpacing="{DynamicResource Space2}" LineSpacing="{DynamicResource Space2}">
             <Button Classes="Primary Small" Click="ReplyClicked"><StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}"><c:DaisyIcon Icon="mail-reply-01" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="Reply" /></StackPanel></Button>
             <Button Content="Forward" Classes="Secondary Small" Click="ForwardClicked" />
@@ -103,6 +104,7 @@
               <Button.Flyout><MenuFlyout><MenuItem Header="Reply all" Click="ReplyAllClicked" /><MenuItem Header="Star / unstar" Click="StarClicked" /><MenuItem Header="Mark unread" Click="UnreadClicked" /><MenuItem Header="Move to folder…" Click="MoveClicked" /><Separator /><MenuItem x:Name="TextViewToggle" Header="View plain text" Click="TextViewClicked" IsVisible="False" /><MenuItem Header="Copy message text" Click="CopyTextClicked" /></MenuFlyout></Button.Flyout>
             </Button>
           </WrapPanel>
+          </Border>
           <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
             <StackPanel x:Name="ReaderContent" IsVisible="False" Spacing="{DynamicResource Space6}" MaxWidth="760" HorizontalAlignment="Stretch">
               <TextBlock x:Name="Subject" Text="" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold" TextWrapping="Wrap" />

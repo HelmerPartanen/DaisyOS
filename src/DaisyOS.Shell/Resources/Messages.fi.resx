@@ -7593,4 +7593,20 @@ Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
     <comment>Source: Displays must not overlap. Use Mirror displays to show the same content.
 Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
   </data>
+  <data name="Loc_374CDB9D435A" xml:space="preserve">
+    <value>Lisää muotoiluja</value>
+    <comment>Source: More formatting</comment>
+  </data>
+  <data name="Loc_119EF3FA607E" xml:space="preserve">
+    <value>Kirjasin</value>
+    <comment>Source: Font family</comment>
+  </data>
+  <data name="Loc_6D784D95C638" xml:space="preserve">
+    <value>Kirjasinkoko</value>
+    <comment>Source: Font size</comment>
+  </data>
+  <data name="Loc_D05AD818D51D" xml:space="preserve">
+    <value>Kirjasimen vahvuus</value>
+    <comment>Source: Font weight</comment>
+  </data>
 </root>

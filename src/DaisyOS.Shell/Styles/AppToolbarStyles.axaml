@@ -1,0 +1,80 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:converters="clr-namespace:DaisyOS.Shell.Converters">
+  <Styles.Resources>
+    <converters:HalfHeightCornerRadiusConverter x:Key="HalfToolbarHeight" />
+    <x:Double x:Key="AppToolbarMinHeight">40</x:Double>
+    <Thickness x:Key="AppToolbarPadding">4</Thickness>
+    <x:Double x:Key="AppToolbarIconSize">32</x:Double>
+    <ControlTheme x:Key="AppIconButtonTheme" TargetType="Button">
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Template">
+        <ControlTemplate>
+          <Border Name="IconSurface" Background="{TemplateBinding Background}"
+                  BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                  CornerRadius="{TemplateBinding CornerRadius}">
+            <ContentPresenter Name="IconContent" Content="{TemplateBinding Content}"
+                              ContentTemplate="{TemplateBinding ContentTemplate}"
+                              HorizontalContentAlignment="Center" VerticalContentAlignment="Center" />
+          </Border>
+        </ControlTemplate>
+      </Setter>
+      <Style Selector="^:pointerover /template/ Border#IconSurface">
+        <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+      </Style>
+      <Style Selector="^:checked /template/ Border#IconSurface, ^.Active /template/ Border#IconSurface, ^.Selected /template/ Border#IconSurface">
+        <Setter Property="Background" Value="{DynamicResource ActionPrimarySubtleBrush}" />
+      </Style>
+      <Style Selector="^:pressed /template/ Border#IconSurface">
+        <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+      </Style>
+      <Style Selector="^:focus-visible /template/ Border#IconSurface">
+        <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+        <Setter Property="BorderThickness" Value="2" />
+      </Style>
+    </ControlTheme>
+  </Styles.Resources>
+
+  <!-- Apply to independent groups in a row, including breadcrumb hosts. -->
+  <Style Selector="Border.AppToolbar">
+    <Setter Property="MinHeight" Value="{DynamicResource AppToolbarMinHeight}" />
+    <Setter Property="Padding" Value="{DynamicResource AppToolbarPadding}" />
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+    <Setter Property="CornerRadius" Value="{Binding Bounds.Height, RelativeSource={RelativeSource Self}, Converter={StaticResource HalfToolbarHeight}}" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+  </Style>
+  <Style Selector="Button.IconButton, ToggleButton.IconButton">
+    <Setter Property="Theme" Value="{StaticResource AppIconButtonTheme}" />
+    <Setter Property="Height" Value="{DynamicResource HitTargetStandard}" />
+    <Setter Property="Width" Value="{Binding Height, RelativeSource={RelativeSource Self}}" />
+    <Setter Property="MinWidth" Value="0" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    <Setter Property="CornerRadius" Value="{Binding Bounds.Height, RelativeSource={RelativeSource Self}, Converter={StaticResource HalfToolbarHeight}}" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="VerticalAlignment" Value="Center" />
+    <Setter Property="Cursor" Value="Hand" />
+    <Setter Property="RenderTransform" Value="none" />
+  </Style>
+  <Style Selector="Button.IconButton.Small, ToggleButton.IconButton.Small, Border.AppToolbar Button.IconButton, Border.AppToolbar ToggleButton.IconButton">
+    <Setter Property="Height" Value="{DynamicResource AppToolbarIconSize}" />
+  </Style>
+  <Style Selector="Button.IconButton.Active, ToggleButton.IconButton:checked">
+    <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
+  </Style>
+  <Style Selector="Button.IconButton:pressed, ToggleButton.IconButton:pressed">
+    <Setter Property="RenderTransform" Value="none" />
+  </Style>
+  <Style Selector="Button.ToolbarAction">
+    <Setter Property="Height" Value="{DynamicResource AppToolbarIconSize}" />
+    <Setter Property="MinHeight" Value="0" />
+    <Setter Property="CornerRadius" Value="{Binding Bounds.Height, RelativeSource={RelativeSource Self}, Converter={StaticResource HalfToolbarHeight}}" />
+  </Style>
+  <Style Selector="Button.ToolbarAction.Active /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ActionPrimarySubtleBrush}" />
+  </Style>
+</Styles>

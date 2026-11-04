@@ -48,10 +48,10 @@
               <Button Classes="Primary" Content="{DynamicResource Loc_75081B593D15}" IsEnabled="False" Margin="0,0,10,10" />
             </WrapPanel>
             <WrapPanel Orientation="Horizontal">
-              <Button Classes="Ghost IconButton" ToolTip.Tip="{DynamicResource Loc_49C266BAAAA7}" Margin="0,0,10,0">
+              <Button Classes="Ghost IconButton" ToolTip.Tip="{DynamicResource Loc_49C266BAAAA7}" Margin="0,0,10,0" AutomationProperties.Name="{DynamicResource Loc_49C266BAAAA7}">
                 <controls:DaisyIcon Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}" />
               </Button>
-              <Button Classes="Subtle IconButton" ToolTip.Tip="{DynamicResource Loc_74A883A037BC}" Margin="0,0,10,0">
+              <Button Classes="Subtle IconButton" ToolTip.Tip="{DynamicResource Loc_74A883A037BC}" Margin="0,0,10,0" AutomationProperties.Name="{DynamicResource Loc_74A883A037BC}">
                 <controls:DaisyIcon Icon="gear-six" Size="{DynamicResource IconSizeStandard}" />
               </Button>
               <ToggleButton Classes="Subtle" Content="{DynamicResource Loc_BCE74CE2D310}" />

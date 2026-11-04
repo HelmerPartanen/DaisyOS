@@ -7674,4 +7674,24 @@ Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
     <comment>Source: Displays must not overlap. Use Mirror displays to show the same content.
 Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
   </data>
+  <data name="Loc_374CDB9D435A" xml:space="preserve">
+    <value>More formatting</value>
+    <comment>Source: More formatting
+Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comment>
+  </data>
+  <data name="Loc_119EF3FA607E" xml:space="preserve">
+    <value>Font family</value>
+    <comment>Source: Font family
+Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comment>
+  </data>
+  <data name="Loc_6D784D95C638" xml:space="preserve">
+    <value>Font size</value>
+    <comment>Source: Font size
+Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comment>
+  </data>
+  <data name="Loc_D05AD818D51D" xml:space="preserve">
+    <value>Font weight</value>
+    <comment>Source: Font weight
+Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comment>
+  </data>
 </root>

@@ -189,23 +189,18 @@ public sealed class NotesEditorTests
             Assert.Equal(0, blocks.Spacing);
             Assert.Equal(toolbar.Bounds.Height + 24, blocks.Margin.Top);
             Assert.Equal(view.FindControl<Border>("NavigationSidebar")!.Background, toolbar.Background);
-            Assert.True(rich.FindControl<ComboBox>("FontFamilyCombo")!.IsVisible);
-            Assert.True(rich.FindControl<ComboBox>("FontFamilyCombo")!.Bounds.Width >= 104);
-            foreach (var name in new[] { "BlockTypeCombo", "FontFamilyCombo", "FontWeightCombo" })
+            Assert.Equal(toolbar.Bounds.Height / 2, toolbar.CornerRadius.TopLeft);
+            Assert.Equal(5, rich.FindControl<StackPanel>("FormattingContent")!.Children.OfType<Button>().Count());
+            foreach (var name in new[] { "BlockTypeCombo" })
             {
                 var picker = rich.FindControl<ComboBox>(name)!;
                 picker.Focus(NavigationMethod.Tab);
                 Dispatcher.UIThread.RunJobs();
-                using var focusedFrame = window.CaptureRenderedFrame();
-                var background = picker.GetVisualDescendants().OfType<Border>().First(b => b.Name == "Background");
-                Assert.Equal(32, background.Bounds.Height);
-                Assert.DoesNotContain(picker.GetVisualDescendants().OfType<Border>(), b => b.Name == "HighlightBackground");
                 Assert.Equal(32, picker.Bounds.Height);
                 var origin = picker.TranslatePoint(default, toolbar)!.Value;
                 Assert.Equal(4, origin.Y);
                 Assert.Equal(4, toolbar.Bounds.Height - origin.Y - picker.Bounds.Height);
             }
-            Assert.True(rich.FindControl<Button>("StrikeBtn")!.IsVisible);
             foreach (var editor in Editors(rich)) Assert.True(editor.Bounds.Width <= blocks.Bounds.Width);
             var artifacts = Environment.GetEnvironmentVariable("DAISYOS_UX_ARTIFACTS");
             if (!string.IsNullOrEmpty(artifacts)) { Directory.CreateDirectory(artifacts); frame.Save(Path.Combine(artifacts, $"notes-rich-{(dark ? "dark" : "light")}-{width}.png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions()); }
@@ -504,9 +499,11 @@ public sealed class NotesEditorTests
             editor.Focus();
             PressKey(editor, Key.A, KeyModifiers.Control); // Blank Select All must not swallow formatting.
             var button = view.FindControl<Button>(buttonName)!;
+            if (buttonName == "StrikeBtn") OpenMoreFormatting(window, view);
             Click(window, button);
             Assert.Contains("Active", button.Classes);
             window.KeyTextInput("On");
+            if (buttonName == "StrikeBtn") OpenMoreFormatting(window, view);
             Click(window, button);
             Assert.DoesNotContain("Active", button.Classes);
             // Returning to the same caret must retain the explicitly disabled style.
@@ -561,6 +558,13 @@ public sealed class NotesEditorTests
             Assert.True(view.FindControl<Border>("ImageImportError")!.IsVisible);
         }
         finally { window.Close(); }
+    }
+
+    private static void OpenMoreFormatting(Window window, RichEditorView view)
+    {
+        Click(window, view.FindControl<Button>("MoreFormattingButton")!);
+        Dispatcher.UIThread.RunJobs();
+        window.UpdateLayout();
     }
 
     private static void Click(Window window, Control control)

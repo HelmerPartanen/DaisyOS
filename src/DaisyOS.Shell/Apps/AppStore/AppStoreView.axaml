@@ -232,9 +232,9 @@
             <Button x:Name="CloseScreenshotButton" Grid.Column="2" Classes="Subtle" Click="OnCloseScreenshotClicked" Content="{DynamicResource Loc_7D9EB7ACB13E}" />
           </Grid>
           <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="{DynamicResource Space4}">
-            <Button x:Name="PreviousScreenshotButton" Classes="Subtle" Click="OnPreviousScreenshotClicked" VerticalAlignment="Center" AutomationProperties.Name="{DynamicResource Loc_AF9BE11778E9}" ToolTip.Tip="{DynamicResource Loc_AF9BE11778E9}"><controls:DaisyIcon Icon="arrow-left" Size="{DynamicResource IconSizeStandard}" /></Button>
+            <Button x:Name="PreviousScreenshotButton" Classes="Subtle IconButton" Click="OnPreviousScreenshotClicked" VerticalAlignment="Center" AutomationProperties.Name="{DynamicResource Loc_AF9BE11778E9}" ToolTip.Tip="{DynamicResource Loc_AF9BE11778E9}"><controls:DaisyIcon Icon="arrow-left" Size="{DynamicResource IconSizeStandard}" /></Button>
             <Border x:Name="ScreenshotImageFrame" Grid.Column="1" CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True"><controls:AsyncImage x:Name="ScreenshotPreview" DecodeWidth="1600" Stretch="Uniform" /></Border>
-            <Button x:Name="NextScreenshotButton" Grid.Column="2" Classes="Subtle" Click="OnNextScreenshotClicked" VerticalAlignment="Center" AutomationProperties.Name="{DynamicResource Loc_FD250FD6F59C}" ToolTip.Tip="{DynamicResource Loc_FD250FD6F59C}"><controls:DaisyIcon Icon="arrow-right" Size="{DynamicResource IconSizeStandard}" /></Button>
+            <Button x:Name="NextScreenshotButton" Grid.Column="2" Classes="Subtle IconButton" Click="OnNextScreenshotClicked" VerticalAlignment="Center" AutomationProperties.Name="{DynamicResource Loc_FD250FD6F59C}" ToolTip.Tip="{DynamicResource Loc_FD250FD6F59C}"><controls:DaisyIcon Icon="arrow-right" Size="{DynamicResource IconSizeStandard}" /></Button>
           </Grid>
         </Grid>
       </Grid>

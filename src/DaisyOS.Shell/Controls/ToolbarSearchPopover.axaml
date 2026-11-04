@@ -12,8 +12,7 @@
     </Style>
   </UserControl.Styles>
   <Grid>
-    <Button x:Name="OpenButton" Classes="ShellButton" Width="32" Height="{DynamicResource ControlHeightStandard}"
-            CornerRadius="{DynamicResource RadiusControlInner}" ToolTip.Tip="{DynamicResource Loc_86326F17936B}" AutomationProperties.Name="{DynamicResource Loc_86326F17936B}">
+    <Button x:Name="OpenButton" Classes="ShellButton IconButton" Height="32" ToolTip.Tip="{DynamicResource Loc_86326F17936B}" AutomationProperties.Name="{DynamicResource Loc_86326F17936B}">
       <controls:DaisyIcon Icon="magnifying-glass" Size="{DynamicResource IconSizeStandard}" />
     </Button>
 
@@ -61,8 +60,7 @@
                     </Style>
                   </TextBox.Styles>
                 </TextBox>
-                <Button x:Name="ClearButton" Grid.Column="2" Classes="ShellButton"
-                        Width="24" Height="24" Padding="0" CornerRadius="{DynamicResource RadiusControlInner}"
+                <Button x:Name="ClearButton" Grid.Column="2" Classes="ShellButton IconButton" Height="24"
                         IsVisible="False" ToolTip.Tip="{DynamicResource Loc_3B7EA51793E9}" AutomationProperties.Name="{DynamicResource Loc_3B7EA51793E9}">
                   <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeSmall}" />
                 </Button>

@@ -13,34 +13,6 @@
         </Animation>
       </Style.Animations>
     </Style>
-    <Style Selector="Button.ToolbarPill">
-      <Setter Property="Focusable" Value="True" />
-      <Setter Property="MinWidth" Value="{DynamicResource ControlHeightCompact}" />
-      <Setter Property="Height" Value="{DynamicResource ControlHeightCompact}" />
-      <Setter Property="Width" Value="{DynamicResource ControlHeightCompact}" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
-      <Setter Property="VerticalContentAlignment" Value="Center" />
-    </Style>
-    <!-- Apply interaction colour to the template surface only. Styling both the
-         Button and presenter caused two competing hover transitions to flash. -->
-    <Style Selector="Button.ToolbarPill /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="Transitions"><Transitions /></Setter>
-    </Style>
-    <Style Selector="Button.ToolbarPill:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
-    </Style>
-    <Style Selector="Button.ToolbarPill.Active /template/ ContentPresenter#PART_ContentPresenter,
-                     Button.ToolbarPill.Active:pointerover /template/ ContentPresenter#PART_ContentPresenter">
-      <Setter Property="Background" Value="{DynamicResource ActionPrimarySubtleBrush}" />
-    </Style>
-    <Style Selector="Button.ToolbarPill.Active">
-      <Setter Property="Foreground" Value="{DynamicResource ActionPrimaryBrush}" />
-    </Style>
   </UserControl.Styles>
 
   <Grid>
@@ -49,15 +21,13 @@
       <StackPanel x:Name="BlocksContainer"
                   Margin="24,64,24,24" Spacing="0" HorizontalAlignment="Stretch" />
     </ScrollViewer>
-    <Border x:Name="FloatingToolbar" HorizontalAlignment="Center" VerticalAlignment="Top"
-            Height="{DynamicResource Space10}" Margin="12,12,12,0"
-            CornerRadius="{DynamicResource RoundedMD}" Background="{DynamicResource SurfaceRaisedSubtleBrush}"
-            Padding="{DynamicResource SpaceInset1}">
+    <Border Classes="AppToolbar" x:Name="FloatingToolbar" HorizontalAlignment="Center" VerticalAlignment="Top"
+            Margin="12,12,12,0">
       <!-- Fixed arrow gutters: showing a scroll arrow must never shift the
            formatting controls the user is aiming at. -->
       <Grid ColumnDefinitions="32,*,32">
-        <Button x:Name="ToolbarScrollLeft" Grid.Column="0" Classes="ToolbarPill" IsVisible="False"
-                ToolTip.Tip="{DynamicResource Loc_B8DBA9F25B0A}" Click="OnToolbarScrollLeft">
+        <Button x:Name="ToolbarScrollLeft" Grid.Column="0" Classes="IconButton Small" IsVisible="False"
+                ToolTip.Tip="{DynamicResource Loc_B8DBA9F25B0A}" Click="OnToolbarScrollLeft" AutomationProperties.Name="{DynamicResource Loc_B8DBA9F25B0A}">
           <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeStandard}" />
         </Button>
       <ScrollViewer Grid.Column="1" x:Name="FormattingScroll" HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled">
@@ -84,122 +54,127 @@
             <ComboBoxItem Content="{DynamicResource Loc_BFDBD4C5FD05}" Tag="Code" />
           </ComboBox>
 
-          <!-- Font Family Selector -->
-          <ComboBox x:Name="FontFamilyCombo"
-                    Classes="Flexible"
-                    Height="{DynamicResource ControlHeightCompact}"
-                    MinHeight="{DynamicResource ControlHeightCompact}"
-                    VerticalAlignment="Center"
-                    MinWidth="104"
-                    FontSize="{DynamicResource TypeSizeCaption}"
-                    CornerRadius="{DynamicResource RadiusControlInner}"
-                    SelectionChanged="OnFontFamilySelectionChanged">
-            <ComboBoxItem Content="{DynamicResource Loc_A6E7CD03E301}" Tag="SystemFont" />
-            <ComboBoxItem Content="{DynamicResource Loc_30A4A5BCA8F4}" />
-            <ComboBoxItem Content="{DynamicResource Loc_26C12A414C33}" />
-            <ComboBoxItem Content="{DynamicResource Loc_96C4069D9BB6}" />
-            <ComboBoxItem Content="{DynamicResource Loc_22C971284F12}" />
-            <ComboBoxItem Content="{DynamicResource Loc_1B5E747E5031}" />
-          </ComboBox>
-
-          <!-- Font Size Stepper -->
-          <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
-            <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_303A5795D937}" Click="OnDecreaseFontSizeClicked">
-              <controls:DaisyIcon Icon="minus" Size="{DynamicResource IconSizeSmall}" />
-            </Button>
-            <TextBlock x:Name="FontSizeLabel" Text="16" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" VerticalAlignment="Center" Width="20" TextAlignment="Center" />
-            <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_ECDF43CB43E8}" Click="OnIncreaseFontSizeClicked">
-              <controls:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeSmall}" />
-            </Button>
-          </StackPanel>
-
           <!-- Formatting Toggles -->
-          <Button x:Name="BoldBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_84787DE4AE3F}" Click="OnBoldClicked">
+          <Button x:Name="BoldBtn" Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_84787DE4AE3F}" Click="OnBoldClicked" AutomationProperties.Name="{DynamicResource Loc_84787DE4AE3F}">
             <controls:DaisyIcon Icon="text-bold" Size="{DynamicResource IconSizeStandard}" />
           </Button>
-          <Button x:Name="ItalicBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_CCC60DFF1674}" Click="OnItalicClicked">
+          <Button x:Name="ItalicBtn" Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_CCC60DFF1674}" Click="OnItalicClicked" AutomationProperties.Name="{DynamicResource Loc_CCC60DFF1674}">
             <controls:DaisyIcon Icon="text-italic" Size="{DynamicResource IconSizeStandard}" />
           </Button>
-          <Button x:Name="UnderlineBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_BBDF501C30F8}" Click="OnUnderlineClicked">
+          <Button x:Name="UnderlineBtn" Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_BBDF501C30F8}" Click="OnUnderlineClicked" AutomationProperties.Name="{DynamicResource Loc_BBDF501C30F8}">
             <controls:DaisyIcon Icon="text-underline" Size="{DynamicResource IconSizeStandard}" />
           </Button>
-          <Button x:Name="StrikeBtn" Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_9AABBCB2C18D}" Click="OnStrikeClicked">
-            <controls:DaisyIcon Icon="text-strikethrough" Size="{DynamicResource IconSizeStandard}" />
-          </Button>
 
-          <!-- Color & Highlight Pickers -->
-          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_2EA2323426F3}">
-            <Button.Flyout>
-              <Flyout>
-                <WrapPanel Width="180">
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ContentPrimaryBrush}" Click="OnColorSelected" Tag="" ToolTip.Tip="{DynamicResource Loc_E78B0327D832}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ActionPrimaryBrush}" Click="OnColorSelected" Tag="accent" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorGreenBrush}" Click="OnColorSelected" Tag="{StaticResource EditorGreenValue}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorYellowBrush}" Click="OnColorSelected" Tag="{StaticResource EditorYellowValue}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorRedBrush}" Click="OnColorSelected" Tag="{StaticResource EditorRedValue}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorPurpleBrush}" Click="OnColorSelected" Tag="{StaticResource EditorPurpleValue}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorSlateBrush}" Click="OnColorSelected" Tag="{StaticResource EditorSlateValue}" CornerRadius="4" />
-                </WrapPanel>
-              </Flyout>
-            </Button.Flyout>
-            <StackPanel Orientation="Horizontal" Spacing="4">
-              <controls:DaisyIcon Icon="palette" Size="{DynamicResource IconSizeSmall}" />
-            </StackPanel>
-          </Button>
 
-          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_48AAE41545CE}">
-            <Button.Flyout>
-              <Flyout>
-                <WrapPanel Width="180">
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource TransparentBrush}" Click="OnHighlightSelected" Tag="" CornerRadius="4" ToolTip.Tip="{DynamicResource Loc_DC937B598926}">
-                    <TextBlock Text="✕" FontSize="{DynamicResource TypeSizeCaption}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
-                  </Button>
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightYellowBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightYellowValue}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightBlueBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightBlueValue}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightGreenBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightGreenValue}" CornerRadius="4" />
-                  <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightRedBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightRedValue}" CornerRadius="4" />
-                </WrapPanel>
-              </Flyout>
-            </Button.Flyout>
-            <controls:DaisyIcon Icon="highlighter" Size="{DynamicResource IconSizeStandard}" />
-          </Button>
-
-          <!-- Insert Divider -->
-          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_8BBA8E6B7138}" Click="OnInsertDividerClicked">
-            <controls:DaisyIcon Icon="rows" Size="{DynamicResource IconSizeStandard}" />
-          </Button>
-
-          <!-- Clear Formatting -->
-          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_804CF3352C42}" Click="OnClearFormattingClicked">
-            <controls:DaisyIcon Icon="text-clear" Size="{DynamicResource IconSizeStandard}" />
-          </Button>
           <!-- Insert Image (App.PickImageFilesAsync) -->
-          <Button Classes="ToolbarPill" ToolTip.Tip="{DynamicResource Loc_B9B6EDDA8ADD}" Click="OnInsertImageClicked">
+          <Button Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_B9B6EDDA8ADD}" Click="OnInsertImageClicked" AutomationProperties.Name="{DynamicResource Loc_B9B6EDDA8ADD}">
             <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeStandard}" />
           </Button>
 
-          <!-- Font Weight Selector -->
-          <ComboBox x:Name="FontWeightCombo"
-                    Classes="Flexible"
-                    Height="{DynamicResource ControlHeightCompact}"
-                    MinHeight="{DynamicResource ControlHeightCompact}"
-                    VerticalAlignment="Center"
-                    MinWidth="104"
-                    FontSize="{DynamicResource TypeSizeCaption}"
-                    CornerRadius="{DynamicResource RadiusControlInner}"
-                    SelectionChanged="OnFontWeightSelectionChanged">
-            <ComboBoxItem Content="{DynamicResource Loc_B455784AB530}" Tag="400" />
-            <ComboBoxItem Content="{DynamicResource Loc_8E588CD18774}" Tag="500" />
-            <ComboBoxItem Content="{DynamicResource Loc_FFC5DE721473}" Tag="600" />
-            <ComboBoxItem Content="{DynamicResource Loc_94FEE62E68E2}" Tag="700" />
-            <ComboBoxItem Content="{DynamicResource Loc_F0A0B33594B2}" Tag="800" />
-          </ComboBox>
+          <Button x:Name="MoreFormattingButton" Classes="IconButton Small">
+            <Button.Flyout>
+              <Flyout Placement="Bottom">
+                <ScrollViewer MaxHeight="360" HorizontalScrollBarVisibility="Disabled">
+                  <StackPanel x:Name="AdvancedFormattingContent" Width="240" Spacing="8">
+                    <!-- Font Family Selector -->
+                    <TextBlock x:Name="FontFamilyHeading" />
+                    <ComboBox x:Name="FontFamilyCombo"
+                              Classes="Flexible"
+                              Height="{DynamicResource ControlHeightCompact}"
+                              MinHeight="{DynamicResource ControlHeightCompact}"
+                              VerticalAlignment="Center"
+                              MinWidth="104"
+                              FontSize="{DynamicResource TypeSizeCaption}"
+                              CornerRadius="{DynamicResource RadiusControlInner}"
+                              SelectionChanged="OnFontFamilySelectionChanged">
+                      <ComboBoxItem Content="{DynamicResource Loc_A6E7CD03E301}" Tag="SystemFont" />
+                      <ComboBoxItem Content="{DynamicResource Loc_30A4A5BCA8F4}" />
+                      <ComboBoxItem Content="{DynamicResource Loc_26C12A414C33}" />
+                      <ComboBoxItem Content="{DynamicResource Loc_96C4069D9BB6}" />
+                      <ComboBoxItem Content="{DynamicResource Loc_22C971284F12}" />
+                      <ComboBoxItem Content="{DynamicResource Loc_1B5E747E5031}" />
+                    </ComboBox>
+
+                    <!-- Font Size Stepper -->
+                    <TextBlock x:Name="FontSizeHeading" />
+                    <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
+                      <Button Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_303A5795D937}" Click="OnDecreaseFontSizeClicked" AutomationProperties.Name="{DynamicResource Loc_303A5795D937}">
+                        <controls:DaisyIcon Icon="minus" Size="{DynamicResource IconSizeSmall}" />
+                      </Button>
+                      <TextBlock x:Name="FontSizeLabel" Text="16" FontSize="{DynamicResource TypeSizeCaption}" FontWeight="SemiBold" VerticalAlignment="Center" Width="20" TextAlignment="Center" />
+                      <Button Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_ECDF43CB43E8}" Click="OnIncreaseFontSizeClicked" AutomationProperties.Name="{DynamicResource Loc_ECDF43CB43E8}">
+                        <controls:DaisyIcon Icon="plus" Size="{DynamicResource IconSizeSmall}" />
+                      </Button>
+                    </StackPanel>
+
+                    <Button x:Name="StrikeBtn" Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_9AABBCB2C18D}" Click="OnStrikeClicked" AutomationProperties.Name="{DynamicResource Loc_9AABBCB2C18D}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="text-strikethrough" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_9AABBCB2C18D}" /></StackPanel>
+                    </Button>          <!-- Color & Highlight Pickers -->
+                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_2EA2323426F3}" AutomationProperties.Name="{DynamicResource Loc_2EA2323426F3}">
+                      <Button.Flyout>
+                        <Flyout>
+                          <WrapPanel Width="180">
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ContentPrimaryBrush}" Click="OnColorSelected" Tag="" ToolTip.Tip="{DynamicResource Loc_E78B0327D832}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource ActionPrimaryBrush}" Click="OnColorSelected" Tag="accent" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorGreenBrush}" Click="OnColorSelected" Tag="{StaticResource EditorGreenValue}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorYellowBrush}" Click="OnColorSelected" Tag="{StaticResource EditorYellowValue}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorRedBrush}" Click="OnColorSelected" Tag="{StaticResource EditorRedValue}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorPurpleBrush}" Click="OnColorSelected" Tag="{StaticResource EditorPurpleValue}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorSlateBrush}" Click="OnColorSelected" Tag="{StaticResource EditorSlateValue}" CornerRadius="4" />
+                          </WrapPanel>
+                        </Flyout>
+                      </Button.Flyout><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="palette" Size="{DynamicResource IconSizeSmall}" /><TextBlock Text="{DynamicResource Loc_2EA2323426F3}" /></StackPanel></Button>
+
+                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_48AAE41545CE}" AutomationProperties.Name="{DynamicResource Loc_48AAE41545CE}">
+                      <Button.Flyout>
+                        <Flyout>
+                          <WrapPanel Width="180">
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource TransparentBrush}" Click="OnHighlightSelected" Tag="" CornerRadius="4" ToolTip.Tip="{DynamicResource Loc_DC937B598926}">
+                              <TextBlock Text="✕" FontSize="{DynamicResource TypeSizeCaption}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="{DynamicResource ContentSecondaryBrush}" />
+                            </Button>
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightYellowBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightYellowValue}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightBlueBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightBlueValue}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightGreenBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightGreenValue}" CornerRadius="4" />
+                            <Button Focusable="True" Width="32" Height="{DynamicResource ControlHeightCompact}" Margin="2" Background="{DynamicResource EditorHighlightRedBrush}" Click="OnHighlightSelected" Tag="{StaticResource EditorHighlightRedValue}" CornerRadius="4" />
+                          </WrapPanel>
+                        </Flyout>
+                      </Button.Flyout><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="highlighter" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_48AAE41545CE}" /></StackPanel></Button>
+
+                    <!-- Insert Divider -->
+                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_8BBA8E6B7138}" Click="OnInsertDividerClicked" AutomationProperties.Name="{DynamicResource Loc_8BBA8E6B7138}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="rows" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_8BBA8E6B7138}" /></StackPanel>
+                    </Button>
+
+                    <!-- Clear Formatting -->
+                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_804CF3352C42}" Click="OnClearFormattingClicked" AutomationProperties.Name="{DynamicResource Loc_804CF3352C42}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="text-clear" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_804CF3352C42}" /></StackPanel>
+                    </Button>
+                    <!-- Font Weight Selector -->
+                    <TextBlock x:Name="FontWeightHeading" />
+                    <ComboBox x:Name="FontWeightCombo"
+                              Classes="Flexible"
+                              Height="{DynamicResource ControlHeightCompact}"
+                              MinHeight="{DynamicResource ControlHeightCompact}"
+                              VerticalAlignment="Center"
+                              MinWidth="104"
+                              FontSize="{DynamicResource TypeSizeCaption}"
+                              CornerRadius="{DynamicResource RadiusControlInner}"
+                              SelectionChanged="OnFontWeightSelectionChanged">
+                      <ComboBoxItem Content="{DynamicResource Loc_B455784AB530}" Tag="400" />
+                      <ComboBoxItem Content="{DynamicResource Loc_8E588CD18774}" Tag="500" />
+                      <ComboBoxItem Content="{DynamicResource Loc_FFC5DE721473}" Tag="600" />
+                      <ComboBoxItem Content="{DynamicResource Loc_94FEE62E68E2}" Tag="700" />
+                      <ComboBoxItem Content="{DynamicResource Loc_F0A0B33594B2}" Tag="800" />
+                    </ComboBox>
+                  </StackPanel>
+                </ScrollViewer>
+              </Flyout>
+            </Button.Flyout>
+            <controls:DaisyIcon Icon="dots-three" Size="{DynamicResource IconSizeStandard}" />
+          </Button>
 
 
         </StackPanel>
       </ScrollViewer>
-        <Button x:Name="ToolbarScrollRight" Grid.Column="2" Classes="ToolbarPill" IsVisible="False"
-                ToolTip.Tip="{DynamicResource Loc_E58F65E309FD}" Click="OnToolbarScrollRight">
+        <Button x:Name="ToolbarScrollRight" Grid.Column="2" Classes="IconButton Small" IsVisible="False"
+                ToolTip.Tip="{DynamicResource Loc_E58F65E309FD}" Click="OnToolbarScrollRight" AutomationProperties.Name="{DynamicResource Loc_E58F65E309FD}">
           <controls:DaisyIcon Icon="caret-right" Size="{DynamicResource IconSizeStandard}" />
         </Button>
       </Grid>

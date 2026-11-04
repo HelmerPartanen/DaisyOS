@@ -77,8 +77,12 @@
     </ScrollViewer>
     <TextBlock Grid.Row="4" x:Name="ComposeError" IsVisible="False" TextWrapping="Wrap" Foreground="{DynamicResource StatusDangerBrush}" FontSize="{DynamicResource TypeSizeBodySmall}" Margin="0,8,0,0" />
     <Grid Grid.Row="5" ColumnDefinitions="Auto,Auto,*,Auto" ColumnSpacing="{DynamicResource Space2}" Margin="0,12,0,0">
+      <Border Classes="AppToolbar" Grid.ColumnSpan="2">
+        <StackPanel Orientation="Horizontal" Spacing="4">
       <Button x:Name="SendButton" Content="Send" Classes="Primary Small" Click="SendClicked" ToolTip.Tip="Send (Ctrl+Enter)" />
-      <Button Grid.Column="1" x:Name="AttachButton" Classes="IconButton Subtle" Click="AttachClicked" ToolTip.Tip="Attach files" AutomationProperties.Name="Attach files"><c:DaisyIcon Icon="paperclip" Size="{DynamicResource IconSizeMedium}" /></Button>
+      <Button x:Name="AttachButton" Classes="IconButton Subtle" Click="AttachClicked" ToolTip.Tip="Attach files" AutomationProperties.Name="Attach files"><c:DaisyIcon Icon="paperclip" Size="{DynamicResource IconSizeMedium}" /></Button>
+        </StackPanel>
+      </Border>
       <TextBlock Grid.Column="2" x:Name="DraftStatus" Classes="MailCaption" VerticalAlignment="Center" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" />
       <Button Grid.Column="3" x:Name="DiscardButton" Classes="IconButton Subtle" Click="DiscardClicked" ToolTip.Tip="Discard draft" AutomationProperties.Name="Discard draft"><c:DaisyIcon Icon="trash" Size="{DynamicResource IconSizeMedium}" /></Button>
     </Grid>

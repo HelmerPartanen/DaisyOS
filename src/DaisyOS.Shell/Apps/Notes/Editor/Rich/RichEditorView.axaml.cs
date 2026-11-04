@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using Avalonia;
+using Avalonia.Automation;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Input.Platform;
@@ -41,6 +42,14 @@ public partial class RichEditorView : UserControl
     public RichEditorView()
     {
         InitializeComponent();
+        Loc.Bind(MoreFormattingButton, ToolTip.TipProperty, "More formatting");
+        Loc.Bind(MoreFormattingButton, AutomationProperties.NameProperty, "More formatting");
+        Loc.Bind(FontFamilyHeading, TextBlock.TextProperty, "Font family");
+        Loc.Bind(FontFamilyCombo, AutomationProperties.NameProperty, "Font family");
+        Loc.Bind(FontSizeHeading, TextBlock.TextProperty, "Font size");
+        Loc.Bind(FontWeightHeading, TextBlock.TextProperty, "Font weight");
+        Loc.Bind(FontWeightCombo, AutomationProperties.NameProperty, "Font weight");
+        ((Avalonia.Controls.Primitives.PopupFlyoutBase)MoreFormattingButton.Flyout!).Popup.ShouldUseOverlayLayer = true;
         AddHandler(KeyDownEvent, OnHistoryKeyDown, RoutingStrategies.Tunnel);
         AddHandler(TextInputEvent, OnDocumentTextInput, RoutingStrategies.Tunnel);
         AddHandler(PointerPressedEvent, (_, e) =>
@@ -60,6 +69,7 @@ public partial class RichEditorView : UserControl
 
     public void LoadPackage(NotePackage package)
     {
+        MoreFormattingButton.Flyout?.Hide();
         BlocksContainer.Classes.Remove("DocumentEntering");
         _package = package;
         _history.Clear();
@@ -439,14 +449,14 @@ public partial class RichEditorView : UserControl
     {
         _currentFontSize = Math.Min(96, _currentFontSize + 2);
         FontSizeLabel.Text = _currentFontSize.ToString();
-        ApplyFormatting(s => s with { FontSize = _currentFontSize });
+        ApplyFormatting(s => s with { FontSize = _currentFontSize }, keepFormattingMenuOpen: true);
     }
 
     public void OnDecreaseFontSizeClicked(object? sender, RoutedEventArgs e)
     {
         _currentFontSize = Math.Max(8, _currentFontSize - 2);
         FontSizeLabel.Text = _currentFontSize.ToString();
-        ApplyFormatting(s => s with { FontSize = _currentFontSize });
+        ApplyFormatting(s => s with { FontSize = _currentFontSize }, keepFormattingMenuOpen: true);
     }
 
     public void OnFontFamilySelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -517,6 +527,7 @@ public partial class RichEditorView : UserControl
 
     public void OnInsertDividerClicked(object? sender, RoutedEventArgs e)
     {
+        MoreFormattingButton.Flyout?.Hide();
         var index = _activeEditor != null ? _package.Document.Blocks.IndexOf(_activeEditor.Block) + 1 : _package.Document.Blocks.Count;
         _package.Document.Blocks.Insert(index, new NoteBlock { Kind = BlockKind.Divider });
         _package.Document.Blocks.Insert(index + 1, NoteBlock.Paragraph());
@@ -527,6 +538,7 @@ public partial class RichEditorView : UserControl
 
     public async void OnInsertImageClicked(object? sender, RoutedEventArgs e)
     {
+        MoreFormattingButton.Flyout?.Hide();
         if (TopLevel.GetTopLevel(this) is not Window owner) return;
         var package = _package;
         var anchor = _activeEditor?.Block;
@@ -721,8 +733,9 @@ public partial class RichEditorView : UserControl
     private IEnumerable<RichTextBlockEditor> TextEditors() => BlocksContainer.Children
         .Select(FindEditorIn).OfType<RichTextBlockEditor>();
 
-    private void ApplyFormatting(Func<RunStyle, RunStyle> update)
+    private void ApplyFormatting(Func<RunStyle, RunStyle> update, bool keepFormattingMenuOpen = false)
     {
+        if (!keepFormattingMenuOpen) MoreFormattingButton.Flyout?.Hide();
         var active = _activeEditor;
         if (_allSelected && TextEditors().Any(editor => editor.HasSelection))
         {
@@ -737,7 +750,7 @@ public partial class RichEditorView : UserControl
             active?.ApplyStyleToSelection(update);
         }
         _activeEditor = active;
-        active?.Focus();
+        if (!keepFormattingMenuOpen || MoreFormattingButton.Flyout?.IsOpen != true) active?.Focus();
     }
 
     private void ClearDocumentSelection()

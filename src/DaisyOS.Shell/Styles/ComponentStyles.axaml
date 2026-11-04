@@ -315,16 +315,6 @@
     <Setter Property="Background" Value="{DynamicResource ActionDangerPressedBrush}" />
   </Style>
 
-  <Style Selector="Button.IconButton, ToggleButton.IconButton">
-    <Setter Property="Width" Value="{DynamicResource HitTargetStandard}" />
-    <Setter Property="MinWidth" Value="{DynamicResource HitTargetStandard}" />
-    <Setter Property="Padding" Value="{DynamicResource SpaceInsetNone}" />
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}" />
-  </Style>
-  <Style Selector="Button.Small.IconButton, ToggleButton.Small.IconButton">
-    <Setter Property="CornerRadius" Value="{DynamicResource RadiusButtonSmall}" />
-  </Style>
-
   <Style Selector="Button:disabled, ToggleButton:disabled">
     <Setter Property="Opacity" Value="0.42" />
     <Setter Property="Cursor" Value="Arrow" />
@@ -479,4 +469,5 @@
     <Setter Property="TextBlock.LineHeight" Value="{DynamicResource TypeLineCaption}" />
     <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
   </Style>
+  <StyleInclude Source="avares://DaisyOS.Shell/Styles/AppToolbarStyles.axaml" />
 </Styles>

@@ -42,7 +42,7 @@
     </Border>
     <Grid x:Name="MainPaneLayout" Grid.Column="1" RowDefinitions="Auto,Auto,*,Auto">
       <controls:AppWindowTitleBar x:Name="AppTitleBar"/>
-      <Border Grid.Row="1" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,0,0,1" Padding="24,12">
+      <Border Classes="AppToolbar" Grid.Row="1" Margin="24,12" HorizontalAlignment="Left">
         <WrapPanel x:Name="ActionToolbar" ItemSpacing="8" LineSpacing="8"/>
       </Border>
       <ScrollViewer x:Name="DetailsScroll" Grid.Row="2" HorizontalScrollBarVisibility="Disabled">
