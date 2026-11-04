@@ -50,6 +50,7 @@ public:
     QColor disabledForeground() const;
     QColor buttonBackground(KDecoration3::DecorationButtonType type, bool hovered, bool pressed) const;
     qreal captionGlyphSize() const;
+    QPainterPath titleBarClip(qreal inset = 0.0) const;
     void paintCaptionButtonBackground(QPainter *painter,
                                       KDecoration3::DecorationButtonType type,
                                       const QRectF &bounds,
@@ -91,5 +92,7 @@ private:
     int m_titleFontPixels = 13;
     QString m_titleFontFamily = QStringLiteral("Inter");
     DaisyFrameMetrics m_frameMetrics;
+    qreal m_activeCornerRadius = 16.0;
+    qreal m_inactiveCornerRadius = 16.0;
     qreal m_visibleCaptionButtonsWidth = 0.0;
 };

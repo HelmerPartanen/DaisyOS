@@ -54,4 +54,5 @@ winetricks
 
 # Mail credential storage
 libsecret
+libnotify
 gnome-keyring

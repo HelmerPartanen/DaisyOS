@@ -22,6 +22,17 @@ QRectF DaisyFramePainter::inset(const QRectF &rect, qreal amount)
     return rect.marginsRemoved(QMarginsF(amount, amount, amount, amount));
 }
 
+QPainterPath DaisyFramePainter::titleBarClip(const QRectF &frame, qreal titleHeight, qreal radius)
+{
+    QPainterPath result;
+    if (frame.isEmpty() || titleHeight <= 0) return result;
+    radius = std::clamp(radius, 0.0, std::min(frame.width(), frame.height()) / 2.0);
+    result.addRoundedRect(frame, radius, radius);
+    QPainterPath title;
+    title.addRect(QRectF(frame.topLeft(), QSizeF(frame.width(), std::min(titleHeight, frame.height()))));
+    return result.intersected(title);
+}
+
 void DaisyFramePainter::paint(QPainter *painter,
                               const QRectF &rect,
                               const DaisyFrameMetrics &metrics,

@@ -8,6 +8,7 @@
 #include <memory>
 
 class QPainter;
+class QPainterPath;
 
 namespace KDecoration3
 {
@@ -36,6 +37,7 @@ class DaisyFramePainter
 {
 public:
     static QRectF inset(const QRectF &rect, qreal amount);
+    static QPainterPath titleBarClip(const QRectF &frame, qreal titleHeight, qreal radius);
     static void paint(QPainter *painter,
                       const QRectF &rect,
                       const DaisyFrameMetrics &metrics,

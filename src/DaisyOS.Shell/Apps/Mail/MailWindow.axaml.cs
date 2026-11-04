@@ -18,7 +18,7 @@ public partial class MailWindow : Window
     private readonly MailStorage _storage = new();
     private readonly MailService _service;
     private readonly SystemAppWindowChrome _chrome;
-    private readonly DispatcherTimer _refresh = new() { Interval = TimeSpan.FromMinutes(1) };
+    private readonly DispatcherTimer _refresh = new() { Interval = TimeSpan.FromSeconds(45) };
     private readonly CancellationTokenSource _lifetime = new();
     private CancellationTokenSource? _operation;
     private List<MailAccount> _accounts = [];
@@ -127,9 +127,12 @@ public partial class MailWindow : Window
         // A cancelled request releases its connection before the next account starts.
         while (_busy && !_lifetime.IsCancellationRequested) await Task.Delay(25);
         if (Account != a || _lifetime.IsCancellationRequested) return;
+        var cachedFolders = _storage.Read("folders-" + a.Id, MailJsonContext.Default.ListMailFolder, []);
+        if (cachedFolders.Count > 0) { Folders.ItemsSource = cachedFolders; Folders.SelectedIndex = 0; }
         List<MailFolder>? folders = null;
         await RunAsync("Connecting to " + a.Email + "…", async ct => { folders = await _service.FoldersAsync(a, ct); });
         if (Account != a) return;
+        if (folders is not null && cachedFolders.Count > 0 && folders.Select(x => x.Path).SequenceEqual(cachedFolders.Select(x => x.Path))) return;
         Folders.ItemsSource = folders ?? _storage.Read("folders-" + a.Id, MailJsonContext.Default.ListMailFolder, [new MailFolder("Inbox", "INBOX")]); Folders.SelectedIndex = 0;
     }
     private async void FolderChanged(object? sender, SelectionChangedEventArgs e)
@@ -149,11 +152,14 @@ public partial class MailWindow : Window
     {
         if (Account is not { } a || Folder is not { } f) return;
         var gen = _generation; var query = _serverQuery;
+        var knownUid = _items.Count == 0 ? 0u : _items.Max(i => i.Uid);
         await RunAsync("Fetching messages…", async ct =>
         {
             var items = await _service.FetchAsync(a, f.Path, _limit, ct, query);
             if (gen != _generation || query != _serverQuery) return;
             _items = items; ApplyFilter();
+            if (knownUid > 0 && query is null && f.Path == (Folders.Items.OfType<MailFolder>().FirstOrDefault()?.Path ?? "INBOX") && !IsActive)
+                MailNotifier.Notify(a, items.Where(i => i.Uid > knownUid && i.Unread).ToList());
             Status.Text = $"{_items.Count} messages · {_items.Count(i => i.Unread)} unread · Updated {DateTime.Now:HH:mm}";
         });
     }

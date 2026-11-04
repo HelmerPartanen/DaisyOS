@@ -91,6 +91,33 @@ public sealed class MailService : IAsyncDisposable
             }
             if (folder.Count == 0) { Storage.Write(key, new List<MailItem>(), MailJsonContext.Default.ListMailItem); return []; }
             var fields = MessageSummaryItems.UniqueId | MessageSummaryItems.Envelope | MessageSummaryItems.Flags | MessageSummaryItems.PreviewText;
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                // Incremental sync: download only new headers and refresh flags, instead of re-fetching everything.
+                var cached = Storage.Read(key, MailJsonContext.Default.ListMailItem, []);
+                if (cached.Count > 0 && cached.All(c => c.UidValidity == folder.UidValidity))
+                {
+                    var known = cached.Select(c => new UniqueId(c.Uid)).ToList();
+                    var flagInfo = (await folder.FetchAsync(known, MessageSummaryItems.UniqueId | MessageSummaryItems.Flags, ct)).ToDictionary(x => x.UniqueId.Id);
+                    var maxUid = cached.Max(c => c.Uid);
+                    var fresh = await folder.FetchAsync(new UniqueIdRange(new UniqueId(maxUid + 1), UniqueId.MaxValue), fields, ct);
+                    var merged = new List<MailItem>();
+                    foreach (var s in fresh.Where(x => x.UniqueId.Id > maxUid)) merged.Add(ToItem(s, folder.UidValidity));
+                    foreach (var c in cached)
+                    {
+                        if (!flagInfo.TryGetValue(c.Uid, out var f)) continue; // deleted or moved on the server
+                        var flags = f.Flags.GetValueOrDefault();
+                        c.Unread = !flags.HasFlag(MessageFlags.Seen); c.Starred = flags.HasFlag(MessageFlags.Flagged);
+                        merged.Add(c);
+                    }
+                    merged = merged.OrderByDescending(m => m.Uid).Take(limit).ToList();
+                    if (merged.Count >= Math.Min(limit, folder.Count))
+                    {
+                        Storage.Write(key, merged, MailJsonContext.Default.ListMailItem);
+                        return merged;
+                    }
+                }
+            }
             IList<IMessageSummary> summaries;
             if (!string.IsNullOrWhiteSpace(query))
             {
@@ -99,15 +126,16 @@ public sealed class MailService : IAsyncDisposable
                 summaries = ids.Count == 0 ? new List<IMessageSummary>() : await folder.FetchAsync(ids, fields, ct);
             }
             else summaries = await folder.FetchAsync(Math.Max(0, folder.Count - limit), -1, fields, ct);
-            var items = summaries.Reverse().Select(s => new MailItem { Uid = s.UniqueId.Id, UidValidity = folder.UidValidity, Subject = s.Envelope?.Subject ?? "(No subject)",
-                Sender = s.Envelope?.From?.Mailboxes.FirstOrDefault()?.Name ?? s.Envelope?.From?.ToString() ?? "Unknown sender", Address = s.Envelope?.From?.Mailboxes.FirstOrDefault()?.Address ?? "",
-                Date = s.Envelope?.Date ?? DateTimeOffset.MinValue, Unread = !s.Flags.GetValueOrDefault().HasFlag(MessageFlags.Seen),
-                Starred = s.Flags.GetValueOrDefault().HasFlag(MessageFlags.Flagged), Preview = s.PreviewText ?? "" }).ToList();
+            var items = summaries.Reverse().Select(s => ToItem(s, folder.UidValidity)).ToList();
             if (string.IsNullOrWhiteSpace(query)) Storage.Write(key, items, MailJsonContext.Default.ListMailItem);
             return items;
         }
         finally { _gate.Release(); }
     }
+    private static MailItem ToItem(IMessageSummary s, uint validity) => new() { Uid = s.UniqueId.Id, UidValidity = validity, Subject = s.Envelope?.Subject ?? "(No subject)",
+        Sender = s.Envelope?.From?.Mailboxes.FirstOrDefault()?.Name ?? s.Envelope?.From?.ToString() ?? "Unknown sender", Address = s.Envelope?.From?.Mailboxes.FirstOrDefault()?.Address ?? "",
+        Date = s.Envelope?.Date ?? DateTimeOffset.MinValue, Unread = !s.Flags.GetValueOrDefault().HasFlag(MessageFlags.Seen),
+        Starred = s.Flags.GetValueOrDefault().HasFlag(MessageFlags.Flagged), Preview = s.PreviewText ?? "" };
     public async Task<MimeMessage> MessageAsync(MailAccount a, string path, uint uid, CancellationToken ct, uint expectedValidity = 0)
     {
         await _gate.WaitAsync(ct);

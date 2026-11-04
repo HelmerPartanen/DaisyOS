@@ -86,6 +86,8 @@ void DaisyCaptionButton::paint(QPainter *painter, const QRectF &repaintRegion)
     }
 
     const QRectF bounds = geometry();
+    painter->save();
+    painter->setClipPath(m_daisyDecoration->titleBarClip(), Qt::IntersectClip);
     const auto background = m_daisyDecoration->buttonBackground(type(), isHovered(), isPressed());
     if (background.alpha() > 0) {
         m_daisyDecoration->paintCaptionButtonBackground(painter, type(), bounds, background);
@@ -97,6 +99,7 @@ void DaisyCaptionButton::paint(QPainter *painter, const QRectF &repaintRegion)
             : m_daisyDecoration->foreground())
         : m_daisyDecoration->disabledForeground();
     drawGlyph(painter, type(), bounds, glyph, isChecked(), m_daisyDecoration->captionGlyphSize());
+    painter->restore();
 }
 
 DaisyDecoration::DaisyDecoration(QObject *parent, const QVariantList &args)
@@ -117,6 +120,7 @@ bool DaisyDecoration::init()
 
     connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &DaisyDecoration::updateLayout);
     connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, &DaisyDecoration::updateLayout);
+    connect(window(), &KDecoration3::DecoratedWindow::adjacentScreenEdgesChanged, this, &DaisyDecoration::updateLayout);
     connect(window(), &KDecoration3::DecoratedWindow::activeChanged, this, &DaisyDecoration::updateActiveState);
     connect(window(), &KDecoration3::DecoratedWindow::captionChanged, this, qOverload<>(&DaisyDecoration::update));
     connect(window(), &KDecoration3::DecoratedWindow::nextScaleChanged, this, &DaisyDecoration::updateLayout);
@@ -177,6 +181,11 @@ void DaisyDecoration::reloadTheme()
     m_titleFontFamily = group.readEntry("TitleFontFamily", QStringLiteral("Inter"));
     m_titleFontPixels = std::clamp(group.readEntry("TitleFontPixels", 13), 10, 24);
     m_frameMetrics.cornerRadius = std::clamp(group.readEntry("CornerRadius", 12.0), 0.0, 24.0);
+    const auto kwinConfig = KSharedConfig::openConfig(QStringLiteral("kwinrc"));
+    kwinConfig->reparseConfiguration();
+    const KConfigGroup corners(kwinConfig, QStringLiteral("Round-Corners"));
+    m_activeCornerRadius = std::clamp(corners.readEntry("Size", m_frameMetrics.cornerRadius), 0.0, 256.0);
+    m_inactiveCornerRadius = std::clamp(corners.readEntry("InactiveCornerRadius", m_activeCornerRadius), 0.0, 256.0);
 
     updateLayout();
     update();
@@ -339,6 +348,15 @@ qreal DaisyDecoration::captionGlyphSize() const
     return m_captionGlyphSize;
 }
 
+QPainterPath DaisyDecoration::titleBarClip(qreal inset) const
+{
+    const bool square = window()->isMaximizedHorizontally() || window()->isMaximizedVertically()
+        || window()->adjacentScreenEdges() != Qt::Edges();
+    const qreal radius = square ? 0.0 : (window()->isActive() ? m_activeCornerRadius : m_inactiveCornerRadius);
+    return DaisyFramePainter::titleBarClip(DaisyFramePainter::inset(QRectF(rect()), inset),
+        std::max<qreal>(0.0, m_titleBarHeight - inset), std::max<qreal>(0.0, radius - inset));
+}
+
 void DaisyDecoration::paintCaptionButtonBackground(QPainter *painter,
                                                     KDecoration3::DecorationButtonType type,
                                                     const QRectF &bounds,
@@ -352,25 +370,8 @@ void DaisyDecoration::paintCaptionButtonBackground(QPainter *painter,
         return;
     }
 
-    const qreal innerRadius = std::max<qreal>(0.0, m_frameMetrics.cornerRadius - m_frameMetrics.thickness);
-    const QRectF titleClip(m_frameMetrics.thickness,
-                           m_frameMetrics.thickness,
-                           std::max<qreal>(0.0, size().width() - (m_frameMetrics.thickness * 2.0)),
-                           std::max<qreal>(0.0, m_titleBarHeight - m_frameMetrics.thickness));
-    if (titleClip.isEmpty()) {
-        return;
-    }
-
-    QPainterPath clip;
-    clip.moveTo(titleClip.left(), titleClip.bottom());
-    clip.lineTo(titleClip.right(), titleClip.bottom());
-    clip.lineTo(titleClip.right(), titleClip.top() + innerRadius);
-    clip.quadTo(titleClip.right(), titleClip.top(), titleClip.right() - innerRadius, titleClip.top());
-    clip.lineTo(titleClip.left(), titleClip.top());
-    clip.closeSubpath();
-
     painter->save();
-    painter->setClipPath(clip);
+    painter->setClipPath(titleBarClip(m_frameMetrics.thickness), Qt::IntersectClip);
     painter->fillRect(bounds, background);
     painter->restore();
 }
@@ -388,14 +389,12 @@ void DaisyDecoration::paint(QPainter *painter, const QRectF &repaintRegion)
     painter->setPen(Qt::NoPen);
 
     const QRectF titleRect(0, 0, size().width(), m_titleBarHeight);
-    painter->setClipRect(titleRect);
+    painter->setClipPath(titleBarClip(), Qt::IntersectClip);
     painter->setBrush(titleSurface());
     painter->drawRect(titleRect);
-    painter->setClipping(false);
 
     // Keep every title-bar primitive inside the actual decoration width. This
     // matters for legacy/tool windows that KWin allows to be very narrow.
-    painter->setClipRect(QRectF(0.0, 0.0, std::max<qreal>(0.0, size().width()), m_titleBarHeight));
     const qreal captionRight = std::max<qreal>(0.0, size().width() - m_visibleCaptionButtonsWidth - 10.0);
 
     // Center the caption against the full window, not merely inside the
@@ -423,7 +422,6 @@ void DaisyDecoration::paint(QPainter *painter, const QRectF &repaintRegion)
     if (m_captionButtons) {
         m_captionButtons->paint(painter, rect());
     }
-    painter->setClipping(false);
     painter->restore();
 }
 

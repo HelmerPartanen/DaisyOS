@@ -172,3 +172,11 @@ keyring, receiving, sending, or saving). Unexpected failures also write
 step and exception type. No credentials, email addresses or provider responses
 are recorded. On Google’s permission screen, grant the requested mail access;
 identity-only consent cannot connect a mailbox.
+
+## Background notifications
+
+Mail can check for new messages while closed. Install the per-user timer with
+`scripts/install-mail-background.sh` (remove it with `--remove`). It runs
+`daisyos-mail --background-check` every 3 minutes, which syncs each inbox
+incrementally and sends a desktop notification for new unread mail. `daisyos-mail`
+must be on `PATH`, and the keyring must be unlocked.
