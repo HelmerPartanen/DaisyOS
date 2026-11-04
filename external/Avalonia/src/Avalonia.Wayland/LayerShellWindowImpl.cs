@@ -13,7 +13,7 @@ namespace Avalonia.Wayland;
 /// <summary>Window implementation for a configured zwlr_layer_shell_v1 surface.</summary>
 internal sealed class LayerShellWindowImpl : WindowImpl
 {
-    private readonly LayerShellOptions _options;
+    private LayerShellOptions _options;
     private bool _inputPassthrough;
     private ZwlrLayerSurfaceV1.KeyboardInteractivity _keyboardInteractivity;
     private WaylandSurfaceCreateResult<WLayerSurfaceProxy>? _layerHandle;
@@ -62,6 +62,12 @@ internal sealed class LayerShellWindowImpl : WindowImpl
     {
         _keyboardInteractivity = interactivity;
         _layerSurfaceProxy?.SetKeyboardInteractivity(interactivity);
+    }
+
+    internal void SetOutputName(string outputName)
+    {
+        _options = _options with { OutputName = outputName };
+        _layerSurfaceProxy?.SetOutputName(outputName);
     }
 
     internal void SetExclusiveZone(int exclusiveZone)

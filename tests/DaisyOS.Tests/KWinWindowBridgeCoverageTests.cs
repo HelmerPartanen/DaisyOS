@@ -6,6 +6,24 @@ namespace DaisyOS.Tests;
 public sealed class KWinWindowBridgeCoverageTests
 {
     [Fact]
+    public async Task MovingFullscreenBetweenOutputsUpdatesCoverageWithoutChangingGlobalFlags()
+    {
+        await using var bridge = new KWinWindowBridge();
+        var updates = 0;
+        bridge.WindowsChanged += (_, _) => updates++;
+        var snapshot = """
+        {"windows":[],"desktopOccluded":true,"fullscreenActive":true,
+         "outputCoverage":[{"outputName":"HDMI-A-1","covered":true,"fullscreen":true}]}
+        """;
+        bridge.ApplySerializedSnapshot(snapshot);
+        Assert.False(bridge.IsFullscreenOnOutput("eDP-1"));
+        bridge.ApplySerializedSnapshot(snapshot.Replace("HDMI-A-1", "eDP-1"));
+        Assert.True(bridge.IsFullscreenOnOutput("eDP-1"));
+        Assert.False(bridge.IsCoveredOnOutput("HDMI-A-1"));
+        Assert.Equal(2, updates);
+    }
+
+    [Fact]
     public async Task CoverageUpdatesEvenWhenTaskbarWindowListIsUnchanged()
     {
         await using var bridge = new KWinWindowBridge();

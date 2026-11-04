@@ -26,6 +26,9 @@ public sealed class KWinWindowBridge : ICompositorWindowService
     public IReadOnlyCollection<CompositorWindowRecord> Windows => Volatile.Read(ref _publishedWindows);
     public bool IsAvailable { get; private set; }
     public bool IsDesktopOccluded { get; private set; }
+    private IReadOnlyList<OutputCoverage>? _outputCoverage;
+    internal bool IsFullscreenOnOutput(string? outputName) => OutputCoverage.IsCovered(outputName, Windows, _outputCoverage, HasFullscreenWindow, true);
+    internal bool IsCoveredOnOutput(string? outputName) => OutputCoverage.IsCovered(outputName, Windows, _outputCoverage, IsDesktopOccluded, false);
     public bool HasFullscreenWindow { get; private set; }
     public event EventHandler? WindowsChanged;
     /// <summary>Raised by KWin-owned global shortcuts for a DaisyOS capture action.</summary>
@@ -136,7 +139,10 @@ public sealed class KWinWindowBridge : ICompositorWindowService
         if (KWinWindowSnapshotParser.TryParse(payload, out var snapshot, out var occluded, out var fullscreen))
         {
             Volatile.Write(ref _captureSnapshot, payload!);
-            var coverageChanged = IsDesktopOccluded != occluded || HasFullscreenWindow != fullscreen;
+            var outputCoverage = OutputCoverage.Parse(payload);
+            var coverageChanged = IsDesktopOccluded != occluded || HasFullscreenWindow != fullscreen ||
+                !(_outputCoverage ?? []).SequenceEqual(outputCoverage ?? []);
+            _outputCoverage = outputCoverage;
             IsDesktopOccluded = occluded;
             HasFullscreenWindow = fullscreen;
             ApplySnapshot(snapshot, coverageChanged);

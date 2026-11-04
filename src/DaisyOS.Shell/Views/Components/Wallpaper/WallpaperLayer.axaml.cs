@@ -89,6 +89,7 @@ public partial class WallpaperLayer : UserControl
 
     internal bool SuppressFailureFeedback { get; set; }
 
+    internal string? OutputName { get; set; }
     internal bool FollowDesktopWallpaper { get; set; } = true;
 
     internal void SetMediaVideo(string path)
@@ -336,8 +337,10 @@ public partial class WallpaperLayer : UserControl
 
         bool isVisible = IsEffectivelyVisible;
         bool isWindowMinimized = _attachedWindow?.WindowState == WindowState.Minimized;
-        bool isOwnedWindowOccludingDesktop = !IgnoreDesktopOcclusion && (_app?.WindowTracker.HasAnyOpenWindow ?? false);
-        bool isExternalAppOccludingDesktop = !IgnoreDesktopOcclusion && ((_app?.HasAnyOpenExternalWindow ?? false) || (_app?.IsDesktopOccludedByExternalApp ?? false));
+        bool isOwnedWindowOccludingDesktop = OutputName is null && !IgnoreDesktopOcclusion && (_app?.WindowTracker.HasAnyOpenWindow ?? false);
+        bool isExternalAppOccludingDesktop = !IgnoreDesktopOcclusion && (OutputName is { } output
+            ? _app?.IsOutputDesktopOccluded(output) == true
+            : (_app?.HasAnyOpenExternalWindow ?? false) || (_app?.IsDesktopOccludedByExternalApp ?? false));
         bool isLockScreenOccludingDesktop = !IgnoreDesktopOcclusion && (_app?.IsLockScreenActive ?? false);
 
         bool shouldRender = isVisible

@@ -317,6 +317,8 @@ var covering = source.filter(function (w) {{
         && !w.minimized && (w.onAllDesktops || !w.desktops || w.desktops.length === 0 || w.desktops.some(function (d) {{ return d.id === workspace.currentDesktop.id; }}));
 }});
 callDBus(bridgeService, bridgePath, bridgeInterface, 'PublishSnapshot', JSON.stringify({{ windows: windows,
+    outputCoverage: covering.map(function (w) {{ return {{ outputName: w.output ? String(w.output.name) : '',
+        covered: !!w.fullScreen || Number(w.maximizeMode) === 3, fullscreen: !!w.fullScreen }}; }}),
     desktopOccluded: covering.some(function (w) {{ return w.fullScreen || Number(w.maximizeMode) === 3; }}),
     fullscreenActive: covering.some(function (w) {{ return !!w.fullScreen; }}) }}), function () {{}});
 ";

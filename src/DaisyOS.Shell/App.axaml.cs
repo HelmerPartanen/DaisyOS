@@ -329,6 +329,7 @@ public partial class App : Application
             gamingAutomation.Start();
             desktop.Exit += (_, _) =>
             {
+                StopNativeDisplayTracking();
                 _continuitySession?.Dispose();
                 traceLifetime.Cancel();
                 gamingAutomation.Dispose();
@@ -772,6 +773,7 @@ public partial class App : Application
             StartCompositorBridge(shell);
         };
         wallpaperSurface.Show();
+        StartNativeDisplayTracking(wallpaperSurface);
         desktopSurface.Show();
         panelSurface.Show();
         bottomEdgeSensorSurface.Show();
@@ -1329,16 +1331,18 @@ public partial class App : Application
 
     /// <summary>True when the focused compositor window is a fullscreen client.</summary>
     private bool IsFullscreenAppActive() =>
-        _compositorWindows?.Windows.Any(window => window.IsActive && window.IsFullScreen) == true;
+        _compositorWindows?.Windows.Any(window => window.IsActive && window.IsFullScreen &&
+            (_nativePrimaryOutputName is null || window.OutputName is null || window.OutputName == _nativePrimaryOutputName)) == true;
 
     /// <summary>
-    /// True when any fullscreen client is present. Backdrop selection uses this
+    /// True when a fullscreen client is present on the shell output. Backdrop selection uses this
     /// rather than the active window: opening the launcher moves keyboard focus
     /// away from the game, but the game still deserves the opaque material.
     /// </summary>
-    private bool HasFullscreenWindow() =>
-        _compositorWindows?.Windows.Any(window =>
-            window.IsFullScreen && !window.IsMinimized && window.IsOnCurrentWorkspace) == true;
+    private bool HasFullscreenWindow() => _compositorWindows is KWinWindowBridge bridge
+        ? bridge.IsFullscreenOnOutput(_nativePrimaryOutputName)
+        : _compositorWindows?.Windows.Any(window => window.IsFullScreen && !window.IsMinimized && window.IsOnCurrentWorkspace &&
+            (_nativePrimaryOutputName is null || window.OutputName is null || window.OutputName == _nativePrimaryOutputName)) == true;
 
     /// <summary>
     /// Hides the launcher. <paramref name="restoreFocus"/> is false when the
@@ -1604,9 +1608,10 @@ public partial class App : Application
                 foreach (var window in kwinBridge.Windows.Where(window => window.IsActive)) _recentPrefetch.Observe(window);
                 shell.Taskbar.SetCompositorWindows(kwinBridge.Windows);
                 CompositorWindowsChanged?.Invoke(this, EventArgs.Empty);
+                DesktopOcclusionChanged?.Invoke(this, EventArgs.Empty);
                 ReportUnresponsiveApplications(kwinBridge.Windows);
-                var isFullscreen = kwinBridge.HasFullscreenWindow;
-                var desktopOccluded = kwinBridge.IsDesktopOccluded;
+                var isFullscreen = kwinBridge.IsFullscreenOnOutput(_nativePrimaryOutputName);
+                var desktopOccluded = kwinBridge.IsCoveredOnOutput(_nativePrimaryOutputName);
                 SetExternalDesktopOcclusion(desktopOccluded);
                 var hasOpenExternal = kwinBridge.Windows.Any(window => !window.IsMinimized && window.IsOnCurrentWorkspace);
                 if (_hasAnyOpenExternalWindow != hasOpenExternal)
@@ -2984,7 +2989,7 @@ public partial class App : Application
         if (IsNativeShellSession && _layerShellBackend is not null)
         {
             var primaryScreen = _nativeShellSurfaces.FirstOrDefault()?.Screens?.Primary;
-            var primaryOutput = primaryScreen?.DisplayName;
+            var primaryOutput = _nativePrimaryOutputName ?? primaryScreen?.DisplayName;
             var primaryOptions = LayerShellSurfaceOptions.LockScreen(primaryOutput, isSecondary: false);
             _lockScreenWindow = LockScreenWindow.CreateNative(_layerShellBackend, primaryOptions, wallpaperSource, initialWallpaper: initialWallpaper);
         }
@@ -3015,6 +3020,7 @@ public partial class App : Application
                 try { win.Close(); } catch (Exception ex) { global::System.Diagnostics.Debug.WriteLine($"Failed to close lock screen: {ex.Message}"); }
             }
             _secondaryLockScreens.Clear();
+            _secondaryLockScreenOutputNames.Clear();
             _powerIdleService?.ResumeLockMonitoring();
         };
         _powerIdleService?.PauseLockMonitoring();
@@ -3029,10 +3035,12 @@ public partial class App : Application
             var screens = _lockScreenWindow.Screens.All;
             if (screens.Count > 1)
             {
-                var primary = _lockScreenWindow.Screens.Primary;
+                var primary = screens.FirstOrDefault(screen => screen.DisplayName == _nativePrimaryOutputName)
+                    ?? _lockScreenWindow.Screens.ScreenFromWindow(_lockScreenWindow)
+                    ?? _lockScreenWindow.Screens.Primary ?? screens.FirstOrDefault();
                 foreach (var scr in screens)
                 {
-                    if (primary is not null && scr.Bounds == primary.Bounds) continue;
+                    if (ReferenceEquals(scr, primary)) continue;
 
                     LockScreenWindow secondary;
                     if (IsNativeShellSession && _layerShellBackend is not null)
@@ -3050,6 +3058,7 @@ public partial class App : Application
                         };
                     }
                     _secondaryLockScreens.Add(secondary);
+                    if (scr.DisplayName is { } outputName) _secondaryLockScreenOutputNames[secondary] = outputName;
                     secondary.Show();
                 }
             }

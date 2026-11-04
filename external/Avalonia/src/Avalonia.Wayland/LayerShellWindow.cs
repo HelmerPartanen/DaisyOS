@@ -57,6 +57,14 @@ public static class LayerShellWindow
         return false;
     }
 
+    /// <summary>Moves a persistent window to an output, preserving its content and input policy.</summary>
+    public static void SetOutputName(Window window, string outputName)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        ArgumentException.ThrowIfNullOrWhiteSpace(outputName);
+        if (window.PlatformImpl is LayerShellWindowImpl layerWindow) layerWindow.SetOutputName(outputName);
+    }
+
     /// <summary>
     /// Enables or disables pointer hit testing for a layer-shell surface
     /// without destroying its Wayland role. This is the safe visibility

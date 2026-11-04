@@ -12,7 +12,7 @@ public static class NativeAppWindowSizing
     public static void Apply(Window window)
     {
         ArgumentNullException.ThrowIfNull(window);
-        var screen = window.Screens.Primary;
+        var screen = window.Screens.ScreenFromWindow(window) ?? window.Screens.Primary ?? window.Screens.All.FirstOrDefault();
         if (screen is null) return;
 
         var scaling = Math.Max(1, screen.Scaling);

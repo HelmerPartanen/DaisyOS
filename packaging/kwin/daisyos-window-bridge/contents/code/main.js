@@ -235,7 +235,11 @@ function publishSnapshot() {
             && window.specialWindow !== true && window.popupWindow !== true
             && !window.minimized && isOnCurrentWorkspace(window);
     });
-    var snapshot = JSON.stringify({ windows: windows,
+    var outputCoverage = covering.map(function (window) {
+        return { outputName: window.output ? stringValue(window.output.name) : "",
+            covered: !!window.fullScreen || Number(window.maximizeMode) === 3, fullscreen: !!window.fullScreen };
+    });
+    var snapshot = JSON.stringify({ windows: windows, outputCoverage: outputCoverage,
         desktopOccluded: covering.some(function (window) { return window.fullScreen || Number(window.maximizeMode) === 3; }),
         fullscreenActive: covering.some(function (window) { return !!window.fullScreen; }) });
     if (snapshot === lastSnapshot) return;

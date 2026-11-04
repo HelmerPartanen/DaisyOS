@@ -14,7 +14,7 @@ namespace Avalonia.Wayland.Server.Persistent;
 /// <summary>Worker-side zwlr_layer_surface_v1 backed by Avalonia's normal render path.</summary>
 internal sealed class WLayerSurface : WSurface, ILayerSurface
 {
-    private readonly LayerShellOptions _options;
+    private LayerShellOptions _options;
     private readonly List<IDisposable> _nativeChildren = new();
 
     // Executed on the Wayland worker. Children must stop their render threads
@@ -137,6 +137,21 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
 
         _layerSurface.SetKeyboardInteractivity(interactivity);
         WlSurface.Commit();
+    }
+
+    public void SetOutputName(string outputName)
+    {
+        if (_options.OutputName == outputName) return;
+        var connection = _pendingConnection;
+        var globals = _pendingGlobals;
+        _options = _options with { OutputName = outputName };
+        // Output is immutable on a layer role. Replace only its native resources,
+        // retaining the Avalonia window, content and logical input state.
+        OnDisconnected();
+        _closedOutput = null;
+        if (connection is not null && globals is not null) OnConnected(connection, globals);
+        Worker.Compositor.Server.InvalidateAllCompositionTargets();
+        Worker.WakeupRenderLoop();
     }
 
     public void SetExclusiveZone(int exclusiveZone)

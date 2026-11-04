@@ -192,7 +192,7 @@ public sealed class LinuxDisplaySettingsTests
             CommandResult.Failed("kscreen-doctor not found"),
             CommandResult.Success(SampleXrandrOutput));
 
-        var display = await DisplaySettingsHelper.DetectPrimaryDisplayAsync(runner);
+        var display = await DisplaySettingsHelper.DetectPrimaryDisplayAsync(runner, waylandSession: false);
 
         Assert.NotNull(display);
         Assert.Equal("DP-1", display.Name);

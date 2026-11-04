@@ -31,7 +31,14 @@ public sealed record DetectedDisplay(
     int Priority = 1,
     bool HdrEnabled = false,
     bool WideColorGamutEnabled = false,
-    bool HdrAvailable = false);
+    bool HdrAvailable = false,
+    int Rotation = 1,
+    int OutputId = 0,
+    string? MirrorSource = null)
+{
+    public int LogicalWidth => (int)Math.Ceiling((Rotation is 2 or 4 or 6 or 8 ? Height : Width) / Scale);
+    public int LogicalHeight => (int)Math.Ceiling((Rotation is 2 or 4 or 6 or 8 ? Width : Height) / Scale);
+}
 
 public static partial class DisplaySettingsHelper
 {
@@ -51,13 +58,13 @@ public static partial class DisplaySettingsHelper
         "800 × 600"
     ];
 
-    public static async Task<DetectedDisplay?> DetectPrimaryDisplayAsync(ICommandRunner? runner = null, CancellationToken cancellationToken = default)
+    public static async Task<DetectedDisplay?> DetectPrimaryDisplayAsync(ICommandRunner? runner = null, CancellationToken cancellationToken = default, bool? waylandSession = null)
     {
-        var all = await DetectAllDisplaysAsync(runner, cancellationToken);
+        var all = await DetectAllDisplaysAsync(runner, cancellationToken, waylandSession);
         return all.FirstOrDefault(d => d.IsPrimary) ?? all.FirstOrDefault();
     }
 
-    public static async Task<IReadOnlyList<DetectedDisplay>> DetectAllDisplaysAsync(ICommandRunner? runner = null, CancellationToken cancellationToken = default)
+    public static async Task<IReadOnlyList<DetectedDisplay>> DetectAllDisplaysAsync(ICommandRunner? runner = null, CancellationToken cancellationToken = default, bool? waylandSession = null)
     {
         runner ??= new SafeCommandRunner();
 
@@ -74,10 +81,17 @@ public static partial class DisplaySettingsHelper
                 }
             }
         }
+        catch (OperationCanceledException) { throw; }
         catch
         {
             // Fall back to xrandr
         }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        // XWayland describes virtual compatibility outputs, not the real monitors.
+        if (waylandSession ?? (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")) ||
+            string.Equals(Environment.GetEnvironmentVariable("XDG_SESSION_TYPE"), "wayland", StringComparison.OrdinalIgnoreCase)))
+            return Array.Empty<DetectedDisplay>();
 
         // 2. Try xrandr (X11)
         try
@@ -92,6 +106,7 @@ public static partial class DisplaySettingsHelper
                 }
             }
         }
+        catch (OperationCanceledException) { throw; }
         catch
         {
             // Unavailable
@@ -103,7 +118,12 @@ public static partial class DisplaySettingsHelper
     public static async Task<bool> SetPrimaryDisplayAsync(string outputName, ICommandRunner? runner = null, CancellationToken cancellationToken = default)
     {
         runner ??= new SafeCommandRunner();
-        var result = await runner.RunAsync("kscreen-doctor", [$"output.{outputName}.priority.1"], TimeSpan.FromSeconds(3), cancellationToken);
+        var displays = await DetectAllDisplaysAsync(runner, cancellationToken);
+        var selected = displays.FirstOrDefault(d => d.Name == outputName);
+        if (selected is null) return false;
+        var ordered = new[] { selected }.Concat(displays.Where(d => d.Name != outputName).OrderBy(d => d.Priority)).ToArray();
+        var arguments = ordered.Select((d, index) => $"output.{d.Name}.priority.{index + 1}").ToArray();
+        var result = await runner.RunAsync("kscreen-doctor", arguments, TimeSpan.FromSeconds(3), cancellationToken);
         return result.Succeeded;
     }
 
@@ -113,6 +133,53 @@ public static partial class DisplaySettingsHelper
         var args = positions.Select(p => $"output.{p.OutputName}.position.{p.X},{p.Y}").ToList();
         var result = await runner.RunAsync("kscreen-doctor", args, TimeSpan.FromSeconds(3), cancellationToken);
         return result.Succeeded;
+    }
+
+    public static string ConfigurationKey(IReadOnlyList<DetectedDisplay> displays) => string.Join(";",
+        displays.OrderBy(d => d.Name, StringComparer.Ordinal).Select(d => FormattableString.Invariant(
+            $"{d.Name}:{d.Width}:{d.Height}:{d.Scale}:{d.RefreshRate}:{d.PositionX}:{d.PositionY}:{d.Priority}:{d.Rotation}:{d.HdrEnabled}:{d.WideColorGamutEnabled}:{d.MirrorSource}:" ) +
+            string.Join(",", d.Modes.Select(m => FormattableString.Invariant($"{m.Id}/{m.Width}/{m.Height}/{m.RefreshRate}")))));
+
+    public static IReadOnlyList<string> LayoutArguments(IReadOnlyList<DetectedDisplay> displays, bool mirror)
+    {
+        if (displays.Count < 2) return Array.Empty<string>();
+        var primary = displays.FirstOrDefault(d => d.IsPrimary) ?? displays[0];
+        var ordered = new[] { primary }.Concat(displays.Where(d => d.Name != primary.Name)).ToArray();
+        var arguments = new List<string>();
+        var x = 0;
+        foreach (var display in ordered)
+        {
+            arguments.Add($"output.{display.Name}.mirror.{(mirror && display.Name != primary.Name ? primary.Name : "none")}");
+            arguments.Add($"output.{display.Name}.position.{(mirror ? 0 : x)},0");
+            x += display.LogicalWidth;
+        }
+        return arguments;
+    }
+
+    public static IReadOnlyList<string> RestoreArguments(IReadOnlyList<DetectedDisplay> previous, IReadOnlyList<DetectedDisplay> connected)
+    {
+        var arguments = new List<string>();
+        foreach (var display in previous)
+        {
+            var current = connected.FirstOrDefault(d => d.Name == display.Name);
+            if (current is null) continue; // Never target a connector that was unplugged.
+            var mode = FindBestModeForResolution(current.Modes, display.Width, display.Height, display.RefreshRate);
+            arguments.Add(BuildKScreenModeArgument(display.Name, mode, display.Width, display.Height, display.RefreshRate));
+            arguments.Add($"output.{display.Name}.scale.{display.Scale.ToString(CultureInfo.InvariantCulture)}");
+            var source = connected.Any(d => d.Name == display.MirrorSource) ? display.MirrorSource : "none";
+            arguments.Add($"output.{display.Name}.mirror.{source}");
+            arguments.Add($"output.{display.Name}.position.{display.PositionX},{display.PositionY}");
+            arguments.Add($"output.{display.Name}.priority.{display.Priority}");
+        }
+        return arguments;
+    }
+
+    public static async Task<bool> RestoreConfigurationAsync(IReadOnlyList<DetectedDisplay> previous, ICommandRunner runner)
+    {
+        var connected = await DetectAllDisplaysAsync(runner);
+        if (connected.Count == 0) return false;
+        var arguments = RestoreArguments(previous, connected);
+        return arguments.Count == 0 || (await runner.RunAsync("kscreen-doctor", arguments, TimeSpan.FromSeconds(5))).Succeeded;
     }
 
     public static DetectedDisplay? ParseKScreenDoctorJson(string json)
@@ -141,8 +208,9 @@ public static partial class DisplaySettingsHelper
             var list = new List<DetectedDisplay>();
             foreach (var output in outputs.EnumerateArray())
             {
-                var connected = output.TryGetProperty("connected", out var c) && c.GetBoolean();
-                var enabled = output.TryGetProperty("enabled", out var e) && e.GetBoolean();
+                if (output.ValueKind != JsonValueKind.Object) continue;
+                var connected = output.TryGetProperty("connected", out var c) && c.ValueKind == JsonValueKind.True;
+                var enabled = output.TryGetProperty("enabled", out var e) && e.ValueKind == JsonValueKind.True;
                 if (!connected || !enabled) continue;
 
                 var parsed = ParseSingleKScreenOutput(output);
@@ -151,7 +219,13 @@ public static partial class DisplaySettingsHelper
                     list.Add(parsed);
                 }
             }
-            return list;
+            var primary = list.OrderBy(d => d.Priority > 0 ? d.Priority : int.MaxValue).FirstOrDefault();
+            return list.Select(d => d with
+            {
+                IsPrimary = ReferenceEquals(d, primary),
+                MirrorSource = int.TryParse(d.MirrorSource, out var sourceId)
+                    ? list.FirstOrDefault(source => source.OutputId == sourceId)?.Name : d.MirrorSource
+            }).ToArray();
         }
         catch
         {
@@ -165,6 +239,7 @@ public static partial class DisplaySettingsHelper
         {
             var name = target.TryGetProperty("name", out var n) ? n.GetString() ?? "Display" : "Display";
             var scale = target.TryGetProperty("scale", out var s) ? ScalarDouble(s, 1.0) : 1.0;
+            if (!double.IsFinite(scale) || scale <= 0) scale = 1;
             var priority = target.TryGetProperty("priority", out var p) ? ScalarInt(p, 1) : 1;
             var isPrimary = priority == 1;
 
@@ -271,7 +346,11 @@ public static partial class DisplaySettingsHelper
                 priority,
                 hdrEnabled,
                 wideColorGamutEnabled,
-                hdrAvailable);
+                hdrAvailable,
+                target.TryGetProperty("rotation", out var rotation) ? ScalarInt(rotation, 1) : 1,
+                target.TryGetProperty("id", out var outputId) ? ScalarInt(outputId) : 0,
+                target.TryGetProperty("replicationSource", out var source) && ScalarText(source) is { } sourceName && sourceName != "0"
+                    ? sourceName : null);
         }
         catch
         {

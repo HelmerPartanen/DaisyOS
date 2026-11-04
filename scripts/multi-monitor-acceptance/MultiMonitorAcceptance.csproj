@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <AssemblyName>DaisyOS.PerformanceBenchmark</AssemblyName>
+    <OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable>
+    <ShellOutput>$(MSBuildThisFileDirectory)../../src/DaisyOS.Shell/bin/$(Configuration)/net10.0</ShellOutput>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="$(ShellOutput)/*.dll" />
+    <None Include="$(ShellOutput)/runtimes/linux-x64/native/*" Link="%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

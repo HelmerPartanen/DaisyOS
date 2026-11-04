@@ -7454,4 +7454,224 @@ Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml</comment>
     <comment>Source: Choose an installation folder
 Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerWindow.axaml.cs</comment>
   </data>
+  <data name="Loc_C17566634936" xml:space="preserve">
+    <value>A classic dial with ticking hands.</value>
+    <comment>Source: A classic dial with ticking hands.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_9EAD17459C01" xml:space="preserve">
+    <value>A large frame for your favourite moments.</value>
+    <comment>Source: A large frame for your favourite moments.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_D56C8D573512" xml:space="preserve">
+    <value>A rotating selection of your photos.</value>
+    <comment>Source: A rotating selection of your photos.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_A5D032CDE530" xml:space="preserve">
+    <value>A smooth, continuously sweeping hand.</value>
+    <comment>Source: A smooth, continuously sweeping hand.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_B29E4B359A98" xml:space="preserve">
+    <value>A softly glowing dial for darker desktops.</value>
+    <comment>Source: A softly glowing dial for darker desktops.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_F4BCD0D570DE" xml:space="preserve">
+    <value>A wider frame for landscapes.</value>
+    <comment>Source: A wider frame for landscapes.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_82262AE75A30" xml:space="preserve">
+    <value>All Continuity features are enabled. Choose where the other screen is and move your pointer between screens.</value>
+    <comment>Source: All Continuity features are enabled. Choose where the other screen is and move your pointer between screens.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_9B3CB2913026" xml:space="preserve">
+    <value>Artwork with controls on hover.</value>
+    <comment>Source: Artwork with controls on hover.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_3038BE85F64E" xml:space="preserve">
+    <value>Artwork, track details and playback controls.</value>
+    <comment>Source: Artwork, track details and playback controls.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_B676DB0F000F" xml:space="preserve">
+    <value>Bold segment digits that read from across the room.</value>
+    <comment>Source: Bold segment digits that read from across the room.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_D9B45984FC20" xml:space="preserve">
+    <value>Clipboard is unavailable. Try again.</value>
+    <comment>Source: Clipboard is unavailable. Try again.
+Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_52E3D35762FC" xml:space="preserve">
+    <value>Complete pairing in the pop-up.</value>
+    <comment>Source: Complete pairing in the pop-up.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_AE406AF13F4E" xml:space="preserve">
+    <value>Copy text to see it here.</value>
+    <comment>Source: Copy text to see it here.
+Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_CC797260BD32" xml:space="preserve">
+    <value>Couldn’t copy this clip. Try again.</value>
+    <comment>Source: Couldn’t copy this clip. Try again.
+Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_B0C960F627FF" xml:space="preserve">
+    <value>Couldn’t pair devices</value>
+    <comment>Source: Couldn’t pair devices
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_C98B51D2E4EB" xml:space="preserve">
+    <value>Couldn’t start screen viewing. Make sure the other computer is awake and connected.</value>
+    <comment>Source: Couldn’t start screen viewing. Make sure the other computer is awake and connected.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_E5F7979E4D04" xml:space="preserve">
+    <value>Disconnect both computers. Pair again to use Continuity.</value>
+    <comment>Source: Disconnect both computers. Pair again to use Continuity.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_8E84F008A644" xml:space="preserve">
+    <value>Display mode</value>
+    <comment>Source: Display mode
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Displays.cs</comment>
+  </data>
+  <data name="Loc_F14961646C5E" xml:space="preserve">
+    <value>Drag displays to match their physical arrangement.</value>
+    <comment>Source: Drag displays to match their physical arrangement.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_4233A0584F94" xml:space="preserve">
+    <value>Enter the code shown on the other computer.</value>
+    <comment>Source: Enter the code shown on the other computer.
+Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
+  </data>
+  <data name="Loc_4B707E427EBF" xml:space="preserve">
+    <value>Enter this code on the other computer.</value>
+    <comment>Source: Enter this code on the other computer.
+Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
+  </data>
+  <data name="Loc_7DAD9BE5B0F2" xml:space="preserve">
+    <value>Extend displays</value>
+    <comment>Source: Extend displays
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Displays.cs</comment>
+  </data>
+  <data name="Loc_C0B8BC0E6C53" xml:space="preserve">
+    <value>Full artwork with progress and controls.</value>
+    <comment>Source: Full artwork with progress and controls.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_A004FE1365EC" xml:space="preserve">
+    <value>Horizontal position</value>
+    <comment>Source: Horizontal position
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_3A02069999BC" xml:space="preserve">
+    <value>Mirror displays</value>
+    <comment>Source: Mirror displays
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Displays.cs</comment>
+  </data>
+  <data name="Loc_57BB2F3229BA" xml:space="preserve">
+    <value>No clips yet</value>
+    <comment>Source: No clips yet
+Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_D67CBA41ED2A" xml:space="preserve">
+    <value>No matching clips</value>
+    <comment>Source: No matching clips
+Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_2072295EF6E2" xml:space="preserve">
+    <value>PAIR DEVICE</value>
+    <comment>Source: PAIR DEVICE
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_739C2B53D285" xml:space="preserve">
+    <value>PAIRING</value>
+    <comment>Source: PAIRING
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_DA914A2AFE3A" xml:space="preserve">
+    <value>Page {0} of {1}</value>
+    <comment>Source: Page {0} of {1}
+Used by: src/DaisyOS.Shell/Views/Components/Launcher/LauncherView.axaml.cs</comment>
+  </data>
+  <data name="Loc_C7B08A22D8AB" xml:space="preserve">
+    <value>Pair with {0}</value>
+    <comment>Source: Pair with {0}
+Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
+  </data>
+  <data name="Loc_5D7035F3C1D9" xml:space="preserve">
+    <value>Paired devices share clipboard, files, keyboard, mouse, screen and audio automatically.</value>
+    <comment>Source: Paired devices share clipboard, files, keyboard, mouse, screen and audio automatically.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_1A3CBAC51C14" xml:space="preserve">
+    <value>Paired. You’re ready to share.</value>
+    <comment>Source: Paired. You’re ready to share.
+Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
+  </data>
+  <data name="Loc_B90126C02967" xml:space="preserve">
+    <value>Pairing enables all Continuity features.</value>
+    <comment>Source: Pairing enables all Continuity features.
+Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
+  </data>
+  <data name="Loc_FF1CEE744146" xml:space="preserve">
+    <value>Pin</value>
+    <comment>Source: Pin
+Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_923C6FFB32B5" xml:space="preserve">
+    <value>Six-digit pairing code</value>
+    <comment>Source: Six-digit pairing code
+Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
+  </data>
+  <data name="Loc_DCF159062579" xml:space="preserve">
+    <value>Today beside the whole month.</value>
+    <comment>Source: Today beside the whole month.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_E7A18E499CD5" xml:space="preserve">
+    <value>Today’s date at a glance.</value>
+    <comment>Source: Today’s date at a glance.
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
+  </data>
+  <data name="Loc_06F0E210B27D" xml:space="preserve">
+    <value>Turn off</value>
+    <comment>Source: Turn off
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_5A1F096A0D8D" xml:space="preserve">
+    <value>Turn on</value>
+    <comment>Source: Turn on
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Continuity.cs</comment>
+  </data>
+  <data name="Loc_EE3C71613054" xml:space="preserve">
+    <value>Unpin</value>
+    <comment>Source: Unpin
+Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml.cs</comment>
+  </data>
+  <data name="Loc_40A3878F39F3" xml:space="preserve">
+    <value>Vertical position</value>
+    <comment>Source: Vertical position
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_F5E2D23B268F" xml:space="preserve">
+    <value>Waiting for the other computer…</value>
+    <comment>Source: Waiting for the other computer…
+Used by: src/DaisyOS.Shell/Views/Continuity/ContinuityPairingDialog.cs</comment>
+  </data>
+  <data name="Loc_D268A9B43A19" xml:space="preserve">
+    <value>Displays must not overlap. Use Mirror displays to show the same content.</value>
+    <comment>Source: Displays must not overlap. Use Mirror displays to show the same content.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
 </root>
