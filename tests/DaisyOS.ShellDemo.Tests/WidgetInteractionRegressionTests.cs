@@ -15,7 +15,7 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class WidgetInteractionRegressionTests
 {
     [AvaloniaFact]
-    public void RemoveButtonKeepsItsCircleOnHoverAndPress()
+    public void RemoveButtonUsesSubtleStyleAndRemainsClickable()
     {
         var item = new DaisyOS.Shell.ViewModels.DesktopItemViewModel(
             new DaisyOS.Core.Desktop.DesktopItemState("desktop.widget.test", "primary", 0, 0, 0))
@@ -33,10 +33,15 @@ public sealed class WidgetInteractionRegressionTests
             var button = view.FindControl<Button>("RemoveWidgetButton")!;
             window.MouseMove(view.TranslatePoint(new Point(40, 40), window)!.Value);
             Assert.True(button.IsHitTestVisible);
-            ClickAndCheckShape(window, button);
-            var surface = button.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "WidgetButtonSurface");
-            Assert.Equal(22, surface.Bounds.Width);
-            Assert.Equal(22, surface.Bounds.Height);
+            Assert.Contains("Subtle", button.Classes);
+            Assert.DoesNotContain(button.GetVisualDescendants().OfType<Border>(), b => b.Name == "WidgetButtonSurface");
+            var point = button.TranslatePoint(new Point(14, 14), window)!.Value;
+            window.MouseMove(point);
+            window.MouseDown(point, MouseButton.Left);
+            window.UpdateLayout();
+            Assert.Equal(28, button.Bounds.Width);
+            Assert.Equal(28, button.Bounds.Height);
+            window.MouseUp(point, MouseButton.Left);
             Assert.False(view.ClipToBounds);
         }
         finally { window.Close(); }
@@ -91,7 +96,7 @@ public sealed class WidgetInteractionRegressionTests
     }
 
     [AvaloniaFact]
-    public void GalleryArrowsKeepCircularGeometryDuringPressAndReversal()
+    public void GalleryPageDotsNavigateInBothDirections()
     {
         var library = new WidgetLibraryOverlay();
         library.Resources["MotionDurationEnter"] = TimeSpan.Zero;
@@ -101,32 +106,24 @@ public sealed class WidgetInteractionRegressionTests
         {
             library.Open();
             window.UpdateLayout();
-            var next = library.FindControl<Button>("NextVariantButton")!;
-            var back = library.FindControl<Button>("PreviousVariantButton")!;
+            var dots = library.FindControl<StackPanel>("PageDots")!;
+            void ClickDot(Border dot)
+            {
+                var point = dot.TranslatePoint(new Point(dot.Bounds.Width / 2, dot.Bounds.Height / 2), window)!.Value;
+                window.MouseMove(point);
+                window.MouseDown(point, MouseButton.Left);
+                window.MouseUp(point, MouseButton.Left);
+                window.UpdateLayout();
+            }
             for (var i = 0; i < 4; i++)
             {
-                ClickAndCheckShape(window, next);
+                ClickDot((Border)dots.Children[1]);
                 Assert.Equal(1, library.SelectedIndex);
-                ClickAndCheckShape(window, back);
+                ClickDot((Border)dots.Children[0]);
                 Assert.Equal(0, library.SelectedIndex);
             }
         }
         finally { window.Close(); }
     }
 
-    private static void ClickAndCheckShape(Window window, Button button)
-    {
-        var surface = button.GetVisualDescendants().OfType<Border>().Single(b => b.Name == "WidgetButtonSurface");
-        var bounds = surface.Bounds;
-        var corner = surface.CornerRadius;
-        var point = button.TranslatePoint(new Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
-        window.MouseMove(point);
-        window.MouseDown(point, MouseButton.Left);
-        window.UpdateLayout();
-        Assert.Equal(bounds, surface.Bounds);
-        Assert.Equal(corner, surface.CornerRadius);
-        Assert.True(button.RenderTransform is null || button.RenderTransform.Value.IsIdentity);
-        window.MouseUp(point, MouseButton.Left);
-        window.UpdateLayout();
-    }
 }

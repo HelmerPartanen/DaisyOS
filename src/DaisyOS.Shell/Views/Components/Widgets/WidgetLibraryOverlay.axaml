@@ -1,11 +1,4 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="DaisyOS.Shell.Views.Components.Widgets.WidgetLibraryOverlay" HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="False" Focusable="True" PointerPressed="OnBackdropPointerPressed">
-  <UserControl.Resources>
-    <ResourceDictionary>
-      <ResourceDictionary.MergedDictionaries>
-        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/WidgetChromeButtonTheme.axaml" />
-      </ResourceDictionary.MergedDictionaries>
-    </ResourceDictionary>
-  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="Border.WidgetLibraryFrame">
       <Setter Property="Background" Value="{DynamicResource ShellFrameOuterEdgeBrush}" />
@@ -76,35 +69,6 @@
       <Setter Property="FontWeight" Value="SemiBold" />
       <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
     </Style>
-    <Style Selector="Button.CarouselNav">
-      <Setter Property="Width" Value="40" />
-      <Setter Property="Height" Value="40" />
-      <Setter Property="MinHeight" Value="40" />
-      <Setter Property="Padding" Value="0" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="HorizontalContentAlignment" Value="Center" />
-      <Setter Property="VerticalContentAlignment" Value="Center" />
-      <Setter Property="VerticalAlignment" Value="Center" />
-      <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="ZIndex" Value="500" />
-      <Setter Property="Theme" Value="{StaticResource WidgetChromeButtonTheme}" />
-      <Setter Property="Transitions">
-        <Transitions>
-          <DoubleTransition Property="Opacity" Duration="{DynamicResource MotionDurationBase}" />
-        </Transitions>
-      </Setter>
-    </Style>
-    <Style Selector="Button.CarouselNav /template/ Border#WidgetButtonSurface">
-      <Setter Property="BoxShadow" Value="{DynamicResource ElevationFlyoutShadow}" />
-    </Style>
-    <Style Selector="Button.CarouselNav:disabled">
-      <Setter Property="Opacity" Value="0" />
-      <Setter Property="IsHitTestVisible" Value="False" />
-    </Style>
     <Style Selector="Border.PageDot">
       <Setter Property="Width" Value="7" />
       <Setter Property="Height" Value="7" />
@@ -140,25 +104,25 @@
               <StackPanel Grid.Row="1" Spacing="4" VerticalAlignment="Top">
                 <Button x:Name="ClockCategoryButton" Classes="CategoryButton Active" Click="OnClockCategoryClicked">
                   <Grid ColumnDefinitions="24,*">
-                    <controls:DaisyIcon Icon="clock" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource AccentOptionOrangeBrush}" HorizontalAlignment="Center" />
+                    <controls:DaisyIcon Icon="clock" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" />
                     <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_93FF9273DE4B}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>
                 <Button x:Name="CalendarCategoryButton" Classes="CategoryButton" Click="OnCalendarCategoryClicked">
                   <Grid ColumnDefinitions="24,*">
-                    <controls:DaisyIcon Icon="calendar" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource AccentOptionRedBrush}" HorizontalAlignment="Center" />
+                    <controls:DaisyIcon Icon="calendar" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" />
                     <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_D5D0A30B517E}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>
                 <Button x:Name="MediaCategoryButton" Classes="CategoryButton" Click="OnMediaCategoryClicked">
                   <Grid ColumnDefinitions="24,*">
-                    <controls:DaisyIcon Icon="music-note" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource AccentOptionPinkBrush}" HorizontalAlignment="Center" />
+                    <controls:DaisyIcon Icon="music-note" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" />
                     <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_D357175CFE89}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>
                 <Button x:Name="PhotosCategoryButton" Classes="CategoryButton" Click="OnPhotosCategoryClicked">
                   <Grid ColumnDefinitions="24,*">
-                    <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource FileLocationPicturesBrush}" HorizontalAlignment="Center" />
+                    <controls:DaisyIcon Icon="image" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Center" />
                     <TextBlock Grid.Column="1" Margin="10,0,0,0" Text="{DynamicResource Loc_5E3147AB51E0}" VerticalAlignment="Center" />
                   </Grid>
                 </Button>
@@ -181,12 +145,6 @@
               </StackPanel>
               <Grid Grid.Row="1" x:Name="CarouselViewport" ClipToBounds="True" Background="Transparent">
                 <Grid x:Name="CarouselTrack" HorizontalAlignment="Center" VerticalAlignment="Center" />
-                <Button x:Name="PreviousVariantButton" Classes="CarouselNav" HorizontalAlignment="Left" Margin="4,0,0,0" Click="OnPreviousVariantClicked" ToolTip.Tip="Previous size">
-                  <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                </Button>
-                <Button x:Name="NextVariantButton" Classes="CarouselNav" HorizontalAlignment="Right" Margin="0,0,4,0" Click="OnNextVariantClicked" ToolTip.Tip="Next size">
-                  <controls:DaisyIcon Icon="caret-right" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentPrimaryBrush}" />
-                </Button>
               </Grid>
               <StackPanel Grid.Row="2" x:Name="PageDots" Orientation="Horizontal" HorizontalAlignment="Center" Height="10" />
               <Grid Grid.Row="3" ColumnDefinitions="*,Auto,*">

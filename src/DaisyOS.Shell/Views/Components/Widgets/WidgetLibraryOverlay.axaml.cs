@@ -208,8 +208,6 @@ public partial class WidgetLibraryOverlay : UserControl
         this.FindControl<TextBlock>("VariantTitle")!.Text = variant.Title;
         this.FindControl<TextBlock>("VariantSizeText")!.Text = $"{variant.Columns} × {variant.Rows}";
         this.FindControl<TextBlock>("VariantDescription")!.Text = variant.Description;
-        this.FindControl<Button>("PreviousVariantButton")!.IsEnabled = _index > 0;
-        this.FindControl<Button>("NextVariantButton")!.IsEnabled = _index < _slides.Count - 1;
         var dots = this.FindControl<StackPanel>("PageDots")!;
         for (var i = 0; i < dots.Children.Count; i++) dots.Children[i].Classes.Set("Active", i == _index);
         if (animate && MotionEnabled && this.FindControl<Control>("VariantHeader") is { } header)
@@ -550,8 +548,6 @@ public partial class WidgetLibraryOverlay : UserControl
     private void OnCalendarCategoryClicked(object? sender, RoutedEventArgs e) => ShowCategory("Calendar", true);
     private void OnMediaCategoryClicked(object? sender, RoutedEventArgs e) => ShowCategory("Media", true);
     private void OnPhotosCategoryClicked(object? sender, RoutedEventArgs e) => ShowCategory("Photos", true);
-    private void OnPreviousVariantClicked(object? sender, RoutedEventArgs e) => GoTo(_index - 1);
-    private void OnNextVariantClicked(object? sender, RoutedEventArgs e) => GoTo(_index + 1);
     private void OnDoneClicked(object? sender, RoutedEventArgs e) => Dismiss();
     private void OnAddWidgetClicked(object? sender, RoutedEventArgs e) => AddCurrent();
 

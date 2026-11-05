@@ -231,105 +231,105 @@
           <StackPanel x:Name="NavigationItems" Spacing="{DynamicResource SidebarItemGap}">
           <Button x:Name="NavSystem" Classes="Large SettingsNavItem Active" Click="OnNavCategoryClicked" Tag="System">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="gear-six" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <controls:DaisyIcon Icon="gear-six" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_6725E7BBCD28}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavDisplays" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Displays">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="monitor" Classes="NavIcon" Foreground="{DynamicResource FileLocationDesktopBrush}" />
+              <controls:DaisyIcon Icon="monitor" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_5A3452EB50BC}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavSound" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Sound">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="speaker-high" Classes="NavIcon" Foreground="{DynamicResource AccentOptionPinkBrush}" />
+              <controls:DaisyIcon Icon="speaker-high" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_46124E023603}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavNetwork" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Network">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="wifi-02" Classes="NavIcon" Foreground="{DynamicResource FileLocationDesktopBrush}" />
+              <controls:DaisyIcon Icon="wifi-02" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_337253F2E8D4}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavEthernet" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Ethernet">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="ethernet" Classes="NavIcon" Foreground="{DynamicResource FileLocationDownloadsBrush}" />
+              <controls:DaisyIcon Icon="ethernet" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_681E12098D28}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavBluetooth" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Bluetooth">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="bluetooth" Classes="NavIcon" Foreground="{DynamicResource FileLocationPicturesBrush}" />
+              <controls:DaisyIcon Icon="bluetooth" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_8BB29098B369}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavContinuity" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Continuity">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="continuity" Classes="NavIcon" Foreground="{DynamicResource AccentOptionOrangeBrush}" />
+              <controls:DaisyIcon Icon="continuity" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_8971F58F9CCF}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavAppearance" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Appearance">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="palette" Classes="NavIcon" Foreground="{DynamicResource AccentOptionPurpleBrush}" />
+              <controls:DaisyIcon Icon="palette" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_3907FA7F8072}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavNotifications" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Notifications">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="bell" Classes="NavIcon" Foreground="{DynamicResource AccentOptionRedBrush}" />
+              <controls:DaisyIcon Icon="bell" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_788011833A5A}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavApps" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Apps">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="squares-four" Classes="NavIcon" Foreground="{DynamicResource AccentOptionPurpleBrush}" />
+              <controls:DaisyIcon Icon="squares-four" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_89DD748442C1}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavStorage" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Storage">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="hard-drives" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <controls:DaisyIcon Icon="hard-drives" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_A69C4DECE144}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavAccessibility" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Accessibility">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="person-arms-spread" Classes="NavIcon" Foreground="{DynamicResource FileLocationDesktopBrush}" />
+              <controls:DaisyIcon Icon="person-arms-spread" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_D3368CBFFE23}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavInput" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Input">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="keyboard" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <controls:DaisyIcon Icon="keyboard" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_595D74BA3B2F}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavDateTime" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="DateTime">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="clock" Classes="NavIcon" Foreground="{DynamicResource AccentOptionRedBrush}" />
+              <controls:DaisyIcon Icon="clock" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_2459EA42894C}" Classes="NavLabel" />
             </Grid>
           </Button>
 
           <Button x:Name="NavAbout" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="About">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="info" Classes="NavIcon" Foreground="{DynamicResource FileLocationDocumentsBrush}" />
+              <controls:DaisyIcon Icon="info" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_4EFCA0D10C5F}" Classes="NavLabel" />
             </Grid>
           </Button>

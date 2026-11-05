@@ -45,8 +45,8 @@ public sealed class WidgetLibraryLayoutTests
                 ["Photos"] = (typeof(DaisyOS.Shell.DesktopWidgets.ImageWidget), ["3,2", "4,2", "5,4"]),
             };
             var viewport = library.FindControl<Grid>("CarouselViewport")!;
-            var next = library.FindControl<Button>("NextVariantButton")!;
-            var previous = library.FindControl<Button>("PreviousVariantButton")!;
+            Assert.Null(library.FindControl<Button>("NextVariantButton"));
+            Assert.Null(library.FindControl<Button>("PreviousVariantButton"));
             foreach (var (category, (widgetType, tags)) in expected)
             {
                 library.FindControl<Button>($"{category}CategoryButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
@@ -58,11 +58,10 @@ public sealed class WidgetLibraryLayoutTests
                 if (widgetType != typeof(Control))
                     Assert.All(cards, card => Assert.IsType(widgetType, ((Grid)((Viewbox)card.Child!).Child!).Children.Single()));
                 Assert.All(cards, card => Assert.False(((Grid)((Viewbox)card.Child!).Child!).Children.Single().IsHitTestVisible));
-                Assert.False(previous.IsEnabled);
 
                 for (var i = 0; i < cards.Length; i++)
                 {
-                    if (i > 0) next.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                    library.GoTo(i);
                     window.UpdateLayout();
                     var active = cards[i];
                     Assert.Equal(1, active.Opacity);
@@ -75,7 +74,6 @@ public sealed class WidgetLibraryLayoutTests
                     // Every other variant is dimmed and turned away; only one is in focus.
                     Assert.All(cards.Where(card => card != active), card => Assert.True(card.Opacity < 0.5));
                 }
-                Assert.False(next.IsEnabled);
                 using var frame = window.CaptureRenderedFrame();
                 Assert.NotNull(frame);
                 frame.Save($"/tmp/daisy-widget-{category}-{width}.png", Avalonia.Media.Imaging.PngBitmapEncoderOptions.Default);
@@ -97,7 +95,7 @@ public sealed class WidgetLibraryLayoutTests
             (string, int, int)? request = null;
             library.WidgetAddRequested += (type, columns, rows) => request = (type, columns, rows);
             library.FindControl<Button>("PhotosCategoryButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            library.FindControl<Button>("NextVariantButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            library.GoTo(1);
             library.FindControl<Button>("AddWidgetButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             Assert.Equal(("image", 4, 2), request);
         }

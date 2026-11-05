@@ -8,13 +8,6 @@
              Classes.Selected="{Binding IsSelected}"
              Classes.Widget="{Binding IsWidgetCard}"
              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
-  <UserControl.Resources>
-    <ResourceDictionary>
-      <ResourceDictionary.MergedDictionaries>
-        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/WidgetChromeButtonTheme.axaml" />
-      </ResourceDictionary.MergedDictionaries>
-    </ResourceDictionary>
-  </UserControl.Resources>
   <UserControl.Styles>
     <Style Selector="controls|DesktopItemView">
       <Setter Property="Transitions">
@@ -102,20 +95,13 @@
     </Style>
 
     <Style Selector="Button.WidgetRemoveButton">
-      <Setter Property="ClipToBounds" Value="False" />
       <Setter Property="Width" Value="28" />
       <Setter Property="Height" Value="28" />
       <Setter Property="MinWidth" Value="28" />
       <Setter Property="MinHeight" Value="28" />
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedBrush}" />
-      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
-      <Setter Property="BorderThickness" Value="1" />
-      <Setter Property="CornerRadius" Value="11" />
       <Setter Property="HorizontalAlignment" Value="Left" />
       <Setter Property="VerticalAlignment" Value="Top" />
-      <Setter Property="Cursor" Value="Hand" />
-      <Setter Property="Theme" Value="{StaticResource WidgetChromeButtonTheme}" />
-      <Setter Property="Padding" Value="3" />
+      <Setter Property="Padding" Value="0" />
     </Style>
 
   </UserControl.Styles>
@@ -325,9 +311,9 @@
                       HorizontalAlignment="Stretch"
                       VerticalAlignment="Stretch" />
 
-    <!-- Circular Remove (-) Button on Top Left Corner (shifted further outside) -->
+    <!-- Subtle remove button at the top-left corner. -->
     <Button Name="RemoveWidgetButton"
-            Classes="WidgetRemoveButton"
+            Classes="Subtle Small WidgetRemoveButton"
             IsVisible="{Binding IsWidgetCard}"
             Click="OnRemoveWidgetClicked"
             Margin="-3,-3,0,0"
