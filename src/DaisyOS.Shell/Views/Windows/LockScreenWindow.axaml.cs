@@ -502,17 +502,22 @@ public partial class LockScreenWindow : Window
             () => !IsMediaExpanded && LockContentScroll.Offset.Y < 1 && wallpaperImage.Opacity > 0.999 && LockWallpaper.Opacity > 0.99 && _lockCanvasLayer.Opacity < 0.01, LockWallpaperScrim.Background);
         void RefreshDeptEffect()
         {
+            var currentUri = LockWallpaper.WallpaperUri ?? wallpaperSource ?? "";
+            var isImageWallpaper = !string.IsNullOrWhiteSpace(currentUri) &&
+                !DaisyOS.Shell.Services.Wallpaper.WallpaperSource.TryGetSolidColor(currentUri, out _) &&
+                !DaisyOS.Shell.Services.Wallpaper.WallpaperFileTypes.IsVideo(currentUri);
+            DeptForeground.WallpaperIdentity = currentUri;
             if (Application.Current is App activeApp)
             {
                 ApplyLockScreenAppearance(activeApp.CurrentLockScreenAppearance);
                 DeptForeground.SetPreferences(
-                    activeApp.DeptEffectEnabled && !activeApp.HighContrastEnabled && !DaisyOS.Shell.Services.Wallpaper.WallpaperFileTypes.IsVideo(LockWallpaper.WallpaperUri ?? wallpaperSource ?? ""),
+                    activeApp.DeptEffectEnabled && !activeApp.HighContrastEnabled && isImageWallpaper,
                     activeApp.DeptEffectAutomatic);
                 return;
             }
             var settings = new AppearanceSettingsStore().Load();
             ApplyLockScreenAppearance(settings.LockScreen ?? new());
-            DeptForeground.SetPreferences(settings.DeptEffectEnabled && !settings.HighContrast && !DaisyOS.Shell.Services.Wallpaper.WallpaperFileTypes.IsVideo(LockWallpaper.WallpaperUri ?? wallpaperSource ?? ""),
+            DeptForeground.SetPreferences(settings.DeptEffectEnabled && !settings.HighContrast && isImageWallpaper,
                 settings.DeptEffectAutomatic);
         }
         LoadWallpaper(wallpaperSource);
@@ -733,11 +738,13 @@ public partial class LockScreenWindow : Window
         PasswordPillBorder.Height = controlHeight + 8;
         PasswordPillBorder.CornerRadius = new CornerRadius((controlHeight + 8) / 2);
         HintButton.Height = UnlockButton.Height = controlHeight;
+        PowerButton.Width = PowerButton.Height = Math.Max(40, controlHeight);
         var cornerControlsHeight = (!_isSecondary && PowerControlsPanel.IsVisible)
             ? Math.Max(40, controlHeight) + 40
             : (!_isSecondary && BatteryInfo.IsVisible ? controlHeight + 40 : 0);
         MainContentGrid.MinHeight = Math.Max(0, height - cornerControlsHeight);
-        ClockArea.Margin = new Thickness(0, Math.Clamp(height * _lockAppearance.TopFraction, 24, _lockAppearance.TopFraction == 0.10 ? 96 : Math.Max(24, height * 0.2)), 0, 0);
+        var baseClockTop = Math.Clamp(height * _lockAppearance.TopFraction, 24, _lockAppearance.TopFraction == 0.10 ? 96 : Math.Max(24, height * 0.2));
+        ClockArea.Margin = new Thickness(0, baseClockTop, 0, 0);
         DateText.MaxWidth = width;
         var size = Math.Min(Resource("TypeSizeDisplayHero", 104) * Math.Clamp(height / 720, 0.75, 1.25),
             Math.Clamp(height * 0.2, 64, 160));
@@ -1805,7 +1812,7 @@ public partial class LockScreenWindow : Window
             var showMedia = !_isSecondary && _lockAppearance.ShowMedia && (_hasMediaSession || mediaPresence > 0.001);
 
             DeptForeground.RefreshLayout();
-            // 1. Clock Area stays anchored at top
+            // 1. Clock Area Always Visible (Top)
             ClockArea.Opacity = presence;
             _clockPresence.Y = -14 * (1 - presence);
 

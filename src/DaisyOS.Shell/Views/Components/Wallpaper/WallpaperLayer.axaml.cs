@@ -243,7 +243,21 @@ public partial class WallpaperLayer : UserControl
         UpdateVisibilityAndPauseState();
 
         var uri = WallpaperUri ?? (FollowDesktopWallpaper ? _app?.CurrentWallpaperUri : null);
-        if (!string.IsNullOrEmpty(uri)) RequestWallpaperLoad(uri);
+        if (!string.IsNullOrEmpty(uri))
+        {
+            if (WallpaperImage.Source is null &&
+                !WallpaperSource.TryGetSolidColor(uri, out _) &&
+                !WallpaperFileTypes.IsVideo(ResolveWallpaperPath(uri)) &&
+                !WallpaperFileTypes.IsHeic(ResolveWallpaperPath(uri)) &&
+                WallpaperSourceCache.TryAcquire(ResolveWallpaperPath(uri)) is { } cachedLease)
+            {
+                _initialWallpaperLease?.Dispose();
+                _initialWallpaperLease = cachedLease;
+                WallpaperImage.Source = cachedLease.Bitmap;
+                WallpaperImage.Opacity = 1;
+            }
+            RequestWallpaperLoad(uri);
+        }
     }
 
     internal void SeedFrom(WallpaperLayer source)

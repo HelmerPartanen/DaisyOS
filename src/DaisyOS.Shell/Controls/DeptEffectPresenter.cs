@@ -13,6 +13,9 @@ namespace DaisyOS.Shell.Controls;
 public sealed class DeptEffectPresenter : Control
 {
     private static readonly ConditionalWeakTable<Bitmap, Dictionary<(int X, int Y, int W, int H), byte[][]>> AnalyzedBitmapMasks = new();
+    private static readonly object PlacementCacheGate = new();
+    private static readonly Dictionary<string, (double PlacedTop, byte[]? SelectedMask)> PlacementCache = new(StringComparer.Ordinal);
+    private static readonly Dictionary<(string WallpaperIdentity, int AspectKey, bool Automatic), byte[][]> IdentityMasksCache = new();
 
     private Image? _wallpaper;
     private TextBlock? _clock;
@@ -32,6 +35,8 @@ public sealed class DeptEffectPresenter : Control
     private (Bitmap? Source, int X, int Y, int W, int H, bool Enabled, bool Automatic)? _scheduledAnalysisSignature;
     public double ClockTopFraction { get; set; } = 0.10;
     public double ForegroundTintOpacity { get; set; }
+    public string? WallpaperIdentity { get; set; }
+    internal double PlacedTop => _placedTop;
     private double _placedTop = double.NaN;
     private double _baseMargin;
     private bool _enabled = true, _automatic = true;
@@ -39,6 +44,8 @@ public sealed class DeptEffectPresenter : Control
     private IImage? _source;
     private IBrush? _foregroundScrim;
     private Size _analyzedSize;
+    private string? _analyzedIdentity;
+    private bool _analysisCompletedForCurrentSource;
 
     public DeptEffectPresenter()
     {
@@ -70,14 +77,14 @@ public sealed class DeptEffectPresenter : Control
     public void SetPreferences(bool enabled, bool automatic, int strength = 15)
     {
         strength = Math.Clamp(strength, 0, 30);
-        if (_enabled == enabled && _automatic == automatic && _strength == strength) return;
-        var needsAnalysis = _enabled != enabled || _automatic != automatic;
+        var changed = _enabled != enabled || _automatic != automatic || _strength != strength;
+        var needsAnalysis = _enabled != enabled || _automatic != automatic || (enabled && !_analysisCompletedForCurrentSource && _request is null);
         _enabled = enabled;
         _automatic = automatic;
         _strength = Math.Clamp(strength, 0, 30);
-        _layoutKey = null;
+        if (changed) _layoutKey = null;
         if (needsAnalysis) ScheduleAnalysis();
-        RefreshLayout();
+        if (changed && (!needsAnalysis || _masks is not null || !_enabled || _strength == 0)) RefreshLayout();
     }
 
     private void Stop()
@@ -97,17 +104,42 @@ public sealed class DeptEffectPresenter : Control
         ((int)Math.Round(crop.X * 10), (int)Math.Round(crop.Y * 10),
          (int)Math.Round(crop.Width * 10), (int)Math.Round(crop.Height * 10));
 
-    private static bool TryGetCachedMasks(Bitmap source, (int X, int Y, int W, int H) cropKey, out byte[][]? masks)
+    private static int QuantizeAspect(Size bounds) =>
+        bounds.Width > 0 && bounds.Height > 0
+            ? (int)Math.Round(bounds.Width / bounds.Height * 1000)
+            : 0;
+
+    private bool TryGetCachedMasks(Bitmap source, string? wallpaperIdentity, (int X, int Y, int W, int H) cropKey, Size bounds, bool automatic, out byte[][]? masks)
     {
         masks = null;
-        if (!AnalyzedBitmapMasks.TryGetValue(source, out var map)) return false;
-        lock (map)
+        if (AnalyzedBitmapMasks.TryGetValue(source, out var map))
         {
-            return map.TryGetValue(cropKey, out masks);
+            lock (map)
+            {
+                if (map.TryGetValue(cropKey, out masks)) return true;
+            }
         }
+        var aspectKey = QuantizeAspect(bounds);
+        if (!string.IsNullOrEmpty(wallpaperIdentity) && aspectKey > 0)
+        {
+            lock (PlacementCacheGate)
+            {
+                if (IdentityMasksCache.TryGetValue((wallpaperIdentity, aspectKey, automatic), out masks))
+                    return true;
+                if (!automatic && IdentityMasksCache.TryGetValue((wallpaperIdentity, aspectKey, true), out masks))
+                    return true;
+            }
+            masks = _service.TryLoadCachedMasks(wallpaperIdentity, aspectKey);
+            if (masks is not null)
+            {
+                CacheMasks(source, wallpaperIdentity, cropKey, bounds, automatic, masks);
+                return true;
+            }
+        }
+        return false;
     }
 
-    private static void CacheMasks(Bitmap source, (int X, int Y, int W, int H) cropKey, byte[][] masks)
+    private void CacheMasks(Bitmap source, string? wallpaperIdentity, (int X, int Y, int W, int H) cropKey, Size bounds, bool automatic, byte[][] masks)
     {
         var map = AnalyzedBitmapMasks.GetOrCreateValue(source);
         lock (map)
@@ -115,11 +147,39 @@ public sealed class DeptEffectPresenter : Control
             if (map.Count >= 8) map.Clear();
             map[cropKey] = masks;
         }
+        var aspectKey = QuantizeAspect(bounds);
+        if (!string.IsNullOrEmpty(wallpaperIdentity) && aspectKey > 0)
+        {
+            lock (PlacementCacheGate)
+            {
+                if (IdentityMasksCache.Count >= 16) IdentityMasksCache.Clear();
+                IdentityMasksCache[(wallpaperIdentity, aspectKey, automatic)] = masks;
+            }
+            _service.SaveIdentityCachedMasks(wallpaperIdentity, aspectKey, masks);
+        }
+    }
+
+    private string GetSourceIdentity()
+    {
+        if (!string.IsNullOrEmpty(WallpaperIdentity)) return WallpaperIdentity;
+        if (_wallpaper?.Source is { } img) return RuntimeHelpers.GetHashCode(img).ToString();
+        return "none";
+    }
+
+    private string GetPlacementKey()
+    {
+        var fontName = _clock?.FontFamily.Name ?? "";
+        var fontSize = _clock?.FontSize ?? 0;
+        var fontWeight = _clock?.FontWeight ?? FontWeight.Bold;
+        var align = _area?.HorizontalAlignment ?? Avalonia.Layout.HorizontalAlignment.Center;
+        var w = Math.Round(Bounds.Width);
+        var h = Math.Round(Bounds.Height);
+        return $"{GetSourceIdentity()}|{w}x{h}|{fontSize:F1}|{fontName}|{(int)fontWeight}|{(int)align}|{ClockTopFraction:F2}|{_strength}|{_enabled}|{_automatic}";
     }
 
     private void ScheduleAnalysis()
     {
-        if (!_enabled || _wallpaper?.Source is not Bitmap bitmapSource || Bounds.Width <= 0 || Bounds.Height <= 0)
+        if (!_enabled || _strength == 0)
         {
             _request?.Cancel();
             _request?.Dispose();
@@ -128,6 +188,22 @@ public sealed class DeptEffectPresenter : Control
             _masks = null;
             _source = null;
             _layoutKey = null;
+            _analysisCompletedForCurrentSource = true;
+            ClearMask();
+            if (_area is not null && _baseMargin > 0) _area.Margin = new Thickness(0, _baseMargin, 0, 0);
+            return;
+        }
+
+        if (_wallpaper?.Source is not Bitmap bitmapSource || Bounds.Width <= 0 || Bounds.Height <= 0)
+        {
+            _request?.Cancel();
+            _request?.Dispose();
+            _request = null;
+            _scheduledAnalysisSignature = null;
+            _masks = null;
+            _source = null;
+            _layoutKey = null;
+            _analysisCompletedForCurrentSource = false;
             ClearMask();
             if (_area is not null && _baseMargin > 0) _area.Margin = new Thickness(0, _baseMargin, 0, 0);
             return;
@@ -136,7 +212,7 @@ public sealed class DeptEffectPresenter : Control
         var crop = Crop(bitmapSource.Size, Bounds.Size);
         var cropKey = QuantizeCrop(crop);
         var signature = ((Bitmap?)bitmapSource, cropKey.X, cropKey.Y, cropKey.W, cropKey.H, _enabled, _automatic);
-        if (_scheduledAnalysisSignature == signature && (_masks is not null || _request is not null))
+        if (_scheduledAnalysisSignature == signature && (_masks is not null || _request is not null || _analysisCompletedForCurrentSource))
         {
             if (_masks is not null && _analyzedSize != Bounds.Size)
             {
@@ -147,10 +223,25 @@ public sealed class DeptEffectPresenter : Control
             return;
         }
 
-        if (TryGetCachedMasks(bitmapSource, cropKey, out var cachedMasks) && cachedMasks is not null)
+        var identity = WallpaperIdentity;
+        if (!string.IsNullOrEmpty(identity) &&
+            string.Equals(_analyzedIdentity, identity, StringComparison.Ordinal) &&
+            _masks is not null &&
+            _analyzedSize == Bounds.Size)
+        {
+            // Seamless swap from initial seeded bitmap to pre-rendered bitmap of the exact same wallpaper and size.
+            _scheduledAnalysisSignature = signature;
+            _source = bitmapSource;
+            CacheMasks(bitmapSource, identity, cropKey, Bounds.Size, _automatic, _masks);
+            _layoutKey = null;
+            RefreshLayout();
+            return;
+        }
+
+        if (TryGetCachedMasks(bitmapSource, identity, cropKey, Bounds.Size, _automatic, out var cachedMasks) && cachedMasks is not null)
         {
             _scheduledAnalysisSignature = signature;
-            ApplyPreparedMasks(cachedMasks);
+            ApplyPreparedMasks(cachedMasks, clearPlacementCache: false);
             return;
         }
 
@@ -162,8 +253,8 @@ public sealed class DeptEffectPresenter : Control
         _masks = null;
         _source = null;
         _layoutKey = null;
+        _analysisCompletedForCurrentSource = false;
         ClearMask();
-        if (_area is not null && _baseMargin > 0) _area.Margin = new Thickness(0, _baseMargin, 0, 0);
 
         // Defer until layout and any image swap have settled. Capture only a small analysis image on the UI thread.
         Dispatcher.UIThread.Post(async () =>
@@ -173,9 +264,10 @@ public sealed class DeptEffectPresenter : Control
             {
                 var currentCrop = Crop(source.Size, Bounds.Size);
                 var currentCropKey = QuantizeCrop(currentCrop);
-                if (TryGetCachedMasks(source, currentCropKey, out var readyMasks) && readyMasks is not null)
+                var currentIdentity = WallpaperIdentity;
+                if (TryGetCachedMasks(source, currentIdentity, currentCropKey, Bounds.Size, _automatic, out var readyMasks) && readyMasks is not null)
                 {
-                    ApplyPreparedMasks(readyMasks);
+                    ApplyPreparedMasks(readyMasks, clearPlacementCache: false);
                     return;
                 }
 
@@ -188,24 +280,44 @@ public sealed class DeptEffectPresenter : Control
                 thumbnail.Save(stream, PngBitmapEncoderOptions.Default);
                 var masks = await _service.AnalyzeAsync(stream.ToArray(), _automatic, token);
                 if (token.IsCancellationRequested) return;
-                if (masks is not null) CacheMasks(source, currentCropKey, masks);
-                ApplyPreparedMasks(masks);
+                if (masks is not null) CacheMasks(source, currentIdentity, currentCropKey, Bounds.Size, _automatic, masks);
+                ApplyPreparedMasks(masks, clearPlacementCache: false);
             }
-            catch (Exception ex) { Console.Error.WriteLine($"[DeptEffect] Preview unavailable: {ex.Message}"); }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[DeptEffect] Preview unavailable: {ex.Message}");
+                if (!token.IsCancellationRequested) ApplyPreparedMasks(null);
+            }
         }, DispatcherPriority.Background);
     }
 
     internal bool HasForeground => _maskBitmap is not null;
 
-    internal void ApplyPreparedMasks(byte[][]? masks)
+    internal void ApplyPreparedMasks(byte[][]? masks, bool clearPlacementCache = true)
     {
         _request?.Cancel();
         _request?.Dispose();
         _request = null;
         _source = _wallpaper?.Source;
         _analyzedSize = Bounds.Size;
+        _analyzedIdentity = WallpaperIdentity;
         _masks = masks;
+        if (_wallpaper?.Source is Bitmap bmp && Bounds.Width > 0 && Bounds.Height > 0)
+        {
+            var cropKey = QuantizeCrop(Crop(bmp.Size, Bounds.Size));
+            _scheduledAnalysisSignature = (bmp, cropKey.X, cropKey.Y, cropKey.W, cropKey.H, _enabled, _automatic);
+            if (masks is not null)
+                CacheMasks(bmp, WallpaperIdentity, cropKey, Bounds.Size, _automatic, masks);
+        }
+        _analysisCompletedForCurrentSource = true;
         _layoutKey = null;
+        if (clearPlacementCache)
+        {
+            lock (PlacementCacheGate)
+            {
+                PlacementCache.Remove(GetPlacementKey());
+            }
+        }
         RefreshLayout();
     }
 
@@ -262,67 +374,83 @@ public sealed class DeptEffectPresenter : Control
             InvalidateVisual();
         }
 
-        // Derive a stable resting X/Y origin so vertical presence translations do not invalidate _layoutKey.
+        // Derive a stable resting X/Y origin so vertical presence translations and minute ticks do not invalidate placement.
         var localOrigin = _clock.TranslatePoint(default, _area) ?? default;
         var xOrigin = origin.Value.X;
-        var key = $"{_clock.Text}|{_clock.FontSize}|{_clock.FontFamily}|{Bounds.Size}|{_strength}|{_enabled}|{allowed}|{xOrigin:F1}|{_area.Bounds.Size}|{ClockTopFraction}|{_clock.FontWeight}";
+        var placementKey = GetPlacementKey();
+        var key = $"{placementKey}|{allowed}";
         if (key == _layoutKey && _area.Margin.Top.Equals(_placedTop)) return;
-        _layoutKey = key;
         _baseMargin = Math.Clamp(Bounds.Height * ClockTopFraction, 24, ClockTopFraction == 0.10 ? 96 : Math.Max(24, Bounds.Height * 0.2));
         var previousTop = _area.Margin.Top;
         _placedTop = _baseMargin;
         _area.Margin = new Thickness(0, _baseMargin, 0, 0);
         if (!_enabled || !allowed || _strength == 0 || _masks is null || _glyphs is null || Bounds.Size != _analyzedSize)
         {
-            ClearMask();
-            return;
-        }
-        var bands = _glyphs();
-        if (bands.Length == 0)
-        {
-            ClearMask();
-            return;
-        }
-        var best = double.PositiveInfinity;
-        var bestOffset = 0d;
-        byte[]? selected = null;
-        var parentOrigin = (_area.Parent as Visual)?.TranslatePoint(_area.Bounds.Position, this);
-        var yOrigin = (parentOrigin?.Y ?? previousTop) - previousTop + _baseMargin + localOrigin.Y;
-        var glyphTop = double.PositiveInfinity;
-        var glyphBottom = double.NegativeInfinity;
-        for (var i = 0; i < bands.Length; i++)
-        {
-            if (bands[i].Top < glyphTop) glyphTop = bands[i].Top;
-            if (bands[i].Bottom > glyphBottom) glyphBottom = bands[i].Bottom;
-        }
-        var glyphHeight = glyphBottom - glyphTop;
-        var upperBoundary = glyphTop + glyphHeight * 0.55;
-        var targetRatio = _strength / 100d;
-        var minOverlap = Math.Min(0.05, targetRatio);
-        var maxOverlap = Math.Min(0.30, targetRatio + 0.04);
-        var maxOffset = Bounds.Height * 0.22;
-        var maxBottom = Bounds.Height * 0.48;
-        foreach (var mask in _masks)
-            for (var offset = 0d; offset <= maxOffset; offset += 2)
+            _layoutKey = null;
+            if (!_enabled || !allowed || _strength == 0 || _analysisCompletedForCurrentSource)
             {
-                if (yOrigin + offset + glyphBottom > maxBottom) continue;
-                var overlap = MeasureOverlap(mask, bands, xOrigin, yOrigin + offset, Bounds.Size, upperBoundary);
-                if (overlap.Total < minOverlap || overlap.Total > maxOverlap || overlap.Upper > 0.015 || overlap.WorstDigit > 0.40) continue;
-                var score = Math.Abs(overlap.Total - targetRatio) + offset * 0.00001;
+                ClearMask();
+            }
+            return;
+        }
+        _layoutKey = key;
+
+        byte[]? selected = null;
+        var hasCachedPlacement = false;
+        lock (PlacementCacheGate)
+        {
+            if (PlacementCache.TryGetValue(placementKey, out var cachedPlacement) &&
+                (cachedPlacement.SelectedMask is null || _masks.Any(m => ReferenceEquals(m, cachedPlacement.SelectedMask))))
+            {
+                hasCachedPlacement = true;
+                selected = cachedPlacement.SelectedMask;
+                _placedTop = _baseMargin;
+            }
+        }
+
+        if (!hasCachedPlacement)
+        {
+            var bands = _glyphs();
+            if (bands.Length == 0)
+            {
+                ClearMask();
+                return;
+            }
+            var best = double.PositiveInfinity;
+            var parentOrigin = (_area.Parent as Visual)?.TranslatePoint(_area.Bounds.Position, this);
+            var yOrigin = (parentOrigin?.Y ?? previousTop) - previousTop + _baseMargin + localOrigin.Y;
+            var glyphTop = double.PositiveInfinity;
+            var glyphBottom = double.NegativeInfinity;
+            for (var i = 0; i < bands.Length; i++)
+            {
+                if (bands[i].Top < glyphTop) glyphTop = bands[i].Top;
+                if (bands[i].Bottom > glyphBottom) glyphBottom = bands[i].Bottom;
+            }
+            var glyphHeight = glyphBottom - glyphTop;
+            var upperBoundary = glyphTop + glyphHeight * 0.55;
+            var targetRatio = _strength / 100d;
+            var maxOverlap = Math.Min(0.45, targetRatio + 0.15);
+            foreach (var mask in _masks)
+            {
+                var overlap = MeasureOverlap(mask, bands, xOrigin, yOrigin, Bounds.Size, upperBoundary);
+                if (overlap.Total <= 0.001 || overlap.Total > maxOverlap || overlap.Upper > 0.05 || overlap.WorstDigit > 0.45) continue;
+                var score = Math.Abs(overlap.Total - targetRatio);
                 if (score >= best) continue;
                 best = score;
                 selected = mask;
-                bestOffset = offset;
             }
-        // The requested overlap is a preference, not an eligibility threshold. A readable
-        // smaller overlap is preferable to discarding a correctly segmented subject.
+            lock (PlacementCacheGate)
+            {
+                if (PlacementCache.Count >= 32) PlacementCache.Clear();
+                PlacementCache[placementKey] = (_placedTop, selected);
+            }
+        }
+
         if (selected is null)
         {
             ClearMask();
             return;
         }
-        _placedTop = _baseMargin + bestOffset;
-        _area.Margin = new Thickness(0, _placedTop, 0, 0);
         _selectedMask = selected;
         if (!ReferenceEquals(_maskBitmapSource, selected) || _maskBitmap is null)
         {

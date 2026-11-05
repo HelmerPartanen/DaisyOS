@@ -38,9 +38,12 @@ class DaisyWindowMotion {
         if (this.reduced) this.windows.forEach(w => this.stop(w));
     }
     eligible(w) {
-        return w.managed && (w.normalWindow || w.dialog) && !w.popupWindow
+        const cls = String(w.windowClass || w.desktopFileName || "");
+        const cap = String(w.caption || "");
+        return w.managed && (w.normalWindow || w.dialog) && !w.popupWindow && !w.specialWindow
             && !w.lockScreen && !w.outline && !w.fullScreen
-            && !!w.caption && !/^DaisyOS Lock/.test(w.caption);
+            && !!cap && !/^DaisyOS Lock/i.test(cap)
+            && !/(^|[\s.])(?:org\.daisyos\.)?lockscreen(?:[\s.]|$)/i.test(cls);
     }
     allowed(w, role) {
         return this.eligible(w) && !w.move && !w.resize && !this.reduced && effects.animationTimeFactor > 0

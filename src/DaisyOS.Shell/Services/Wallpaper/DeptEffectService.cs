@@ -46,6 +46,97 @@ public sealed class DeptEffectService
             ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache") : root, "DaisyOS", "dept-effect");
     }
 
+    private string? GetIdentityCachePath(string? wallpaperIdentity, int aspectKey)
+    {
+        if (string.IsNullOrWhiteSpace(wallpaperIdentity) || aspectKey <= 0) return null;
+        try
+        {
+            var resolved = WallpaperSource.ResolveWallpaperPath(wallpaperIdentity);
+            string fingerprint;
+            if (resolved.StartsWith("avares://", StringComparison.OrdinalIgnoreCase))
+            {
+                fingerprint = resolved;
+            }
+            else
+            {
+                var fullPath = Path.GetFullPath(resolved);
+                var info = new FileInfo(fullPath);
+                if (!info.Exists) return null;
+                fingerprint = $"{fullPath}|{info.Length}|{info.LastWriteTimeUtc.Ticks}";
+            }
+            var rawKey = $"{fingerprint}|aspect:{aspectKey}|v3|{ModelVersion.Value}";
+            var hash = Convert.ToHexString(SHA256.HashData(global::System.Text.Encoding.UTF8.GetBytes(rawKey)));
+            return Path.Combine(_cacheDirectory, hash + ".mask");
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public byte[][]? TryLoadCachedMasks(string? wallpaperIdentity, int aspectKey)
+    {
+        var path = GetIdentityCachePath(wallpaperIdentity, aspectKey);
+        if (path is null) return null;
+        lock (MemoryCacheGate)
+        {
+            if (MemoryCache.TryGetValue(path, out var inMemory) && File.Exists(path))
+                return inMemory;
+        }
+        try
+        {
+            if (!File.Exists(path)) return null;
+            var cached = File.ReadAllBytes(path);
+            if (cached.Length != OverlaySize * OverlaySize * 2) return null;
+            var loaded = new[] { cached[..(OverlaySize * OverlaySize)], cached[(OverlaySize * OverlaySize)..] };
+            lock (MemoryCacheGate)
+            {
+                if (MemoryCache.Count >= 16) MemoryCache.Clear();
+                MemoryCache[path] = loaded;
+            }
+            return loaded;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public void SaveIdentityCachedMasks(string? wallpaperIdentity, int aspectKey, byte[][]? masks)
+    {
+        if (masks is not { Length: 2 } || masks[0].Length != OverlaySize * OverlaySize || masks[1].Length != OverlaySize * OverlaySize)
+            return;
+        var path = GetIdentityCachePath(wallpaperIdentity, aspectKey);
+        if (path is null) return;
+        lock (MemoryCacheGate)
+        {
+            if (MemoryCache.Count >= 16) MemoryCache.Clear();
+            MemoryCache[path] = masks;
+        }
+        try
+        {
+            Directory.CreateDirectory(_cacheDirectory);
+            if (File.Exists(path)) return;
+            var temporary = path + "." + Guid.NewGuid().ToString("N");
+            try
+            {
+                var combined = new byte[OverlaySize * OverlaySize * 2];
+                Buffer.BlockCopy(masks[0], 0, combined, 0, OverlaySize * OverlaySize);
+                Buffer.BlockCopy(masks[1], 0, combined, OverlaySize * OverlaySize, OverlaySize * OverlaySize);
+                File.WriteAllBytes(temporary, combined);
+                File.Move(temporary, path, true);
+            }
+            finally
+            {
+                if (File.Exists(temporary)) File.Delete(temporary);
+            }
+        }
+        catch
+        {
+            // Ignore disk cache write errors
+        }
+    }
+
     // A cache entry contains both masks, including negative results. Strength and clock text never invalidate inference.
     public async Task<byte[][]?> AnalyzeAsync(byte[] snapshot, bool automatic, CancellationToken cancellationToken)
     {

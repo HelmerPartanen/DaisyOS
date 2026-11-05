@@ -63,8 +63,8 @@ public sealed class LockScreenLayoutTests
             Assert.Equal((double)resources["ControlHeightStandard"]!, password.Bounds.Height);
             Assert.Contains("Ghost", unlockButton.Classes);
             Assert.Contains("IconButton", unlockButton.Classes);
-            Assert.Equal(40, powerButton.Bounds.Width);
-            Assert.Equal(40, powerButton.Bounds.Height);
+            Assert.Equal(Math.Max(40, (double)resources["ControlHeightStandard"]!), powerButton.Bounds.Width);
+            Assert.Equal(Math.Max(40, (double)resources["ControlHeightStandard"]!), powerButton.Bounds.Height);
             Assert.False(powerMenu.IsVisible);
             powerButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
             window.UpdateLayout();
