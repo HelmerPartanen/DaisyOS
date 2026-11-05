@@ -1,4 +1,6 @@
+using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Input.Raw;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
@@ -54,6 +56,26 @@ public sealed class SidebarWindowChromeTests
                         {
                             Assert.Empty(title.GetVisualDescendants().OfType<Image>());
                             Assert.Empty(title.GetVisualDescendants().OfType<TextBlock>());
+                        }
+                    }
+                    // Raw second presses must use the caption-button transition,
+                    // without handing that press to the compositor's move grab.
+                    var dragSurface = title as Border ?? title.GetVisualDescendants().OfType<Border>().First();
+                    using (var pointer = new Pointer(Pointer.GetNextFreeId(), PointerType.Mouse, true))
+                    {
+                        foreach (var expected in new[] { WindowState.Maximized, WindowState.Normal })
+                        {
+                            var press = new PointerPressedEventArgs(dragSurface, pointer, window,
+                                dragSurface.TranslatePoint(new Point(20, 20), window)!.Value, 0,
+                                new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
+                                KeyModifiers.None, clickCount: 2);
+                            dragSurface.RaiseEvent(press);
+                            Dispatcher.UIThread.RunJobs();
+                            Assert.True(press.Handled);
+                            Assert.Equal(expected, window.WindowState);
+                            // A gesture recognizer must not toggle the same press again.
+                            dragSurface.RaiseEvent(new TappedEventArgs(InputElement.DoubleTappedEvent, press));
+                            Assert.Equal(expected, window.WindowState);
                         }
                     }
                     window.WindowState = WindowState.Maximized;

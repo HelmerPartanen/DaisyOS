@@ -307,8 +307,7 @@
               <Panel x:Name="TabRow"
                      Grid.Row="0"
                      Background="{DynamicResource SurfaceBaseSolidBrush}"
-                     PointerPressed="OnTabRowPointerPressed"
-                     DoubleTapped="OnTabRowDoubleTapped">
+                     PointerPressed="OnTabRowPointerPressed">
         <!-- Bottom divider under tab row -->
         <Grid ColumnDefinitions="*,Auto">
           <Grid Grid.Column="0" ColumnDefinitions="*,Auto" Margin="6,0,6,0" VerticalAlignment="Center">
@@ -496,8 +495,8 @@
                   <ToggleButton Classes="ShellButton FilesHiddenToggle IconButton" Height="32"
                                 IsChecked="{Binding ActiveTab.ShowHiddenFiles, Mode=TwoWay}" ToolTip.Tip="{DynamicResource Loc_B5EDE7FB45DF}" AutomationProperties.Name="{DynamicResource Loc_B5EDE7FB45DF}">
                     <Grid>
-                      <controls:DaisyIcon Icon="eye" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding !ActiveTab.ShowHiddenFiles}"/>
-                      <controls:DaisyIcon Icon="view-off" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding ActiveTab.ShowHiddenFiles}"/>
+                      <controls:DaisyIcon Icon="view-off" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding !ActiveTab.ShowHiddenFiles}"/>
+                      <controls:DaisyIcon Icon="eye" Size="{DynamicResource IconSizeStandard}" IsVisible="{Binding ActiveTab.ShowHiddenFiles}"/>
                     </Grid>
                   </ToggleButton>
                   <Rectangle Width="1" Height="20" Fill="{DynamicResource StrokeDefaultBrush}" Margin="3,0"/>

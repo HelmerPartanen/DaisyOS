@@ -44,8 +44,7 @@
 
   <Border Background="{DynamicResource SurfaceBaseSolidBrush}"
           BorderThickness="0"
-          PointerPressed="OnTitleBarPointerPressed"
-          DoubleTapped="OnTitleBarDoubleTapped">
+          PointerPressed="OnTitleBarPointerPressed">
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Grid.Column="1" Orientation="Horizontal">
         <Button Classes="CaptionButton" Click="OnMinimizeClicked" ToolTip.Tip="{DynamicResource Loc_D72E311C4DDA}">

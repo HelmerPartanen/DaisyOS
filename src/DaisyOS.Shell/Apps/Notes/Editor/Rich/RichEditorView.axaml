@@ -2,9 +2,30 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
              xmlns:rich="clr-namespace:DaisyOS.Shell.Apps.Notes.Editor.Rich"
+             xmlns:converters="clr-namespace:DaisyOS.Shell.Converters"
              x:Class="DaisyOS.Shell.Apps.Notes.Editor.Rich.RichEditorView">
 
+  <UserControl.Resources>
+    <converters:HalfHeightCornerRadiusConverter x:Key="PickerRadius" />
+  </UserControl.Resources>
+
   <UserControl.Styles>
+    <Style Selector="ComboBox.ToolbarPicker, ComboBox.FormattingPicker">
+      <Setter Property="CornerRadius" Value="{Binding Bounds.Height, RelativeSource={RelativeSource Self}, Converter={StaticResource PickerRadius}}" />
+    </Style>
+    <Style Selector="Button.FormattingMenuAction">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="Height" Value="36" />
+      <Setter Property="Padding" Value="12,0" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBlock.FormattingHeading">
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="Margin" Value="12,8,12,4" />
+    </Style>
     <Style Selector="StackPanel.DocumentEntering">
       <Style.Animations>
         <Animation Duration="{DynamicResource MotionDurationFast}" Easing="CubicEaseOut">
@@ -23,9 +44,7 @@
     </ScrollViewer>
     <Border Classes="AppToolbar" x:Name="FloatingToolbar" HorizontalAlignment="Center" VerticalAlignment="Top"
             Margin="12,12,12,0">
-      <!-- Fixed arrow gutters: showing a scroll arrow must never shift the
-           formatting controls the user is aiming at. -->
-      <Grid ColumnDefinitions="32,*,32">
+      <Grid ColumnDefinitions="Auto,*,Auto">
         <Button x:Name="ToolbarScrollLeft" Grid.Column="0" Classes="IconButton Small" IsVisible="False"
                 ToolTip.Tip="{DynamicResource Loc_B8DBA9F25B0A}" Click="OnToolbarScrollLeft" AutomationProperties.Name="{DynamicResource Loc_B8DBA9F25B0A}">
           <controls:DaisyIcon Icon="caret-left" Size="{DynamicResource IconSizeStandard}" />
@@ -34,14 +53,13 @@
         <StackPanel x:Name="FormattingContent" Orientation="Horizontal" Spacing="4">
           <!-- Block Type Selector DropDown -->
           <ComboBox x:Name="BlockTypeCombo"
-                    Classes="Flexible"
+                    Classes="Flexible ToolbarPicker"
                     MinWidth="120"
                     AutomationProperties.Name="{DynamicResource Loc_9AA08BE49BDD}"
                     Height="{DynamicResource ControlHeightCompact}"
                     MinHeight="{DynamicResource ControlHeightCompact}"
                     VerticalAlignment="Center"
                     FontSize="{DynamicResource TypeSizeCaption}"
-                    CornerRadius="{DynamicResource RadiusControlInner}"
                     SelectionChanged="OnBlockTypeSelectionChanged">
             <ComboBoxItem Content="{DynamicResource Loc_C3B03DD28595}" Tag="Paragraph" />
             <ComboBoxItem Content="{DynamicResource Loc_D95E9370EF74}" Tag="Heading1" />
@@ -73,19 +91,18 @@
 
           <Button x:Name="MoreFormattingButton" Classes="IconButton Small">
             <Button.Flyout>
-              <Flyout Placement="Bottom">
-                <ScrollViewer MaxHeight="360" HorizontalScrollBarVisibility="Disabled">
-                  <StackPanel x:Name="AdvancedFormattingContent" Width="240" Spacing="8">
+              <Flyout Placement="BottomEdgeAlignedRight" FlyoutPresenterClasses="FormattingMenu">
+                <ScrollViewer MaxHeight="520" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                  <StackPanel x:Name="AdvancedFormattingContent" Width="264" Spacing="4">
                     <!-- Font Family Selector -->
-                    <TextBlock x:Name="FontFamilyHeading" />
+                    <TextBlock x:Name="FontFamilyHeading" Classes="FormattingHeading" />
                     <ComboBox x:Name="FontFamilyCombo"
-                              Classes="Flexible"
+                              Classes="Flexible FormattingPicker"
                               Height="{DynamicResource ControlHeightCompact}"
                               MinHeight="{DynamicResource ControlHeightCompact}"
                               VerticalAlignment="Center"
                               MinWidth="104"
                               FontSize="{DynamicResource TypeSizeCaption}"
-                              CornerRadius="{DynamicResource RadiusControlInner}"
                               SelectionChanged="OnFontFamilySelectionChanged">
                       <ComboBoxItem Content="{DynamicResource Loc_A6E7CD03E301}" Tag="SystemFont" />
                       <ComboBoxItem Content="{DynamicResource Loc_30A4A5BCA8F4}" />
@@ -96,7 +113,7 @@
                     </ComboBox>
 
                     <!-- Font Size Stepper -->
-                    <TextBlock x:Name="FontSizeHeading" />
+                    <TextBlock x:Name="FontSizeHeading" Classes="FormattingHeading" />
                     <StackPanel Orientation="Horizontal" Spacing="0" VerticalAlignment="Center">
                       <Button Classes="IconButton Small" ToolTip.Tip="{DynamicResource Loc_303A5795D937}" Click="OnDecreaseFontSizeClicked" AutomationProperties.Name="{DynamicResource Loc_303A5795D937}">
                         <controls:DaisyIcon Icon="minus" Size="{DynamicResource IconSizeSmall}" />
@@ -107,9 +124,27 @@
                       </Button>
                     </StackPanel>
 
-                    <Button x:Name="StrikeBtn" Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_9AABBCB2C18D}" Click="OnStrikeClicked" AutomationProperties.Name="{DynamicResource Loc_9AABBCB2C18D}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="text-strikethrough" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_9AABBCB2C18D}" /></StackPanel>
-                    </Button>          <!-- Color & Highlight Pickers -->
-                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_2EA2323426F3}" AutomationProperties.Name="{DynamicResource Loc_2EA2323426F3}">
+                    <!-- Font Weight Selector -->
+                    <TextBlock x:Name="FontWeightHeading" Classes="FormattingHeading" />
+                    <ComboBox x:Name="FontWeightCombo"
+                              Classes="Flexible FormattingPicker"
+                              Height="{DynamicResource ControlHeightCompact}"
+                              MinHeight="{DynamicResource ControlHeightCompact}"
+                              VerticalAlignment="Center"
+                              MinWidth="104"
+                              FontSize="{DynamicResource TypeSizeCaption}"
+                              SelectionChanged="OnFontWeightSelectionChanged">
+                      <ComboBoxItem Content="{DynamicResource Loc_B455784AB530}" Tag="400" />
+                      <ComboBoxItem Content="{DynamicResource Loc_8E588CD18774}" Tag="500" />
+                      <ComboBoxItem Content="{DynamicResource Loc_FFC5DE721473}" Tag="600" />
+                      <ComboBoxItem Content="{DynamicResource Loc_94FEE62E68E2}" Tag="700" />
+                      <ComboBoxItem Content="{DynamicResource Loc_F0A0B33594B2}" Tag="800" />
+                    </ComboBox>
+                    <Border Height="1" Background="{DynamicResource StrokeSubtleBrush}" Margin="8,8" />
+                    <Button x:Name="StrikeBtn" Classes="Subtle FormattingMenuAction" ToolTip.Tip="{DynamicResource Loc_9AABBCB2C18D}" Click="OnStrikeClicked" AutomationProperties.Name="{DynamicResource Loc_9AABBCB2C18D}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="text-strikethrough" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_9AABBCB2C18D}" /></StackPanel>
+                    </Button>
+                    <!-- Color & Highlight Pickers -->
+                    <Button Classes="Subtle FormattingMenuAction" ToolTip.Tip="{DynamicResource Loc_2EA2323426F3}" AutomationProperties.Name="{DynamicResource Loc_2EA2323426F3}">
                       <Button.Flyout>
                         <Flyout>
                           <WrapPanel Width="180">
@@ -124,7 +159,7 @@
                         </Flyout>
                       </Button.Flyout><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="palette" Size="{DynamicResource IconSizeSmall}" /><TextBlock Text="{DynamicResource Loc_2EA2323426F3}" /></StackPanel></Button>
 
-                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_48AAE41545CE}" AutomationProperties.Name="{DynamicResource Loc_48AAE41545CE}">
+                    <Button Classes="Subtle FormattingMenuAction" ToolTip.Tip="{DynamicResource Loc_48AAE41545CE}" AutomationProperties.Name="{DynamicResource Loc_48AAE41545CE}">
                       <Button.Flyout>
                         <Flyout>
                           <WrapPanel Width="180">
@@ -140,29 +175,13 @@
                       </Button.Flyout><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="highlighter" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_48AAE41545CE}" /></StackPanel></Button>
 
                     <!-- Insert Divider -->
-                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_8BBA8E6B7138}" Click="OnInsertDividerClicked" AutomationProperties.Name="{DynamicResource Loc_8BBA8E6B7138}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="rows" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_8BBA8E6B7138}" /></StackPanel>
+                    <Button Classes="Subtle FormattingMenuAction" ToolTip.Tip="{DynamicResource Loc_8BBA8E6B7138}" Click="OnInsertDividerClicked" AutomationProperties.Name="{DynamicResource Loc_8BBA8E6B7138}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="rows" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_8BBA8E6B7138}" /></StackPanel>
                     </Button>
 
                     <!-- Clear Formatting -->
-                    <Button Classes="Subtle ToolbarAction" ToolTip.Tip="{DynamicResource Loc_804CF3352C42}" Click="OnClearFormattingClicked" AutomationProperties.Name="{DynamicResource Loc_804CF3352C42}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="text-clear" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_804CF3352C42}" /></StackPanel>
+                    <Button Classes="Subtle FormattingMenuAction" ToolTip.Tip="{DynamicResource Loc_804CF3352C42}" Click="OnClearFormattingClicked" AutomationProperties.Name="{DynamicResource Loc_804CF3352C42}"><StackPanel Orientation="Horizontal" Spacing="8"><controls:DaisyIcon Icon="text-clear" Size="{DynamicResource IconSizeStandard}" /><TextBlock Text="{DynamicResource Loc_804CF3352C42}" /></StackPanel>
                     </Button>
-                    <!-- Font Weight Selector -->
-                    <TextBlock x:Name="FontWeightHeading" />
-                    <ComboBox x:Name="FontWeightCombo"
-                              Classes="Flexible"
-                              Height="{DynamicResource ControlHeightCompact}"
-                              MinHeight="{DynamicResource ControlHeightCompact}"
-                              VerticalAlignment="Center"
-                              MinWidth="104"
-                              FontSize="{DynamicResource TypeSizeCaption}"
-                              CornerRadius="{DynamicResource RadiusControlInner}"
-                              SelectionChanged="OnFontWeightSelectionChanged">
-                      <ComboBoxItem Content="{DynamicResource Loc_B455784AB530}" Tag="400" />
-                      <ComboBoxItem Content="{DynamicResource Loc_8E588CD18774}" Tag="500" />
-                      <ComboBoxItem Content="{DynamicResource Loc_FFC5DE721473}" Tag="600" />
-                      <ComboBoxItem Content="{DynamicResource Loc_94FEE62E68E2}" Tag="700" />
-                      <ComboBoxItem Content="{DynamicResource Loc_F0A0B33594B2}" Tag="800" />
-                    </ComboBox>
+
                   </StackPanel>
                 </ScrollViewer>
               </Flyout>

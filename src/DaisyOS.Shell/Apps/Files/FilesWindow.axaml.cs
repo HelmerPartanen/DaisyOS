@@ -1747,17 +1747,7 @@ public partial class FilesWindow : Window
             return;
         }
 
-        BeginMoveDrag(e);
-    }
-
-    private void OnTabRowDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (e.Source is Visual source && IsInteractiveControl(source))
-        {
-            return;
-        }
-
-        ToggleMaximizeRestore();
+        SystemAppWindowChrome.HandleTitleBarPress(this, e);
     }
 
     private static bool IsInteractiveControl(Visual source)

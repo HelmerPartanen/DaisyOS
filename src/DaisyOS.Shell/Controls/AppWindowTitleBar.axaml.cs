@@ -75,17 +75,8 @@ public partial class AppWindowTitleBar : UserControl
             return;
         }
 
-        HostWindow?.BeginMoveDrag(e);
-    }
-
-    private void OnTitleBarDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (e.Source is Visual source && IsInteractiveControl(source))
-        {
-            return;
-        }
-
-        ToggleMaximizeRestore();
+        if (HostWindow is { } window)
+            Apps.SystemAppWindowChrome.HandleTitleBarPress(window, e);
     }
 
     private static bool IsInteractiveControl(Visual source)

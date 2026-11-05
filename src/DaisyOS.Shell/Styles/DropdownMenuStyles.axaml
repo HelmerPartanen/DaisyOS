@@ -57,6 +57,33 @@
     </Setter>
   </Style>
 
+  <!-- Composed formatting controls share the context-menu material and blur host. -->
+  <Style Selector="FlyoutPresenter.FormattingMenu">
+    <Setter Property="Background" Value="Transparent" />
+    <Setter Property="BorderThickness" Value="0" />
+    <Setter Property="Padding" Value="0" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <Border x:Name="MenuBlurHost" Margin="{DynamicResource SpaceInset4}"
+                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                CornerRadius="{DynamicResource RoundedLG}"
+                Padding="{DynamicResource BorderThicknessDefault}"
+                BoxShadow="{DynamicResource ElevationFlyoutShadow}">
+          <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                  CornerRadius="{DynamicResource RoundedLGInset}"
+                  Padding="{DynamicResource BorderThicknessDefault}">
+            <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                    CornerRadius="{DynamicResource RoundedMD}" Padding="8">
+              <ContentPresenter Name="PART_ContentPresenter"
+                                Content="{TemplateBinding Content}"
+                                ContentTemplate="{TemplateBinding ContentTemplate}" />
+            </Border>
+          </Border>
+        </Border>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+
   <!-- Reusable Global Glass Context Menu Container Style -->
   <Style Selector="ContextMenu">
     <Setter Property="Background" Value="Transparent" />

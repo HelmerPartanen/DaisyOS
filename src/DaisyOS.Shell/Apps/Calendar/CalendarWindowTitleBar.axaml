@@ -47,8 +47,7 @@
 
   <Border Background="{DynamicResource SurfaceBaseBrush}"
           BorderThickness="0"
-          PointerPressed="OnTitleBarPointerPressed"
-          DoubleTapped="OnTitleBarDoubleTapped">
+          PointerPressed="OnTitleBarPointerPressed">
     <Grid ColumnDefinitions="Auto,*,Auto">
       <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Spacing="8" Margin="12,0,10,0">
         <controls:DaisyIcon Icon="calendar"

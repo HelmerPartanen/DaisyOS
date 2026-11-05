@@ -33,17 +33,8 @@ public partial class CalendarWindowTitleBar : UserControl
             return;
         }
 
-        HostWindow?.BeginMoveDrag(e);
-    }
-
-    private void OnTitleBarDoubleTapped(object? sender, TappedEventArgs e)
-    {
-        if (e.Source is Visual source && IsInteractiveControl(source))
-        {
-            return;
-        }
-
-        ToggleMaximizeRestore();
+        if (HostWindow is { } window)
+            SystemAppWindowChrome.HandleTitleBarPress(window, e);
     }
 
     private static bool IsInteractiveControl(Visual source)

@@ -33,7 +33,8 @@ public partial class CalculatorWindowTitleBar : UserControl
             return;
         }
 
-        HostWindow?.BeginMoveDrag(e);
+        if (HostWindow is { } window)
+            SystemAppWindowChrome.HandleTitleBarPress(window, e);
     }
 
     private static bool IsInteractiveControl(Visual source)

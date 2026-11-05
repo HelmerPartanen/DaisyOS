@@ -151,6 +151,19 @@ internal sealed class SystemAppWindowChrome : IDisposable
         _window.WindowState = WindowState.FullScreen;
     }
 
+    internal static void HandleTitleBarPress(Window window, PointerPressedEventArgs e)
+    {
+        // Never start a compositor move for the second press: Wayland move
+        // grabs can outlive the maximize configure and leave floating geometry.
+        // Use the raw click count because BeginMoveDrag releases pointer capture,
+        // which can prevent the routed DoubleTapped gesture from being raised.
+        if (e.ClickCount % 2 == 0)
+            ToggleMaximizeRestore(window);
+        else
+            window.BeginMoveDrag(e);
+        e.Handled = true;
+    }
+
     /// <summary>
     /// Starts the standard desktop maximize/restore operation and immediately
     /// applies its frame presentation. Wayland state changes are asynchronous;
