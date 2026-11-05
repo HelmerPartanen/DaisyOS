@@ -24,7 +24,7 @@ public class LockScreenSettingsTests
     [AvaloniaTheory]
     [InlineData(760, false)]
     [InlineData(1280, true)]
-    public async Task DedicatedCategoryKeepsAdvancedOptionsCollapsedAndUpdatesPreview(int width, bool dark)
+    public async Task DedicatedCategoryShowsAllSettingsAndUpdatesPreview(int width, bool dark)
     {
         var view = new SettingsView();
         var window = new Window { Width = width, Height = 900, Content = view,
@@ -37,7 +37,8 @@ public class LockScreenSettingsTests
             Dispatcher.UIThread.RunJobs();
             Assert.True(view.FindControl<ScrollViewer>("LockScreenView")!.IsVisible);
             Assert.True(view.FindControl<Button>("NavLockScreen")!.Classes.Contains("Active"));
-            Assert.False(view.FindControl<Expander>("LockMoreExpander")!.IsExpanded);
+            Assert.True(view.FindControl<StackPanel>("LockMoreOptions")!.IsEffectivelyVisible);
+            Assert.Empty(view.FindControl<ScrollViewer>("LockScreenView")!.GetVisualDescendants().OfType<Expander>());
             var toggle = view.FindControl<ToggleSwitch>("DeptEffectToggle")!;
             toggle.IsChecked = false;
             Assert.False(view.FindControl<StackPanel>("DeptEffectOptions")!.IsEnabled);
@@ -67,7 +68,6 @@ public class LockScreenSettingsTests
             Directory.CreateDirectory("/tmp/daisy-lock-settings");
             using var frame = window.CaptureRenderedFrame();
             frame!.Save($"/tmp/daisy-lock-settings/page-{width}.png", PngBitmapEncoderOptions.Default);
-            view.FindControl<Expander>("LockMoreExpander")!.IsExpanded = true;
             window.UpdateLayout();
             var content = view.FindControl<StackPanel>("LockScreenContent")!;
             var sliders = content.GetVisualDescendants().OfType<QuickSettingsSlider>().ToArray();

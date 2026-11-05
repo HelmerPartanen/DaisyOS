@@ -113,7 +113,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Bluetooth", "BLUETOOTH", "Bluetooth", "Devices, pairing, and discoverability", "bluetooth headset controller devices"),
             new("LockScreen", "", "Clock font", "Customize the lock-screen clock", "lock screen font style size color position typography"),
             new("LockScreen", "", "Depth effect", "Place the clock behind wallpaper subjects", "lock screen dept depth effect foreground disable"),
-            new("LockScreen", "", "More options", "Date, time format, dimming, battery and media", "lock screen date battery media privacy dim wallpaper format"),
+            new("LockScreen", "", "Date & time", "Date, time format, dimming, battery and media", "lock screen date battery media privacy dim wallpaper format"),
             new("Appearance", "", "Theme", "Light, dark, and automatic appearance", "dark light theme mode appearance"),
             new("Appearance", "", "Taskbar size", "Minimum, default or maximum", "taskbar dock size height scale"),
             new("Appearance", "", "Taskbar and systembar", "Always visible or auto-hide", "taskbar systembar system bar dock auto-hide maximize fullscreen"),

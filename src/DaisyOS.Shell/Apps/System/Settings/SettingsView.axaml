@@ -61,25 +61,6 @@
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
     </Style>
 
-    <Style Selector="Expander.LockScreenMore">
-      <Setter Property="HorizontalAlignment" Value="Stretch" />
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0" />
-    </Style>
-    <Style Selector="Expander.LockScreenMore /template/ ToggleButton#ExpanderHeader">
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
-      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
-      <Setter Property="Padding" Value="20,0,0,0" />
-      <Setter Property="MinHeight" Value="60" />
-    </Style>
-    <Style Selector="Expander.LockScreenMore /template/ Border#ExpanderContent">
-      <Setter Property="Background" Value="Transparent" />
-      <Setter Property="BorderThickness" Value="0" />
-      <Setter Property="Padding" Value="0" />
-    </Style>
-
     <Style Selector="Border.SettingsGroupCard">
       <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
@@ -514,8 +495,7 @@
                 </Border>
               </Border>
             </StackPanel>
-            <Expander x:Name="LockMoreExpander" Classes="LockScreenMore" Header="{DynamicResource Loc_BC79CDFFBAA8}" HorizontalContentAlignment="Stretch">
-              <StackPanel Spacing="24" Margin="0,12,0,0">
+            <StackPanel Spacing="24">
                 <StackPanel x:Name="LockMoreOptions" Spacing="24" />
                 <StackPanel Spacing="12">
                   <TextBlock Text="{DynamicResource Loc_B7539531C5C0}" Classes="SettingsSectionTitle" />
@@ -534,8 +514,7 @@
                     </StackPanel>
                   </Border>
                 </StackPanel>
-              </StackPanel>
-            </Expander>
+            </StackPanel>
             <Button Content="{DynamicResource Loc_602F8E637002}" Classes="Small" HorizontalAlignment="Left" Click="OnResetLockScreenClicked" />
           </StackPanel>
         </Grid>

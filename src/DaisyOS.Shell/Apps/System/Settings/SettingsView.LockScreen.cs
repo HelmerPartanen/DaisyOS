@@ -40,10 +40,9 @@ public partial class SettingsView
         if (_pendingSettingTitle is { } target)
         {
             _pendingSettingTitle = null;
-            if (target == "More options") LockMoreExpander.IsExpanded = true;
             Dispatcher.UIThread.Post(() =>
             {
-                Control control = target == "Depth effect" ? DeptEffectToggle : target == "More options" ? LockMoreExpander : LockClockOptions;
+                Control control = target == "Depth effect" ? DeptEffectToggle : target == "Date & time" ? LockMoreOptions : LockClockOptions;
                 control.BringIntoView();
                 (control.GetVisualDescendants().OfType<Control>().FirstOrDefault(c => c.Focusable) ?? control).Focus(NavigationMethod.Directional);
             }, DispatcherPriority.Render);
