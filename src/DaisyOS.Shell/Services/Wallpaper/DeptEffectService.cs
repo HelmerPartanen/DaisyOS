@@ -14,12 +14,29 @@ public sealed class DeptEffectService
     private static readonly string ModelDirectory = Path.Combine(AppContext.BaseDirectory, "Models", "DeptEffect");
     private static readonly Lazy<string> ModelVersion = new(() => string.Join("-", new[] { "skyseg.onnx", "u2netp.onnx" }
         .Select(HashModel)));
+    private static readonly object MemoryCacheGate = new();
+    private static readonly Dictionary<string, byte[][]> MemoryCache = new(StringComparer.Ordinal);
+    private static readonly object SessionGate = new();
+    private static InferenceSession? SkySession;
+    private static InferenceSession? SubjectSession;
     private readonly string _cacheDirectory;
 
     private static string HashModel(string name)
     {
         using var stream = File.OpenRead(Path.Combine(ModelDirectory, name));
         return Convert.ToHexString(SHA256.HashData(stream));
+    }
+
+    private static InferenceSession GetSession(string model, bool sky)
+    {
+        lock (SessionGate)
+        {
+            ref var session = ref (sky ? ref SkySession : ref SubjectSession);
+            if (session is not null) return session;
+            var options = new SessionOptions { IntraOpNumThreads = 2, InterOpNumThreads = 1 };
+            session = new InferenceSession(Path.Combine(ModelDirectory, model), options);
+            return session;
+        }
     }
 
     public DeptEffectService(string? cacheDirectory = null)
@@ -34,19 +51,40 @@ public sealed class DeptEffectService
     {
         try
         {
+            if (snapshot is not { Length: > 0 }) return null;
             return await Task.Run(async () =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var key = Convert.ToHexString(SHA256.HashData(snapshot)) + "-v3-" + ModelVersion.Value;
                 key = Convert.ToHexString(SHA256.HashData(global::System.Text.Encoding.UTF8.GetBytes(key)));
                 var path = Path.Combine(_cacheDirectory, key + ".mask");
+                var memoryKey = path;
+                lock (MemoryCacheGate)
+                {
+                    if (MemoryCache.TryGetValue(memoryKey, out var inMemory) && File.Exists(path))
+                        return inMemory;
+                }
                 await InferenceGate.WaitAsync(cancellationToken);
                 try
                 {
+                    lock (MemoryCacheGate)
+                    {
+                        if (MemoryCache.TryGetValue(memoryKey, out var inMemory) && File.Exists(path))
+                            return inMemory;
+                    }
                     if (File.Exists(path))
                     {
                         var cached = await File.ReadAllBytesAsync(path, cancellationToken);
                         if (cached.Length == OverlaySize * OverlaySize * 2)
-                            return new[] { cached[..(OverlaySize * OverlaySize)], cached[(OverlaySize * OverlaySize)..] };
+                        {
+                            var loaded = new[] { cached[..(OverlaySize * OverlaySize)], cached[(OverlaySize * OverlaySize)..] };
+                            lock (MemoryCacheGate)
+                            {
+                                if (MemoryCache.Count >= 16) MemoryCache.Clear();
+                                MemoryCache[memoryKey] = loaded;
+                            }
+                            return loaded;
+                        }
                     }
                     if (!automatic) return null;
                     using var image = SKBitmap.Decode(snapshot);
@@ -61,10 +99,18 @@ public sealed class DeptEffectService
                     var temporary = path + "." + Guid.NewGuid().ToString("N");
                     try
                     {
-                        await File.WriteAllBytesAsync(temporary, masks.SelectMany(mask => mask).ToArray(), cancellationToken);
+                        var combined = new byte[OverlaySize * OverlaySize * 2];
+                        Buffer.BlockCopy(masks[0], 0, combined, 0, OverlaySize * OverlaySize);
+                        Buffer.BlockCopy(masks[1], 0, combined, OverlaySize * OverlaySize, OverlaySize * OverlaySize);
+                        await File.WriteAllBytesAsync(temporary, combined, cancellationToken);
                         File.Move(temporary, path, true);
                     }
                     finally { if (File.Exists(temporary)) File.Delete(temporary); }
+                    lock (MemoryCacheGate)
+                    {
+                        if (MemoryCache.Count >= 16) MemoryCache.Clear();
+                        MemoryCache[memoryKey] = masks;
+                    }
                     // Bound the disk cache (each entry is only 800 KiB).
                     foreach (var old in new DirectoryInfo(_cacheDirectory).GetFiles("*.mask").OrderByDescending(f => f.LastWriteTimeUtc).Skip(64))
                         old.Delete();
@@ -84,8 +130,7 @@ public sealed class DeptEffectService
     private static byte[] Infer(SKBitmap image, string model, bool sky, CancellationToken token)
     {
         token.ThrowIfCancellationRequested();
-        using var options = new SessionOptions { IntraOpNumThreads = 2, InterOpNumThreads = 1 };
-        using var session = new InferenceSession(Path.Combine(ModelDirectory, model), options);
+        var session = GetSession(model, sky);
         using var runOptions = new RunOptions();
         using var cancellation = token.Register(() => runOptions.Terminate = true);
         var tensor = new DenseTensor<float>(new[] { 1, 3, MaskSize, MaskSize });
@@ -98,13 +143,17 @@ public sealed class DeptEffectService
                     var p = image.GetPixel(x, y);
                     maximum = Math.Max(maximum, Math.Max(p.Red, Math.Max(p.Green, p.Blue)));
                 }
+        var normScale = 1f / (sky ? 255f : maximum);
+        var invDev0 = 1f / deviations[0];
+        var invDev1 = 1f / deviations[1];
+        var invDev2 = 1f / deviations[2];
         for (var y = 0; y < MaskSize; y++)
             for (var x = 0; x < MaskSize; x++)
             {
                 var p = image.GetPixel(x, y);
-                tensor[0, 0, y, x] = (p.Red / (sky ? 255f : maximum) - means[0]) / deviations[0];
-                tensor[0, 1, y, x] = (p.Green / (sky ? 255f : maximum) - means[1]) / deviations[1];
-                tensor[0, 2, y, x] = (p.Blue / (sky ? 255f : maximum) - means[2]) / deviations[2];
+                tensor[0, 0, y, x] = (p.Red * normScale - means[0]) * invDev0;
+                tensor[0, 1, y, x] = (p.Green * normScale - means[1]) * invDev1;
+                tensor[0, 2, y, x] = (p.Blue * normScale - means[2]) * invDev2;
             }
         using var output = session.Run(new[] { NamedOnnxValue.CreateFromTensor(session.InputMetadata.Keys.First(), tensor) }, session.OutputMetadata.Keys.Take(1).ToArray(), runOptions);
         var prediction = output.First().AsTensor<float>().ToArray();
@@ -114,14 +163,15 @@ public sealed class DeptEffectService
         if (range < 0.05) return new byte[prediction.Length];
         var mask = new byte[prediction.Length];
         var uncertain = 0;
+        var invRange = 1f / range;
         for (var i = 0; i < mask.Length; i++)
         {
-            var value = (prediction[i] - min) / range;
+            var value = (prediction[i] - min) * invRange;
             // Sky model emits high values for sky; invert to retain mountains, trees and buildings.
             if (sky) value = 1 - value;
             if (value > 0.1 && value < 0.9) uncertain++;
             // A narrow smoothstep removes low-confidence halos without widening subjects.
-            var alpha = Math.Clamp((value - 0.35f) / 0.4f, 0, 1);
+            var alpha = Math.Clamp((value - 0.35f) * 2.5f, 0, 1);
             mask[i] = (byte)Math.Round(alpha * alpha * (3 - 2 * alpha) * 255);
         }
         if (!IsCompatible(mask, uncertain / (double)mask.Length, sky) || !HasUsableEdges(mask, image)) Array.Clear(mask);

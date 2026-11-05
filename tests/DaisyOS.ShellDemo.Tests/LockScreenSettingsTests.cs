@@ -142,6 +142,39 @@ public class LockScreenSettingsTests
         finally { window.Close(); }
     }
 
+    [AvaloniaFact]
+    public async Task LockScreenPreviewNeverLeavesLetterboxBarsAndScalesClockBandsFast()
+    {
+        var view = new SettingsView();
+        var window = new Window { Width = 1280, Height = 900, Content = view };
+        window.Show();
+        try
+        {
+            view.SelectCategory("LockScreen");
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            var previewGrid = view.FindControl<Grid>("DeptPreviewGrid")!;
+            Assert.Equal(1200, previewGrid.Width);
+            Assert.Equal(720, previewGrid.Height);
+            var viewbox = previewGrid.Parent as Viewbox;
+            Assert.NotNull(viewbox);
+            Assert.Equal(Stretch.UniformToFill, viewbox!.Stretch);
+
+            var typeface = new Typeface(FontFamily.Default, FontStyle.Normal, FontWeight.Bold);
+            // Warm up reference glyph rasterization once
+            _ = LockScreenWindow.RasterizeClockGlyphBands("21:41", typeface, 104);
+            var sw = global::System.Diagnostics.Stopwatch.StartNew();
+            for (var size = 70; size <= 140; size++)
+            {
+                var bands = LockScreenWindow.RasterizeClockGlyphBands("21:41", typeface, size);
+                Assert.NotEmpty(bands);
+            }
+            sw.Stop();
+            Assert.True(sw.ElapsedMilliseconds < 50, $"Scaling 71 clock sizes took {sw.ElapsedMilliseconds}ms");
+        }
+        finally { window.Close(); }
+    }
+
     private sealed class PreviewMediaService : IMediaSessionService
     {
         public event EventHandler? MediaChanged { add { } remove { } }

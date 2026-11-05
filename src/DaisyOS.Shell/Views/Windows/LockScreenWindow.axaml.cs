@@ -122,6 +122,7 @@ public partial class LockScreenWindow : Window
     private readonly Button _expandedPlayPauseButton;
     private readonly DaisyIcon _expandedPlayPauseGlyph;
 
+    private readonly Border _expandedArtworkTint;
     private readonly Border _morphingArtworkBorder;
     private readonly Border _morphingArtworkInner;
     private readonly Image _morphingArtworkImage;
@@ -130,7 +131,7 @@ public partial class LockScreenWindow : Window
     private readonly DaisyIcon _morphingSourceGlyph;
     private readonly Border _morphingArtworkHighlight;
 
-    private readonly DispatcherTimer _clockAnimation = new() { Interval = TimeSpan.FromMilliseconds(16) };
+    private readonly DispatcherTimer _clockAnimation = new(DispatcherPriority.Render) { Interval = TimeSpan.FromMilliseconds(16) };
     private readonly global::System.Diagnostics.Stopwatch _clockAnimationTime = new();
     private bool _clockInitialized;
     private KWinBlur? _nativeBlur;
@@ -219,8 +220,20 @@ public partial class LockScreenWindow : Window
         {
             AdditionalRegions = window.GetClockBlurRegions
         };
-        window.ClockText.PropertyChanged += (_, _) => window._nativeBlur.RefreshImmediately();
-        window.PreviousClockText.PropertyChanged += (_, _) => window._nativeBlur.RefreshImmediately();
+        static bool AffectsClockBlur(AvaloniaPropertyChangedEventArgs e)
+        {
+            if (e.Property == Visual.OpacityProperty)
+                return (e.GetOldValue<double>() > 0.001) != (e.GetNewValue<double>() > 0.001);
+            return e.Property == TextBlock.TextProperty ||
+                   e.Property == TextBlock.FontSizeProperty ||
+                   e.Property == TextBlock.FontFamilyProperty ||
+                   e.Property == TextBlock.FontWeightProperty ||
+                   e.Property == Visual.BoundsProperty ||
+                   e.Property == Visual.IsVisibleProperty ||
+                   e.Property == Visual.RenderTransformProperty;
+        }
+        window.ClockText.PropertyChanged += (_, e) => { if (AffectsClockBlur(e)) window._nativeBlur.RefreshImmediately(); };
+        window.PreviousClockText.PropertyChanged += (_, e) => { if (AffectsClockBlur(e)) window._nativeBlur.RefreshImmediately(); };
         wallpaper.Show();
         return window;
     }
@@ -403,6 +416,7 @@ public partial class LockScreenWindow : Window
         _expandedRemainingText = this.FindControl<TextBlock>("ExpandedRemainingText")!;
         _expandedPlayPauseButton = this.FindControl<Button>("ExpandedPlayPauseButton")!;
         _expandedPlayPauseGlyph = this.FindControl<DaisyIcon>("ExpandedPlayPauseGlyph")!;
+        _expandedArtworkTint = this.FindControl<Border>("ExpandedArtworkTint")!;
 
         _morphingArtworkBorder = this.FindControl<Border>("MorphingArtworkBorder")!;
         _morphingArtworkInner = this.FindControl<Border>("MorphingArtworkInner")!;
@@ -486,11 +500,20 @@ public partial class LockScreenWindow : Window
             () => !IsMediaExpanded && LockContentScroll.Offset.Y < 1 && wallpaperImage.Opacity > 0.999 && LockWallpaper.Opacity > 0.99 && _lockCanvasLayer.Opacity < 0.01, LockWallpaperScrim.Background);
         void RefreshDeptEffect()
         {
+            if (Application.Current is App activeApp)
+            {
+                ApplyLockScreenAppearance(activeApp.CurrentLockScreenAppearance);
+                DeptForeground.SetPreferences(
+                    activeApp.DeptEffectEnabled && !activeApp.HighContrastEnabled && !DaisyOS.Shell.Services.Wallpaper.WallpaperFileTypes.IsVideo(LockWallpaper.WallpaperUri ?? wallpaperSource ?? ""),
+                    activeApp.DeptEffectAutomatic);
+                return;
+            }
             var settings = new AppearanceSettingsStore().Load();
             ApplyLockScreenAppearance(settings.LockScreen ?? new());
             DeptForeground.SetPreferences(settings.DeptEffectEnabled && !settings.HighContrast && !DaisyOS.Shell.Services.Wallpaper.WallpaperFileTypes.IsVideo(LockWallpaper.WallpaperUri ?? wallpaperSource ?? ""),
                 settings.DeptEffectAutomatic);
         }
+        LoadWallpaper(wallpaperSource);
         RefreshDeptEffect();
         if (Application.Current is App deptApp)
         {
@@ -502,8 +525,6 @@ public partial class LockScreenWindow : Window
             deptApp.AppearanceChanged += refreshDept;
             Closed += (_, _) => deptApp.AppearanceChanged -= refreshDept;
         }
-        LoadWallpaper(wallpaperSource);
-        RefreshDeptEffect();
 
         _clockTimer = new DispatcherTimer
         {
@@ -521,7 +542,12 @@ public partial class LockScreenWindow : Window
             var eased = 1 - Math.Pow(1 - progress, 3);
             ClockText.Opacity = eased;
             PreviousClockText.Opacity = 1 - eased;
-            if (progress >= 1) _clockAnimation.Stop();
+            if (progress >= 1)
+            {
+                ClockText.Opacity = 1;
+                PreviousClockText.Opacity = 0;
+                _clockAnimation.Stop();
+            }
         };
 
         if (_isSecondary)
@@ -538,6 +564,14 @@ public partial class LockScreenWindow : Window
             UpdateBatteryAsync();
 
             KeyDown += OnWindowKeyDown;
+            KeyUp += OnWindowKeyUp;
+            PasswordBox.TextChanged += (_, _) =>
+            {
+                if (!string.IsNullOrEmpty(PasswordBox.Text) && ErrorMessageText.IsVisible)
+                {
+                    ErrorMessageText.IsVisible = false;
+                }
+            };
             PasswordBox.KeyDown += (s, e) =>
             {
                 if (_isAuthenticating) return;
@@ -617,10 +651,29 @@ public partial class LockScreenWindow : Window
 
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape && IsMediaExpanded)
+        if (e.Key == Key.CapsLock)
+        {
+            CapsLockWarningText.IsVisible = !CapsLockWarningText.IsVisible;
+        }
+        else if (e.Key == Key.Escape && IsMediaExpanded)
         {
             e.Handled = true;
             _ = SetMediaExpandedAsync(false);
+        }
+        else if (!IsMediaExpanded && !_isSecondary && !PasswordBox.IsFocused
+                 && e.KeySymbol is { Length: > 0 } && e.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift)
+        {
+            PasswordBox.Focus();
+        }
+    }
+
+    private void OnWindowKeyUp(object? sender, KeyEventArgs e)
+    {
+        if (e.KeySymbol is { Length: 1 } symbol && char.IsLetter(symbol[0]))
+        {
+            var isShifted = (e.KeyModifiers & KeyModifiers.Shift) != 0;
+            var isUpper = char.IsUpper(symbol[0]);
+            CapsLockWarningText.IsVisible = isUpper != isShifted;
         }
     }
 
@@ -691,11 +744,20 @@ public partial class LockScreenWindow : Window
         {
             if (string.IsNullOrWhiteSpace(wallpaperSource))
             {
-                var appearance = new AppearanceSettingsStore().Load();
-                wallpaperSource = appearance.WallpaperUri;
-                if (appearance.UseSolidWallpaper && !string.IsNullOrWhiteSpace(appearance.SolidWallpaperColor))
+                if (Application.Current is App activeApp)
                 {
-                    wallpaperSource = appearance.SolidWallpaperColor;
+                    wallpaperSource = activeApp.UsesSolidWallpaper
+                        ? activeApp.CurrentSolidWallpaperColor.ToString()
+                        : activeApp.CurrentWallpaperUri;
+                }
+                else
+                {
+                    var appearance = new AppearanceSettingsStore().Load();
+                    wallpaperSource = appearance.WallpaperUri;
+                    if (appearance.UseSolidWallpaper && !string.IsNullOrWhiteSpace(appearance.SolidWallpaperColor))
+                    {
+                        wallpaperSource = appearance.SolidWallpaperColor;
+                    }
                 }
             }
 
@@ -1354,17 +1416,19 @@ public partial class LockScreenWindow : Window
     {
         var brush = MediaWidgetMaterial.CreateTint(this, _artworkTint);
         _collapsedArtworkTint.Background = brush;
-        this.FindControl<Border>("ExpandedArtworkTint")!.Background = brush;
+        _expandedArtworkTint.Background = brush;
     }
 
     private void UpdateSpectrumBarTint()
     {
+        IBrush brush = _artworkTint is { } color
+            ? new SolidColorBrush(color)
+            : Brushes.Transparent;
+        var opacity = _artworkTint is null ? 0 : 0.55;
         foreach (var tintLayer in _spectrumTintLayers)
         {
-            tintLayer.Background = _artworkTint is { } color
-                ? new SolidColorBrush(color)
-                : Brushes.Transparent;
-            tintLayer.Opacity = _artworkTint is null ? 0 : 0.55;
+            tintLayer.Background = brush;
+            tintLayer.Opacity = opacity;
         }
     }
 
@@ -1577,18 +1641,21 @@ public partial class LockScreenWindow : Window
 
     private async Task ShakePasswordBoxAsync()
     {
-        if (_isShaking) return;
+        if (_isShaking || Application.Current is App { ReduceMotionEnabled: true }) return;
         _isShaking = true;
         try
         {
             var transform = new TranslateTransform();
             PasswordPillBorder.RenderTransform = transform;
-            int[] offsets = [-12, 12, -9, 9, -5, 5, 0];
-            foreach (var offset in offsets)
+            var sw = global::System.Diagnostics.Stopwatch.StartNew();
+            const double durationMs = 260;
+            while (sw.Elapsed.TotalMilliseconds < durationMs && !_closed && !_dismissing)
             {
-                transform.X = offset;
+                var t = Math.Clamp(sw.Elapsed.TotalMilliseconds / durationMs, 0, 1);
+                var decay = (1 - t) * (1 - t);
+                transform.X = Math.Round(-12 * decay * Math.Sin(t * Math.PI * 6));
                 _nativeBlur?.RefreshImmediately();
-                await Task.Delay(25);
+                await Task.Delay(16);
             }
             PasswordPillBorder.RenderTransform = null;
             _nativeBlur?.RefreshImmediately();

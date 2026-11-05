@@ -60,7 +60,7 @@ internal sealed class KWinBlur : IDisposable
     private void OnLayoutUpdated(object? sender, EventArgs e) => RefreshImmediately();
     private void OnControlPropertyChanged(object? sender, AvaloniaPropertyChangedEventArgs e)
     {
-        if (e.Property == Visual.OpacityProperty && sender is Visual visual && AdditionalRegions is null)
+        if (e.Property == Visual.OpacityProperty && sender is Visual visual)
         {
             // KWin's mask is geometric, not alpha weighted. Fading an already
             // visible material does not require rebuilding its scanlines.
@@ -80,6 +80,12 @@ internal sealed class KWinBlur : IDisposable
                     crossesThreshold = true;
                     break;
                 }
+            }
+            if (!crossesThreshold && AdditionalRegions is not null)
+            {
+                var oldVisible = e.GetOldValue<double>() > 0.001;
+                var newVisible = e.GetNewValue<double>() > 0.001;
+                if (oldVisible != newVisible) crossesThreshold = true;
             }
             if (!crossesThreshold) return;
         }
