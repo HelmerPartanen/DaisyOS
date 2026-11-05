@@ -52,6 +52,26 @@
     <Style Selector="Border.LockMediaArtwork:pressed">
       <Setter Property="RenderTransform" Value="scale(0.97)" />
     </Style>
+    <Style Selector="Button.LauncherUtility">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RadiusCircle}" />
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="RenderTransform" Value="none" />
+      <Setter Property="Transitions">
+        <Transitions>
+          <TransformOperationsTransition Property="RenderTransform" Duration="{DynamicResource MotionDurationFast}" Easing="{StaticResource MotionEaseMove}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.LauncherUtility:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource LauncherTileHoverBrush}" />
+      <Setter Property="BorderBrush" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.LauncherUtility:pressed">
+      <Setter Property="RenderTransform" Value="scale(0.92)" />
+    </Style>
   </Window.Styles>
 
   <Grid x:Name="RootGrid"
@@ -106,7 +126,7 @@
     <!-- Main Foreground Content Grid -->
     <Grid RowDefinitions="*,Auto">
       <ScrollViewer x:Name="LockContentScroll" Grid.Row="0"
-                    HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Hidden">
       <Grid x:Name="MainContentGrid" RowDefinitions="Auto,*,Auto" Margin="24,0">
       <!-- Top Area: Date above Clock -->
       <StackPanel x:Name="ClockArea"
@@ -245,15 +265,8 @@
                 <!-- Hint Button (?) -->
                 <Button x:Name="HintButton"
                         Grid.Column="1"
-                        Width="{DynamicResource ControlHeightStandard}"
-                        Height="{DynamicResource ControlHeightStandard}"
-                        CornerRadius="{DynamicResource RadiusControl}"
-                        Background="Transparent"
-                        BorderThickness="0"
-                        Margin="0,0,4,0"
-                        VerticalAlignment="Center"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"
+                        Classes="Ghost IconButton Small"
+                        Margin="0,0,2,0"
                         ToolTip.Tip="{DynamicResource Loc_89D40EFBE503}"
                         Click="OnHintClicked">
                   <TextBlock Text="?"
@@ -268,15 +281,8 @@
                 <!-- Submit Arrow Button -->
                 <Button x:Name="UnlockButton"
                         Grid.Column="2"
-                        Width="{DynamicResource ControlHeightStandard}"
-                        Height="{DynamicResource ControlHeightStandard}"
-                        CornerRadius="{DynamicResource RadiusSurfaceInner}"
-                        Background="{DynamicResource StateHoverBrush}"
-                        BorderThickness="0"
-                        Margin="0,0,6,0"
-                        VerticalAlignment="Center"
-                        HorizontalContentAlignment="Center"
-                        VerticalContentAlignment="Center"
+                        Classes="Ghost IconButton Small"
+                        Margin="0,0,3,0"
                         Click="OnUnlockClicked">
                   <controls:DaisyIcon x:Name="UnlockArrowIcon"
                                       Icon="arrow-right"
@@ -352,51 +358,58 @@
                   Orientation="Horizontal"
                   Spacing="8"
                   VerticalAlignment="Center">
-        <Button Width="{DynamicResource ControlHeightStandard}"
-                Height="{DynamicResource ControlHeightStandard}"
-                CornerRadius="{DynamicResource RadiusSurfaceInner}"
-                Background="{DynamicResource BlackAlpha15Brush}"
-                BorderBrush="{DynamicResource WhiteAlpha08Brush}"
-                BorderThickness="1"
-                ToolTip.Tip="{DynamicResource Loc_D466BCF52EB6}"
-                Click="OnSleepClicked">
-          <controls:DaisyIcon Icon="moon"
-                              Size="{DynamicResource IconSizeStandard}"
-                              Foreground="{DynamicResource WhiteAlpha56Brush}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center" />
-        </Button>
-        <Button Width="{DynamicResource ControlHeightStandard}"
-                Height="{DynamicResource ControlHeightStandard}"
-                CornerRadius="{DynamicResource RadiusSurfaceInner}"
-                Background="{DynamicResource BlackAlpha15Brush}"
-                BorderBrush="{DynamicResource WhiteAlpha08Brush}"
-                BorderThickness="1"
-                ToolTip.Tip="{DynamicResource Loc_6B983A81E5E8}"
-                Click="OnRestartClicked">
-          <controls:DaisyIcon Icon="arrow-clockwise"
-                              Size="{DynamicResource IconSizeStandard}"
-                              Foreground="{DynamicResource WhiteAlpha56Brush}"
-                              HorizontalAlignment="Center"
-                              VerticalAlignment="Center" />
-        </Button>
-        <Button Width="{DynamicResource ControlHeightStandard}"
-                Height="{DynamicResource ControlHeightStandard}"
-                CornerRadius="{DynamicResource RadiusSurfaceInner}"
-                Background="{DynamicResource BlackAlpha15Brush}"
-                BorderBrush="{DynamicResource WhiteAlpha08Brush}"
-                BorderThickness="1"
-                ToolTip.Tip="{DynamicResource Loc_3E45A33D2260}"
-                Click="OnShutdownClicked">
+        <Button x:Name="PowerButton"
+                Classes="LauncherUtility"
+                HorizontalAlignment="Right"
+                VerticalAlignment="Center"
+                Width="40"
+                Height="40"
+                ToolTip.Tip="{DynamicResource Loc_E40690533ABD}"
+                Click="OnPowerButtonClicked">
           <controls:DaisyIcon Icon="power"
-                              Size="{DynamicResource IconSizeStandard}"
-                              Foreground="{DynamicResource WhiteAlpha56Brush}"
+                              Size="{DynamicResource IconSizeMedium}"
+                              Foreground="{DynamicResource ContentPrimaryBrush}"
                               HorizontalAlignment="Center"
                               VerticalAlignment="Center" />
         </Button>
       </StackPanel>
     </Grid>
     </Grid>
+
+    <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
+            HorizontalAlignment="Left" VerticalAlignment="Top"
+            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            CornerRadius="{DynamicResource RoundedLG}" Padding="1"
+            BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="100">
+      <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+              CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
+        <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
+                CornerRadius="{DynamicResource RoundedMD}" Padding="4">
+          <StackPanel>
+            <MenuItem Header="{DynamicResource Loc_D466BCF52EB6}" Click="OnSleepClicked">
+              <MenuItem.Icon>
+                <controls:DaisyIcon Icon="moon" Classes="MenuIcon" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Loc_49616145514E}" Click="OnLogOutClicked">
+              <MenuItem.Icon>
+                <controls:DaisyIcon Icon="sign-out" Classes="MenuIcon" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Loc_6B983A81E5E8}" Click="OnRestartClicked">
+              <MenuItem.Icon>
+                <controls:DaisyIcon Icon="arrows-clockwise" Classes="MenuIcon" />
+              </MenuItem.Icon>
+            </MenuItem>
+            <MenuItem Header="{DynamicResource Loc_A4193461E8AC}" Click="OnShutdownClicked">
+              <MenuItem.Icon>
+                <controls:DaisyIcon Icon="power" Classes="MenuIcon" />
+              </MenuItem.Icon>
+            </MenuItem>
+          </StackPanel>
+        </Border>
+      </controls:ShellFrameBorder>
+    </controls:ShellFrameBorder>
 
     <!-- Bottom-Left Large Desktop Media Widget -->
     <Grid x:Name="CollapsedMediaHost"

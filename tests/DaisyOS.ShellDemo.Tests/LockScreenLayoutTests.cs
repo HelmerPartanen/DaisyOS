@@ -35,6 +35,12 @@ public sealed class LockScreenLayoutTests
             Directory.CreateDirectory("/tmp/daisy-lock-polish");
             using (var initialFrame = window.CaptureRenderedFrame())
                 initialFrame!.Save($"/tmp/daisy-lock-polish/balanced-{width}-{height}-{scale}.png", PngBitmapEncoderOptions.Default);
+            var scroller = window.FindControl<ScrollViewer>("LockContentScroll")!;
+            if (height >= 720)
+            {
+                Assert.True(scroller.Extent.Height <= scroller.Viewport.Height,
+                    $"Normal lock screen should not scroll at {width}x{height} (Extent={scroller.Extent.Height}, Viewport={scroller.Viewport.Height})");
+            }
             var name = window.FindControl<TextBlock>("UserNameText")!;
             name.Text = "Alexandra Åström — a long display name";
             var error = window.FindControl<TextBlock>("ErrorMessageText")!;
@@ -45,14 +51,26 @@ public sealed class LockScreenLayoutTests
             var clock = window.FindControl<TextBlock>("ClockText")!;
             var clockArea = window.FindControl<StackPanel>("ClockArea")!;
             var credentials = window.FindControl<StackPanel>("CredentialsPanel")!;
-            var scroller = window.FindControl<ScrollViewer>("LockContentScroll")!;
             var clockOrigin = clockArea.TranslatePoint(default, window)!.Value;
             var credentialsOrigin = credentials.TranslatePoint(default, window)!.Value;
             Assert.True(clockOrigin.Y + clockArea.Bounds.Height <= credentialsOrigin.Y);
             Assert.True(clock.Bounds.Width <= window.ClientSize.Width - 48);
             Assert.Equal(128, ((SolidColorBrush)clock.Foreground!).Color.A);
             var password = window.FindControl<TextBox>("PasswordBox")!;
+            var unlockButton = window.FindControl<Button>("UnlockButton")!;
+            var powerButton = window.FindControl<Button>("PowerButton")!;
+            var powerMenu = window.FindControl<Border>("MenuBlurHost")!;
             Assert.Equal((double)resources["ControlHeightStandard"]!, password.Bounds.Height);
+            Assert.Contains("Ghost", unlockButton.Classes);
+            Assert.Contains("IconButton", unlockButton.Classes);
+            Assert.Equal(40, powerButton.Bounds.Width);
+            Assert.Equal(40, powerButton.Bounds.Height);
+            Assert.False(powerMenu.IsVisible);
+            powerButton.RaiseEvent(new Avalonia.Interactivity.RoutedEventArgs(Button.ClickEvent));
+            window.UpdateLayout();
+            Assert.True(powerMenu.IsVisible);
+            window.ClosePowerMenu();
+            Assert.False(powerMenu.IsVisible);
             Assert.True(credentials.Bounds.Width <= window.ClientSize.Width - 48);
             credentials.BringIntoView();
             window.UpdateLayout();

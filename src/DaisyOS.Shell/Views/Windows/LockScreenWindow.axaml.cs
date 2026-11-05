@@ -10,6 +10,7 @@ using Avalonia.Media;
 using Avalonia.Media.Imaging;
 using Avalonia.Media.TextFormatting;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Avalonia.Wayland;
 using DaisyOS.Core.Models;
 using DaisyOS.Core.Services;
@@ -215,7 +216,8 @@ public partial class LockScreenWindow : Window
                 window.PasswordPillBorder,
                 window._collapsedMediaBorder,
                 window._expandedArtworkContainer,
-                window._expandedMediaBorder
+                window._expandedMediaBorder,
+                window.MenuBlurHost
             })
         {
             AdditionalRegions = window.GetClockBlurRegions
@@ -565,6 +567,8 @@ public partial class LockScreenWindow : Window
 
             KeyDown += OnWindowKeyDown;
             KeyUp += OnWindowKeyUp;
+            AddHandler(PointerPressedEvent, OnWindowPointerPressed, RoutingStrategies.Tunnel);
+            Deactivated += (_, _) => ClosePowerMenu();
             PasswordBox.TextChanged += (_, _) =>
             {
                 if (!string.IsNullOrEmpty(PasswordBox.Text) && ErrorMessageText.IsVisible)
@@ -655,6 +659,11 @@ public partial class LockScreenWindow : Window
         {
             CapsLockWarningText.IsVisible = !CapsLockWarningText.IsVisible;
         }
+        else if (e.Key == Key.Escape && MenuBlurHost.IsVisible)
+        {
+            e.Handled = true;
+            ClosePowerMenu();
+        }
         else if (e.Key == Key.Escape && IsMediaExpanded)
         {
             e.Handled = true;
@@ -663,8 +672,22 @@ public partial class LockScreenWindow : Window
         else if (!IsMediaExpanded && !_isSecondary && !PasswordBox.IsFocused
                  && e.KeySymbol is { Length: > 0 } && e.KeyModifiers is KeyModifiers.None or KeyModifiers.Shift)
         {
+            ClosePowerMenu();
             PasswordBox.Focus();
         }
+    }
+
+    private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (!MenuBlurHost.IsVisible) return;
+        if (e.Source is Visual source &&
+            (ReferenceEquals(source, MenuBlurHost) ||
+             ReferenceEquals(source, PowerButton) ||
+             source.GetVisualAncestors().Any(a => ReferenceEquals(a, MenuBlurHost) || ReferenceEquals(a, PowerButton))))
+        {
+            return;
+        }
+        ClosePowerMenu();
     }
 
     private void OnWindowKeyUp(object? sender, KeyEventArgs e)
@@ -709,7 +732,11 @@ public partial class LockScreenWindow : Window
         PasswordPillBorder.Width = Math.Min(CredentialsPanel.Width, Math.Round(272 * Math.Max(1, controlHeight / 32)));
         PasswordPillBorder.Height = controlHeight + 8;
         PasswordPillBorder.CornerRadius = new CornerRadius((controlHeight + 8) / 2);
-        MainContentGrid.MinHeight = Math.Max(0, height - controlHeight - 40);
+        HintButton.Height = UnlockButton.Height = controlHeight;
+        var cornerControlsHeight = (!_isSecondary && PowerControlsPanel.IsVisible)
+            ? Math.Max(40, controlHeight) + 40
+            : (!_isSecondary && BatteryInfo.IsVisible ? controlHeight + 40 : 0);
+        MainContentGrid.MinHeight = Math.Max(0, height - cornerControlsHeight);
         ClockArea.Margin = new Thickness(0, Math.Clamp(height * _lockAppearance.TopFraction, 24, _lockAppearance.TopFraction == 0.10 ? 96 : Math.Max(24, height * 0.2)), 0, 0);
         DateText.MaxWidth = width;
         var size = Math.Min(Resource("TypeSizeDisplayHero", 104) * Math.Clamp(height / 720, 0.75, 1.25),
@@ -1166,6 +1193,7 @@ public partial class LockScreenWindow : Window
             return _mediaExpandCompletion?.Task ?? Task.CompletedTask;
 
         _mediaExpandTimer.Stop();
+        ClosePowerMenu();
         _mediaExpandCompletion?.TrySetResult();
         _mediaExpandCompletion = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         _mediaExpandTarget = expanded ? 1 : 0;
@@ -1981,18 +2009,64 @@ public partial class LockScreenWindow : Window
         return new Rect(x, y, w, h);
     }
 
+    public void ClosePowerMenu()
+    {
+        if (MenuBlurHost is { IsVisible: true })
+        {
+            MenuBlurHost.IsVisible = false;
+            _nativeBlur?.RefreshImmediately();
+        }
+    }
+
+    private void OnPowerButtonClicked(object? sender, RoutedEventArgs e)
+    {
+        if (MenuBlurHost.IsVisible)
+        {
+            ClosePowerMenu();
+            e.Handled = true;
+            return;
+        }
+
+        var buttonOrigin = PowerButton.TranslatePoint(default, RootGrid);
+        if (buttonOrigin is null) return;
+
+        MenuBlurHost.Margin = default;
+        MenuBlurHost.IsVisible = true;
+        MenuBlurHost.Measure(Size.Infinity);
+
+        var width = Math.Max(MenuBlurHost.DesiredSize.Width, 184);
+        var height = MenuBlurHost.DesiredSize.Height;
+        MenuBlurHost.Margin = new Thickness(
+            Math.Max(6, buttonOrigin.Value.X + PowerButton.Bounds.Width - width),
+            Math.Max(6, buttonOrigin.Value.Y - height - 8),
+            0,
+            0);
+        _nativeBlur?.RefreshImmediately();
+        MenuBlurHost.Focus();
+        e.Handled = true;
+    }
+
     private async void OnSleepClicked(object? sender, RoutedEventArgs e)
     {
+        ClosePowerMenu();
         await _powerService.SuspendAsync();
+    }
+
+    private async void OnLogOutClicked(object? sender, RoutedEventArgs e)
+    {
+        ClosePowerMenu();
+        await _powerService.LogOutAsync();
     }
 
     private async void OnRestartClicked(object? sender, RoutedEventArgs e)
     {
+        ClosePowerMenu();
         await _powerService.RebootAsync();
     }
 
     private async void OnShutdownClicked(object? sender, RoutedEventArgs e)
     {
+        ClosePowerMenu();
         await _powerService.ShutdownAsync();
     }
 }
