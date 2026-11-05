@@ -1,0 +1,22 @@
+# Dept Effect
+
+Dept Effect is integrated into the Avalonia lock screen and its existing KWin layer-shell surfaces. The original wallpaper remains on the wallpaper surface. The existing accessible clock remains in the foreground window. A noninteractive presenter above it redraws foreground pixels from that same wallpaper image through a cached segmentation mask, restricted to the clock region. It also reapplies the wallpaper's scrim, preventing brightness seams. Credentials, power actions, media controls and authentication are unchanged.
+
+Appearance → Wallpaper now includes Enable Dept Effect, Automatic Foreground Detection, a 0–30% strength slider, and a live lock-screen preview. Settings use the existing appearance store and desktop-settings IPC. Strength changes recalculate placement from cached masks. Automatic detection off permits existing cached results but does not start new inference. High contrast, solid colours and video wallpapers use the ordinary clock. HEIC snapshots follow the existing wallpaper layer's selected frame.
+
+The presenter takes a small snapshot of the actual displayed center crop, then processes it asynchronously. Each display gets a mask matching its crop. Display size, image replacement and disposal cancel obsolete requests; one process-wide inference gate bounds model concurrency. Model sessions and output buffers are disposed after processing. The renderer shares the wallpaper bitmap and retains only a small alpha image; no full-resolution foreground bitmap is duplicated.
+
+Both bundled CPU models run locally. Sky segmentation handles mountain/sky boundaries, trees and buildings; U²-Net small provides a second candidate for people and objects. Confidence, coverage, skyline boundaries and image-edge contrast gate compatibility. Colour-guided refinement follows source edges. Results, including rejected masks, are stored atomically under `$XDG_CACHE_HOME/DaisyOS/dept-effect` (or `~/.cache/DaisyOS/dept-effect`). The key hashes the cropped image content, both model fingerprints and processing version. Up to 64 entries are retained. No original wallpaper is saved in this cache.
+
+Placement tests candidate positions within the upper lock-screen layout against rasterized glyph bands shared with the native clock blur implementation. It measures foreground alpha over visible glyph pixels, protects the upper 55% of digits, bounds local occlusion, and seeks the requested overlap within five percentage points. No suitable position means normal rendering. The foreground remains aligned to the wallpaper when the clock moves. Existing presence and minute-change animations remain active. Positioning is recalculated for time/font/layout/strength changes; those changes never invoke segmentation.
+
+Validation:
+
+```sh
+dotnet test tests/DaisyOS.Shell.Tests/DaisyOS.Shell.Tests.csproj --filter FullyQualifiedName~DeptEffectTests -m:2
+dotnet test tests/DaisyOS.ShellDemo.Tests/DaisyOS.ShellDemo.Tests.csproj --filter 'FullyQualifiedName~DeptEffectRenderingTests|FullyQualifiedName~LockScreenLayoutTests|FullyQualifiedName~LockScreenClockBlurTests' -m:2
+```
+
+The unit tests cover actual offline model inference, skyline polarity, gradient rejection, cache reuse with detection disabled, cancellation, invalid images, mask suitability, measured glyph overlap, partial alpha, aspect ratios, display scaling, and preference persistence. Headless rendering tests exercise the three layers with a prepared mask, strength changes, disabling, and existing blur/layout behavior. A float16-versus-float32 comparison on a real mountain photo produced 100% binary mask agreement and a mean probability difference of 0.0000035. This comparison is a sample check, not an accuracy guarantee for arbitrary wallpapers.
+
+Real KWin multi-output hardware, mixed-DPI hotplug, and subjective hair/tree-edge quality still need interactive acceptance checks. The sky model is larger than the general model and its temporary inference memory is substantially greater than cached rendering memory. Both are unloaded after analysis. Some intricate, hazy, low-contrast or otherwise unsuitable subjects deliberately retain the normal clock.

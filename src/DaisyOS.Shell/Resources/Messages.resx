@@ -7685,4 +7685,19 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comme
     <comment>Source: Font weight
 Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comment>
   </data>
+  <data name="Loc_B7539531C5C0" xml:space="preserve">
+    <value>Dept Effect</value>
+  </data>
+  <data name="Loc_DDE0A80C1638" xml:space="preserve">
+    <value>Enable Dept Effect</value>
+  </data>
+  <data name="Loc_B9385C44BF51" xml:space="preserve">
+    <value>Automatic Foreground Detection</value>
+  </data>
+  <data name="Loc_8A19362612DE" xml:space="preserve">
+    <value>Effect Strength (0–30% of clock pixels)</value>
+  </data>
+  <data name="Loc_2B7814C39D5E" xml:space="preserve">
+    <value>The effect appears when a suitable foreground leaves the clock readable. Analysis runs locally.</value>
+  </data>
 </root>

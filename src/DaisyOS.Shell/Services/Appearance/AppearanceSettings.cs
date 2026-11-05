@@ -21,6 +21,10 @@ public sealed class AppearanceSettings
 
     public bool HighContrast { get; set; }
 
+    public bool DeptEffectEnabled { get; set; } = true;
+    public bool DeptEffectAutomatic { get; set; } = true;
+    public int DeptEffectStrength { get; set; } = 15;
+
     public bool ReduceMotion { get; set; }
 
     public string? CursorThemeId { get; set; } = "DaisyOS-Dark";

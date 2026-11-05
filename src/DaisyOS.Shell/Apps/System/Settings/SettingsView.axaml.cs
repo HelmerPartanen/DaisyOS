@@ -3639,6 +3639,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 : WallpaperFileTypes.IsVideo(app.CurrentWallpaperUri)
                     ? WallpaperSelection.Video
                     : WallpaperSelection.Picture;
+            DeptEffectToggle.IsChecked = app.DeptEffectEnabled;
+            DeptAutomaticToggle.IsChecked = app.DeptEffectAutomatic;
+            DeptStrengthSlider.Value = app.DeptEffectStrength;
+            InitializeDeptPreview();
             WallpaperTypePicker.SelectedIndex = (int)_wallpaperSelection;
             _isRefreshingAppearanceControls = false;
             UpdateWallpaperSelectionUi(_wallpaperSelection, app);
@@ -3696,6 +3700,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             SolidWallpaperOptions.IsVisible = isSolid;
             SolidWallpaperPreview.IsVisible = isSolid;
             WallpaperPreviewImage.IsVisible = !isSolid;
+            if (_deptPreviewInitialized) RefreshDeptPreviewSource();
 
             if (isSolid)
             {

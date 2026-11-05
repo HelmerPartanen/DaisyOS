@@ -256,7 +256,7 @@ public partial class LockScreenWindow : Window
         return regions;
     }
 
-    private static Rect[] RasterizeClockGlyphBands(string value, Typeface typeface, double fontSize)
+    internal static Rect[] RasterizeClockGlyphBands(string value, Typeface typeface, double fontSize)
     {
         var formatted = new FormattedText(value, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
             typeface, fontSize, Brushes.White);
@@ -418,7 +418,30 @@ public partial class LockScreenWindow : Window
             Closed += (_, _) => app.AppearanceChanged -= refreshLayout;
         }
 
+        var wallpaperImage = LockWallpaper.FindControl<Image>("WallpaperImage")!;
+        DeptForeground.Configure(wallpaperImage, ClockText, ClockArea,
+            () => RasterizeClockGlyphBands(ClockText.Text ?? "", new Typeface(ClockText.FontFamily,
+                ClockText.FontStyle, ClockText.FontWeight, ClockText.FontStretch), ClockText.FontSize),
+            () => !IsMediaExpanded && LockContentScroll.Offset.Y < 1 && wallpaperImage.Opacity > 0.999 && LockWallpaper.Opacity > 0.99 && _lockCanvasLayer.Opacity < 0.01, LockWallpaperScrim.Background);
+        void RefreshDeptEffect()
+        {
+            var settings = new AppearanceSettingsStore().Load();
+            DeptForeground.SetPreferences(settings.DeptEffectEnabled && !settings.HighContrast && !DaisyOS.Shell.Services.Wallpaper.WallpaperFileTypes.IsVideo(LockWallpaper.WallpaperUri ?? wallpaperSource ?? ""),
+                settings.DeptEffectAutomatic, settings.DeptEffectStrength);
+        }
+        RefreshDeptEffect();
+        if (Application.Current is App deptApp)
+        {
+            EventHandler refreshDept = (_, _) =>
+            {
+                LoadWallpaper(deptApp.UsesSolidWallpaper ? deptApp.CurrentSolidWallpaperColor.ToString() : deptApp.CurrentWallpaperUri);
+                RefreshDeptEffect();
+            };
+            deptApp.AppearanceChanged += refreshDept;
+            Closed += (_, _) => deptApp.AppearanceChanged -= refreshDept;
+        }
         LoadWallpaper(wallpaperSource);
+        RefreshDeptEffect();
 
         _clockTimer = new DispatcherTimer
         {
@@ -1604,6 +1627,7 @@ public partial class LockScreenWindow : Window
             var expand = _mediaExpandProgress;
             var showMedia = !_isSecondary && (_hasMediaSession || mediaPresence > 0.001);
 
+            DeptForeground.RefreshLayout();
             // 1. Clock Area stays anchored at top
             ClockArea.Opacity = presence;
             _clockPresence.Y = -14 * (1 - presence);

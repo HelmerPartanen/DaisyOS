@@ -532,6 +532,30 @@
                     </StackPanel>
                   </Grid>
                 </Border>
+                <Border Height="1" Margin="20,0" Background="{DynamicResource StrokeDefaultBrush}" />
+                <Border Padding="20,16">
+                  <StackPanel Spacing="12">
+                    <TextBlock Text="{DynamicResource Loc_B7539531C5C0}" Classes="SettingsDescription" />
+                    <ToggleSwitch x:Name="DeptEffectToggle" Content="{DynamicResource Loc_DDE0A80C1638}" IsCheckedChanged="OnDeptEffectChanged" />
+                    <ToggleSwitch x:Name="DeptAutomaticToggle" Content="{DynamicResource Loc_B9385C44BF51}" IsCheckedChanged="OnDeptEffectChanged" />
+                    <TextBlock Text="{DynamicResource Loc_8A19362612DE}" Classes="SettingsDescription" />
+                    <TextBlock Text="{Binding #DeptStrengthSlider.Value, StringFormat='{}{0:0}%'}" Classes="SettingsDescription" />
+                    <Slider x:Name="DeptStrengthSlider" AutomationProperties.Name="Dept Effect strength (%)" Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="OnDeptStrengthChanged" />
+                    <Border Height="180" ClipToBounds="True" Background="Black">
+                      <Viewbox Stretch="Uniform">
+                        <Grid x:Name="DeptPreviewGrid" Width="1280" Height="720" ClipToBounds="True">
+                          <Image x:Name="DeptPreviewWallpaper" Stretch="UniformToFill" />
+                          <StackPanel x:Name="DeptPreviewClockArea" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,72,0,0">
+                            <TextBlock x:Name="DeptPreviewDate" FontSize="24" Foreground="White" HorizontalAlignment="Center" />
+                            <TextBlock x:Name="DeptPreviewClock" Text="9:41" FontSize="104" FontWeight="Bold" Foreground="White" />
+                          </StackPanel>
+                          <controls:DeptEffectPresenter x:Name="DeptPreviewForeground" />
+                        </Grid>
+                      </Viewbox>
+                    </Border>
+                    <TextBlock Text="{DynamicResource Loc_2B7814C39D5E}" TextWrapping="Wrap" Classes="SettingsDescription" />
+                  </StackPanel>
+                </Border>
               </StackPanel>
             </Border>
 

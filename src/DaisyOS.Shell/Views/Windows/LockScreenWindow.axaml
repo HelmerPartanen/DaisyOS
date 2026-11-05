@@ -89,7 +89,7 @@
       </Panel>
 
       <!-- Subtle Vignette / Scrim Overlay for Legibility -->
-      <Border IsHitTestVisible="False">
+      <Border x:Name="LockWallpaperScrim" IsHitTestVisible="False">
         <Border.Background>
           <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
             <GradientStop Offset="0.0" Color="{DynamicResource BlackAlpha25Color}" />
@@ -810,5 +810,6 @@
       </Border>
     </Panel>
 
+    <controls:DeptEffectPresenter x:Name="DeptForeground" IsHitTestVisible="False" />
   </Grid>
 </Window>
