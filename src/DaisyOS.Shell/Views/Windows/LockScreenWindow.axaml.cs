@@ -31,6 +31,7 @@ namespace DaisyOS.Shell.Views.Windows;
 
 public partial class LockScreenWindow : Window
 {
+    private LockScreenAppearance _lockAppearance = new();
     private const int SpectrumColumns = 6;
     private const int MaxInlineArtworkBytes = 4 * 1024 * 1024;
     private static readonly HttpClient ArtworkHttpClient = new() { Timeout = TimeSpan.FromSeconds(3) };
@@ -426,8 +427,9 @@ public partial class LockScreenWindow : Window
         void RefreshDeptEffect()
         {
             var settings = new AppearanceSettingsStore().Load();
+            ApplyLockScreenAppearance(settings.LockScreen ?? new());
             DeptForeground.SetPreferences(settings.DeptEffectEnabled && !settings.HighContrast && !DaisyOS.Shell.Services.Wallpaper.WallpaperFileTypes.IsVideo(LockWallpaper.WallpaperUri ?? wallpaperSource ?? ""),
-                settings.DeptEffectAutomatic, settings.DeptEffectStrength);
+                settings.DeptEffectAutomatic);
         }
         RefreshDeptEffect();
         if (Application.Current is App deptApp)
@@ -562,6 +564,25 @@ public partial class LockScreenWindow : Window
         }
     }
 
+    internal void ApplyLockScreenAppearance(LockScreenAppearance appearance)
+    {
+        _lockAppearance = appearance.Normalize();
+        _lockAppearance.ApplyClock(ClockText, DateText, ClockArea,
+            this.TryFindResource("LockScreenMutedBrush", out var brush) && brush is IBrush found ? found : Brushes.White);
+        PreviousClockText.FontFamily = ClockText.FontFamily;
+        PreviousClockText.FontWeight = ClockText.FontWeight;
+        PreviousClockText.Foreground = ClockText.Foreground;
+        DeptForeground.ClockTopFraction = _lockAppearance.TopFraction;
+        DeptForeground.ForegroundTintOpacity = _lockAppearance.WallpaperDimming / 100d;
+        LockWallpaperTint.Opacity = DeptForeground.ForegroundTintOpacity;
+        UpdateLockLayout();
+        UpdateClock();
+        if (!_lockAppearance.ShowBattery) BatteryInfo.IsVisible = false;
+        else if (!_isSecondary) UpdateBatteryAsync();
+        if (!_lockAppearance.ShowMedia && IsMediaExpanded) _ = SetMediaExpandedAsync(false);
+        ApplyVisualState();
+    }
+
     private void UpdateLockLayout()
     {
         if (ClientSize.Width <= 0 || ClientSize.Height <= 0) return;
@@ -576,10 +597,11 @@ public partial class LockScreenWindow : Window
         PasswordPillBorder.Height = controlHeight + 8;
         PasswordPillBorder.CornerRadius = new CornerRadius((controlHeight + 8) / 2);
         MainContentGrid.MinHeight = Math.Max(0, height - controlHeight - 40);
-        ClockArea.Margin = new Thickness(0, Math.Clamp(height * 0.1, 24, 96), 0, 0);
+        ClockArea.Margin = new Thickness(0, Math.Clamp(height * _lockAppearance.TopFraction, 24, _lockAppearance.TopFraction == 0.10 ? 96 : Math.Max(24, height * 0.2)), 0, 0);
         DateText.MaxWidth = width;
         var size = Math.Min(Resource("TypeSizeDisplayHero", 104) * Math.Clamp(height / 720, 0.75, 1.25),
             Math.Clamp(height * 0.2, 64, 160));
+        size *= _lockAppearance.ClockSize / 100d;
         using var measured = new TextLayout("88:88", new Typeface(ClockText.FontFamily,
             ClockText.FontStyle, ClockText.FontWeight, ClockText.FontStretch), size, fontFeatures: ClockText.FontFeatures);
         if (measured.Width > width && measured.Width > 0) size *= width / measured.Width;
@@ -652,7 +674,7 @@ public partial class LockScreenWindow : Window
             (Application.Current as App)?.GetPreference("time.clock-format", "24-hour"),
             "12-hour",
             StringComparison.OrdinalIgnoreCase);
-        var time = now.ToString(useTwelveHour ? "h:mm" : "H:mm", CultureInfo.InvariantCulture);
+        var time = _lockAppearance.FormatTime(now, useTwelveHour);
         if (ClockText.Text != time)
         {
             PreviousClockText.Text = ClockText.Text;
@@ -668,7 +690,7 @@ public partial class LockScreenWindow : Window
             }
         }
         _clockInitialized = true;
-        DateText.Text = now.ToString("dddd, MMMM d", CultureInfo.CurrentCulture);
+        DateText.Text = _lockAppearance.FormatDate(now);
     }
 
     private async void UpdateBatteryAsync()
@@ -681,7 +703,7 @@ public partial class LockScreenWindow : Window
                 BatteryInfo.ChargePercent = status.ChargePercent.Value;
                 BatteryInfo.IsCharging = BatteryStatusView.IsChargingState(status.State);
                 BatteryInfo.StateText = Loc.Get(status.State);
-                BatteryInfo.IsVisible = true;
+                BatteryInfo.IsVisible = _lockAppearance.ShowBattery;
                 ToolTip.SetTip(BatteryInfo, status.Detail);
             }
             else BatteryInfo.IsVisible = false;
@@ -1012,7 +1034,7 @@ public partial class LockScreenWindow : Window
 
     public Task SetMediaExpandedAsync(bool expanded)
     {
-        if (_isSecondary || (expanded && !_hasMediaSession))
+        if (_isSecondary || (expanded && (!_hasMediaSession || !_lockAppearance.ShowMedia)))
         {
             return Task.CompletedTask;
         }
@@ -1625,7 +1647,7 @@ public partial class LockScreenWindow : Window
             var presence = _presenceProgress;
             var mediaPresence = _mediaPresenceProgress;
             var expand = _mediaExpandProgress;
-            var showMedia = !_isSecondary && (_hasMediaSession || mediaPresence > 0.001);
+            var showMedia = !_isSecondary && _lockAppearance.ShowMedia && (_hasMediaSession || mediaPresence > 0.001);
 
             DeptForeground.RefreshLayout();
             // 1. Clock Area stays anchored at top
@@ -1642,7 +1664,7 @@ public partial class LockScreenWindow : Window
             CornerControlsGrid.IsHitTestVisible = expand < 0.1;
 
             // Hide bottom-left battery text when bottom-left media widget is shown so they never collide
-            BatteryInfo.Opacity = Math.Clamp(1 - mediaPresence * 1.6, 0, 1);
+            BatteryInfo.Opacity = Math.Clamp(1 - (_lockAppearance.ShowMedia ? mediaPresence : 0) * 1.6, 0, 1);
 
             // 3. Collapsed Bottom-Left Media Widget
             var collapsedCardOpacity = presence * mediaPresence * Math.Clamp(1 - expand * 1.65, 0, 1);

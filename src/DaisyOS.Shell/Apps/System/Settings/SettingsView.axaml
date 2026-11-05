@@ -61,6 +61,25 @@
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
     </Style>
 
+    <Style Selector="Expander.LockScreenMore">
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+    <Style Selector="Expander.LockScreenMore /template/ ToggleButton#ExpanderHeader">
+      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+      <Setter Property="Padding" Value="20,0,0,0" />
+      <Setter Property="MinHeight" Value="60" />
+    </Style>
+    <Style Selector="Expander.LockScreenMore /template/ Border#ExpanderContent">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0" />
+    </Style>
+
     <Style Selector="Border.SettingsGroupCard">
       <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
@@ -285,6 +304,13 @@
             </Grid>
           </Button>
 
+          <Button x:Name="NavLockScreen" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="LockScreen">
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="lock" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_91A007B58B9D}" Classes="NavLabel" />
+            </Grid>
+          </Button>
+
           <Button x:Name="NavNotifications" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Notifications">
             <Grid ColumnDefinitions="24,*">
               <controls:DaisyIcon Icon="bell" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
@@ -440,6 +466,81 @@
         </Grid>
       </ScrollViewer>
 
+      <ScrollViewer x:Name="LockScreenView" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid>
+          <StackPanel x:Name="LockScreenContent" Width="800" HorizontalAlignment="Center" Spacing="24" Margin="0,24,0,32">
+            <StackPanel Spacing="8">
+              <TextBlock Text="{DynamicResource Loc_91A007B58B9D}" Classes="SettingsPageTitle" />
+              <TextBlock Text="{DynamicResource Loc_604E027935B7}" Classes="SettingsDescription" TextWrapping="Wrap" />
+            </StackPanel>
+            <StackPanel Spacing="12">
+              <TextBlock Text="{DynamicResource Loc_324B134F57C7}" Classes="SettingsSectionTitle" />
+              <Border Classes="SettingsGroupCard" Padding="20,16">
+                <Grid x:Name="LockPreviewLayout" ColumnDefinitions="200,*" ColumnSpacing="20" RowSpacing="16">
+                  <Border Width="200" Height="120" HorizontalAlignment="Left" ClipToBounds="True"
+                          CornerRadius="{DynamicResource RoundedMD}" Background="Black">
+                    <Viewbox Stretch="Uniform">
+                      <Grid x:Name="DeptPreviewGrid" Width="1280" Height="720" ClipToBounds="True">
+                        <Image x:Name="DeptPreviewWallpaper" Stretch="UniformToFill" />
+                        <Border x:Name="DeptPreviewTint" Background="Black" Opacity="0" IsHitTestVisible="False" />
+                        <StackPanel x:Name="DeptPreviewClockArea" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,72,0,0" Spacing="4">
+                          <TextBlock x:Name="DeptPreviewDate" FontSize="24" Foreground="White" HorizontalAlignment="Center" />
+                          <TextBlock x:Name="DeptPreviewClock" Text="9:41" FontSize="104" FontWeight="Bold" Foreground="White" />
+                        </StackPanel>
+                        <controls:DeptEffectPresenter x:Name="DeptPreviewForeground" />
+                      </Grid>
+                    </Viewbox>
+                  </Border>
+                  <StackPanel x:Name="LockPreviewActions" Grid.Column="1" Spacing="12" VerticalAlignment="Center">
+                    <TextBlock Text="{DynamicResource Loc_13EC8F6DEC08}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                    <Button Content="{DynamicResource Loc_9287E3B60FC6}" Classes="Primary Small" HorizontalAlignment="Left" Click="OnLockWallpaperClicked" />
+                  </StackPanel>
+                </Grid>
+              </Border>
+            </StackPanel>
+            <StackPanel x:Name="LockClockOptions" Spacing="24" />
+            <StackPanel Spacing="12">
+              <TextBlock Text="{DynamicResource Loc_B7539531C5C0}" Classes="SettingsSectionTitle" />
+              <Border Classes="SettingsGroupCard">
+                <Border Classes="SettingsGroupRow">
+                  <Grid ColumnDefinitions="Auto,*,Auto">
+                    <controls:DaisyIcon Icon="wallpaper" Classes="SettingsRowIcon" />
+                    <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                      <TextBlock Text="{DynamicResource Loc_AB29EAFD0F3A}" Classes="SettingsLabel" />
+                      <TextBlock Text="{DynamicResource Loc_DD71DB5DAA1C}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="DeptEffectToggle" Grid.Column="2" VerticalAlignment="Center" AutomationProperties.Name="Depth effect" IsCheckedChanged="OnDeptEffectChanged" />
+                  </Grid>
+                </Border>
+              </Border>
+            </StackPanel>
+            <Expander x:Name="LockMoreExpander" Classes="LockScreenMore" Header="{DynamicResource Loc_BC79CDFFBAA8}" HorizontalContentAlignment="Stretch">
+              <StackPanel Spacing="24" Margin="0,12,0,0">
+                <StackPanel x:Name="LockMoreOptions" Spacing="24" />
+                <StackPanel Spacing="12">
+                  <TextBlock Text="{DynamicResource Loc_B7539531C5C0}" Classes="SettingsSectionTitle" />
+                  <Border Classes="SettingsGroupCard">
+                    <StackPanel x:Name="DeptEffectOptions">
+                      <Border Classes="SettingsGroupRow">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <controls:DaisyIcon Icon="wallpaper" Classes="SettingsRowIcon" />
+                          <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="{DynamicResource Loc_964FEDDCFEA4}" Classes="SettingsLabel" TextWrapping="Wrap" />
+                            <TextBlock Text="{DynamicResource Loc_6C986329C247}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <ToggleSwitch x:Name="DeptAutomaticToggle" Grid.Column="2" VerticalAlignment="Center" IsCheckedChanged="OnDeptEffectChanged" AutomationProperties.Name="Automatic foreground detection" />
+                        </Grid>
+                      </Border>
+                    </StackPanel>
+                  </Border>
+                </StackPanel>
+              </StackPanel>
+            </Expander>
+            <Button Content="{DynamicResource Loc_602F8E637002}" Classes="Small" HorizontalAlignment="Left" Click="OnResetLockScreenClicked" />
+          </StackPanel>
+        </Grid>
+      </ScrollViewer>
+
       <!-- APPEARANCE -->
       <ScrollViewer x:Name="AppearanceView" IsVisible="False" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" HorizontalAlignment="Stretch">
         <Grid>
@@ -531,30 +632,6 @@
                       </Border>
                     </StackPanel>
                   </Grid>
-                </Border>
-                <Border Height="1" Margin="20,0" Background="{DynamicResource StrokeDefaultBrush}" />
-                <Border Padding="20,16">
-                  <StackPanel Spacing="12">
-                    <TextBlock Text="{DynamicResource Loc_B7539531C5C0}" Classes="SettingsDescription" />
-                    <ToggleSwitch x:Name="DeptEffectToggle" Content="{DynamicResource Loc_DDE0A80C1638}" IsCheckedChanged="OnDeptEffectChanged" />
-                    <ToggleSwitch x:Name="DeptAutomaticToggle" Content="{DynamicResource Loc_B9385C44BF51}" IsCheckedChanged="OnDeptEffectChanged" />
-                    <TextBlock Text="{DynamicResource Loc_8A19362612DE}" Classes="SettingsDescription" />
-                    <TextBlock Text="{Binding #DeptStrengthSlider.Value, StringFormat='{}{0:0}%'}" Classes="SettingsDescription" />
-                    <Slider x:Name="DeptStrengthSlider" AutomationProperties.Name="Dept Effect strength (%)" Minimum="0" Maximum="30" TickFrequency="1" IsSnapToTickEnabled="True" ValueChanged="OnDeptStrengthChanged" />
-                    <Border Height="180" ClipToBounds="True" Background="Black">
-                      <Viewbox Stretch="Uniform">
-                        <Grid x:Name="DeptPreviewGrid" Width="1280" Height="720" ClipToBounds="True">
-                          <Image x:Name="DeptPreviewWallpaper" Stretch="UniformToFill" />
-                          <StackPanel x:Name="DeptPreviewClockArea" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,72,0,0">
-                            <TextBlock x:Name="DeptPreviewDate" FontSize="24" Foreground="White" HorizontalAlignment="Center" />
-                            <TextBlock x:Name="DeptPreviewClock" Text="9:41" FontSize="104" FontWeight="Bold" Foreground="White" />
-                          </StackPanel>
-                          <controls:DeptEffectPresenter x:Name="DeptPreviewForeground" />
-                        </Grid>
-                      </Viewbox>
-                    </Border>
-                    <TextBlock Text="{DynamicResource Loc_2B7814C39D5E}" TextWrapping="Wrap" Classes="SettingsDescription" />
-                  </StackPanel>
                 </Border>
               </StackPanel>
             </Border>

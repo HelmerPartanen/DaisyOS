@@ -23,6 +23,8 @@ public sealed class DeptEffectPresenter : Control
     private readonly DeptEffectService _service = new();
     private readonly List<Bitmap> _retiredMasks = [];
     private string? _layoutKey;
+    public double ClockTopFraction { get; set; } = 0.10;
+    public double ForegroundTintOpacity { get; set; }
     private double _placedTop = double.NaN;
     private double _baseMargin;
     private bool _enabled = true, _automatic = true;
@@ -58,7 +60,7 @@ public sealed class DeptEffectPresenter : Control
         ScheduleAnalysis();
     }
 
-    public void SetPreferences(bool enabled, bool automatic, int strength)
+    public void SetPreferences(bool enabled, bool automatic, int strength = 15)
     {
         strength = Math.Clamp(strength, 0, 30);
         if (_enabled == enabled && _automatic == automatic && _strength == strength) return;
@@ -168,10 +170,10 @@ public sealed class DeptEffectPresenter : Control
         var origin = _clock.TranslatePoint(default, this);
         if (origin is null) return;
         var allowed = _allowed?.Invoke() ?? true;
-        var key = $"{_clock.Text}|{_clock.FontSize}|{_clock.FontFamily}|{Bounds.Size}|{_strength}|{_enabled}|{allowed}|{origin.Value.X}|{_area.Bounds.Size}";
+        var key = $"{_clock.Text}|{_clock.FontSize}|{_clock.FontFamily}|{Bounds.Size}|{_strength}|{_enabled}|{allowed}|{origin.Value.X}|{_area.Bounds.Size}|{ClockTopFraction}|{_clock.FontWeight}";
         if (key == _layoutKey && _area.Margin.Top.Equals(_placedTop)) return;
         _layoutKey = key;
-        _baseMargin = Math.Clamp(Bounds.Height * 0.1, 24, 96);
+        _baseMargin = Math.Clamp(Bounds.Height * ClockTopFraction, 24, ClockTopFraction == 0.10 ? 96 : Math.Max(24, Bounds.Height * 0.2));
         var previousTop = _area.Margin.Top;
         _placedTop = _baseMargin;
         _area.Margin = new Thickness(0, _baseMargin, 0, 0);
@@ -191,18 +193,20 @@ public sealed class DeptEffectPresenter : Control
         var glyphBottom = bands.Max(b => b.Bottom);
         var glyphHeight = glyphBottom - glyphTop;
         foreach (var mask in _masks)
-            for (var offset = 0d; offset <= Math.Min(Bounds.Height * 0.22, 220); offset += 2)
+            for (var offset = 0d; offset <= Bounds.Height * 0.22; offset += 2)
             {
                 if (yOrigin + offset + glyphBottom > Bounds.Height * 0.48) continue;
                 var overlap = MeasureOverlap(mask, bands, xOrigin, yOrigin + offset, Bounds.Size, glyphTop + glyphHeight * 0.55);
-                if (overlap.Total < 0.02 || overlap.Total > Math.Min(0.30, _strength / 100d + 0.04) || overlap.Upper > 0.015 || overlap.WorstDigit > 0.40) continue;
+                if (overlap.Total < Math.Min(0.05, _strength / 100d) || overlap.Total > Math.Min(0.30, _strength / 100d + 0.04) || overlap.Upper > 0.015 || overlap.WorstDigit > 0.40) continue;
                 var score = Math.Abs(overlap.Total - _strength / 100d) + offset * 0.00001;
                 if (score >= best) continue;
                 best = score;
                 selected = mask;
                 bestOffset = offset;
             }
-        if (selected is null || best > 0.05) return;
+        // The requested overlap is a preference, not an eligibility threshold. A readable
+        // smaller overlap is preferable to discarding a correctly segmented subject.
+        if (selected is null) return;
         _placedTop = _baseMargin + bestOffset;
         _area.Margin = new Thickness(0, _placedTop, 0, 0);
         _selectedMask = selected;
@@ -267,6 +271,8 @@ public sealed class DeptEffectPresenter : Control
         {
             context.DrawImage(_source, Crop(_source.Size, Bounds.Size), new Rect(Bounds.Size));
             if (_foregroundScrim is not null) context.FillRectangle(_foregroundScrim, new Rect(Bounds.Size));
+            if (ForegroundTintOpacity > 0)
+                using (context.PushOpacity(ForegroundTintOpacity)) context.FillRectangle(Brushes.Black, new Rect(Bounds.Size));
         }
     }
 }

@@ -1085,21 +1085,36 @@ public partial class App : Application
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public bool DeptEffectEnabled => _appearanceSettings.DeptEffectEnabled;
-    public bool DeptEffectAutomatic => _appearanceSettings.DeptEffectAutomatic;
-    public int DeptEffectStrength => Math.Clamp(_appearanceSettings.DeptEffectStrength, 0, 30);
+    public LockScreenAppearance CurrentLockScreenAppearance => (_appearanceSettings.LockScreen ?? new()).Normalize();
 
-    public async Task SetDeptEffectAsync(bool enabled, bool automatic, int strength)
+    public async Task SetLockScreenAppearanceAsync(LockScreenAppearance preferences)
     {
-        strength = Math.Clamp(strength, 0, 30);
+        preferences = preferences.Normalize();
         if (_useDesktopSettings)
         {
-            await ApplyDesktopSettingAsync("dept-effect", enabled.ToString(), automatic.ToString(), strength.ToString());
+            var json = global::System.Text.Json.JsonSerializer.Serialize(preferences,
+                Services.Serialization.DaisyShellJsonContext.Default.LockScreenAppearance);
+            await ApplyDesktopSettingAsync("lock-screen", json);
+            return;
+        }
+        _appearanceSettings.LockScreen = preferences;
+        await PersistAppearanceAsync();
+        AppearanceChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public bool DeptEffectEnabled => _appearanceSettings.DeptEffectEnabled;
+    public bool DeptEffectAutomatic => _appearanceSettings.DeptEffectAutomatic;
+
+    public async Task SetDeptEffectAsync(bool enabled, bool automatic)
+    {
+        if (_useDesktopSettings)
+        {
+            await ApplyDesktopSettingAsync("dept-effect", enabled.ToString(), automatic.ToString());
             return;
         }
         _appearanceSettings.DeptEffectEnabled = enabled;
         _appearanceSettings.DeptEffectAutomatic = automatic;
-        _appearanceSettings.DeptEffectStrength = strength;
+        _appearanceSettings.DeptEffectStrength = 15; // Retire legacy manual strength values.
         await PersistAppearanceAsync();
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }

@@ -21,8 +21,11 @@ public sealed class AppearanceSettings
 
     public bool HighContrast { get; set; }
 
+    public LockScreenAppearance LockScreen { get; set; } = new();
+
     public bool DeptEffectEnabled { get; set; } = true;
     public bool DeptEffectAutomatic { get; set; } = true;
+    // Legacy preference retained for file compatibility; placement now chooses overlap automatically.
     public int DeptEffectStrength { get; set; } = 15;
 
     public bool ReduceMotion { get; set; }

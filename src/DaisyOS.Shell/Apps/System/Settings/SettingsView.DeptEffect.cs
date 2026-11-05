@@ -16,8 +16,8 @@ public partial class SettingsView
     private void RefreshDeptPreviewClock()
     {
         var twelveHour = string.Equals((Application.Current as App)?.GetPreference("time.clock-format", "24-hour"), "12-hour", StringComparison.OrdinalIgnoreCase);
-        DeptPreviewClock.Text = DateTime.Now.ToString(twelveHour ? "h:mm" : "H:mm", global::System.Globalization.CultureInfo.InvariantCulture);
-        DeptPreviewDate.Text = DateTime.Now.ToString("dddd, MMMM d");
+        DeptPreviewClock.Text = _lockPreferences.FormatTime(DateTime.Now, twelveHour);
+        DeptPreviewDate.Text = _lockPreferences.FormatDate(DateTime.Now);
     }
 
     private void InitializeDeptPreview()
@@ -39,26 +39,27 @@ public partial class SettingsView
             };
         }
         RefreshDeptPreviewSource();
-        DeptPreviewForeground.SetPreferences(DeptEffectToggle.IsChecked == true && _wallpaperSelection == WallpaperSelection.Picture,
-            DeptAutomaticToggle.IsChecked == true, (int)DeptStrengthSlider.Value);
+        DeptPreviewForeground.SetPreferences(DeptEffectToggle.IsChecked == true && _wallpaperSelection == WallpaperSelection.Picture && (Application.Current as App)?.HighContrastEnabled != true,
+            DeptAutomaticToggle.IsChecked == true);
     }
 
     private void RefreshDeptPreviewSource()
     {
         DeptPreviewWallpaper.Source = _wallpaperSelection == WallpaperSelection.Solid ? null : WallpaperPreviewImage.Source;
         DeptPreviewGrid.Background = _wallpaperSelection == WallpaperSelection.Solid ? SolidWallpaperPreview.Background : Brushes.Black;
-        DeptPreviewForeground.SetPreferences(DeptEffectToggle.IsChecked == true && _wallpaperSelection == WallpaperSelection.Picture,
-            DeptAutomaticToggle.IsChecked == true, (int)DeptStrengthSlider.Value);
+        DeptPreviewForeground.SetPreferences(DeptEffectToggle.IsChecked == true && _wallpaperSelection == WallpaperSelection.Picture && (Application.Current as App)?.HighContrastEnabled != true,
+            DeptAutomaticToggle.IsChecked == true);
     }
 
     private async void OnDeptEffectChanged(object? sender, RoutedEventArgs e) => await SaveDeptEffectAsync();
-    private async void OnDeptStrengthChanged(object? sender, RangeBaseValueChangedEventArgs e) => await SaveDeptEffectAsync();
 
     private async Task SaveDeptEffectAsync()
     {
-        if (_isRefreshingAppearanceControls || !_deptPreviewInitialized || Application.Current is not App app) return;
-        DeptPreviewForeground.SetPreferences(DeptEffectToggle.IsChecked == true && _wallpaperSelection == WallpaperSelection.Picture,
-            DeptAutomaticToggle.IsChecked == true, (int)DeptStrengthSlider.Value);
+        if (_isRefreshingAppearanceControls || !_deptPreviewInitialized) return;
+        DeptPreviewForeground.SetPreferences(DeptEffectToggle.IsChecked == true && _wallpaperSelection == WallpaperSelection.Picture && (Application.Current as App)?.HighContrastEnabled != true,
+            DeptAutomaticToggle.IsChecked == true);
+        DeptEffectOptions.IsEnabled = DeptEffectToggle.IsChecked == true;
+        if (Application.Current is not App app) return;
         _deptSaveCancellation?.Cancel();
         _deptSaveCancellation?.Dispose();
         _deptSaveCancellation = new CancellationTokenSource();
@@ -66,8 +67,13 @@ public partial class SettingsView
         try
         {
             await Task.Delay(150, token);
-            await app.SetDeptEffectAsync(DeptEffectToggle.IsChecked == true,
-                DeptAutomaticToggle.IsChecked == true, (int)DeptStrengthSlider.Value);
+            _lockWritesInProgress++;
+            try
+            {
+                await app.SetDeptEffectAsync(DeptEffectToggle.IsChecked == true,
+                    DeptAutomaticToggle.IsChecked == true);
+            }
+            finally { _lockWritesInProgress--; }
         }
         catch (OperationCanceledException) { }
 

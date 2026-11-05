@@ -90,7 +90,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         [
             ("SYSTEM", ["System", "Displays", "Sound"]),
             ("CONNECTIONS", ["Network", "Ethernet", "Bluetooth", "Continuity"]),
-            ("PERSONALIZATION", ["Appearance", "Notifications", "Apps"]),
+            ("PERSONALIZATION", ["Appearance", "LockScreen", "Notifications", "Apps"]),
             ("MANAGEMENT", ["Storage", "Accessibility", "Input", "DateTime", "About"])
         ];
 
@@ -111,6 +111,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Network", "WI-FI", "Wi-Fi", "Wireless radio and available networks", "wifi wireless network internet connect password"),
             new("Ethernet", "ETHERNET", "Ethernet", "Wired connection status", "ethernet wired lan network cable internet"),
             new("Bluetooth", "BLUETOOTH", "Bluetooth", "Devices, pairing, and discoverability", "bluetooth headset controller devices"),
+            new("LockScreen", "", "Clock font", "Customize the lock-screen clock", "lock screen font style size color position typography"),
+            new("LockScreen", "", "Depth effect", "Place the clock behind wallpaper subjects", "lock screen dept depth effect foreground disable"),
+            new("LockScreen", "", "More options", "Date, time format, dimming, battery and media", "lock screen date battery media privacy dim wallpaper format"),
             new("Appearance", "", "Theme", "Light, dark, and automatic appearance", "dark light theme mode appearance"),
             new("Appearance", "", "Taskbar size", "Minimum, default or maximum", "taskbar dock size height scale"),
             new("Appearance", "", "Taskbar and systembar", "Always visible or auto-hide", "taskbar systembar system bar dock auto-hide maximize fullscreen"),
@@ -181,7 +184,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             };
             _heicPreviewTimer.Tick += (_, _) =>
             {
-                if (_activeCategory == "Appearance" && _previewWallpaperUri is { } uri && WallpaperFileTypes.IsHeic(uri))
+                if (_activeCategory is "Appearance" or "LockScreen" && _previewWallpaperUri is { } uri && WallpaperFileTypes.IsHeic(uri))
                     RefreshWallpaperPreview(uri);
             };
             _connectionsRefreshTimer.Tick += (_, _) =>
@@ -489,9 +492,17 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var isAppearance = string.Equals(category, "Appearance", StringComparison.Ordinal);
             SystemListView.IsVisible = false;
             SystemDetailView.IsVisible = false;
-            CategoryView.IsVisible = !isAppearance;
+            var isLockScreen = category == "LockScreen";
+            LockScreenView.IsVisible = isLockScreen;
+            CategoryView.IsVisible = !isAppearance && !isLockScreen;
             AppearanceView.IsVisible = isAppearance;
 
+            if (isLockScreen)
+            {
+                RefreshLockScreenControls();
+                if (pageChanged) _ = GuiMotion.RevealAsync(LockScreenContent, 6);
+                return;
+            }
             if (isAppearance)
             {
                 _pendingSection = null;
@@ -508,6 +519,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private static string GetCategoryTitle(string category) => category switch
             {
+                "LockScreen" => Loc.Get("Lock Screen"),
                 "Displays" => Loc.Get("Displays"),
                 "Sound" => Loc.Get("Sound"),
                 "Network" => Loc.Get("Wi-Fi"),
@@ -3111,6 +3123,14 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private static SettingIcon? GetSettingIcon(string title) => title switch
         {
+            "Clock font" or "Font weight" => new("text-aa"),
+            "Clock size" => new("arrows-out-cardinal"),
+            "Clock color" => new("palette"),
+            "Clock position" or "Clock alignment" => new("clock"),
+            "Date style" or "Date below clock" => new("calendar"),
+            "Wallpaper dimming" => new("sun"),
+            "Show battery status" => new("power"),
+            "Show media controls" => new("music-note-02"),
             "Power mode" => new("power"),
             "Show date in the system bar" => new("calendar"),
 
@@ -3176,6 +3196,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
             CategoryContent.Width = width;
             AppearanceContent.Width = width;
+            LockScreenContent.Width = width;
             UpdateAppearanceLayout(width < 640 * (Application.Current?.Resources["TypeSizeBody"] as double? ?? 14) / 14);
         }
 
@@ -3185,6 +3206,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             if (_appearanceStacked == stacked) return;
             _appearanceStacked = stacked;
+            LockPreviewLayout.ColumnDefinitions = new ColumnDefinitions(stacked ? "*" : "200,*");
+            LockPreviewLayout.RowDefinitions = new RowDefinitions(stacked ? "Auto,Auto" : "Auto");
+            Grid.SetColumn(LockPreviewActions, stacked ? 0 : 1);
+            Grid.SetRow(LockPreviewActions, stacked ? 1 : 0);
             WallpaperLayout.ColumnDefinitions = new ColumnDefinitions(stacked ? "*" : "200,*");
             WallpaperLayout.RowDefinitions = new RowDefinitions(stacked ? "Auto,Auto" : "Auto");
             Grid.SetColumn(WallpaperActions, stacked ? 0 : 1);
@@ -3599,6 +3624,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private void OnAppearanceChanged(object? sender, EventArgs e)
         {
             RefreshAppearanceControls();
+            if (_activeCategory == "LockScreen") RefreshLockScreenControls();
             UpdateContentWidth();
             if (_displayLanguageTag == Loc.Culture.Name) return;
             _displayLanguageTag = Loc.Culture.Name;
@@ -3639,10 +3665,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 : WallpaperFileTypes.IsVideo(app.CurrentWallpaperUri)
                     ? WallpaperSelection.Video
                     : WallpaperSelection.Picture;
-            DeptEffectToggle.IsChecked = app.DeptEffectEnabled;
-            DeptAutomaticToggle.IsChecked = app.DeptEffectAutomatic;
-            DeptStrengthSlider.Value = app.DeptEffectStrength;
-            InitializeDeptPreview();
             WallpaperTypePicker.SelectedIndex = (int)_wallpaperSelection;
             _isRefreshingAppearanceControls = false;
             UpdateWallpaperSelectionUi(_wallpaperSelection, app);
@@ -3726,7 +3748,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private void RefreshWallpaperPreview(string wallpaperUri)
         {
             // Hidden settings pages must not decode images or start video preview workers.
-            if (_activeCategory != "Appearance" || TopLevel.GetTopLevel(this) is null || WallpaperPreviewImage is null) return;
+            if (_activeCategory is not ("Appearance" or "LockScreen") || TopLevel.GetTopLevel(this) is null || WallpaperPreviewImage is null) return;
             if (!WallpaperFileTypes.IsHeic(wallpaperUri) && string.Equals(_previewWallpaperUri, wallpaperUri, StringComparison.Ordinal)) return;
 
             _previewWallpaperUri = wallpaperUri;

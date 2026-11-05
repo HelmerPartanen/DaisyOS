@@ -74,6 +74,32 @@ public class DeptEffectRenderingTests
                     bands.Min(b => b.Top) + (bands.Max(b => b.Bottom) - bands.Min(b => b.Top)) * 0.55);
                 Assert.InRange(overlap.Total, strength / 100d - 0.05, strength / 100d + 0.04);
             }
+            // A narrow foreground can cover only part of one digit. Its best readable
+            // overlap is below 10%; failing to reach the ideal 15% must not turn it off.
+            var narrowMask = new byte[mask.Length];
+            var baseOrigin = clock.TranslatePoint(default, overlay)!.Value;
+            baseOrigin = new Point(baseOrigin.X, baseOrigin.Y - area.Margin.Top + 40);
+            var glyphLeft = bands.Min(b => b.Left);
+            var glyphRight = glyphLeft + (bands.Max(b => b.Right) - glyphLeft) / 5;
+            var boundary = baseOrigin.Y + bands.Min(b => b.Top) + (bands.Max(b => b.Bottom) - bands.Min(b => b.Top)) * 0.75;
+            for (var y = 0; y < DeptEffectService.OverlaySize; y++)
+                for (var x = 0; x < DeptEffectService.OverlaySize; x++)
+                {
+                    var px = x / (double)DeptEffectService.OverlaySize * overlay.Bounds.Width;
+                    var py = y / (double)DeptEffectService.OverlaySize * overlay.Bounds.Height;
+                    if (px >= baseOrigin.X + glyphLeft && px <= baseOrigin.X + glyphRight && py >= boundary)
+                        narrowMask[y * DeptEffectService.OverlaySize + x] = 255;
+                }
+            overlay.SetPreferences(true, false);
+            overlay.ApplyPreparedMasks([narrowMask]);
+            window.UpdateLayout();
+            Assert.True(overlay.HasForeground);
+            origin = clock.TranslatePoint(default, overlay)!.Value;
+            overlap = DeptEffectPresenter.MeasureOverlap(narrowMask, bands, origin.X, origin.Y, overlay.Bounds.Size,
+                bands.Min(b => b.Top) + (bands.Max(b => b.Bottom) - bands.Min(b => b.Top)) * 0.55);
+            Assert.InRange(overlap.Total, 0.05, 0.10);
+            Assert.InRange(overlap.Upper, 0, 0.015);
+            overlay.ApplyPreparedMasks([mask]);
             overlay.SetPreferences(true, false, 0);
             window.UpdateLayout();
             Assert.False(overlay.HasForeground);

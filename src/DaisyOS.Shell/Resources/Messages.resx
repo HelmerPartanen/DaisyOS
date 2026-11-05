@@ -7700,4 +7700,121 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comme
   <data name="Loc_2B7814C39D5E" xml:space="preserve">
     <value>The effect appears when a suitable foreground leaves the clock readable. Analysis runs locally.</value>
   </data>
+  <data name="Loc_C3A5F1416316" xml:space="preserve">
+    <value>12-hour</value>
+  </data>
+  <data name="Loc_0A56A0DDE3D9" xml:space="preserve">
+    <value>24-hour</value>
+  </data>
+  <data name="Loc_8DBA29750131" xml:space="preserve">
+    <value>Adjust effect</value>
+  </data>
+  <data name="Loc_129DF0BF0495" xml:space="preserve">
+    <value>Appears only when a suitable subject leaves the clock readable.</value>
+  </data>
+  <data name="Loc_964FEDDCFEA4" xml:space="preserve">
+    <value>Automatic foreground detection</value>
+  </data>
+  <data name="Loc_D946067427E9" xml:space="preserve">
+    <value>Center</value>
+  </data>
+  <data name="Loc_9287E3B60FC6" xml:space="preserve">
+    <value>Change wallpaper</value>
+  </data>
+  <data name="Loc_087762C1BE61" xml:space="preserve">
+    <value>Clock alignment</value>
+  </data>
+  <data name="Loc_799BA2F56C39" xml:space="preserve">
+    <value>Clock color</value>
+  </data>
+  <data name="Loc_5A509B40CD8B" xml:space="preserve">
+    <value>Clock font</value>
+  </data>
+  <data name="Loc_3B8D26AED843" xml:space="preserve">
+    <value>Clock position</value>
+  </data>
+  <data name="Loc_6C2C8E3324B0" xml:space="preserve">
+    <value>Clock size</value>
+  </data>
+  <data name="Loc_99452646E34B" xml:space="preserve">
+    <value>Compact</value>
+  </data>
+  <data name="Loc_F28FBFBC8978" xml:space="preserve">
+    <value>Date below clock</value>
+  </data>
+  <data name="Loc_88ED1B34C6BE" xml:space="preserve">
+    <value>Date style</value>
+  </data>
+  <data name="Loc_AB29EAFD0F3A" xml:space="preserve">
+    <value>Depth effect</value>
+  </data>
+  <data name="Loc_F3C8DB8CB41F" xml:space="preserve">
+    <value>Effect strength</value>
+  </data>
+  <data name="Loc_008DACB6D1E8" xml:space="preserve">
+    <value>Full</value>
+  </data>
+  <data name="Loc_7E6FEFFF0F0A" xml:space="preserve">
+    <value>Hidden</value>
+  </data>
+  <data name="Loc_F20A248EEFD9" xml:space="preserve">
+    <value>Higher</value>
+  </data>
+  <data name="Loc_870A9F743D91" xml:space="preserve">
+    <value>Layout &amp; visibility</value>
+  </data>
+  <data name="Loc_58EB9032E3BB" xml:space="preserve">
+    <value>Left</value>
+  </data>
+  <data name="Loc_DD71DB5DAA1C" xml:space="preserve">
+    <value>Let wallpaper subjects sit in front of the clock.</value>
+  </data>
+  <data name="Loc_13EC8F6DEC08" xml:space="preserve">
+    <value>Live preview · Uses your desktop wallpaper</value>
+  </data>
+  <data name="Loc_91A007B58B9D" xml:space="preserve">
+    <value>Lock Screen</value>
+  </data>
+  <data name="Loc_4E8BBF3A2BEA" xml:space="preserve">
+    <value>Lower</value>
+  </data>
+  <data name="Loc_B790C29478D7" xml:space="preserve">
+    <value>Make the first screen you see feel like yours.</value>
+  </data>
+  <data name="Loc_CED97CC4A377" xml:space="preserve">
+    <value>Mint</value>
+  </data>
+  <data name="Loc_BC79CDFFBAA8" xml:space="preserve">
+    <value>More options</value>
+  </data>
+  <data name="Loc_36752D6CD147" xml:space="preserve">
+    <value>Numeric</value>
+  </data>
+  <data name="Loc_602F8E637002" xml:space="preserve">
+    <value>Restore defaults</value>
+  </data>
+  <data name="Loc_883361D5D682" xml:space="preserve">
+    <value>Right</value>
+  </data>
+  <data name="Loc_E10D850954A8" xml:space="preserve">
+    <value>Rose</value>
+  </data>
+  <data name="Loc_21FCCF7317B7" xml:space="preserve">
+    <value>Show battery status</value>
+  </data>
+  <data name="Loc_5C8FF450BBB5" xml:space="preserve">
+    <value>Show media controls</value>
+  </data>
+  <data name="Loc_0A46F6DCAD9B" xml:space="preserve">
+    <value>Wallpaper dimming</value>
+  </data>
+  <data name="Loc_316F24288BE5" xml:space="preserve">
+    <value>Warm</value>
+  </data>
+  <data name="Loc_604E027935B7" xml:space="preserve">
+    <value>Clock, wallpaper and lock-screen appearance.</value>
+  </data>
+  <data name="Loc_6C986329C247" xml:space="preserve">
+    <value>Overlap adjusts automatically to keep the clock readable.</value>
+  </data>
 </root>

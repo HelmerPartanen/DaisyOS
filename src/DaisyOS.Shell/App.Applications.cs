@@ -53,7 +53,11 @@ public partial class App
             case "theme" when request.Length == 2 && Enum.TryParse<ThemeMode>(request[1], out var mode) && Enum.IsDefined(mode): await SetThemeModeAsync(mode); break;
             case "accent" when request.Length == 2 && Enum.TryParse<AccentColor>(request[1], out var accent) && Enum.IsDefined(accent): await SetAccentColorAsync(accent); break;
             case "contrast" when request.Length == 2: await SetHighContrastAsync(bool.Parse(request[1])); break;
-            case "dept-effect" when request.Length == 4: await SetDeptEffectAsync(bool.Parse(request[1]), bool.Parse(request[2]), int.Parse(request[3])); break;
+            case "lock-screen" when request.Length == 2:
+                await SetLockScreenAppearanceAsync(global::System.Text.Json.JsonSerializer.Deserialize(request[1],
+                    Services.Serialization.DaisyShellJsonContext.Default.LockScreenAppearance) ?? new());
+                break;
+            case "dept-effect" when request.Length is 3 or 4: await SetDeptEffectAsync(bool.Parse(request[1]), bool.Parse(request[2])); break;
             case "motion" when request.Length == 2: await SetReduceMotionAsync(bool.Parse(request[1])); break;
             case "taskbar-size" when request.Length == 2: await SetTaskbarSizeAsync(int.Parse(request[1])); break;
             case "taskbar-auto-hide" when request.Length == 2: await SetTaskbarAutoHideAsync(bool.Parse(request[1])); break;
