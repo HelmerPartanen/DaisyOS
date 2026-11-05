@@ -13,6 +13,57 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class WidgetLibraryLayoutTests
 {
     [AvaloniaFact]
+    public void NativeLibraryHasItsOwnBlurSurfaceAndRetainsDesktopOwner()
+    {
+        var desktop = new DaisyOS.Shell.Views.Components.Desktop.DesktopView();
+        var library = desktop.DetachWidgetLibraryForNativeOverlay();
+        library.Resources["MotionDurationEnter"] = TimeSpan.Zero;
+        library.Resources["MotionDurationExit"] = TimeSpan.Zero;
+        var window = new Window { Width = 1024, Height = 768, Content = new Grid { Children = { library } } };
+        using var blur = new DaisyOS.Shell.Services.Compositor.KWinBlur(window, window,
+            () => new[] { library.FindControl<Control>("LibraryFrame")! });
+        window.Show();
+        try
+        {
+            Assert.Same(desktop, library.DesktopHost);
+            Assert.DoesNotContain(library, desktop.GetVisualDescendants());
+            Assert.Same(library, desktop.FindControl<WidgetLibraryOverlay>("WidgetLibrary"));
+            library.Open();
+            window.UpdateLayout();
+            Assert.NotEmpty(blur.BuildRegions());
+            library.Dismiss();
+            window.UpdateLayout();
+            Assert.Empty(blur.BuildRegions());
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void RemovedGlowClockRestoresAsSweepWithoutChangingPlacement()
+    {
+        var path = Path.Combine(Path.GetTempPath(), $"daisy-legacy-clock-{Guid.NewGuid():N}.json");
+        try
+        {
+            var store = new DaisyOS.Shell.Services.Desktop.DesktopLayoutStore(path);
+            store.Save(new DaisyOS.Shell.Services.Desktop.DesktopLayoutConfig
+            {
+                Widgets = [new() { Id = "desktop.widget.clock.glow.legacy", Column = 2, Row = 3, ColumnSpan = 3, RowSpan = 2 }]
+            });
+            var desktop = new DaisyOS.Shell.ViewModels.DesktopViewModel(store);
+            var clock = Assert.Single(desktop.Items, item => item.Id.ToString() == "desktop.widget.clock.glow.legacy");
+            Assert.IsType<DaisyOS.Shell.DesktopWidgets.ClockWidget>(clock.WidgetContent);
+            Assert.Equal(2, clock.State.Column);
+            Assert.Equal(3, clock.State.Row);
+            Assert.Equal(3, clock.ColumnSpan);
+            Assert.Equal(2, clock.RowSpan);
+            var added = desktop.AddNewWidget("clock-glow", 3, 2);
+            Assert.IsType<DaisyOS.Shell.DesktopWidgets.ClockWidget>(added.WidgetContent);
+            Assert.Contains("clock.sweep", added.Id.ToString());
+        }
+        finally { File.Delete(path); }
+    }
+
+    [AvaloniaFact]
     public void PhotoWidgetsStartEmptyAndIgnoreUnavailableImages()
     {
         var widget = new DaisyOS.Shell.DesktopWidgets.ImageWidget();
@@ -39,7 +90,7 @@ public sealed class WidgetLibraryLayoutTests
             Assert.Contains(library.GetVisualDescendants().OfType<TextBlock>(), text => text.Text == "Widget Gallery");
             var expected = new Dictionary<string, (Type Widget, string[] Tags)>
             {
-                ["Clock"] = (typeof(Control), ["3,2", "3,2", "3,2", "3,2"]),
+                ["Clock"] = (typeof(Control), ["3,2", "3,2", "3,2", "4,2"]),
                 ["Calendar"] = (typeof(DaisyOS.Shell.DesktopWidgets.CalendarWidget), ["3,2", "4,2"]),
                 ["Media"] = (typeof(DaisyOS.Shell.DesktopWidgets.MediaWidget), ["3,2", "5,2", "5,6"]),
                 ["Photos"] = (typeof(DaisyOS.Shell.DesktopWidgets.ImageWidget), ["3,2", "4,2", "5,4"]),

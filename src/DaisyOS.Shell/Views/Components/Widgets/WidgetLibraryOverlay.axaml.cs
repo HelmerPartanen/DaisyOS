@@ -68,6 +68,9 @@ public partial class WidgetLibraryOverlay : UserControl
     private readonly Grid _viewport;
     private readonly Grid _track;
 
+    internal Desktop.DesktopView? DesktopHost { get; set; }
+    private Desktop.DesktopView? OwnerDesktop => DesktopHost ?? this.FindAncestorOfType<Desktop.DesktopView>();
+
     public bool IsOpen => GuiMotion.IsOpen(this);
     internal int SelectedIndex => _index;
     internal string SelectedCategory => _category;
@@ -116,7 +119,7 @@ public partial class WidgetLibraryOverlay : UserControl
             new("clock", 3, 2, Loc.Get("Sweep Clock"), Loc.Get("A smooth, continuously sweeping hand."), () => Sized(new ClockWidget(), w => w.SetGridSize(3, 2))),
             new("clock-digital", 3, 2, Loc.Get("Digital Clock"), Loc.Get("Bold segment digits that read from across the room."), () => Sized(new DigitalClockWidget(), w => w.SetGridSize(3, 2))),
             new("clock-analog", 3, 2, Loc.Get("Analog Clock"), Loc.Get("A classic dial with ticking hands."), () => Sized(new AnalogClockWidget(), w => w.SetGridSize(3, 2))),
-            new("clock-glow", 3, 2, Loc.Get("Glow Clock"), Loc.Get("A softly glowing dial for darker desktops."), () => Sized(new GlowClockWidget(), w => w.SetGridSize(3, 2))),
+            new("clock-analog", 4, 2, Loc.Get("Analog Clock") + " · " + Loc.Get("Large"), Loc.Get("A classic dial with ticking hands."), () => Sized(new AnalogClockWidget(), w => w.SetGridSize(4, 2))),
         ],
     };
 
@@ -249,7 +252,7 @@ public partial class WidgetLibraryOverlay : UserControl
     private void LayoutSlides()
     {
         if (_slides.Count == 0) return;
-        var metrics = this.FindAncestorOfType<Desktop.DesktopView>()?.CurrentMetrics;
+        var metrics = OwnerDesktop?.CurrentMetrics;
         double cellWidth = metrics?.CellWidth ?? 74;
         double cellHeight = metrics?.CellHeight ?? 88;
         double width = Math.Max(1, _viewport.Bounds.Width);
@@ -583,7 +586,7 @@ public partial class WidgetLibraryOverlay : UserControl
 
     private void OnAddMediaToBottomShelfClicked(object? sender, RoutedEventArgs e)
     {
-        var desktopView = this.FindAncestorOfType<Desktop.DesktopView>();
+        var desktopView = OwnerDesktop;
         desktopView?.ViewModel?.MoveMediaWidgetToBottomShelf();
         Dismiss();
     }

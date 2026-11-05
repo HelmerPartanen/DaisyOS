@@ -13,5 +13,6 @@ public partial class AnalogClockWidget : UserControl
         var container = this.FindControl<WidgetContainer>("Container")!;
         container.ColumnSpan = columnSpan;
         container.RowSpan = rowSpan;
+        this.FindControl<ClockFace>("Face")!.ShowDayDate = columnSpan >= 4;
     }
 }

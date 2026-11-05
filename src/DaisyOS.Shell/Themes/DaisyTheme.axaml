@@ -126,6 +126,11 @@
     <Color x:Key="FaviconColor">#FF1598FF</Color>
 
     <!-- Accent options -->
+    <!-- Saturated decorative accents, tuned for this theme's surfaces. -->
+    <Color x:Key="VibrantGreenColor">#FF009A42</Color>
+    <Color x:Key="VibrantYellowColor">#FFB47D00</Color>
+    <Color x:Key="VibrantRedColor">#FFE62032</Color>
+    <Color x:Key="VibrantOrangeColor">#FFDB5500</Color>
     <Color x:Key="AccentOptionDefaultColor">#FF1598FF</Color>
     <Color x:Key="AccentOptionBlueColor">#FF1598FF</Color>
     <Color x:Key="AccentOptionPurpleColor">#FF7652D9</Color>
@@ -221,6 +226,10 @@
       <SolidColorBrush x:Key="StatusDangerContainerBrush" Color="{StaticResource StatusDangerContainerColor}" />
       <SolidColorBrush x:Key="StatusInfoBrush" Color="{StaticResource StatusInfoColor}" />
       <SolidColorBrush x:Key="StatusInfoContainerBrush" Color="{StaticResource StatusInfoContainerColor}" />
+      <SolidColorBrush x:Key="VibrantGreenBrush" Color="{StaticResource VibrantGreenColor}" />
+      <SolidColorBrush x:Key="VibrantYellowBrush" Color="{StaticResource VibrantYellowColor}" />
+      <SolidColorBrush x:Key="VibrantRedBrush" Color="{StaticResource VibrantRedColor}" />
+      <SolidColorBrush x:Key="VibrantOrangeBrush" Color="{StaticResource VibrantOrangeColor}" />
       <SolidColorBrush x:Key="AccentOptionDefaultBrush" Color="{StaticResource AccentOptionDefaultColor}" />
       <SolidColorBrush x:Key="AccentOptionBlueBrush" Color="{StaticResource AccentOptionBlueColor}" />
       <SolidColorBrush x:Key="AccentOptionPurpleBrush" Color="{StaticResource AccentOptionPurpleColor}" />
@@ -337,7 +346,12 @@
       <Color x:Key="StatusDangerContainerColor">#FF491B23</Color>
       <Color x:Key="StatusInfoColor">#FF85B6FF</Color>
       <Color x:Key="StatusInfoContainerColor">#FF1C355E</Color>
-      <Color x:Key="AccentOptionDefaultColor">#FF0059D1</Color>
+      <!-- Saturated decorative accents, tuned for this theme's surfaces. -->
+    <Color x:Key="VibrantGreenColor">#FF30E66D</Color>
+    <Color x:Key="VibrantYellowColor">#FFFFD60A</Color>
+    <Color x:Key="VibrantRedColor">#FFFF453A</Color>
+    <Color x:Key="VibrantOrangeColor">#FFFF9500</Color>
+    <Color x:Key="AccentOptionDefaultColor">#FF0059D1</Color>
       <Color x:Key="AccentOptionBlueColor">#FF0059D1</Color>
       <Color x:Key="AccentOptionPurpleColor">#FFBB9CFF</Color>
       <Color x:Key="AccentOptionPinkColor">#FFFF9AC6</Color>
@@ -427,6 +441,10 @@
       <SolidColorBrush x:Key="StatusDangerContainerBrush" Color="{StaticResource StatusDangerContainerColor}" />
       <SolidColorBrush x:Key="StatusInfoBrush" Color="{StaticResource StatusInfoColor}" />
       <SolidColorBrush x:Key="StatusInfoContainerBrush" Color="{StaticResource StatusInfoContainerColor}" />
+      <SolidColorBrush x:Key="VibrantGreenBrush" Color="{StaticResource VibrantGreenColor}" />
+      <SolidColorBrush x:Key="VibrantYellowBrush" Color="{StaticResource VibrantYellowColor}" />
+      <SolidColorBrush x:Key="VibrantRedBrush" Color="{StaticResource VibrantRedColor}" />
+      <SolidColorBrush x:Key="VibrantOrangeBrush" Color="{StaticResource VibrantOrangeColor}" />
       <SolidColorBrush x:Key="AccentOptionDefaultBrush" Color="{StaticResource AccentOptionDefaultColor}" />
       <SolidColorBrush x:Key="AccentOptionBlueBrush" Color="{StaticResource AccentOptionBlueColor}" />
       <SolidColorBrush x:Key="AccentOptionPurpleBrush" Color="{StaticResource AccentOptionPurpleColor}" />

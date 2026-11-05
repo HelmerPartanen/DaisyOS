@@ -54,6 +54,17 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
         public bool IsWidgetContextMenuVisible => DesktopWidgetContextMenuHost.IsVisible;
 
+        public bool IsWidgetLibraryOpen => WidgetLibrary.IsOpen;
+        public void DismissWidgetLibrary() => WidgetLibrary.Dismiss();
+
+        public WidgetLibraryOverlay DetachWidgetLibraryForNativeOverlay()
+        {
+            WidgetLibrary.DesktopHost = this;
+            if (WidgetLibrary.Parent is Panel parent)
+                parent.Children.Remove(WidgetLibrary);
+            return WidgetLibrary;
+        }
+
         public Control DetachWidgetContextMenuForNativeOverlay()
         {
             if (DesktopWidgetContextMenuHost.Parent is Panel parent)

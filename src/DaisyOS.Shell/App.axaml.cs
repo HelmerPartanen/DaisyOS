@@ -476,6 +476,7 @@ public partial class App : Application
         var shell = new ShellView();
         var panelContent = shell.DetachDesktopChromeForNativePanel();
         var launcherContent = shell.DetachLauncherForNativeOverlay();
+        var widgetLibrary = shell.Desktop.DetachWidgetLibraryForNativeOverlay();
         var systemFlyoutContent = shell.SystemBar.DetachFlyoutsForNativeOverlay();
         Control? launcherAppContextMenu = null;
         if (systemFlyoutContent is Panel flyoutPanel)
@@ -571,6 +572,28 @@ public partial class App : Application
                 KeyboardInteractivity = LayerShellKeyboardInteractivity.None
             }, systemFlyoutContent);
         _nativeSystemFlyoutSurface = systemFlyoutSurface;
+        // A distinct surface lets KWin blur desktop widgets as well as wallpaper.
+        var widgetLibrarySurface = backend.CreateWindow(
+            LayerShellSurfaceOptions.TopTransient("daisyos.overlay.widget-library") with
+            {
+                InputPassthrough = true,
+                KeyboardInteractivity = LayerShellKeyboardInteractivity.None
+            }, new Grid { Children = { widgetLibrary } });
+        widgetLibrary.PropertyChanged += (_, change) =>
+        {
+            if (change.Property == Visual.IsVisibleProperty || change.Property == InputElement.IsHitTestVisibleProperty)
+            {
+                SetNativeSurfaceVisible(widgetLibrarySurface, widgetLibrary.IsVisible, captureKeyboard: true);
+                LayerShellWindow.SetInputPassthrough(widgetLibrarySurface,
+                    !widgetLibrary.IsVisible || !widgetLibrary.IsHitTestVisible);
+            }
+        };
+        _blurEffects.Add(new KWinBlur(widgetLibrarySurface, widgetLibrarySurface, () =>
+            new[] { widgetLibrary.FindControl<Control>("LibraryFrame") }.OfType<Control>()));
+        ConfigureTransientSurfaceDismissal(widgetLibrarySurface,
+            () => widgetLibrary.IsOpen,
+            source => IsWithin(source, widgetLibrary.FindControl<Control>("LibraryFrame")!),
+            widgetLibrary.Dismiss);
         var toastSurface = backend.CreateWindow(
             LayerShellSurfaceOptions.NotificationOverlay(), toastContent);
         var consoleSurface = backend.CreateWindow(
@@ -615,6 +638,7 @@ public partial class App : Application
         _nativeShellSurfaces.Add(launcherSurface);
         if (_launcherHintSurface is not null) _nativeShellSurfaces.Add(_launcherHintSurface);
         _nativeShellSurfaces.Add(systemFlyoutSurface);
+        _nativeShellSurfaces.Add(widgetLibrarySurface);
         var tooltipSurface = backend.CreateWindow(
             LayerShellSurfaceOptions.BottomTooltipOverlay(), shell.DetachBottomTooltipsForNativeOverlay());
         _nativeShellSurfaces.Add(tooltipSurface);
@@ -652,7 +676,7 @@ public partial class App : Application
         {
             return desktopSurface.GetVisualDescendants()
                 .OfType<Border>()
-                .Where(border => border.Name is "OuterFrame" or "LibraryCard" or "MenuBlurHost")
+                .Where(border => border.Name is "OuterFrame" or "MenuBlurHost")
                 .Cast<Control>()
                 .ToList();
         });
@@ -2023,6 +2047,12 @@ public partial class App : Application
         if (_shellView?.Taskbar.IsContextMenuVisible == true)
         {
             _shellView.Taskbar.HideContextMenu();
+            return true;
+        }
+
+        if (_shellView?.Desktop.IsWidgetLibraryOpen == true)
+        {
+            _shellView.Desktop.DismissWidgetLibrary();
             return true;
         }
 

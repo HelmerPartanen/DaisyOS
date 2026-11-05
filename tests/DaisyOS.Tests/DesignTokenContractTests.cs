@@ -10,6 +10,29 @@ public sealed class DesignTokenContractTests
     private static readonly XNamespace X = "http://schemas.microsoft.com/winfx/2006/xaml";
 
     [Fact]
+    public void VibrantPaletteIsSaturatedAndVisibleInBothThemes()
+    {
+        var document = XDocument.Load(ThemePath());
+        foreach (var theme in new[] { "Light", "Dark" })
+        {
+            var dictionary = document.Descendants().Single(e => (string?)e.Attribute(X + "Key") == theme);
+            var resources = dictionary.Elements().Where(e => e.Attribute(X + "Key") != null)
+                .ToDictionary(e => (string)e.Attribute(X + "Key")!);
+            var surface = ParseColor(resources["SurfaceRaisedColor"].Value);
+            foreach (var hue in new[] { "Green", "Yellow", "Red", "Orange" })
+            {
+                var key = $"Vibrant{hue}Color";
+                var color = ParseColor(resources[key].Value);
+                var max = Math.Max(color.R, Math.Max(color.G, color.B));
+                var min = Math.Min(color.R, Math.Min(color.G, color.B));
+                Assert.True((max - min) / (double)max >= 0.75, $"{theme} {hue} should stay saturated.");
+                Assert.True(Contrast(color, surface) >= 3, $"{theme} {hue} should remain visible on its surface.");
+                Assert.Equal($"{{StaticResource {key}}}", (string?)resources[$"Vibrant{hue}Brush"].Attribute("Color"));
+            }
+        }
+    }
+
+    [Fact]
     public void CanonicalTokenGroupsExistInTheThemeDictionary()
     {
         var source = File.ReadAllText(ThemePath());

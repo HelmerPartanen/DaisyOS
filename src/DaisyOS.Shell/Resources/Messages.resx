@@ -5373,10 +5373,6 @@ Used by: src/DaisyOS.Shell/Apps/AppStore</comment>
     <value>Analog Clock</value>
     <comment>Source: Analog Clock</comment>
   </data>
-  <data name="Loc_5DEE82102283" xml:space="preserve">
-    <value>Glow Clock</value>
-    <comment>Source: Glow Clock</comment>
-  </data>
   <data name="Loc_29954C63C3BA" xml:space="preserve">
     <value>Keep display changes?</value>
     <comment>Source: Keep display changes?</comment>
@@ -7472,11 +7468,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.c
   <data name="Loc_A5D032CDE530" xml:space="preserve">
     <value>A smooth, continuously sweeping hand.</value>
     <comment>Source: A smooth, continuously sweeping hand.
-Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
-  </data>
-  <data name="Loc_B29E4B359A98" xml:space="preserve">
-    <value>A softly glowing dial for darker desktops.</value>
-    <comment>Source: A softly glowing dial for darker desktops.
 Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml.cs</comment>
   </data>
   <data name="Loc_F4BCD0D570DE" xml:space="preserve">
