@@ -227,14 +227,12 @@ public partial class App : Application
 
     public void SetPreference(string key, string value)
     {
-        if (_useDesktopSettings) { _ = ApplyDesktopSettingAsync("preference", key, value); return; }
         SessionState.SetPreference(key, value);
         PreferenceChanged?.Invoke(this, (key, value));
     }
 
     public void SetDoNotDisturb(bool enabled)
     {
-        if (_useDesktopSettings) { _ = ApplyDesktopSettingAsync("dnd", enabled.ToString()); return; }
         SessionState.DoNotDisturb = enabled;
         Notifications.SetDoNotDisturb(enabled);
     }
@@ -415,17 +413,68 @@ public partial class App : Application
         var writeTime = File.GetLastWriteTimeUtc(_appearanceSettingsStore.PreferencesPath);
         var minute = DateTime.Now.Minute;
         if (!force && writeTime == _applicationAppearanceWriteTime && minute == _applicationAppearanceMinute) return;
+        var fileChanged = writeTime != _applicationAppearanceWriteTime;
         _applicationAppearanceWriteTime = writeTime;
         _applicationAppearanceMinute = minute;
-        _appearanceSettings = _appearanceSettingsStore.Load();
-        RequestedThemeVariant = _appearanceSettings.ThemeMode == ThemeMode.Automatic
+
+        if (!force && !fileChanged && _appearanceSettings.ThemeMode != ThemeMode.Automatic)
+        {
+            return;
+        }
+
+        var previous = _appearanceSettings;
+        var previousThemeVariant = RequestedThemeVariant;
+        var loaded = (force || fileChanged) ? _appearanceSettingsStore.Load() : previous;
+        _appearanceSettings = loaded;
+
+        var targetThemeVariant = _appearanceSettings.ThemeMode == ThemeMode.Automatic
             ? (SolarSchedule.ForLocalTimeZone(DateTimeOffset.Now).IsDaylight(DateTimeOffset.Now) ? ThemeVariant.Light : ThemeVariant.Dark)
             : ToThemeVariant(_appearanceSettings.ThemeMode);
-        ApplyAccessibilityPreferences();
-        ApplyAccentPreference();
-        ApplyLanguageResources();
-        ApplyTypographyResources();
-        AppearanceChanged?.Invoke(this, EventArgs.Empty);
+        var themeChanged = RequestedThemeVariant != targetThemeVariant;
+        if (themeChanged)
+        {
+            RequestedThemeVariant = targetThemeVariant;
+        }
+
+        var accessibilityChanged = themeChanged
+            || previous.HighContrast != loaded.HighContrast
+            || previous.ReduceMotion != loaded.ReduceMotion;
+        var accentChanged = themeChanged
+            || previous.HighContrast != loaded.HighContrast
+            || previous.AccentColor != loaded.AccentColor;
+        var languageChanged = !string.Equals(
+            SystemLanguages.Resolve(previous.LanguageTag).Tag,
+            SystemLanguages.Resolve(loaded.LanguageTag).Tag,
+            StringComparison.OrdinalIgnoreCase);
+        var typographyChanged = !string.Equals(previous.SystemFontFamily, loaded.SystemFontFamily, StringComparison.Ordinal)
+            || previous.TextScalePercent != loaded.TextScalePercent;
+        var profilePictureChanged = !string.Equals(previous.ProfilePictureUri, loaded.ProfilePictureUri, StringComparison.Ordinal);
+        var taskbarSizeChanged = previous.TaskbarSize != loaded.TaskbarSize;
+        var wallpaperChanged = previous.UseSolidWallpaper != loaded.UseSolidWallpaper
+            || !string.Equals(previous.SolidWallpaperColor, loaded.SolidWallpaperColor, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(previous.WallpaperUri, loaded.WallpaperUri, StringComparison.Ordinal);
+        var lockScreenChanged = (previous.LockScreen ?? new()).Normalize() != (loaded.LockScreen ?? new()).Normalize()
+            || previous.DeptEffectEnabled != loaded.DeptEffectEnabled
+            || previous.DeptEffectAutomatic != loaded.DeptEffectAutomatic;
+        var barVisibilityChanged = previous.TaskbarAutoHide != loaded.TaskbarAutoHide
+            || previous.SystemBarAutoHide != loaded.SystemBarAutoHide
+            || previous.MediaWidgetAutoHide != loaded.MediaWidgetAutoHide
+            || !string.Equals(previous.CursorThemeId, loaded.CursorThemeId, StringComparison.Ordinal)
+            || previous.CursorSize != loaded.CursorSize;
+
+        if (accessibilityChanged) ApplyAccessibilityPreferences();
+        if (accentChanged) ApplyAccentPreference();
+        if (languageChanged) ApplyLanguageResources();
+        if (typographyChanged) TypographyPolicy.Apply(Resources, _appearanceSettings.SystemFontFamily, _appearanceSettings.TextScalePercent);
+        if (profilePictureChanged || typographyChanged) ApplyProfilePictureResources();
+        if (taskbarSizeChanged || typographyChanged) ApplyTaskbarSizeResources();
+
+        if (accessibilityChanged || accentChanged || languageChanged || typographyChanged ||
+            profilePictureChanged || taskbarSizeChanged || wallpaperChanged || lockScreenChanged || barVisibilityChanged ||
+            previous.ThemeMode != loaded.ThemeMode)
+        {
+            AppearanceChanged?.Invoke(this, EventArgs.Empty);
+        }
     }
 
     /// <summary>
@@ -1047,7 +1096,18 @@ public partial class App : Application
 
     public async Task SetThemeModeAsync(ThemeMode mode)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("theme", mode.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.ThemeMode = mode;
+            RequestedThemeVariant = mode == ThemeMode.Automatic
+                ? (SolarSchedule.ForLocalTimeZone(DateTimeOffset.Now).IsDaylight(DateTimeOffset.Now) ? ThemeVariant.Light : ThemeVariant.Dark)
+                : ToThemeVariant(mode);
+            ApplyAccessibilityPreferences();
+            ApplyAccentPreference();
+            AppearanceChanged?.Invoke(this, EventArgs.Empty);
+            await ApplyDesktopSettingAsync("theme", mode.ToString());
+            return;
+        }
         _appearanceSettings.ThemeMode = mode;
         if (mode == ThemeMode.Automatic)
         {
@@ -1068,7 +1128,14 @@ public partial class App : Application
 
     public async Task SetAccentColorAsync(AccentColor accentColor)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("accent", accentColor.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.AccentColor = accentColor;
+            ApplyAccentPreference();
+            AppearanceChanged?.Invoke(this, EventArgs.Empty);
+            await ApplyDesktopSettingAsync("accent", accentColor.ToString());
+            return;
+        }
         _appearanceSettings.AccentColor = accentColor;
         ApplyAccentPreference();
         await PersistAppearanceAsync();
@@ -1077,7 +1144,15 @@ public partial class App : Application
 
     public async Task SetHighContrastAsync(bool enabled)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("contrast", enabled.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.HighContrast = enabled;
+            ApplyAccessibilityPreferences();
+            ApplyAccentPreference();
+            AppearanceChanged?.Invoke(this, EventArgs.Empty);
+            await ApplyDesktopSettingAsync("contrast", enabled.ToString());
+            return;
+        }
         _appearanceSettings.HighContrast = enabled;
         ApplyAccessibilityPreferences();
         ApplyAccentPreference();
@@ -1092,6 +1167,7 @@ public partial class App : Application
         preferences = preferences.Normalize();
         if (_useDesktopSettings)
         {
+            _appearanceSettings.LockScreen = preferences;
             var json = global::System.Text.Json.JsonSerializer.Serialize(preferences,
                 Services.Serialization.DaisyShellJsonContext.Default.LockScreenAppearance);
             await ApplyDesktopSettingAsync("lock-screen", json);
@@ -1109,6 +1185,9 @@ public partial class App : Application
     {
         if (_useDesktopSettings)
         {
+            _appearanceSettings.DeptEffectEnabled = enabled;
+            _appearanceSettings.DeptEffectAutomatic = automatic;
+            _appearanceSettings.DeptEffectStrength = 15;
             await ApplyDesktopSettingAsync("dept-effect", enabled.ToString(), automatic.ToString());
             return;
         }
@@ -1121,7 +1200,14 @@ public partial class App : Application
 
     public async Task SetReduceMotionAsync(bool enabled)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("motion", enabled.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.ReduceMotion = enabled;
+            ApplyAccessibilityPreferences();
+            AppearanceChanged?.Invoke(this, EventArgs.Empty);
+            await ApplyDesktopSettingAsync("motion", enabled.ToString());
+            return;
+        }
         _appearanceSettings.ReduceMotion = enabled;
         ApplyAccessibilityPreferences();
         await PersistAppearanceAsync();
@@ -1131,7 +1217,13 @@ public partial class App : Application
     public async Task SetTaskbarSizeAsync(int size)
     {
         size = Math.Clamp(size, 0, 2);
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("taskbar-size", size.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.TaskbarSize = size;
+            ApplyTaskbarSizeResources();
+            await ApplyDesktopSettingAsync("taskbar-size", size.ToString());
+            return;
+        }
         _appearanceSettings.TaskbarSize = size;
         ApplyTaskbarSizeResources();
         await PersistAppearanceAsync();
@@ -1147,7 +1239,12 @@ public partial class App : Application
 
     public async Task SetTaskbarAutoHideAsync(bool enabled)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("taskbar-auto-hide", enabled.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.TaskbarAutoHide = enabled;
+            await ApplyDesktopSettingAsync("taskbar-auto-hide", enabled.ToString());
+            return;
+        }
         _appearanceSettings.TaskbarAutoHide = enabled;
         _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
         await PersistAppearanceAsync();
@@ -1156,7 +1253,12 @@ public partial class App : Application
 
     public async Task SetSystemBarAutoHideAsync(bool enabled)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("systembar-auto-hide", enabled.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.SystemBarAutoHide = enabled;
+            await ApplyDesktopSettingAsync("systembar-auto-hide", enabled.ToString());
+            return;
+        }
         _appearanceSettings.SystemBarAutoHide = enabled;
         _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
         await PersistAppearanceAsync();
@@ -1165,7 +1267,12 @@ public partial class App : Application
 
     public async Task SetMediaWidgetAutoHideAsync(bool enabled)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("media-widget-auto-hide", enabled.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.MediaWidgetAutoHide = enabled;
+            await ApplyDesktopSettingAsync("media-widget-auto-hide", enabled.ToString());
+            return;
+        }
         _appearanceSettings.MediaWidgetAutoHide = enabled;
         _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, enabled);
         await PersistAppearanceAsync();
@@ -3253,7 +3360,15 @@ public partial class App : Application
 
     public async Task SetSolidWallpaperAsync(Color color)
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("solid-wallpaper", color.ToString()); return; }
+        if (_useDesktopSettings)
+        {
+            var solidSource = WallpaperSource.FromSolidColor(color);
+            _appearanceSettings.SolidWallpaperColor = solidSource["solid:".Length..];
+            _appearanceSettings.UseSolidWallpaper = true;
+            AppearanceChanged?.Invoke(this, EventArgs.Empty);
+            await ApplyDesktopSettingAsync("solid-wallpaper", color.ToString());
+            return;
+        }
         var source = WallpaperSource.FromSolidColor(color);
         _appearanceSettings.SolidWallpaperColor = source["solid:".Length..];
         _appearanceSettings.UseSolidWallpaper = true;
@@ -3268,7 +3383,13 @@ public partial class App : Application
 
     public async Task UseImageWallpaperAsync()
     {
-        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("image-wallpaper"); return; }
+        if (_useDesktopSettings)
+        {
+            _appearanceSettings.UseSolidWallpaper = false;
+            AppearanceChanged?.Invoke(this, EventArgs.Empty);
+            await ApplyDesktopSettingAsync("image-wallpaper");
+            return;
+        }
         var source = GetSafeWallpaperUri(_appearanceSettings.WallpaperUri);
         if (WallpaperSource.TryGetSolidColor(source, out _) && TryGetDefaultImageWallpaper() is { } defaultImage)
         {

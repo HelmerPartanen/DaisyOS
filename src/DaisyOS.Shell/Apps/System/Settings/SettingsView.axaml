@@ -459,9 +459,9 @@
               <Border Classes="SettingsGroupCard" Padding="20,16">
                 <Grid x:Name="LockPreviewLayout" ColumnDefinitions="200,*" ColumnSpacing="20" RowSpacing="16">
                   <Border Width="200" Height="120" HorizontalAlignment="Left" ClipToBounds="True"
-                          CornerRadius="{DynamicResource RoundedMD}" Background="Black">
-                    <Viewbox Stretch="Uniform">
-                      <Grid x:Name="DeptPreviewGrid" Width="1280" Height="720" ClipToBounds="True">
+                          CornerRadius="{DynamicResource RoundedMD}" Background="{DynamicResource SurfaceRaisedBrush}">
+                    <Viewbox Stretch="UniformToFill">
+                      <Grid x:Name="DeptPreviewGrid" Width="1200" Height="720" ClipToBounds="True">
                         <Image x:Name="DeptPreviewWallpaper" Stretch="UniformToFill" />
                         <Border x:Name="DeptPreviewTint" Background="Black" Opacity="0" IsHitTestVisible="False" />
                         <StackPanel x:Name="DeptPreviewClockArea" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,72,0,0" Spacing="4">

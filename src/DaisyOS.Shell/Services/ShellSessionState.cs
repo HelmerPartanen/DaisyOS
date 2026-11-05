@@ -50,10 +50,70 @@ public sealed class ShellSessionState
         }
     }
 
-    public bool DoNotDisturb { get => _state.DoNotDisturb; set { if (RemoteWrite is { } remote) remote("dnd", [value.ToString()]); else Update(s => s.DoNotDisturb = value); } }
-    public bool GamingMode { get => _state.GamingMode; set { if (RemoteWrite is { } remote) remote("gaming", [value.ToString()]); else Update(s => s.GamingMode = value); } }
-    public bool ShowDateInSystemBar { get => _state.ShowDateInSystemBar; set { if (RemoteWrite is { } remote) remote("show-date", [value.ToString()]); else Update(s => s.ShowDateInSystemBar = value); } }
-    public double? LastKnownVolume { get => _state.LastKnownVolume; set { if (RemoteWrite is { } remote) remote("volume", [value?.ToString(global::System.Globalization.CultureInfo.InvariantCulture) ?? ""]); else Update(s => s.LastKnownVolume = value is null ? null : Math.Clamp(value.Value, 0, 100)); } }
+    public bool DoNotDisturb
+    {
+        get => _state.DoNotDisturb;
+        set
+        {
+            if (_state.DoNotDisturb == value) return;
+            if (RemoteWrite is { } remote)
+            {
+                lock (_sync) _state.DoNotDisturb = value;
+                Changed?.Invoke(this, EventArgs.Empty);
+                remote("dnd", [value.ToString()]);
+            }
+            else Update(s => s.DoNotDisturb = value);
+        }
+    }
+
+    public bool GamingMode
+    {
+        get => _state.GamingMode;
+        set
+        {
+            if (_state.GamingMode == value) return;
+            if (RemoteWrite is { } remote)
+            {
+                lock (_sync) _state.GamingMode = value;
+                Changed?.Invoke(this, EventArgs.Empty);
+                remote("gaming", [value.ToString()]);
+            }
+            else Update(s => s.GamingMode = value);
+        }
+    }
+
+    public bool ShowDateInSystemBar
+    {
+        get => _state.ShowDateInSystemBar;
+        set
+        {
+            if (_state.ShowDateInSystemBar == value) return;
+            if (RemoteWrite is { } remote)
+            {
+                lock (_sync) _state.ShowDateInSystemBar = value;
+                Changed?.Invoke(this, EventArgs.Empty);
+                remote("show-date", [value.ToString()]);
+            }
+            else Update(s => s.ShowDateInSystemBar = value);
+        }
+    }
+
+    public double? LastKnownVolume
+    {
+        get => _state.LastKnownVolume;
+        set
+        {
+            var clamped = value is null ? (double?)null : Math.Clamp(value.Value, 0, 100);
+            if (_state.LastKnownVolume == clamped) return;
+            if (RemoteWrite is { } remote)
+            {
+                lock (_sync) _state.LastKnownVolume = clamped;
+                Changed?.Invoke(this, EventArgs.Empty);
+                remote("volume", [clamped?.ToString(global::System.Globalization.CultureInfo.InvariantCulture) ?? ""]);
+            }
+            else Update(s => s.LastKnownVolume = clamped);
+        }
+    }
     public IReadOnlyList<string> DockOrder
     {
         get
@@ -86,8 +146,19 @@ public sealed class ShellSessionState
     public void SetPreference(string key, string value)
     {
         if (string.IsNullOrWhiteSpace(key)) return;
-        if (RemoteWrite is { } remote) { remote("preference", [key, value ?? string.Empty]); return; }
-        Update(s => s.Preferences[key] = value ?? string.Empty);
+        var normalized = value ?? string.Empty;
+        if (RemoteWrite is { } remote)
+        {
+            lock (_sync)
+            {
+                if (_state.Preferences.TryGetValue(key, out var existing) && existing == normalized) return;
+                _state.Preferences[key] = normalized;
+            }
+            Changed?.Invoke(this, EventArgs.Empty);
+            remote("preference", [key, normalized]);
+            return;
+        }
+        Update(s => s.Preferences[key] = normalized);
     }
 
     public void SetDockOrder(IEnumerable<string> order) => Update(s => s.DockOrder = order

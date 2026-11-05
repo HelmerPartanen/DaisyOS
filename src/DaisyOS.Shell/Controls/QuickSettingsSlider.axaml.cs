@@ -57,12 +57,16 @@ public partial class QuickSettingsSlider : UserControl
 
     static QuickSettingsSlider()
     {
-        ValueProperty.Changed.AddClassHandler<QuickSettingsSlider>((slider, _) =>
+        ValueProperty.Changed.AddClassHandler<QuickSettingsSlider>((slider, e) =>
         {
+            if (e.OldValue is double oldVal && e.NewValue is double newVal && Math.Abs(newVal - oldVal) < 0.0001)
+                return;
             slider.UpdateProgressFill();
             slider.ValueChanged?.Invoke(slider, EventArgs.Empty);
         });
     }
+
+    public bool IsDragging => _isAdjustingFromTrack;
 
     public QuickSettingsSlider()
     {

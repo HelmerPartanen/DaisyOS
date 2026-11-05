@@ -67,6 +67,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private bool _isScanningBluetooth = false;
         private readonly LinuxWirelessNetworkService _settingsWirelessService = new(new SafeCommandRunner());
         private readonly LinuxBluetoothService _settingsBluetoothService = new(new SafeCommandRunner());
+        private readonly LinuxAudioService _settingsAudioService = new(new SafeCommandRunner());
         private readonly DispatcherTimer _connectionsRefreshTimer = new() { Interval = TimeSpan.FromSeconds(8) };
         private Task? _automaticNetworkRefresh;
         private CancellationTokenSource? _bluetoothDiscoveryLifetime;
@@ -658,8 +659,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     Picker("Power mode", "power.mode", currentProfile, async mode =>
                     {
                         if (!await powerService.SetPowerProfileAsync(mode))
+                        {
                             (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the power mode. The system power-profile service rejected the request."));
-                        ShowCategory("System");
+                            ShowCategory("System");
+                        }
                     }, "Balanced", "Power saver", "Performance"));
             }
             else
@@ -1137,36 +1140,27 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private async Task BuildSoundDevicesAsync(int buildVersion, TextBlock checking)
         {
-            var audio = new LinuxAudioService(new SafeCommandRunner());
+            var audio = _settingsAudioService;
+            var outputTask = audio.GetAudioDevicesAsync();
+            var inputTask = audio.GetAudioInputDevicesAsync();
+            var streamsTask = audio.GetAudioAppStreamsAsync();
+            var inputMutedTask = audio.GetInputMutedAsync();
+
             IReadOnlyList<AudioDeviceInfo> outputDevices;
             IReadOnlyList<AudioDeviceInfo> inputDevices;
             IReadOnlyList<AudioAppStreamInfo> streams;
-            try
-            {
-                outputDevices = await audio.GetAudioDevicesAsync();
-            }
-            catch
-            {
-                outputDevices = Array.Empty<AudioDeviceInfo>();
-            }
+            bool inputMuted;
+            try { outputDevices = await outputTask; }
+            catch { outputDevices = Array.Empty<AudioDeviceInfo>(); }
 
-            try
-            {
-                inputDevices = await audio.GetAudioInputDevicesAsync();
-            }
-            catch
-            {
-                inputDevices = Array.Empty<AudioDeviceInfo>();
-            }
+            try { inputDevices = await inputTask; }
+            catch { inputDevices = Array.Empty<AudioDeviceInfo>(); }
 
-            try
-            {
-                streams = await audio.GetAudioAppStreamsAsync();
-            }
-            catch
-            {
-                streams = Array.Empty<AudioAppStreamInfo>();
-            }
+            try { streams = await streamsTask; }
+            catch { streams = Array.Empty<AudioAppStreamInfo>(); }
+
+            try { inputMuted = await inputMutedTask; }
+            catch { inputMuted = false; }
 
             if (buildVersion != _categoryBuildVersion) return;
             CategoryContent.Children.Remove(checking);
@@ -1177,15 +1171,21 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 var deviceNames = outputDevices.Select(d => d.Name).ToArray();
                 var defaultDevice = outputDevices.FirstOrDefault(d => d.IsDefault)?.Name ?? deviceNames[0];
+                var outputVolumeRow = VolumeRow("Output volume", false);
+                var outputVolumeSlider = outputVolumeRow.GetVisualDescendants().OfType<QuickSettingsSlider>().FirstOrDefault();
                 var devicePicker = Picker("Speakers and headphones", "sound.output-device", defaultDevice, async selectedName =>
                 {
                     var target = outputDevices.FirstOrDefault(d => string.Equals(d.Name, selectedName, StringComparison.Ordinal));
                     if (target is not null && !await audio.SetDefaultAudioDeviceAsync(target.Id))
+                    {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t switch speakers. Check that the device is connected and try again."));
-                    ShowCategory("Sound");
+                        ShowCategory("Sound");
+                        return;
+                    }
+                    if (outputVolumeSlider is not null) _ = LoadVolumeAsync(outputVolumeSlider, false);
                 }, deviceNames);
                 outputControls.Add(devicePicker);
-                outputControls.Add(VolumeRow("Output volume", false));
+                outputControls.Add(outputVolumeRow);
 
                 var testSoundButton = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
                 {
@@ -1214,16 +1214,21 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 var inputNames = inputDevices.Select(d => d.Name).ToArray();
                 var defaultInput = inputDevices.FirstOrDefault(d => d.IsDefault)?.Name ?? inputNames[0];
+                var inputVolumeRow = VolumeRow("Input volume", true);
+                var inputVolumeSlider = inputVolumeRow.GetVisualDescendants().OfType<QuickSettingsSlider>().FirstOrDefault();
                 var inputPicker = Picker("Microphone", "sound.input-device", defaultInput, async selectedName =>
                 {
                     var target = inputDevices.FirstOrDefault(d => string.Equals(d.Name, selectedName, StringComparison.Ordinal));
                     if (target is not null && !await audio.SetDefaultAudioInputDeviceAsync(target.Id))
+                    {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t switch microphones. Check that the device is connected and try again."));
-                    ShowCategory("Sound");
+                        ShowCategory("Sound");
+                        return;
+                    }
+                    if (inputVolumeSlider is not null) _ = LoadVolumeAsync(inputVolumeSlider, true);
                 }, inputNames);
                 inputControls.Add(inputPicker);
-                inputControls.Add(VolumeRow("Input volume", true));
-                var inputMuted = await audio.GetInputMutedAsync();
+                inputControls.Add(inputVolumeRow);
                 inputControls.Add(Toggle("Mute microphone", "sound.input-muted", inputMuted, value => { _ = SetMicrophoneMuted(value); }));
             }
             else
@@ -1242,21 +1247,51 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private Border AppStreamVolumeRow(AudioAppStreamInfo stream, LinuxAudioService audio)
         {
+            var initialVolume = (int)Math.Round(stream.Volume);
             var slider = new QuickSettingsSlider
             {
                 Minimum = 0,
                 Maximum = 100,
                 Width = 200,
-                Value = stream.Volume,
+                Value = initialVolume,
                 Icon = "speaker-high",
                 VerticalAlignment = VerticalAlignment.Center
             };
+            var row = PreferenceRow(stream.Name, Loc.Format("Application volume: {0}%", initialVolume), slider);
+            var descriptionBlock = ((Grid)row.Child!).Children.OfType<StackPanel>().FirstOrDefault()?.Children.OfType<TextBlock>().ElementAtOrDefault(1);
+            int lastVolume = initialVolume;
+            int pendingVolume = -1;
+            int writeRunning = 0;
+
+            async Task FlushStreamVolumeAsync()
+            {
+                if (Interlocked.CompareExchange(ref writeRunning, 1, 0) != 0) return;
+                try
+                {
+                    while (true)
+                    {
+                        var target = Interlocked.Exchange(ref pendingVolume, -1);
+                        if (target < 0) break;
+                        await audio.SetAppStreamVolumeAsync(stream.Id, target);
+                    }
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref writeRunning, 0);
+                    if (Volatile.Read(ref pendingVolume) >= 0) _ = FlushStreamVolumeAsync();
+                }
+            }
+
             slider.ValueChanged += (_, _) =>
             {
-                var vol = Math.Round(slider.Value);
-                _ = audio.SetAppStreamVolumeAsync(stream.Id, vol);
+                var vol = (int)Math.Round(slider.Value);
+                if (descriptionBlock is not null) descriptionBlock.Text = Loc.Format("Application volume: {0}%", vol);
+                if (vol == lastVolume) return;
+                lastVolume = vol;
+                Interlocked.Exchange(ref pendingVolume, vol);
+                _ = FlushStreamVolumeAsync();
             };
-            return PreferenceRow(stream.Name, Loc.Format("Application volume: {0}%", (int)stream.Volume), slider);
+            return row;
         }
 
         private void BuildNetwork(int buildVersion)
@@ -1736,8 +1771,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 {
                     var app = status.AvailableBrowsers.FirstOrDefault(b => b.DisplayName == chosenName);
                     if (app is not null && !await defaultAppsService.SetDefaultBrowserAsync(app.DesktopId))
+                    {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the default browser."));
-                    ShowCategory("Apps");
+                        ShowCategory("Apps");
+                    }
                 }, browserNames));
             }
             else
@@ -1755,8 +1792,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 {
                     var app = status.AvailableFileManagers.FirstOrDefault(f => f.DisplayName == chosenName);
                     if (app is not null && !await defaultAppsService.SetDefaultFileManagerAsync(app.DesktopId))
+                    {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the default file manager."));
-                    ShowCategory("Apps");
+                        ShowCategory("Apps");
+                    }
                 }, fmNames));
             }
 
@@ -1770,8 +1809,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 {
                     var app = status.AvailableTextEditors.FirstOrDefault(e => e.DisplayName == chosenName);
                     if (app is not null && !await defaultAppsService.SetDefaultTextEditorAsync(app.DesktopId))
+                    {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the default text editor."));
-                    ShowCategory("Apps");
+                        ShowCategory("Apps");
+                    }
                 }, editorNames));
             }
 
@@ -2349,42 +2390,49 @@ namespace DaisyOS.Shell.Apps.System.Settings
             ToolTip.SetTip(scrollSpeedSlider, GetScrollSpeedLabel((int)Math.Round(scrollSpeedSlider.Value)));
 
             int lastScrollSpeed = status.TrackpadScrollSpeed;
-            int scrollSpeedChangeVersion = 0;
-            var scrollSpeedUpdateLock = new SemaphoreSlim(1, 1);
-            scrollSpeedSlider.ValueChanged += async (_, _) =>
+            int pendingScrollSpeed = -1;
+            int scrollSpeedWriteRunning = 0;
+
+            async Task FlushScrollSpeedAsync()
+            {
+                if (Interlocked.CompareExchange(ref scrollSpeedWriteRunning, 1, 0) != 0) return;
+                try
+                {
+                    while (true)
+                    {
+                        var targetSpeed = Interlocked.Exchange(ref pendingScrollSpeed, -1);
+                        if (targetSpeed < 0) break;
+                        if (!await hardwareService.SetTrackpadScrollSpeedAsync(targetSpeed))
+                        {
+                            (Application.Current as App)?.Feedback.Show(Loc.Get("Trackpad scroll speed was saved, but couldn’t be applied yet."));
+                        }
+                    }
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref scrollSpeedWriteRunning, 0);
+                    if (Volatile.Read(ref pendingScrollSpeed) >= 0) _ = FlushScrollSpeedAsync();
+                }
+            }
+
+            scrollSpeedSlider.ValueChanged += (_, _) =>
             {
                 var speedIndex = (int)Math.Round(scrollSpeedSlider.Value);
                 ToolTip.SetTip(scrollSpeedSlider, GetScrollSpeedLabel(speedIndex));
                 if (speedIndex == lastScrollSpeed) return;
                 lastScrollSpeed = speedIndex;
-                var changeVersion = ++scrollSpeedChangeVersion;
-
-                // Coalesce drag events and serialize writes. If an older write is
-                // already running, the newest selected tick is always written last.
-                await Task.Delay(100);
-                if (changeVersion != scrollSpeedChangeVersion) return;
-
-                await scrollSpeedUpdateLock.WaitAsync();
-                try
-                {
-                    if (changeVersion != scrollSpeedChangeVersion) return;
-                    if (!await hardwareService.SetTrackpadScrollSpeedAsync(speedIndex))
-                    {
-                        (Application.Current as App)?.Feedback.Show(Loc.Get("Trackpad scroll speed was saved, but couldn’t be applied yet."));
-                    }
-                }
-                finally
-                {
-                    scrollSpeedUpdateLock.Release();
-                }
+                Interlocked.Exchange(ref pendingScrollSpeed, speedIndex);
+                _ = FlushScrollSpeedAsync();
             };
 
             AddSection(Loc.Get("MOUSE & TRACKPAD"), null,
                 Picker("Pointer speed", "input.pointer-speed", status.PointerSpeed, async speed =>
                 {
                     if (!await hardwareService.SetPointerSpeedAsync(speed))
+                    {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Pointer speed was saved, but couldn’t be applied yet."));
-                    ShowCategory("Input");
+                        ShowCategory("Input");
+                    }
                 }, "Slow", "Normal", "Fast"),
                 PreferenceRow(Loc.Get("Trackpad scroll speed"), GetScrollSpeedLabel(DaisyOS.System.Input.LinuxInputHardwareService.DefaultTrackpadScrollSpeed), scrollSpeedSlider),
                 Toggle("Natural scrolling", "input.natural-scroll", status.NaturalScroll, async enabled =>
@@ -2613,26 +2661,36 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 currentClockFormat = fallbackFormat;
             }
 
+            var useTwelveHourTime = string.Equals(currentClockFormat, "12-hour", StringComparison.OrdinalIgnoreCase);
+            var currentTimePattern = useTwelveHourTime ? "dddd, d MMMM yyyy, h:mm tt" : "dddd, d MMMM yyyy, HH:mm";
+            var currentTimeRow = InfoRow(Loc.Get("Current time"), status.LocalTime.ToString(currentTimePattern, global::System.Globalization.CultureInfo.CurrentCulture));
+            var currentTimeLabel = currentTimeRow.GetVisualDescendants().OfType<TextBlock>().LastOrDefault();
+            TimePicker? manualTimePicker = null;
+
             var timeFormatPicker = Picker("Time format", "time.clock-format", currentClockFormat, selected =>
             {
                 var app = Application.Current as App;
                 app?.SetPreference("time.clock-format", selected);
-                ShowCategory("DateTime");
+                var twelveHour = string.Equals(selected, "12-hour", StringComparison.OrdinalIgnoreCase);
+                var pattern = twelveHour ? "dddd, d MMMM yyyy, h:mm tt" : "dddd, d MMMM yyyy, HH:mm";
+                if (currentTimeLabel is not null)
+                    currentTimeLabel.Text = status.LocalTime.ToString(pattern, global::System.Globalization.CultureInfo.CurrentCulture);
+                if (manualTimePicker is not null)
+                    manualTimePicker.ClockIdentifier = twelveHour ? "12HourClock" : "24HourClock";
             }, "24-hour", "12-hour");
-
-            var useTwelveHourTime = string.Equals(currentClockFormat, "12-hour", StringComparison.OrdinalIgnoreCase);
-            var currentTimePattern = useTwelveHourTime ? "dddd, d MMMM yyyy, h:mm tt" : "dddd, d MMMM yyyy, HH:mm";
 
             AddSection(Loc.Get("TIME"), Loc.Get("Choose how your computer sets the date and time."),
                 PreferenceRow(Loc.Get("Set time automatically"), Loc.Get("Use an internet time service when available."), automaticTime),
-                InfoRow(Loc.Get("Current time"), status.LocalTime.ToString(currentTimePattern, global::System.Globalization.CultureInfo.CurrentCulture)),
+                currentTimeRow,
                 PreferenceRow(Loc.Get("Time zone"), Loc.Get("Choose where you are so time and daylight saving stay correct."), zonePicker),
                 timeFormatPicker);
 
             if (!status.AutomaticTime)
             {
+                var manualRow = ManualDateTimeRow(status.LocalTime, buildVersion, useTwelveHourTime);
+                manualTimePicker = manualRow.GetVisualDescendants().OfType<TimePicker>().FirstOrDefault();
                 AddSection(Loc.Get("MANUAL TIME"), Loc.Get("Set the date and time only when automatic time is turned off."),
-                    ManualDateTimeRow(status.LocalTime, buildVersion, useTwelveHourTime));
+                    manualRow);
             }
 
         }
@@ -3021,23 +3079,66 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private Border VolumeRow(string title, bool input)
         {
             var app = Application.Current as App;
+            var initialVolume = (int)Math.Round(app?.SessionState.LastKnownVolume ?? 72);
             var slider = new QuickSettingsSlider
             {
                 Minimum = 0,
                 Maximum = 100,
                 Width = 200,
-                Value = app?.SessionState.LastKnownVolume ?? 72,
+                Value = initialVolume,
                 Icon = input ? "microphone" : "speaker-high",
                 VerticalAlignment = VerticalAlignment.Center
             };
+            int lastVolume = initialVolume;
+            int pendingVolume = -1;
+            int writeRunning = 0;
+            bool isLoadingVolume = false;
+
+            async Task FlushVolumeAsync()
+            {
+                if (Interlocked.CompareExchange(ref writeRunning, 1, 0) != 0) return;
+                try
+                {
+                    while (true)
+                    {
+                        var target = Interlocked.Exchange(ref pendingVolume, -1);
+                        if (target < 0) break;
+                        if (input)
+                        {
+                            await _settingsAudioService.SetInputVolumeAsync(target);
+                        }
+                        else
+                        {
+                            await _settingsAudioService.SetVolumeAsync(target);
+                            if (app is not null) app.SessionState.LastKnownVolume = target;
+                        }
+                    }
+                }
+                finally
+                {
+                    Interlocked.Exchange(ref writeRunning, 0);
+                    if (Volatile.Read(ref pendingVolume) >= 0) _ = FlushVolumeAsync();
+                }
+            }
+
             slider.ValueChanged += (_, _) =>
             {
-                var volume = Math.Round(slider.Value);
-                if (!input && app is not null) app.SessionState.LastKnownVolume = volume;
-                var audio = new LinuxAudioService(new SafeCommandRunner());
-                _ = input ? audio.SetInputVolumeAsync(volume) : audio.SetVolumeAsync(volume);
+                var volume = (int)Math.Round(slider.Value);
+                if (isLoadingVolume || volume == lastVolume) return;
+                lastVolume = volume;
+                Interlocked.Exchange(ref pendingVolume, volume);
+                _ = FlushVolumeAsync();
             };
-            _ = LoadVolumeAsync(slider, input);
+            _ = LoadVolumeAsync(slider, input, loaded =>
+            {
+                isLoadingVolume = true;
+                try
+                {
+                    lastVolume = loaded;
+                    slider.Value = loaded;
+                }
+                finally { isLoadingVolume = false; }
+            });
             return PreferenceRow(title, input ? Loc.Get("Microphone") : Loc.Get("System output"), slider);
         }
 
@@ -3292,13 +3393,17 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private IBrush? TryBrush(string resourceKey) =>
             this.TryFindResource(resourceKey, ActualThemeVariant, out var value) ? value as IBrush : null;
 
-        private async Task LoadVolumeAsync(QuickSettingsSlider slider, bool input)
+        private async Task LoadVolumeAsync(QuickSettingsSlider slider, bool input, Action<int>? applyLoaded = null)
         {
             try
             {
-                var audio = new LinuxAudioService(new SafeCommandRunner());
-                var volume = input ? await audio.GetInputVolumeAsync() : await audio.GetVolumeAsync();
-                if (volume is not null) slider.Value = volume.Value;
+                var volume = input ? await _settingsAudioService.GetInputVolumeAsync() : await _settingsAudioService.GetVolumeAsync();
+                if (volume is not null && !slider.IsDragging)
+                {
+                    var rounded = (int)Math.Round(volume.Value);
+                    if (applyLoaded is not null) applyLoaded(rounded);
+                    else slider.Value = rounded;
+                }
             }
             catch { /* Keep the last safe slider position if PipeWire is unavailable. */ }
         }
@@ -3307,8 +3412,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             try
             {
-                await new LinuxAudioService(new SafeCommandRunner()).SetInputMutedAsync(muted);
-                ShowCategory("Sound");
+                await _settingsAudioService.SetInputMutedAsync(muted);
             }
             catch
             {
@@ -3508,7 +3612,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private async void OnTaskbarSizeChanged(object? sender, EventArgs e)
         {
             if (_isRefreshingAppearanceControls || sender is not QuickSettingsSlider { IsLoaded: true } slider || Application.Current is not App app) return;
-            await app.SetTaskbarSizeAsync((int)Math.Round(slider.Value));
+            var size = (int)Math.Round(slider.Value);
+            if (size == app.CurrentTaskbarSize) return;
+            await app.SetTaskbarSizeAsync(size);
         }
 
         private async void OnTaskbarVisibilitySelectionChanged(object? sender, SelectionChangedEventArgs e)
@@ -3652,7 +3758,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
             AutomaticThemeInfo.Text = app.GetAutomaticThemeScheduleDescription();
             HighContrastToggle.IsChecked = app.HighContrastEnabled;
             ReduceMotionToggle.IsChecked = app.ReduceMotionEnabled;
-            TaskbarSizeSlider.Value = app.CurrentTaskbarSize;
+            if (!TaskbarSizeSlider.IsDragging)
+            {
+                TaskbarSizeSlider.Value = app.CurrentTaskbarSize;
+            }
             SelectComboByTag(TaskbarVisibilityPicker, app.TaskbarAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(SystemBarVisibilityPicker, app.SystemBarAutoHideEnabled ? "AutoHide" : "Always");
             SelectComboByTag(MediaWidgetVisibilityPicker, app.MediaWidgetAutoHideEnabled ? "AutoHide" : "Always");

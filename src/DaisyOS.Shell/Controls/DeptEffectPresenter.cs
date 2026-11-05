@@ -20,6 +20,7 @@ public sealed class DeptEffectPresenter : Control
     private byte[][]? _masks;
     private Bitmap? _maskBitmap;
     private byte[]? _selectedMask;
+    private byte[]? _maskBitmapSource;
     private readonly DeptEffectService _service = new();
     private readonly List<Bitmap> _retiredMasks = [];
     private string? _layoutKey;
@@ -142,6 +143,7 @@ public sealed class DeptEffectPresenter : Control
     {
         var retired = _maskBitmap;
         _maskBitmap = null;
+        _maskBitmapSource = null;
         if (retired is not null) _ = RetireMaskAsync(retired);
         _selectedMask = null;
         InvalidateVisual();
@@ -177,10 +179,17 @@ public sealed class DeptEffectPresenter : Control
         var previousTop = _area.Margin.Top;
         _placedTop = _baseMargin;
         _area.Margin = new Thickness(0, _baseMargin, 0, 0);
-        ClearMask();
-        if (!_enabled || !allowed || _strength == 0 || _masks is null || _glyphs is null || Bounds.Size != _analyzedSize) return;
+        if (!_enabled || !allowed || _strength == 0 || _masks is null || _glyphs is null || Bounds.Size != _analyzedSize)
+        {
+            ClearMask();
+            return;
+        }
         var bands = _glyphs();
-        if (bands.Length == 0) return;
+        if (bands.Length == 0)
+        {
+            ClearMask();
+            return;
+        }
         var best = double.PositiveInfinity;
         var bestOffset = 0d;
         byte[]? selected = null;
@@ -206,11 +215,22 @@ public sealed class DeptEffectPresenter : Control
             }
         // The requested overlap is a preference, not an eligibility threshold. A readable
         // smaller overlap is preferable to discarding a correctly segmented subject.
-        if (selected is null) return;
+        if (selected is null)
+        {
+            ClearMask();
+            return;
+        }
         _placedTop = _baseMargin + bestOffset;
         _area.Margin = new Thickness(0, _placedTop, 0, 0);
         _selectedMask = selected;
-        _maskBitmap = CreateMaskBitmap(selected);
+        if (!ReferenceEquals(_maskBitmapSource, selected) || _maskBitmap is null)
+        {
+            var retired = _maskBitmap;
+            if (retired is not null) _ = RetireMaskAsync(retired);
+            _maskBitmapSource = selected;
+            _maskBitmap = CreateMaskBitmap(selected);
+        }
+        InvalidateVisual();
     }
 
     public static (double Total, double Upper, double WorstDigit) MeasureOverlap(byte[] mask, Rect[] bands,

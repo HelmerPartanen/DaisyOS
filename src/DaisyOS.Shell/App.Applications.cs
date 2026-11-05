@@ -10,6 +10,8 @@ public partial class App
 {
     private bool _useDesktopSettings;
     private readonly SemaphoreSlim _desktopSettingsQueue = new(1, 1);
+    private readonly Dictionary<string, int> _desktopSettingsGenerations = new(StringComparer.Ordinal);
+    private readonly object _desktopSettingsGate = new();
 
     /// <summary>Settings reads shared state, but the desktop remains its sole writer.</summary>
     public void UseDesktopSettings()
@@ -18,14 +20,34 @@ public partial class App
         SessionState.RemoteWrite = (operation, values) => _ = ApplyDesktopSettingAsync(operation, values);
     }
 
+    private static string GetDesktopSettingCoalesceKey(string operation, string[] values) =>
+        operation == "preference" && values.Length > 0 ? $"preference:{values[0]}" : operation;
+
     private async Task<bool> ApplyDesktopSettingAsync(string operation, params string[] values)
     {
+        var coalesceKey = GetDesktopSettingCoalesceKey(operation, values);
+        int generation;
+        lock (_desktopSettingsGate)
+        {
+            generation = _desktopSettingsGenerations.TryGetValue(coalesceKey, out var current) ? current + 1 : 1;
+            _desktopSettingsGenerations[coalesceKey] = generation;
+        }
+
         await _desktopSettingsQueue.WaitAsync();
         try
         {
+            lock (_desktopSettingsGate)
+            {
+                if (_desktopSettingsGenerations.TryGetValue(coalesceKey, out var latest) && latest != generation)
+                {
+                    return true;
+                }
+            }
+
             var response = await ApplicationPipe.RequestAsync(ApplicationPipe.Name("desktop-settings"), [operation, .. values]);
             SessionState.Reload();
-            ReloadApplicationAppearance(force: true);
+            var requiresAppearanceReload = operation is "wallpaper" or "profile-picture" or "language" or "typography" or "cursor";
+            ReloadApplicationAppearance(force: requiresAppearanceReload || response != "ok");
             if (response == "ok")
             {
                 if (operation == "preference" && values.Length == 2) PreferenceChanged?.Invoke(this, (values[0], values[1]));

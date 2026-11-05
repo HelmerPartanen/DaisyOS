@@ -392,6 +392,23 @@ public sealed partial class LinuxAudioService : IAudioService
                         var appName = clean[(firstDot + 1)..].Trim();
                         if (appName.Contains('>')) continue; // Sub-channel routing line
 
+                        double vol = 100;
+                        bool isMuted = false;
+                        var inlineVolStart = appName.IndexOf("[vol:", StringComparison.OrdinalIgnoreCase);
+                        if (inlineVolStart > 0)
+                        {
+                            var volPart = appName[inlineVolStart..];
+                            appName = appName[..inlineVolStart].Trim();
+                            isMuted = volPart.Contains("MUTED", StringComparison.OrdinalIgnoreCase);
+                            var inlineMatch = InlineStatusVolumeRegex().Match(volPart);
+                            if (inlineMatch.Success && double.TryParse(inlineMatch.Groups["volume"].Value, NumberStyles.Float, CultureInfo.InvariantCulture, out var rawInlineVol))
+                            {
+                                vol = Math.Clamp(rawInlineVol * 100, 0, 100);
+                                list.Add(new AudioAppStreamInfo(streamId, appName, vol, isMuted));
+                                continue;
+                            }
+                        }
+
                         // Query volume for this stream
                         var volRes = await _commandRunner.RunAsync(
                             "wpctl",
@@ -399,8 +416,6 @@ public sealed partial class LinuxAudioService : IAudioService
                             CommandTimeout,
                             cancellationToken);
 
-                        double vol = 100;
-                        bool isMuted = false;
                         if (volRes.Succeeded)
                         {
                             isMuted = volRes.StandardOutput.Contains("[MUTED]", StringComparison.OrdinalIgnoreCase);
@@ -486,4 +501,7 @@ public sealed partial class LinuxAudioService : IAudioService
 
     [GeneratedRegex(@"Volume:\s+(?<volume>[0-9]+(?:\.[0-9]+)?)", RegexOptions.IgnoreCase)]
     private static partial Regex VolumeRegex();
+
+    [GeneratedRegex(@"\[vol:\s+(?<volume>[0-9]+(?:\.[0-9]+)?)", RegexOptions.IgnoreCase)]
+    private static partial Regex InlineStatusVolumeRegex();
 }

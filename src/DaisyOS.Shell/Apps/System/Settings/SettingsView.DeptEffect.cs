@@ -46,7 +46,7 @@ public partial class SettingsView
     private void RefreshDeptPreviewSource()
     {
         DeptPreviewWallpaper.Source = _wallpaperSelection == WallpaperSelection.Solid ? null : WallpaperPreviewImage.Source;
-        DeptPreviewGrid.Background = _wallpaperSelection == WallpaperSelection.Solid ? SolidWallpaperPreview.Background : Brushes.Black;
+        DeptPreviewGrid.Background = _wallpaperSelection == WallpaperSelection.Solid ? SolidWallpaperPreview.Background : TryBrush("SurfaceRaisedBrush");
         DeptPreviewForeground.SetPreferences(DeptEffectToggle.IsChecked == true && _wallpaperSelection == WallpaperSelection.Picture && (Application.Current as App)?.HighContrastEnabled != true,
             DeptAutomaticToggle.IsChecked == true);
     }

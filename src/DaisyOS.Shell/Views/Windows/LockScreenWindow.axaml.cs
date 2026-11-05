@@ -257,7 +257,67 @@ public partial class LockScreenWindow : Window
         return regions;
     }
 
+    private static readonly object GlyphBandsCacheGate = new();
+    private static readonly Dictionary<(string Value, Typeface Typeface, int SizeMillipoints), Rect[]> ExactGlyphBandsCache = new();
+    private static readonly Dictionary<(string Value, Typeface Typeface), Rect[]> ReferenceGlyphBandsCache = new();
+    private const double ReferenceGlyphFontSize = 104d;
+
     internal static Rect[] RasterizeClockGlyphBands(string value, Typeface typeface, double fontSize)
+    {
+        if (string.IsNullOrEmpty(value) || fontSize <= 0) return [];
+        var sizeMillipoints = (int)Math.Round(fontSize * 1000);
+        lock (GlyphBandsCacheGate)
+        {
+            if (ExactGlyphBandsCache.TryGetValue((value, typeface, sizeMillipoints), out var cached))
+                return cached;
+        }
+
+        // Rasterize once per (value, typeface) at the reference size and scale bands linearly
+        // for other sizes so dragging the Clock Size slider never stalls on GPU readback.
+        Rect[] referenceBands;
+        var isReferenceSize = Math.Abs(fontSize - ReferenceGlyphFontSize) < 0.01;
+        lock (GlyphBandsCacheGate)
+        {
+            ReferenceGlyphBandsCache.TryGetValue((value, typeface), out referenceBands!);
+        }
+
+        if (referenceBands is null)
+        {
+            referenceBands = RasterizeClockGlyphBandsCore(value, typeface, ReferenceGlyphFontSize);
+            lock (GlyphBandsCacheGate)
+            {
+                if (ReferenceGlyphBandsCache.Count >= 16) ReferenceGlyphBandsCache.Clear();
+                ReferenceGlyphBandsCache[(value, typeface)] = referenceBands;
+            }
+        }
+
+        Rect[] result;
+        if (isReferenceSize || referenceBands.Length == 0)
+        {
+            result = referenceBands;
+        }
+        else
+        {
+            var scale = fontSize / ReferenceGlyphFontSize;
+            result = new Rect[referenceBands.Length];
+            for (var i = 0; i < referenceBands.Length; i++)
+            {
+                var b = referenceBands[i];
+                var scaledTop = Math.Round(b.Top * scale);
+                var scaledBottom = Math.Max(scaledTop + 1, Math.Round(b.Bottom * scale));
+                result[i] = new Rect(b.Left * scale, scaledTop, b.Width * scale, scaledBottom - scaledTop);
+            }
+        }
+
+        lock (GlyphBandsCacheGate)
+        {
+            if (ExactGlyphBandsCache.Count >= 32) ExactGlyphBandsCache.Clear();
+            ExactGlyphBandsCache[(value, typeface, sizeMillipoints)] = result;
+        }
+        return result;
+    }
+
+    private static Rect[] RasterizeClockGlyphBandsCore(string value, Typeface typeface, double fontSize)
     {
         var formatted = new FormattedText(value, CultureInfo.InvariantCulture, FlowDirection.LeftToRight,
             typeface, fontSize, Brushes.White);

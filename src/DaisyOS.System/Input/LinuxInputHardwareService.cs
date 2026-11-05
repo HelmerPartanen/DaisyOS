@@ -18,6 +18,8 @@ public sealed record InputHardwareStatus(
 public sealed class LinuxInputHardwareService
 {
     private static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(3);
+    private static readonly object TouchpadPathsCacheGate = new();
+    private static string[]? _cachedTouchpadDevicePaths;
     private readonly ICommandRunner _commandRunner;
     private readonly string _configFilePath;
 
@@ -243,10 +245,8 @@ public sealed class LinuxInputHardwareService
     {
         try
         {
-            foreach (var devPath in await GetKWinInputDevicePathsAsync(cancellationToken))
+            foreach (var devPath in await GetKWinTouchpadDevicePathsAsync(forceRefresh: false, cancellationToken))
             {
-                if (!await IsKWinTouchpadAsync(devPath, cancellationToken)) continue;
-
                 var result = await _commandRunner.RunAsync(
                     "busctl", ["--user", "get-property", "org.kde.KWin", devPath,
                         "org.kde.KWin.InputDevice", "scrollFactor"],
@@ -276,18 +276,19 @@ public sealed class LinuxInputHardwareService
         string value,
         CancellationToken cancellationToken)
     {
-        var applied = false;
         try
         {
-            foreach (var devPath in await GetKWinInputDevicePathsAsync(cancellationToken))
+            var touchpads = await GetKWinTouchpadDevicePathsAsync(forceRefresh: false, cancellationToken);
+            if (touchpads.Count > 0 && await TryApplyPropertyToTouchpadsAsync(touchpads, property, signature, value, cancellationToken))
             {
-                if (!await IsKWinTouchpadAsync(devPath, cancellationToken)) continue;
+                return true;
+            }
 
-                var result = await _commandRunner.RunAsync(
-                    "busctl", ["--user", "set-property", "org.kde.KWin", devPath,
-                        "org.kde.KWin.InputDevice", property, signature, value],
-                    TimeSpan.FromMilliseconds(500), cancellationToken);
-                applied |= result.Succeeded;
+            // Re-probe once in case a device was hotplugged or the session restarted.
+            touchpads = await GetKWinTouchpadDevicePathsAsync(forceRefresh: true, cancellationToken);
+            if (touchpads.Count > 0)
+            {
+                return await TryApplyPropertyToTouchpadsAsync(touchpads, property, signature, value, cancellationToken);
             }
         }
         catch
@@ -295,7 +296,60 @@ public sealed class LinuxInputHardwareService
             // The saved fallback is still available if live application fails.
         }
 
+        return false;
+    }
+
+    private async Task<bool> TryApplyPropertyToTouchpadsAsync(
+        IReadOnlyList<string> touchpads,
+        string property,
+        string signature,
+        string value,
+        CancellationToken cancellationToken)
+    {
+        var applied = false;
+        foreach (var devPath in touchpads)
+        {
+            var result = await _commandRunner.RunAsync(
+                "busctl", ["--user", "set-property", "org.kde.KWin", devPath,
+                    "org.kde.KWin.InputDevice", property, signature, value],
+                TimeSpan.FromMilliseconds(500), cancellationToken);
+            applied |= result.Succeeded;
+        }
         return applied;
+    }
+
+    private async Task<IReadOnlyList<string>> GetKWinTouchpadDevicePathsAsync(bool forceRefresh, CancellationToken cancellationToken)
+    {
+        var isSharedRunner = _commandRunner is SafeCommandRunner;
+        if (isSharedRunner && !forceRefresh)
+        {
+            lock (TouchpadPathsCacheGate)
+            {
+                if (_cachedTouchpadDevicePaths is { Length: > 0 } cached)
+                {
+                    return cached;
+                }
+            }
+        }
+
+        var discovered = new List<string>();
+        foreach (var devPath in await GetKWinInputDevicePathsAsync(cancellationToken))
+        {
+            if (await IsKWinTouchpadAsync(devPath, cancellationToken))
+            {
+                discovered.Add(devPath);
+            }
+        }
+
+        var result = discovered.ToArray();
+        if (isSharedRunner)
+        {
+            lock (TouchpadPathsCacheGate)
+            {
+                _cachedTouchpadDevicePaths = result;
+            }
+        }
+        return result;
     }
 
     private async Task<IReadOnlyList<string>> GetKWinInputDevicePathsAsync(CancellationToken cancellationToken)
