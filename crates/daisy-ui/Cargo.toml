@@ -1,0 +1,10 @@
+[package]
+name = "daisy-ui"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+[dependencies]
+slint.workspace = true
+daisy-core = { path = "../daisy-core" }
+serde_json.workspace = true

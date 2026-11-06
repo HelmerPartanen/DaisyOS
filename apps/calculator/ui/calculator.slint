@@ -1,0 +1,84 @@
+import { DaisyTheme, DaisyLabel, DaisyButton } from "../../../crates/daisy-ui/lib.slint";
+export { DaisyTheme }
+export struct CalcKey { label: string, command: string }
+export component CalculatorWindow inherits Window {
+    in property<string> language: "en-US";
+    in property<string> title-text: "Calculator";
+    in property<string> toggle-label: "Toggle Standard / Scientific";
+    title: root.title-text;
+    preferred-width: 360px; preferred-height: 560px;
+    min-width: 360px; max-width: 360px; min-height: 560px; max-height: 560px;
+    background: DaisyTheme.surface-base;
+    default-font-family: DaisyTheme.font-family;
+    in property<image> empty-icon;
+    in property<string> display: "0";
+    in property<string> expression;
+    in property<bool> scientific;
+    in property<bool> inverse;
+    in property<bool> hyp;
+    in property<string> angle: "DEG";
+    in property<bool> memory;
+    in property<string> standard-label: "Standard";
+    in property<string> scientific-label: "Scientific";
+    callback command(string);
+    in property<[CalcKey]> keypad: [
+        {label:"⌫",command:"backspace"}, {label:"AC",command:"AC"}, {label:"%",command:"%"}, {label:"÷",command:"÷"},
+        {label:"7",command:"7"}, {label:"8",command:"8"}, {label:"9",command:"9"}, {label:"×",command:"×"},
+        {label:"4",command:"4"}, {label:"5",command:"5"}, {label:"6",command:"6"}, {label:"-",command:"-"},
+        {label:"1",command:"1"}, {label:"2",command:"2"}, {label:"3",command:"3"}, {label:"+",command:"+"},
+        {label:"+/−",command:"sign"}, {label:"0",command:"0"}, {label:".",command:"."}, {label:"=",command:"="}];
+    in property<[CalcKey]> functions: [
+        {label:"MC",command:"MC"}, {label:"MR",command:"MR"}, {label:"M+",command:"M+"}, {label:"M-",command:"M-"}, {label:"MS",command:"MS"}, {label:"π",command:"pi"},
+        {label:"INV",command:"inv"}, {label:"HYP",command:"hyp"}, {label:root.angle,command:"angle"}, {label:"sin",command:"sin"}, {label:"cos",command:"cos"}, {label:"tan",command:"tan"},
+        {label:"1/x",command:"recip"}, {label:"x²",command:"sqr"}, {label:"√x",command:"sqrt"}, {label:"ln",command:"ln"}, {label:"log",command:"log"}, {label:"x!",command:"fact"}];
+    forward-focus: keys;
+    keys := FocusScope {
+        key-pressed(event) => {
+            if event.text=="\n" || event.text=="=" {root.command("=");return accept;}
+            if event.text==Key.Backspace {root.command("backspace");return accept;}
+            if event.text==Key.Escape {root.command("AC");return accept;}
+            if event.text==Key.Delete {root.command("CE");return accept;}
+            if event.text=="0"||event.text=="1"||event.text=="2"||event.text=="3"||event.text=="4"||event.text=="5"||event.text=="6"||event.text=="7"||event.text=="8"||event.text=="9"||event.text=="."||event.text=="+"||event.text=="-"||event.text=="*"||event.text=="/"||event.text=="%" {root.command(event.text);return accept;}
+            return reject;
+        }
+    VerticalLayout {
+        padding: 10px; spacing: 0px;
+        HorizontalLayout {
+            height: 32px; padding-left: 2px; padding-right: 2px; spacing: 8px;
+            DaisyButton { enter-activates:false; weight:400; contrast-content:true;width:32px; quiet:true; icon:root.scientific ? @image-url("../../../src/DaisyOS.Shell/Assets/Icons/HugeIcons/calculator.svg") : @image-url("../../../src/DaisyOS.Shell/Assets/Icons/HugeIcons/function.svg"); accessible-label:root.toggle-label; clicked => {root.command("mode");} }
+            DaisyLabel {text:root.scientific?root.scientific-label:root.standard-label; font-size:DaisyTheme.type-size-title; font-weight:700; vertical-alignment:center;}
+            Rectangle {horizontal-stretch:1; background:transparent;}
+            Rectangle {width:32px; background:transparent; Image {source:@image-url("../../../src/DaisyOS.Shell/Assets/Icons/HugeIcons/clock-arrow-down.svg"); width:18px; height:18px; x:7px; y:(parent.height - self.height)/2; colorize:DaisyTheme.content-primary;} }
+        }
+        VerticalLayout {
+            height: 90px; padding-left:6px; padding-right:6px; padding-top:8px; padding-bottom:8px; spacing:2px;
+            DaisyLabel {text:root.expression; color:DaisyTheme.content-secondary; font-size:DaisyTheme.type-size-body-small; horizontal-alignment:right; overflow:elide;}
+            DaisyLabel {text:root.display; font-size:DaisyTheme.type-size-display-large; font-weight:600; horizontal-alignment:right;}
+        }
+        if root.scientific: Rectangle {
+            height:108px; background:transparent;
+            for item[i] in root.functions: DaisyButton { enter-activates:false; weight:400; contrast-content:true;
+                x: mod(i,6)*(parent.width/6)+3px; y: floor(i/6)*36px+3px;
+                width:parent.width/6 - 6px; height:30px; min-height:0px;
+                text:item.label; quiet:true; font-size:DaisyTheme.type-size-body;
+                selected: (item.command=="inv" && root.inverse)||(item.command=="hyp"&&root.hyp);
+                clicked => {root.command(item.command);}
+            }
+        }
+        Rectangle {
+            vertical-stretch:1; background:transparent;
+            for item[i] in root.keypad: DaisyButton { enter-activates:false; weight:400; contrast-content:true;
+                x:mod(i,4)*(parent.width/4)+3px+(item.command=="backspace"?(parent.width/4 - 6px - 32px)/2:0px);
+                y:floor(i/4)*(parent.height/5)+3px+(item.command=="backspace"?(parent.height/5 - 6px - 32px)/2:0px);
+                width:item.command=="backspace"?32px:parent.width/4 - 6px; height:item.command=="backspace"?32px:parent.height/5 - 6px;
+                text:item.command=="backspace"?"":item.label;
+                icon: item.command=="backspace" ? @image-url("../../../src/DaisyOS.Shell/Assets/Icons/HugeIcons/delete-03.svg") : root.empty-icon;
+                primary:mod(i,4)==3;
+                font-size:i<4 && mod(i,4)!=3 ? DaisyTheme.type-size-body-large : DaisyTheme.type-size-heading;
+                radius:item.command=="backspace"?DaisyTheme.radius-circle:DaisyTheme.rounded-lg; accessible-label:item.command=="backspace"?"Backspace":item.label;
+                clicked => {root.command(item.command);}
+            }
+        }
+    }
+    }
+}

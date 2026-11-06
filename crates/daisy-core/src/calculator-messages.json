@@ -1,0 +1,26 @@
+{
+  "sourceHashes": {
+    "src/DaisyOS.Shell/Resources/Messages.resx": "f2bd62755236c673559678ddf669e87e2979332d92fa1e55dcc27d6bcd6152f0",
+    "src/DaisyOS.Shell/Resources/Messages.fi.resx": "2098c90dbf71d0888a3b2b3a2b4e50dd9057bcf572a0616ee897fb6c855250ae"
+  },
+  "messages": {
+    "en-US": {
+      "Calculator": "Calculator",
+      "Standard": "Standard",
+      "Scientific": "Scientific",
+      "Error": "Error",
+      "Toggle Standard / Scientific": "Toggle Standard / Scientific",
+      "Backspace": "Backspace",
+      "History": "History"
+    },
+    "fi-FI": {
+      "Calculator": "Laskin",
+      "Standard": "Peruslaskin",
+      "Scientific": "Funktiolaskin",
+      "Error": "Virhe",
+      "Toggle Standard / Scientific": "Vaihda perus- ja funktiolaskimen välillä",
+      "Backspace": "Backspace",
+      "History": "Historia"
+    }
+  }
+}

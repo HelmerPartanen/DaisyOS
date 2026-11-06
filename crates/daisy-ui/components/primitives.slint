@@ -1,0 +1,96 @@
+import { DaisyTheme } from "../themes/tokens.slint";
+export component DaisyLabel inherits Text {
+    color: DaisyTheme.content-primary;
+    font-family: DaisyTheme.font-family;
+    font-size: DaisyTheme.type-size-body;
+}
+export component DaisyButton inherits Rectangle {
+    in property<string> text;
+    in property<image> icon;
+    in property<bool> primary: false;
+    in property<bool> contrast-content: false;
+    in property<bool> enter-activates: true;
+    in property<bool> quiet: false;
+    in property<bool> enabled: true;
+    in property<bool> selected: false;
+    in property<length> font-size: DaisyTheme.type-size-body;
+    in property<length> radius: DaisyTheme.radius-control;
+    in property<int> weight: 600;
+    callback clicked;
+    out property<bool> has-focus: keys.has-focus;
+    min-height: DaisyTheme.button-height-small;
+    border-radius: root.radius;
+    background: !root.enabled ? DaisyTheme.surface-sunken : root.primary ? (touch.pressed ? DaisyTheme.action-primary-pressed : touch.has-hover ? DaisyTheme.action-primary-hover : DaisyTheme.action-primary) : touch.pressed ? DaisyTheme.action-secondary-hover : touch.has-hover || root.selected ? DaisyTheme.action-secondary : root.quiet ? transparent : DaisyTheme.surface-sunken;
+    opacity: root.enabled ? 1 : 0.5;
+    border-width: keys.has-focus ? 2px : 0px;
+    border-color: DaisyTheme.focus-ring;
+    animate background { duration: DaisyTheme.motion-duration-hover; easing: ease-in-out; }
+    accessible-role: button;
+    accessible-label: root.text;
+    accessible-action-default => { if root.enabled { root.clicked(); } }
+    if root.icon.width > 0: Image { source: root.icon; width: 18px; height: 18px; x: (parent.width - self.width)/2; y: (parent.height - self.height)/2; colorize: root.primary ? (root.contrast-content ? DaisyTheme.content-on-action : DaisyTheme.content-on-primary-action) : DaisyTheme.content-primary; }
+    if root.icon.width == 0: DaisyLabel { text: root.text; horizontal-alignment: center; vertical-alignment: center; font-size: root.font-size; font-weight: root.weight; color: root.primary ? (root.contrast-content ? DaisyTheme.content-on-action : DaisyTheme.content-on-primary-action) : DaisyTheme.content-primary; }
+    keys := FocusScope {
+        enabled: root.enabled;
+        key-pressed(event) => { if event.text == " " || (event.text == "\n" && root.enter-activates) { root.clicked(); return accept; } return reject; }
+    }
+    touch := TouchArea { enabled: root.enabled; clicked => { keys.focus(); root.clicked(); } }
+}
+export component DaisyCard inherits Rectangle {
+    background: DaisyTheme.surface-card;
+    border-radius: DaisyTheme.radius-surface;
+    border-width: 1px;
+    border-color: DaisyTheme.stroke-default;
+}
+export component DaisyGlassPanel inherits Rectangle {
+    background: DaisyTheme.surface-base;
+    border-radius: DaisyTheme.radius-surface;
+    border-width: 1px;
+    border-color: DaisyTheme.stroke-default;
+    // No application-side blur; daisy-platform requests KWin's compositor effect.
+}
+export component DaisySeparator inherits Rectangle { height: 1px; background: DaisyTheme.stroke-default; }
+export component DaisySwitch inherits Rectangle {
+    in-out property<bool> checked;
+    in property<bool> enabled: true;
+    in property<string> label;
+    callback toggled(bool);
+    min-width: DaisyTheme.toggle-hit-width;
+    min-height: DaisyTheme.hit-target-standard;
+    background: transparent;
+    accessible-role: switch;
+    accessible-label: root.label;
+    accessible-checked: root.checked;
+    border-width: keys.has-focus ? 2px : 0px;
+    border-color: DaisyTheme.focus-ring;
+    border-radius: 16px;
+    Rectangle {
+        x: (parent.width - self.width)/2; y: (parent.height - self.height)/2;
+        width: DaisyTheme.toggle-track-width; height: DaisyTheme.toggle-track-height;
+        border-radius: 12px;
+        background: root.checked ? DaisyTheme.action-primary : DaisyTheme.toggle-track-off;
+        animate background { duration: DaisyTheme.motion-duration-fast; easing: ease-in-out; }
+        Rectangle {
+            x: 2px + (root.checked ? DaisyTheme.toggle-thumb-travel : 0px); y: 2px;
+            width: DaisyTheme.toggle-thumb-width; height: DaisyTheme.toggle-thumb-height;
+            border-radius: 10px; background: DaisyTheme.toggle-thumb;
+            border-width: 1px; border-color: DaisyTheme.toggle-thumb-stroke;
+            animate x { duration: DaisyTheme.motion-duration-fast; easing: ease-in-out; }
+        }
+    }
+    keys := FocusScope { enabled: root.enabled; key-pressed(event) => { if event.text==" " { root.checked=!root.checked; root.toggled(root.checked); return accept; } return reject; } }
+    TouchArea { enabled: root.enabled; clicked => { keys.focus(); root.checked=!root.checked; root.toggled(root.checked); } }
+}
+export component DaisyTextInput inherits Rectangle {
+    in-out property<string> text;
+    in property<string> placeholder;
+    in property<bool> enabled: true;
+    callback edited(string);
+    height: DaisyTheme.input-height-standard;
+    border-radius: DaisyTheme.radius-control;
+    background: DaisyTheme.surface-input;
+    border-width: editor.has-focus ? 2px : 1px;
+    border-color: editor.has-focus ? DaisyTheme.focus-ring : DaisyTheme.stroke-default;
+    DaisyLabel { visible: root.text==""; text: root.placeholder; color: DaisyTheme.content-tertiary; x: 12px; vertical-alignment: center; }
+    editor := TextInput { text <=> root.text; x: 12px; width: parent.width - 24px; vertical-alignment: center; font-family: DaisyTheme.font-family; font-size: DaisyTheme.type-size-body; color: DaisyTheme.content-primary; selection-background-color: DaisyTheme.action-primary; selection-foreground-color: DaisyTheme.content-on-action; enabled: root.enabled; edited => {root.edited(self.text);} }
+}

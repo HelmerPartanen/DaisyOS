@@ -81,6 +81,14 @@ DaisyOS provides a suite of native applications built with Avalonia and .NET 10:
 
 ---
 
+## Rust + Slint migration
+
+An incremental native UI workspace is now under `crates/` and `apps/`.
+`bash scripts/build-rust-ui.sh` builds the DaisyUI gallery and Calculator migration
+slice. The current desktop and app launch routes remain available while parity
+is verified; this is not a completed shell replacement. See the
+[migration inventory, decisions and cutover gates](docs/migration/RUST_SLINT_MIGRATION.md).
+
 ## Contributor Guide
 
 ### Prerequisites

@@ -1,0 +1,67 @@
+import { DaisyTheme, DaisyLabel, DaisyButton, DaisyCard, DaisyGlassPanel, DaisySeparator, DaisySwitch, DaisyTextInput } from "../../../crates/daisy-ui/lib.slint";
+export { DaisyTheme }
+export component DaisyGallery inherits Window {
+    title: "UI Kit";
+    preferred-width:1120px;preferred-height:760px;
+    min-width:760px;min-height:560px;
+    background:DaisyTheme.surface-base-solid;default-font-family:DaisyTheme.font-family;
+    in-out property<bool> checked:false;
+    in-out property<string> input;
+    in-out property<int> count:0;
+    callback preview-theme(bool);
+    VerticalLayout {
+        spacing:0px;
+        Rectangle {
+            height:112px;background:DaisyTheme.surface-raised;
+            HorizontalLayout {
+                padding-left:28px;padding-right:28px;spacing:24px;
+                VerticalLayout {alignment:center; DaisyLabel {text:"DaisyOS UI Kit";font-size:DaisyTheme.type-size-display;font-weight:700;} DaisyLabel {text:"Shared components, typography, and material surfaces";color:DaisyTheme.content-secondary;} }
+                Rectangle {horizontal-stretch:1;background:transparent;}
+                DaisyLabel {text:"Dark theme";vertical-alignment:center;}
+                DaisySwitch {checked <=> DaisyTheme.dark;label:"Dark theme";toggled(value)=>{root.preview-theme(value);}width:DaisyTheme.toggle-hit-width;}
+            }
+        }
+        DaisySeparator {}
+        Flickable {
+            content-width:self.width;content-height:780px;interactive:true;
+            VerticalLayout {
+                width:parent.width;padding:24px;spacing:24px;
+                HorizontalLayout {
+                    spacing:24px;
+                    DaisyCard {
+                        min-width:220px;VerticalLayout {padding:24px;spacing:12px;
+                            DaisyLabel {text:"Actions";font-size:DaisyTheme.type-size-title;font-weight:600;}
+                            DaisyButton {text:"Primary action";primary:true;clicked=>{root.count+=1;}}
+                            DaisyButton {text:"Secondary action";clicked=>{root.count+=1;}}
+                            DaisyButton {text:"Quiet action";quiet:true;clicked=>{root.count+=1;}}
+                            DaisyButton {text:"Disabled";enabled:false;}
+                            DaisyLabel {text:"Activated: \{root.count}";color:DaisyTheme.content-secondary;}
+                        }
+                    }
+                    DaisyCard {
+                        VerticalLayout {padding:24px;spacing:12px;
+                            DaisyLabel {text:"Typography";font-size:DaisyTheme.type-size-title;font-weight:600;}
+                            DaisyLabel {text:"Display";font-size:DaisyTheme.type-size-display;font-weight:700;}
+                            DaisyLabel {text:"Heading";font-size:DaisyTheme.type-size-heading;font-weight:600;}
+                            DaisyLabel {text:"Title";font-size:DaisyTheme.type-size-title;font-weight:600;}
+                            DaisyLabel {text:"Body text";font-size:DaisyTheme.type-size-body;}
+                            DaisyLabel {text:"Caption";font-size:DaisyTheme.type-size-caption;color:DaisyTheme.content-secondary;}
+                        }
+                    }
+                }
+                DaisyCard {
+                    VerticalLayout {padding:24px;spacing:16px;
+                        DaisyLabel {text:"Form controls";font-size:DaisyTheme.type-size-title;font-weight:600;}
+                        HorizontalLayout {spacing:16px;DaisyLabel {text:"Enable option";vertical-alignment:center;}DaisySwitch {checked <=> root.checked;label:"Enable option";}Rectangle{horizontal-stretch:1;background:transparent;}DaisyLabel {text:root.checked?"On":"Off";vertical-alignment:center;} }
+                        DaisyTextInput {text <=> root.input;placeholder:"Type here";}
+                        DaisyLabel {text:root.input;wrap:word-wrap;color:DaisyTheme.content-secondary;}
+                    }
+                }
+                DaisyGlassPanel {
+                    height:120px;
+                    VerticalLayout {padding:24px;DaisyLabel {text:"Glass surface";font-size:DaisyTheme.type-size-title;font-weight:600;} DaisyLabel {text:"Translucent material with the DaisyOS border and corner geometry.";wrap:word-wrap;color:DaisyTheme.content-secondary;} }
+                }
+            }
+        }
+    }
+}

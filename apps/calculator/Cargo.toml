@@ -1,0 +1,17 @@
+[package]
+name = "daisy-calculator"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+publish.workspace = true
+[dependencies]
+slint.workspace = true
+daisy-core = { path = "../../crates/daisy-core" }
+daisy-ui = { path = "../../crates/daisy-ui" }
+daisy-platform = { path = "../../crates/daisy-platform" }
+serde_json.workspace = true
+[build-dependencies]
+slint-build.workspace = true
+
+[dev-dependencies]
+i-slint-backend-testing = { version = "=1.18.1", default-features = false }
