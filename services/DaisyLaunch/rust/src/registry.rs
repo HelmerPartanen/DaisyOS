@@ -147,6 +147,7 @@ pub async fn watch(launcher: Launcher, connection: zbus::Connection) {
         let Ok(_permit) = launcher.helpers.acquire().await else {
             return;
         };
+        launcher.workers.stop().await;
         let mut builder = Command::new("kbuildsycoca6");
         builder
             .arg("--noincremental")

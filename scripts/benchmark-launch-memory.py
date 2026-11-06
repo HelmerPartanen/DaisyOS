@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('--legacy', type=Path, required=True)
 parser.add_argument('--rust', type=Path, required=True)
+parser.add_argument('--baseline-name', default='resident Qt/KDE')
 parser.add_argument('--platform', choices=['offscreen', 'wayland'], default='offscreen')
 parser.add_argument('--samples', type=int, default=30)
 parser.add_argument('--runs', type=int, default=3)
@@ -35,7 +36,7 @@ if not args.inside:
                    XDG_CURRENT_DESKTOP='KDE', QT_QPA_PLATFORM=args.platform, QT_QPA_PLATFORMTHEME='', GTK_USE_PORTAL='0', GIO_USE_PORTALS='0')
         raise SystemExit(subprocess.run(['dbus-run-session', '--', sys.executable, __file__, '--inside',
             '--legacy', str(args.legacy), '--rust', str(args.rust), '--samples', str(args.samples),
-            '--runs', str(args.runs), '--platform', args.platform, '--output', str(args.output)], env=env).returncode)
+            '--runs', str(args.runs), '--baseline-name', args.baseline_name, '--platform', args.platform, '--output', str(args.output)], env=env).returncode)
 
 import dbus
 apps = Path(os.environ['XDG_DATA_HOME']) / 'applications'
@@ -94,22 +95,31 @@ def run(binary):
         assert any(v['id'] == 'org.daisyos.memoryfixture.desktop' for v in catalog)
         sampling.start()
         samples = []
+        traces = []
+        first_dispatch = None
         for index in range(args.samples + 3):
             request = uuid.uuid4().hex
             begin = time.perf_counter()
             assert api.Launch(request, 'org.daisyos.memoryfixture.desktop', '', dbus.Array([], signature='s'), '', dbus.Dictionary({}, signature='sv'))
             assert api.Await(request)
             elapsed = (time.perf_counter() - begin) * 1000
+            if index == 0: first_dispatch = elapsed
             if index >= 3:
                 samples.append(elapsed)
+                traces.append(json.loads(api.Trace(request)))
             # Keep the same low-rate workload within the API's 20/sec limit.
             time.sleep(.06)
-        time.sleep(.1)
+        burst_tree = []
+        for pid in descendants(p.pid):
+            try: burst_tree.append(memory(pid))
+            except OSError: pass
+        deadline = time.monotonic() + 3
+        while descendants(p.pid)[1:] and time.monotonic() < deadline: time.sleep(.02)
         warm = memory(p.pid)
         helpers = descendants(p.pid)[1:]
-        assert not helpers, f'Helper processes remained resident: {helpers}'
-        return {'startupMs': startup, 'coldIdle': cold, 'warmIdle': warm,
-                'peakTreePssKiB': max(peaks, default=0), 'dispatchMs': samples,
+        assert not helpers, f'Helper processes remained resident after idle lease: {helpers}'
+        return {'startupMs': startup, 'firstDispatchMs': first_dispatch, 'burstTreePssKiB': sum(r['Pss'] for r in burst_tree), 'coldIdle': cold, 'warmIdle': warm,
+                'peakTreePssKiB': max(peaks, default=0), 'dispatchMs': samples, 'traces': traces,
                 'catalogEntries': len(catalog), 'helpersAfterWorkload': len(helpers)}
     finally:
         stop.set()
@@ -129,17 +139,26 @@ for index in range(args.runs):
 summary = {}
 for label, rows in results.items():
     times = sorted(t for r in rows for t in r['dispatchMs'])
-    summary[label] = {'warmPssKiB': statistics.median(r['warmIdle']['Pss'] for r in rows),
+    stages = {}
+    for row in rows:
+        for trace in row['traces']:
+            for stage, begin, end in [('helper.prepare','backend_started','dispatch_started'), ('environment','dispatch_started','environment_ready'), ('kio','environment_ready','dispatch_accepted')]:
+                if trace.get(begin) and trace.get(end): stages.setdefault(stage, []).append((int(trace[end])-int(trace[begin]))/1e6)
+    summary[label] = {'stageMedianMs': {key: statistics.median(values) for key, values in stages.items()},'warmPssKiB': statistics.median(r['warmIdle']['Pss'] for r in rows),
         'warmRssKiB': statistics.median(r['warmIdle']['Rss'] for r in rows),
         'peakTreePssKiB': max(r['peakTreePssKiB'] for r in rows),
         'dispatchMedianMs': statistics.median(times), 'dispatchP95Ms': times[min(len(times)-1, __import__('math').ceil(.95*len(times))-1)],
+        'firstDispatchMedianMs': statistics.median(r['firstDispatchMs'] for r in rows),
+        'burstTreePssKiB': statistics.median(r['burstTreePssKiB'] for r in rows),
         'startupMedianMs': statistics.median(r['startupMs'] for r in rows)}
 binaries = {name: hashlib.sha256(path.read_bytes()).hexdigest() for name, path in
             [('legacy', args.legacy), ('rust', args.rust), ('backend', args.rust.with_name('daisy-launch-backend'))]}
-report = {'binarySha256': binaries, 'rustc': subprocess.check_output(['rustc', '--version'], text=True).strip(),
+if args.legacy.with_name('daisy-launch-backend').exists():
+    binaries['baselineBackend'] = hashlib.sha256(args.legacy.with_name('daisy-launch-backend').read_bytes()).hexdigest()
+report = {'comparisonBaseline': args.baseline_name, 'binarySha256': binaries, 'rustc': subprocess.check_output(['rustc', '--version'], text=True).strip(),
           'qt': subprocess.check_output(['pkg-config', '--modversion', 'Qt6Core'], text=True).strip(),
           'units': 'KiB, ms, thread counts', 'runs': args.runs, 'samplesPerRun': args.samples,
-          'workload': f'private session bus, {args.platform} Qt, real KIO /bin/true dispatch, 3 warmups, low request rate; readiness is dispatch acceptance, not application readiness',
+          'workload': f'private session bus, {args.platform} Qt, real KIO /bin/true dispatch, 3 warmups, low request rate, warm idle measured after helper lease expiry; readiness is dispatch acceptance, not application readiness',
           'summary': summary, 'raw': results}
 args.output.parent.mkdir(parents=True, exist_ok=True)
 args.output.write_text(json.dumps(report, indent=2) + '\n')

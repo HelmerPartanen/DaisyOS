@@ -19,14 +19,17 @@ if '--inside' not in sys.argv:
         (root / 'daisy-launch-backend').write_text('''#!/usr/bin/env python3
 import json,os,pathlib,sys,time
 if sys.argv[1] == '--catalog': print('[]'); sys.exit(0)
-if sys.argv[1] != '--broker-launch': sys.exit(2)
-r=json.load(sys.stdin)
-assert 'secret-token' not in pathlib.Path('/proc/self/cmdline').read_text()
-pathlib.Path(os.environ['FIXTURE_ROOT'],'child').write_text(str(os.getpid()))
-if r['app']=='hang.desktop': time.sleep(60)
-if r['app']=='malformed.desktop': print('{'); sys.exit(1)
-if r['app']=='crash.desktop': sys.exit(1)
-print(json.dumps({'error':''}))
+if sys.argv[1] != '--broker-worker': sys.exit(2)
+print(json.dumps({'ready':True}),flush=True)
+sequence=0
+for line in sys.stdin:
+ r=json.loads(line);sequence+=1
+ assert 'secret-token' not in pathlib.Path('/proc/self/cmdline').read_text()
+ pathlib.Path(os.environ['FIXTURE_ROOT'],'child').write_text(f"{sequence}:{os.getpid()}")
+ if r['app']=='hang.desktop': time.sleep(60)
+ if r['app']=='malformed.desktop': print('{',flush=True); sys.exit(1)
+ if r['app']=='crash.desktop': sys.exit(1)
+ print(json.dumps({'error':''}),flush=True)
 ''')
         (root / 'daisy-launch-backend').chmod(0o755)
         env = os.environ.copy()
@@ -84,7 +87,7 @@ try:
         if time.monotonic()>end: raise AssertionError('Backend did not start')
         time.sleep(.01)
     time.sleep(.1)
-    child = int((root / 'child').read_text())
+    child = int((root / 'child').read_text().split(':')[-1])
     api.Cancel(request)
     rejected(lambda: api.Await(request), 'Cancelled')
     gone(child)
@@ -99,6 +102,15 @@ try:
     rejected(lambda: api.Await(request, timeout=18), 'TimedOut')
     time.sleep(.1)
     assert not Path(f'/proc/{p.pid}/task/{p.pid}/children').read_text().strip(), 'Backend was not reaped'
+    warm = launch(); assert api.Await(warm)
+    warm_pid = int((root / 'child').read_text().split(':')[-1])
+    again = launch(); assert api.Await(again)
+    assert int((root / 'child').read_text().split(':')[-1]) == warm_pid, 'Warm worker was not reused'
+    gone(warm_pid)
+    fresh = launch(); assert api.Await(fresh)
+    fresh_pid = int((root / 'child').read_text().split(':')[-1])
+    assert fresh_pid != warm_pid, 'Expired helper was not replaced'
+    gone(fresh_pid)
     # Missing helper must fail the accepted request without retrying.
     helper = root / 'daisy-launch-backend'
     helper.rename(root / 'hidden-backend')
@@ -124,7 +136,7 @@ try:
     assert 10<=accepted<20, accepted
     request = launch('hang.desktop')
     time.sleep(.2)
-    child = int((root / 'child').read_text())
+    child = int((root / 'child').read_text().split(':')[-1])
     p.terminate(); p.wait(timeout=3)
     gone(child)
     print('PASS: validation, idempotence/conflicts, token pipe, malformed/crashed/missing helper, cancellation/reaping, pending limit, timeout, shutdown cleanup')

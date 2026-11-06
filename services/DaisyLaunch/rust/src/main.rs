@@ -1,9 +1,11 @@
 //! Resident request broker. KDE discovery and launch semantics live in the
-//! on-demand sibling helper, so no GUI toolkit stays loaded between requests.
+//! sibling helper. A bounded idle lease accelerates bursts; the broker itself
+//! never loads the GUI toolkit.
 mod registry;
+mod worker;
 use serde_json::{json, Value};
 use std::{
-    collections::HashMap,
+    collections::{HashMap, HashSet},
     path::PathBuf,
     sync::{
         atomic::{AtomicUsize, Ordering},
@@ -72,6 +74,8 @@ struct Launcher {
     backend: PathBuf,
     telemetry: bool,
     helpers: Arc<tokio::sync::Semaphore>,
+    workers: Arc<worker::Pool>,
+    authorized: Arc<Mutex<HashSet<String>>>,
 }
 impl Launcher {
     fn stamp(&self, r: &Request, event: &'static str) {
@@ -87,6 +91,9 @@ impl Launcher {
         let sender = header
             .sender()
             .ok_or_else(|| Error::AccessDenied("Missing caller".into()))?;
+        if self.authorized.lock().unwrap().contains(sender.as_str()) {
+            return Ok(sender.to_string());
+        }
         let proxy = zbus::fdo::DBusProxy::new(connection).await?;
         let uid = proxy
             .get_connection_unix_user(sender.as_ref().into())
@@ -96,6 +103,11 @@ impl Launcher {
         if uid != unsafe { libc::getuid() } {
             return Err(Error::AccessDenied("Caller is not the session user".into()));
         }
+        let mut authorized = self.authorized.lock().unwrap();
+        if authorized.len() >= 256 {
+            authorized.clear();
+        }
+        authorized.insert(sender.to_string());
         Ok(sender.to_string())
     }
     fn lookup(&self, id: &str, owner: &str) -> Result<Arc<Request>, Error> {
@@ -156,33 +168,11 @@ impl Launcher {
             return "Cancelled".into();
         }
         self.stamp(r, "backend_started");
-        let mut command = Command::new(&self.backend);
-        command
-            .arg("--broker-launch")
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .stderr(std::process::Stdio::null())
-            .kill_on_drop(true);
-        let Ok(mut child) = command.spawn() else {
-            return "BackendFailed".into();
-        };
         let payload =
             json!({"app": r.app, "action": r.action, "uris": r.uris, "token": token}).to_string();
-        let mut input = child.stdin.take().unwrap();
-        if input.write_all(payload.as_bytes()).await.is_err() {
-            return "BackendFailed".into();
-        }
-        drop(input);
-        drop(payload);
-        let output = child.wait_with_output().await;
+        let value = self.workers.exchange(&self.backend, &payload).await;
         drop(permit);
-        let Ok(output) = output else {
-            return "BackendFailed".into();
-        };
-        if output.stdout.len() > 4096 {
-            return "BackendFailed".into();
-        }
-        let Ok(value) = serde_json::from_slice::<Value>(&output.stdout) else {
+        let Ok(value) = value else {
             return "BackendFailed".into();
         };
         if self.telemetry {
@@ -190,6 +180,7 @@ impl Launcher {
                 "registry_lookup_started",
                 "registry_lookup_finished",
                 "dispatch_started",
+                "environment_ready",
             ] {
                 if let Some(stamp) = value
                     .get("trace")
@@ -205,7 +196,7 @@ impl Launcher {
                 }
             }
         }
-        if let Some(activation) = value.get("activation").filter(|_| output.status.success()) {
+        if let Some(activation) = value.get("activation") {
             let (Some(service), Some(path)) = (
                 activation.get("service").and_then(Value::as_str),
                 activation.get("path").and_then(Value::as_str),
@@ -273,7 +264,6 @@ impl Launcher {
                 ]
                 .contains(code)
             })
-            .filter(|code| !code.is_empty() || output.status.success())
             .unwrap_or("BackendFailed")
             .to_owned()
     }
@@ -537,6 +527,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         catalog: Arc::new(Mutex::new(catalog)),
         backend,
         helpers: Arc::new(tokio::sync::Semaphore::new(1)),
+        workers: Arc::new(worker::Pool::default()),
+        authorized: Arc::new(Mutex::new(HashSet::new())),
         telemetry: std::env::var("DAISYOS_LAUNCH_TELEMETRY").as_deref() != Ok("0"),
     };
     let connection = zbus::connection::Builder::session()?
@@ -545,6 +537,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .build()
         .await?;
     tokio::spawn(registry::watch(launcher.clone(), connection.clone()));
+    tokio::spawn(worker::reap(launcher.workers.clone()));
     let requests = launcher.requests.clone();
     tokio::spawn(async move {
         let mut tick = tokio::time::interval(Duration::from_secs(10));
@@ -566,5 +559,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         _ = tokio::signal::ctrl_c() => {},
         _ = async { while poll_fn(|cx| std::pin::Pin::new(&mut messages).poll_next(cx)).await.is_some() {} } => {},
     }
+    launcher.workers.stop().await;
     Ok(())
 }

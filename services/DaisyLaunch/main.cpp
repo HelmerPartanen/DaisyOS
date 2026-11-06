@@ -26,6 +26,7 @@
 #include <QFileDevice>
 #include <QProcess>
 #include <QStandardPaths>
+#include <QSocketNotifier>
 #include <QTimer>
 #include <QUuid>
 #include <QtConcurrent>
@@ -57,42 +58,62 @@ static void exportXWaylandDisplay() {
   const auto wayland = qEnvironmentVariable("WAYLAND_DISPLAY");
   if (wayland.isEmpty())
     return;
-  const auto pids =
-      QDir("/proc").entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+  static QString cachedWayland, cachedCompositor, cachedChild, cachedDisplay, cachedAuthority;
+  static QStringList cachedCompositorArgs, cachedChildArgs;
+  // Validate the two known processes instead of rescanning every /proc entry.
+  // A compositor/XWayland restart or changed arguments falls back to discovery.
+  if (wayland == cachedWayland && !cachedChild.isEmpty() && !cachedCompositorArgs.isEmpty() &&
+      procArgs(cachedCompositor) == cachedCompositorArgs && procArgs(cachedChild) == cachedChildArgs) {
+    qputenv("DISPLAY", cachedDisplay.toLocal8Bit());
+    if (cachedAuthority.isEmpty()) qunsetenv("XAUTHORITY");
+    else qputenv("XAUTHORITY", cachedAuthority.toLocal8Bit());
+    return;
+  }
+  cachedChild.clear();
   QString compositor;
-  for (const auto &pid : pids) {
-    bool ok = false;
-    pid.toInt(&ok);
-    if (!ok)
-      continue;
-    const auto args = procArgs(pid);
-    if (args.isEmpty() || QFileInfo(args[0]).fileName() != "kwin_wayland")
-      continue;
-    const auto i = args.indexOf("--socket");
-    if (i >= 0 && i + 1 < args.size() && args[i + 1] == wayland) {
-      compositor = pid;
-      break;
+  if (wayland == cachedWayland && !cachedCompositorArgs.isEmpty() && procArgs(cachedCompositor) == cachedCompositorArgs) {
+    compositor = cachedCompositor;
+  } else {
+    const auto pids = QDir("/proc").entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+    for (const auto &pid : pids) {
+      bool ok = false;
+      pid.toInt(&ok);
+      if (!ok) continue;
+      const auto args = procArgs(pid);
+      if (args.isEmpty() || QFileInfo(args[0]).fileName() != "kwin_wayland") continue;
+      const auto i = args.indexOf("--socket");
+      if (i >= 0 && i + 1 < args.size() && args[i + 1] == wayland) {
+        compositor = pid;
+        cachedWayland = wayland;
+        cachedCompositor = pid;
+        cachedCompositorArgs = args;
+        break;
+      }
     }
   }
   if (compositor.isEmpty())
     return;
-  QString display, authority;
-  for (const auto &pid : pids) {
-    QFile status("/proc/" + pid + "/status");
-    if (!status.open(QIODevice::ReadOnly))
-      continue;
-    bool child = false;
-    for (const auto &line : status.readAll().split('\n'))
-      if (line.startsWith("PPid:")) {
-        child = line.mid(5).trimmed() == compositor.toLatin1();
-        break;
-      }
-    if (!child)
-      continue;
+  QString display, authority, childPid;
+  QStringList childArgs;
+  // Read only KWin's children, including children started by non-main
+  // threads. Lazy XWayland may not exist yet; scanning every process status on
+  // each launch used ~13 ms even when there was no XWayland child to find.
+  QStringList children;
+  const auto tasks = QDir("/proc/" + compositor + "/task").entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+  for (const auto &task : tasks) {
+    QFile file("/proc/" + compositor + "/task/" + task + "/children");
+    if (!file.open(QIODevice::ReadOnly)) continue;
+    for (const auto &pid : file.readAll().split(' '))
+      if (!pid.trimmed().isEmpty()) children.append(QString::fromLatin1(pid.trimmed()));
+  }
+  children.removeDuplicates();
+  for (const auto &pid : children) {
     const auto args = procArgs(pid);
     if (args.size() < 2 || QFileInfo(args[0]).fileName() != "Xwayland")
       continue;
     display = args[1];
+    childPid = pid;
+    childArgs = args;
     const auto a = args.indexOf("-auth");
     if (a >= 0 && a + 1 < args.size())
       authority = args[a + 1];
@@ -130,6 +151,15 @@ static void exportXWaylandDisplay() {
   }
   if (display.isEmpty())
     return;
+  if (!childPid.isEmpty()) {
+    cachedWayland = wayland;
+    cachedCompositor = compositor;
+    cachedCompositorArgs = procArgs(compositor);
+    cachedChild = childPid;
+    cachedChildArgs = childArgs;
+    cachedDisplay = display;
+    cachedAuthority = authority;
+  }
   qputenv("DISPLAY", display.toLocal8Bit());
   // An inherited Xauthority may belong to a different session.
   if (authority.isEmpty())
@@ -241,6 +271,7 @@ enum class TraceEvent {
   DispatchStarted,
   DispatchAccepted,
   SurfaceAssociated,
+  EnvironmentReady,
   Count
 };
 struct Request {
@@ -360,6 +391,7 @@ class Launcher : public QObject, protected QDBusContext {
     stamp(r, TraceEvent::DispatchStarted);
     exportXWaylandDisplay();
     syncApplicationScale();
+    stamp(r, TraceEvent::EnvironmentReady);
     if (metadata.dbusActivatable) {
       QString name = app->storageId();
       if (name.endsWith(".desktop"))
@@ -594,7 +626,7 @@ public slots:
     const char *names[] = {
         "daemon_received",          "registry_lookup_started",
         "registry_lookup_finished", "dispatch_started",
-        "dispatch_accepted",        "surface_associated"};
+        "dispatch_accepted",        "surface_associated", "environment_ready"};
     for (size_t i = 0; i < r->trace.size(); i++)
       trace.insert(names[i], r->trace[i] < 0
                                  ? QJsonValue{QJsonValue::Null}
@@ -654,47 +686,94 @@ int main(int argc, char **argv) {
                    [updateCursorEnvironment] { updateCursorEnvironment(); });
   const auto args = app.arguments();
 #ifdef DAISY_LAUNCH_BACKEND
-  if (args.size() == 2 && args[1] == "--broker-launch") {
-    // Private pipe transport: activation tokens never enter process arguments.
-    QFile input;
-    if (!input.open(stdin, QIODevice::ReadOnly, QFileDevice::DontCloseHandle)) return 2;
-    const auto bytes = input.read(2 * 1024 * 1024 + 1);
-    QJsonParseError parseError;
-    const auto document = QJsonDocument::fromJson(bytes, &parseError);
-    if (bytes.size() > 2 * 1024 * 1024 || parseError.error != QJsonParseError::NoError || !document.isObject()) return 2;
-    const auto request = document.object();
-    // Launched applications must not inherit the broker result pipe: otherwise
-    // wait_with_output would wait for the application to exit, not dispatch.
+  if (args.size() == 2 && (args[1] == "--broker-launch" || args[1] == "--broker-worker")) {
+    const bool worker = args[1] == "--broker-worker";
+    // Only this CLOEXEC descriptor reports results; applications inherit /dev/null.
+    const int requestFd = fcntl(STDIN_FILENO, F_DUPFD_CLOEXEC, 3);
     const int reportFd = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 3);
-    const int nullFd = open("/dev/null", O_WRONLY | O_CLOEXEC);
-    if (reportFd < 0 || nullFd < 0 || dup2(nullFd, STDOUT_FILENO) < 0) return 2;
+    const int nullFd = open("/dev/null", O_RDWR | O_CLOEXEC);
+    if (requestFd < 0 || reportFd < 0 || nullFd < 0 || dup2(nullFd, STDIN_FILENO) < 0 || dup2(nullFd, STDOUT_FILENO) < 0) return 2;
     close(nullFd);
-    Launcher launcher(true, true);
-    QStringList uris;
-    for (const auto &uri : request.value("uris").toArray()) uris.append(uri.toString());
-    const auto report = [&](const QJsonObject &result, int status) {
+    QTimer idle;
+    idle.setSingleShot(true);
+    idle.setInterval(5000); // Safety lease; the Rust pool expires earlier.
+    QObject::connect(&idle, &QTimer::timeout, &app, [&] { app.quit(); });
+    QSocketNotifier inputNotifier(requestFd, QSocketNotifier::Read);
+    inputNotifier.setEnabled(false);
+    bool busy = false;
+    const auto writeResult = [&](const QJsonObject &result) {
       QFile output;
-      if (output.open(reportFd, QIODevice::WriteOnly, QFileDevice::DontCloseHandle)) {
-        output.write(QJsonDocument(result).toJson(QJsonDocument::Compact));
-        output.write("\n");
-        output.flush();
-      }
-      close(reportFd);
-      app.exit(status);
+      if (!output.open(reportFd, QIODevice::WriteOnly, QFileDevice::DontCloseHandle)) return false;
+      const auto bytes = QJsonDocument(result).toJson(QJsonDocument::Compact) + '\n';
+      return output.write(bytes) == bytes.size() && output.flush();
     };
-    QObject::connect(&launcher, &Launcher::ActivationResolved, &app, [&](QString callbackId, QString service, QString path) {
-      report(QJsonObject{{"activation", QJsonObject{{"service", service}, {"path", path}}},
-                         {"trace", QJsonDocument::fromJson(launcher.Trace(callbackId).toUtf8()).object()}}, 0);
-    });
-    QObject::connect(&launcher, &Launcher::LaunchStateChanged, &app, [&](QString callbackId, QString state) {
-      if (state == "Accepted" || state == "BackendFailed" || state == "NotFound" || state == "TimedOut" || state == "InvalidArgument") {
-        report(QJsonObject{{"error", state == "Accepted" ? QString{} : state},
-                           {"trace", QJsonDocument::fromJson(launcher.Trace(callbackId).toUtf8()).object()}}, state == "Accepted" ? 0 : 1);
-      }
-    });
-    if (!launcher.Launch(QUuid::createUuid().toString(QUuid::Id128), request.value("app").toString(),
-                         request.value("action").toString(), uris, request.value("token").toString(), {})) return 2;
-    return app.exec();
+    const auto runRequest = [&](const QByteArray &bytes) {
+      QJsonParseError parseError;
+      const auto document = QJsonDocument::fromJson(bytes, &parseError);
+      if (busy || bytes.size() > 2 * 1024 * 1024 || parseError.error != QJsonParseError::NoError || !document.isObject()) { app.exit(2); return; }
+      busy = true;
+      idle.stop();
+      inputNotifier.setEnabled(false);
+      const auto request = document.object();
+      auto launcher = new Launcher(true, true, &app);
+      QStringList uris;
+      for (const auto &uri : request.value("uris").toArray()) uris.append(uri.toString());
+      const auto report = [&, launcher](QJsonObject result, int status) {
+        if (!writeResult(result)) { app.exit(2); return; }
+        launcher->deleteLater();
+        if (worker) { busy = false; inputNotifier.setEnabled(true); idle.start(); }
+        else app.exit(status);
+      };
+      QObject::connect(launcher, &Launcher::ActivationResolved, &app, [launcher, report](QString id, QString service, QString path) {
+        report(QJsonObject{{"activation", QJsonObject{{"service", service}, {"path", path}}},
+                           {"trace", QJsonDocument::fromJson(launcher->Trace(id).toUtf8()).object()}}, 0);
+      });
+      QObject::connect(launcher, &Launcher::LaunchStateChanged, &app, [launcher, report](QString id, QString state) {
+        if (state == "Accepted" || state == "BackendFailed" || state == "NotFound" || state == "TimedOut" || state == "InvalidArgument") {
+          report(QJsonObject{{"error", state == "Accepted" ? QString{} : state},
+                             {"trace", QJsonDocument::fromJson(launcher->Trace(id).toUtf8()).object()}}, state == "Accepted" ? 0 : 1);
+        }
+      });
+      if (!launcher->Launch(QUuid::createUuid().toString(QUuid::Id128), request.value("app").toString(), request.value("action").toString(), uris, request.value("token").toString(), {})) app.exit(2);
+    };
+    if (!worker) {
+      QFile input;
+      if (!input.open(requestFd, QIODevice::ReadOnly, QFileDevice::DontCloseHandle)) return 2;
+      runRequest(input.read(2 * 1024 * 1024 + 1));
+    } else {
+      if (fcntl(requestFd, F_SETFL, fcntl(requestFd, F_GETFL) | O_NONBLOCK) < 0) return 2;
+      QByteArray pending;
+      QObject::connect(&inputNotifier, &QSocketNotifier::activated, &app, [&] {
+        char bytes[16384];
+        for (;;) {
+          const auto count = read(requestFd, bytes, sizeof bytes);
+          if (count == 0) { app.quit(); return; }
+          if (count < 0) { if (errno == EINTR) continue; if (errno != EAGAIN) app.exit(2); break; }
+          pending.append(bytes, count);
+          if (pending.size() > 2 * 1024 * 1024) { app.exit(2); return; }
+          const auto newline = pending.indexOf('\n');
+          if (newline >= 0) {
+            const auto line = pending.left(newline);
+            pending.remove(0, newline + 1);
+            if (!pending.isEmpty()) { app.exit(2); return; }
+            runRequest(line);
+            return;
+          }
+        }
+      });
+      if (!writeResult(QJsonObject{{"ready", true}})) return 2;
+      inputNotifier.setEnabled(true);
+      idle.start();
+      // Keep the receive buffer alive through app.exec().
+      const auto status = app.exec();
+      close(requestFd);
+      close(reportFd);
+      return status;
+    }
+    const auto status = app.exec();
+    close(requestFd);
+    close(reportFd);
+    return status;
   }
 #endif
   Launcher launcher(args.size() > 2 && args[1] == "--launch");

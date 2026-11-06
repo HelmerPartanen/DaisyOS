@@ -10,6 +10,10 @@ now include both executables. Building and testing did not replace or restart
 the user's installed launcher. Desktop services and Continuity remain managed
 services; they are not migrated by this change.
 
+A subsequent [dispatch optimization](launcher-dispatch-optimization.md) adds a
+two-second worker lease and removes repeated global process scans. The figures
+below describe the original one-shot-helper migration, before that optimization.
+
 ## Measurements
 
 Measured on 2026-11-06, Linux x86-64, rustc 1.99.1 (58cf8f9c3 2026-10-13), Qt 6.12.0.
@@ -46,9 +50,9 @@ launch is outside the service's budget. The existing long-lived installed
 launcher can have a different footprint from this isolated comparison.
 
 The latency increase is deliberate: loading the helper costs time that the
-resident KDE service amortized. There is no persistent warm-helper cache. Only
+resident KDE service amortized. This measured version had no warm-helper cache. Only
 one helper runs at a time, so bursts queue instead of loading a GUI toolkit per
-request. D-Bus activation waits run in Rust after the resolving helper exits;
+request. D-Bus activation waits run in Rust after the resolving helper finishes;
 a nonresponsive D-Bus application does not occupy the helper semaphore.
 
 The real .NET client also passed 30 interleaved measured samples plus warmups.

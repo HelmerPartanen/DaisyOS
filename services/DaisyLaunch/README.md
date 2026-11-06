@@ -31,14 +31,16 @@ limits are UTF-8 byte limits. Aggregate retained request payloads are additional
 limited to 8 MiB and receive the existing `RateLimited` error when full.
 
 A semaphore limits the broker to one KDE helper at a time, including catalog
-refreshes. D-Bus-activatable applications are resolved by KService, then activated
-asynchronously from Rust after that helper exits. Pending activation replies
-therefore do not keep Qt loaded or block the helper queue. Queued requests can
+refreshes. A worker is reused during a launch burst and is killed/reaped after
+approximately two seconds without a request. Refreshes retire it first. D-Bus-activatable applications are resolved by KService, then activated
+asynchronously from Rust after that helper finishes resolving. Pending activation replies
+therefore do not occupy the helper queue or extend the idle lease. Queued requests can
 be cancelled before spawning a helper. Cancellation does not promise to undo a
 launch that already reached an application.
 
 Activation tokens for service requests travel over a private pipe, not helper
-arguments or telemetry. A close-on-exec result descriptor prevents launched
+arguments or telemetry. Request and result descriptors are close-on-exec and
+application stdin/stdout are isolated from those protocol pipes. A close-on-exec result descriptor prevents launched
 applications from holding the helper's output pipe open. CLI fallback launches
 also detach application stdio from the command runner's pipes. Tokens passed
 explicitly to the legacy-compatible `--launch --token` CLI still appear in that
@@ -50,5 +52,7 @@ same Linux monotonic clock as KDE; actual lookup/dispatch stamps are returned
 by the helper. `backend_started` additionally records when helper work begins.
 No application paths, URIs or tokens are added to traces.
 
-The memory/latency tradeoff and reproducible measurements are documented in
+The sub-16-ms warm dispatch result, cold-launch costs and idle-worker tradeoff
+are documented in [the dispatch optimization report](../../docs/performance/launcher-dispatch-optimization.md).
+The original migration measurements are documented in
 [the migration report](../../docs/performance/launcher-rust-migration.md).

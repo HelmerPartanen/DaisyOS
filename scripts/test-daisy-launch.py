@@ -25,7 +25,7 @@ DBusGMainLoop(set_as_default=True)
 root=Path(sys.argv[-1]); apps=root/'data/applications'; apps.mkdir(parents=True)
 marker=root/'action-result'; pidfile=root/'pid'
 fixture=root/'fixture with spaces.py'
-fixture.write_text('#!/usr/bin/env python3\nimport os,time,pathlib,sys\npathlib.Path(sys.argv[1]).write_text(str(os.getpid()))\ntime.sleep(3)\n')
+fixture.write_text('#!/usr/bin/env python3\nimport os,time,pathlib,sys\npathlib.Path(sys.argv[1]+".stdin").write_text(os.readlink("/proc/self/fd/0"))\npathlib.Path(sys.argv[1]).write_text(str(os.getpid()))\ntime.sleep(3)\n')
 fixture.chmod(0o755)
 (apps/'org.daisyos.launchtest.desktop').write_text(f'''[Desktop Entry]
 Type=Application
@@ -52,7 +52,8 @@ Exec=/bin/false
 """)
 (apps/'org.daisyos.tryexecfixture.desktop').write_text('[Desktop Entry]\nType=Application\nName=Missing executable\nTryExec=/daisyos-test-does-not-exist\nExec=/bin/true\n')
 subprocess.run(['kbuildsycoca6','--noincremental'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-process=subprocess.Popen([os.environ.get('DAISY_LAUNCH_TEST_BINARY', str(ROOT/'services/DaisyLaunch/build/daisy-launch'))],stdout=None,stderr=None)
+binary=os.environ.get('DAISY_LAUNCH_TEST_BINARY',str(ROOT/'services/DaisyLaunch/build/daisy-launch'))
+process=subprocess.Popen([binary],stdout=None,stderr=None)
 bus=dbus.SessionBus()
 events=[]
 class ActivationFixture(dbus.service.Object):
@@ -103,6 +104,14 @@ try:
         if marker.exists() and pidfile.exists(): break
         time.sleep(.02)
     assert marker.exists()
+    broker_pipes=set()
+    for fd in Path(f'/proc/{process.pid}/fd').iterdir():
+        try:
+            target=os.readlink(fd)
+            if target.startswith('pipe:'): broker_pipes.add(target)
+        except FileNotFoundError: pass
+    for output in [pidfile,marker]:
+        assert Path(str(output)+'.stdin').read_text() not in broker_pipes, 'Application inherited a broker protocol pipe'
     invalid=launch(action='Missing')
     try: api.Await(invalid); raise AssertionError('Missing action accepted')
     except dbus.DBusException as e: assert e.get_dbus_name().endswith('.InvalidArgument')
