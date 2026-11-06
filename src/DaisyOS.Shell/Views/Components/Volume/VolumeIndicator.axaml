@@ -4,10 +4,10 @@
              IsVisible="False" IsHitTestVisible="False" Focusable="False">
   <controls:ShellFrameBorder x:Name="MaterialFrame" Width="320" Margin="24,24,24,80" Padding="1"
                             HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                            Background="{DynamicResource ShellFrameOuterEdgeBrush}" CornerRadius="{DynamicResource RoundedXL}">
+                            Background="{DynamicResource ShellFrameOuterEdgeBrush}" CornerRadius="{DynamicResource RadiusPill}">
     <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                              BorderThickness="1" BackgroundSizing="InnerBorderEdge" CornerRadius="{DynamicResource RoundedXLInset}">
-      <Border Background="{DynamicResource SurfaceBaseBrush}" CornerRadius="{DynamicResource RoundedXLDoubleInset}" Padding="4,4,12,4">
+                              BorderThickness="1" BackgroundSizing="InnerBorderEdge" CornerRadius="{DynamicResource RadiusPill}">
+      <Border Background="{DynamicResource SurfaceBaseBrush}" CornerRadius="{DynamicResource RadiusPill}" Padding="4,4,12,4">
         <Grid ColumnDefinitions="*,44">
           <controls:QuickSettingsSlider x:Name="Level" ShowThumb="False" Focusable="False" />
           <TextBlock x:Name="Percentage" Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right"

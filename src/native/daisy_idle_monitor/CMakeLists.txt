@@ -1,6 +1,25 @@
 cmake_minimum_required(VERSION 3.20)
 project(daisy_idle_monitor VERSION 1.0.0 LANGUAGES C)
 
+# Keep the original implementation only for reproducible A/B memory benchmarks.
+option(DAISY_IDLE_C_BASELINE "Build the original C idle monitor for comparison" OFF)
+if(NOT DAISY_IDLE_C_BASELINE)
+    find_program(CARGO cargo REQUIRED)
+    set(RUST_SOURCE "${CMAKE_CURRENT_SOURCE_DIR}/../daisy_background")
+    file(GLOB_RECURSE RUST_INPUTS CONFIGURE_DEPENDS "${RUST_SOURCE}/src/*.rs")
+    set(RUST_TARGET "${CMAKE_CURRENT_BINARY_DIR}/cargo")
+    add_custom_command(
+        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/libdaisy_idle.so" "${CMAKE_CURRENT_BINARY_DIR}/daisyos-idle-monitor"
+        COMMAND ${CARGO} build --manifest-path "${RUST_SOURCE}/Cargo.toml" --target-dir "${RUST_TARGET}" --release --locked
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${RUST_TARGET}/release/libdaisy_idle.so" "${CMAKE_CURRENT_BINARY_DIR}/libdaisy_idle.so"
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different "${RUST_TARGET}/release/daisyos-idle-monitor" "${CMAKE_CURRENT_BINARY_DIR}/daisyos-idle-monitor"
+        DEPENDS ${RUST_INPUTS} "${RUST_SOURCE}/Cargo.toml" "${RUST_SOURCE}/Cargo.lock" "${RUST_SOURCE}/build.rs" "${RUST_SOURCE}/wayland_shim.c" "${CMAKE_CURRENT_SOURCE_DIR}/ext-idle-notify-v1.xml"
+        VERBATIM
+    )
+    add_custom_target(daisy_idle ALL DEPENDS "${CMAKE_CURRENT_BINARY_DIR}/libdaisy_idle.so" "${CMAKE_CURRENT_BINARY_DIR}/daisyos-idle-monitor")
+    return()
+endif()
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)

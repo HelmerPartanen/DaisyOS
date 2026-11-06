@@ -30,6 +30,7 @@
     <None Include="../native/daisy_mail_renderer/build/daisy-mail-renderer" Link="daisy-mail-renderer" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="../native/daisy_idle_monitor/build/libdaisy_idle.so" Link="libdaisy_idle.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_idle_monitor/build/libdaisy_idle.so')" />
     <None Include="../native/daisy_portal_capture/build/daisyos-portal-capture" Link="daisyos-portal-capture" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_portal_capture/build/daisyos-portal-capture')" />
     <None Include="../native/daisy_screenshot/build/daisy-screenshot-helper" Link="daisy-screenshot-helper" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_screenshot/build/daisy-screenshot-helper')" />
     <None Include="../native/daisy_portal_shortcuts/build/daisyos-portal-shortcuts" Link="daisyos-portal-shortcuts" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_portal_shortcuts/build/daisyos-portal-shortcuts')" />

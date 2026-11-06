@@ -7,6 +7,7 @@
     xmlns:converters="clr-namespace:DaisyOS.Shell.Converters"
     xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming"
     xmlns:services="clr-namespace:DaisyOS.Shell.Apps.Files.Services"
+    xmlns:picker="clr-namespace:DaisyOS.Shell.Apps.Files.Picker"
     Title="{DynamicResource Loc_ABC7E9892806}"
     Width="1040"
     Height="680"
@@ -883,7 +884,7 @@
 
                 <files:FilesRenderProbe Tab="{Binding ActiveTab}" />
 
-                <StackPanel IsVisible="{Binding ActiveTab.IsEmpty}"
+                <StackPanel x:Name="EmptyState" IsVisible="{Binding ActiveTab.IsEmpty}"
                             HorizontalAlignment="Center"
                             VerticalAlignment="Center"
                             Spacing="10">
@@ -932,12 +933,12 @@
             </Grid>
           </Grid>
 
-          <!-- ROW 3: BOTTOM STATUS BAR -->
+          <!-- ROW 3: BOTTOM STATUS BAR / PICKER FOOTER -->
           <Panel Grid.Row="3" MinHeight="{DynamicResource ControlHeightStandard}" Background="{DynamicResource SurfaceBaseSolidBrush}">
             <!-- Divider above Status Bar -->
             <Rectangle VerticalAlignment="Top" Height="1" Fill="{DynamicResource StrokeSubtleBrush}" />
 
-            <Grid Margin="14,0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10" VerticalAlignment="Center">
+            <Grid Margin="14,0" ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="10" VerticalAlignment="Center" IsVisible="{Binding !IsPickerMode}">
               <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10" VerticalAlignment="Center">
                 <TextBlock Text="{Binding ActiveTab.StatusText}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ActiveTab.StatusText}"
                          FontSize="{DynamicResource TypeSizeCaption}"
@@ -959,6 +960,60 @@
                       ToolTip.Tip="{Binding ActiveTab.SearchQuery}" IsVisible="{Binding ActiveTab.ShowSearchClearInStatusBar}" />
               <Button Grid.Column="3" Classes="SubtleLink" Content="{DynamicResource Loc_A8283ADE3185}" Click="OnUndoTrashClicked" IsVisible="{Binding ActiveTab.CanUndoTrash}"/>
             </Grid>
+
+            <Border x:Name="PickerFooter" Padding="16,12" MinHeight="68" IsVisible="{Binding IsPickerMode}">
+              <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="10">
+                <StackPanel x:Name="PickerSelectionPanel" Spacing="4" VerticalAlignment="Center" Margin="0,0,12,0">
+                  <TextBox x:Name="SaveFileNameBox" PlaceholderText="File name" MaxWidth="360" HorizontalAlignment="Stretch" IsVisible="False" />
+                  <TextBlock x:Name="SelectionTitle" FontWeight="SemiBold" Text="{DynamicResource Loc_0C4BA345E8AF}" TextTrimming="CharacterEllipsis" />
+                  <TextBlock x:Name="SelectionHint" Text="{DynamicResource Loc_9C6A74BE1D0F}" FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                  <ComboBox x:Name="FilterComboBox" MinWidth="150" MaxWidth="240" IsVisible="False" SelectionChanged="OnPickerFilterChanged" VerticalAlignment="Center" />
+                  <Button x:Name="PickerNewFolderButton" Classes="Secondary" Click="OnNewFolderClicked" ToolTip.Tip="{DynamicResource Loc_CF28F49EC597}">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <controls:DaisyIcon Icon="folder-plus" Size="{DynamicResource IconSizeStandard}" />
+                      <TextBlock Text="{DynamicResource Loc_CF28F49EC597}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="AddFolderButton" Classes="Secondary" Click="OnAddFolderClicked" IsVisible="False">
+                    <StackPanel Orientation="Horizontal" Spacing="6">
+                      <controls:DaisyIcon Icon="folder-plus" Size="{DynamicResource IconSizeStandard}" />
+                      <TextBlock x:Name="AddFolderButtonLabel" Text="{DynamicResource Loc_7A4DBAB42604}" VerticalAlignment="Center" />
+                    </StackPanel>
+                  </Button>
+                  <Button x:Name="CancelPickerButton" Classes="Secondary" Click="OnCancelPickerClicked" Content="{DynamicResource Loc_19766ED6CCB2}" />
+                  <Button x:Name="ConfirmButton" Classes="Primary" ToolTip.Tip="{DynamicResource Loc_49F92EE0A86E}" Click="OnConfirmPickerClicked" IsEnabled="False" Content="{DynamicResource Loc_C7F937836F5D}" />
+                </StackPanel>
+                <ScrollViewer x:Name="SelectionTrayScroller" Grid.Row="1" Grid.ColumnSpan="2" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" MaxHeight="58" IsVisible="False">
+                  <ItemsControl x:Name="SelectionTray">
+                    <ItemsControl.ItemsPanel>
+                      <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal" Spacing="7" />
+                      </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                      <DataTemplate x:DataType="picker:PickerSelection">
+                        <Border Height="48" Padding="4,4,5,4" CornerRadius="{DynamicResource RoundedSM}" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1">
+                          <StackPanel Orientation="Horizontal" Spacing="6">
+                            <Border Width="40" Height="40" CornerRadius="{DynamicResource RadiusControlInner}" ClipToBounds="True">
+                              <Grid>
+                                <Image Source="{Binding Thumbnail}" Stretch="UniformToFill" IsVisible="{Binding HasThumbnail}" />
+                                <controls:DaisyIcon Icon="file" Size="{DynamicResource IconSizeMedium}" HorizontalAlignment="Center" VerticalAlignment="Center" IsVisible="{Binding !HasThumbnail}" />
+                              </Grid>
+                            </Border>
+                            <TextBlock Text="{Binding Name}" MaxWidth="120" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            <Button Classes="ShellButton IconButton" Height="24" Click="OnRemovePickerSelectionClicked" ToolTip.Tip="{DynamicResource Loc_C3812FC4ACB8}" AutomationProperties.Name="{DynamicResource Loc_C3812FC4ACB8}">
+                              <controls:DaisyIcon Icon="x" Size="{DynamicResource IconSizeSmall}" />
+                            </Button>
+                          </StackPanel>
+                        </Border>
+                      </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                  </ItemsControl>
+                </ScrollViewer>
+              </Grid>
+            </Border>
           </Panel>
 
         </Grid>

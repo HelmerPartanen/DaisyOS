@@ -62,6 +62,7 @@ public sealed class HardwareVolumeAndSpringTests
             Assert.False(indicator.IsHitTestVisible);
             Assert.NotNull(indicator.MaterialSurface.Background);
             Assert.Equal(320, indicator.MaterialSurface.Bounds.Width);
+            Assert.Equal(new CornerRadius(999), indicator.MaterialSurface.CornerRadius);
             Directory.CreateDirectory("/tmp/daisy-volume-preview");
             using (var frame = window.CaptureRenderedFrame())
                 frame!.Save($"/tmp/daisy-volume-preview/{(dark ? "Dark" : "Light")}.png");

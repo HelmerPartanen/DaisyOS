@@ -1,0 +1,362 @@
+{
+  "units": "KiB except Threads (count)",
+  "samples": 9,
+  "results": {
+    "standalone": {
+      "median": {
+        "c": {
+          "Rss": 2400,
+          "Pss": 218,
+          "Private_Clean": 0,
+          "Private_Dirty": 196,
+          "VmSize": 78016,
+          "Threads": 2
+        },
+        "rust": {
+          "Rss": 1884,
+          "Pss": 183,
+          "Private_Clean": 0,
+          "Private_Dirty": 164,
+          "VmSize": 3040,
+          "Threads": 1
+        }
+      },
+      "saved": {
+        "Rss": 516,
+        "Pss": 35,
+        "Private_Clean": 0,
+        "Private_Dirty": 32,
+        "VmSize": 74976,
+        "Threads": 1
+      },
+      "raw": {
+        "c": [
+          {
+            "Rss": 2404,
+            "Pss": 222,
+            "Private_Clean": 0,
+            "Private_Dirty": 200,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2404,
+            "Pss": 223,
+            "Private_Clean": 0,
+            "Private_Dirty": 200,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2368,
+            "Pss": 218,
+            "Private_Clean": 0,
+            "Private_Dirty": 196,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2300,
+            "Pss": 216,
+            "Private_Clean": 0,
+            "Private_Dirty": 196,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2300,
+            "Pss": 216,
+            "Private_Clean": 0,
+            "Private_Dirty": 196,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2400,
+            "Pss": 218,
+            "Private_Clean": 0,
+            "Private_Dirty": 196,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2404,
+            "Pss": 222,
+            "Private_Clean": 0,
+            "Private_Dirty": 200,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2400,
+            "Pss": 218,
+            "Private_Clean": 0,
+            "Private_Dirty": 196,
+            "VmSize": 78016,
+            "Threads": 2
+          },
+          {
+            "Rss": 2372,
+            "Pss": 222,
+            "Private_Clean": 0,
+            "Private_Dirty": 200,
+            "VmSize": 78016,
+            "Threads": 2
+          }
+        ],
+        "rust": [
+          {
+            "Rss": 1888,
+            "Pss": 184,
+            "Private_Clean": 0,
+            "Private_Dirty": 164,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1884,
+            "Pss": 180,
+            "Private_Clean": 0,
+            "Private_Dirty": 160,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1884,
+            "Pss": 183,
+            "Private_Clean": 0,
+            "Private_Dirty": 164,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1884,
+            "Pss": 183,
+            "Private_Clean": 0,
+            "Private_Dirty": 164,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1884,
+            "Pss": 179,
+            "Private_Clean": 0,
+            "Private_Dirty": 160,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1888,
+            "Pss": 183,
+            "Private_Clean": 0,
+            "Private_Dirty": 164,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1888,
+            "Pss": 183,
+            "Private_Clean": 0,
+            "Private_Dirty": 164,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1888,
+            "Pss": 183,
+            "Private_Clean": 0,
+            "Private_Dirty": 164,
+            "VmSize": 3040,
+            "Threads": 1
+          },
+          {
+            "Rss": 1864,
+            "Pss": 183,
+            "Private_Clean": 0,
+            "Private_Dirty": 164,
+            "VmSize": 3040,
+            "Threads": 1
+          }
+        ]
+      }
+    },
+    "library": {
+      "median": {
+        "c": {
+          "Rss": 2452,
+          "Pss": 274,
+          "Private_Clean": 0,
+          "Private_Dirty": 252,
+          "VmSize": 78036,
+          "Threads": 2
+        },
+        "rust": {
+          "Rss": 2024,
+          "Pss": 256,
+          "Private_Clean": 0,
+          "Private_Dirty": 236,
+          "VmSize": 69628,
+          "Threads": 2
+        }
+      },
+      "saved": {
+        "Rss": 428,
+        "Pss": 18,
+        "Private_Clean": 0,
+        "Private_Dirty": 16,
+        "VmSize": 8408,
+        "Threads": 0
+      },
+      "raw": {
+        "c": [
+          {
+            "Rss": 2448,
+            "Pss": 270,
+            "Private_Clean": 0,
+            "Private_Dirty": 248,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2456,
+            "Pss": 274,
+            "Private_Clean": 0,
+            "Private_Dirty": 252,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2456,
+            "Pss": 274,
+            "Private_Clean": 0,
+            "Private_Dirty": 252,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2348,
+            "Pss": 268,
+            "Private_Clean": 0,
+            "Private_Dirty": 248,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2456,
+            "Pss": 274,
+            "Private_Clean": 0,
+            "Private_Dirty": 252,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2452,
+            "Pss": 270,
+            "Private_Clean": 0,
+            "Private_Dirty": 248,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2452,
+            "Pss": 270,
+            "Private_Clean": 0,
+            "Private_Dirty": 248,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2452,
+            "Pss": 274,
+            "Private_Clean": 0,
+            "Private_Dirty": 252,
+            "VmSize": 78036,
+            "Threads": 2
+          },
+          {
+            "Rss": 2456,
+            "Pss": 274,
+            "Private_Clean": 0,
+            "Private_Dirty": 252,
+            "VmSize": 78036,
+            "Threads": 2
+          }
+        ],
+        "rust": [
+          {
+            "Rss": 2028,
+            "Pss": 260,
+            "Private_Clean": 0,
+            "Private_Dirty": 240,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2024,
+            "Pss": 256,
+            "Private_Clean": 0,
+            "Private_Dirty": 236,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2024,
+            "Pss": 256,
+            "Private_Clean": 0,
+            "Private_Dirty": 236,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2028,
+            "Pss": 260,
+            "Private_Clean": 0,
+            "Private_Dirty": 240,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2024,
+            "Pss": 256,
+            "Private_Clean": 0,
+            "Private_Dirty": 236,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2024,
+            "Pss": 256,
+            "Private_Clean": 0,
+            "Private_Dirty": 236,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2028,
+            "Pss": 260,
+            "Private_Clean": 0,
+            "Private_Dirty": 240,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2024,
+            "Pss": 256,
+            "Private_Clean": 0,
+            "Private_Dirty": 236,
+            "VmSize": 69628,
+            "Threads": 2
+          },
+          {
+            "Rss": 2028,
+            "Pss": 260,
+            "Private_Clean": 0,
+            "Private_Dirty": 240,
+            "VmSize": 69628,
+            "Threads": 2
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,3 +1,5 @@
+/* Original C implementation retained for -DDAISY_IDLE_C_BASELINE=ON only.
+ * Production builds use ../daisy_background (Rust). */
 #include "daisy_idle.h"
 #include "ext-idle-notify-v1-client-protocol.h"
 #include <fcntl.h>

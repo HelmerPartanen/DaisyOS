@@ -1,5 +1,9 @@
 namespace DaisyOS.Shell.Apps.Files.Picker;
 
+public sealed record DaisyFilePickerFilter(
+    string Name,
+    IReadOnlyList<string> Extensions);
+
 public sealed record DaisyFilePickerOptions(
     string Title,
     bool AllowMultiple,
@@ -11,4 +15,7 @@ public sealed record DaisyFilePickerOptions(
     string ItemNamePlural = "files",
     bool SelectDirectory = false,
     bool SaveFile = false,
-    string? SuggestedName = null);
+    string? SuggestedName = null,
+    string? AcceptLabel = null,
+    IReadOnlyList<DaisyFilePickerFilter>? Filters = null,
+    int SelectedFilterIndex = 0);

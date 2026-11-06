@@ -1,6 +1,10 @@
 using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using Directory = global::System.IO.Directory;
 using File = global::System.IO.File;
+using FileInfo = global::System.IO.FileInfo;
 using Path = global::System.IO.Path;
 using System.Linq;
 using System.Threading;
@@ -10,10 +14,13 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Input.Platform;
+using Avalonia.Media;
+using Avalonia.Media.Imaging;
 using Avalonia.Platform.Storage;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DaisyOS.Shell.Apps;
+using DaisyOS.Shell.Apps.Files.Picker;
 using DaisyOS.Shell.Services.Motion;
 using DaisyOS.Shell.Apps.Files.Services;
 using DaisyOS.System.Processes;
@@ -25,8 +32,18 @@ public partial class FilesWindow : Window
     private static readonly DataFormat<FileDragPayload> FileDragPayloadFormat =
         DataFormat.CreateInProcessFormat<FileDragPayload>("files-drag-payload");
 
+    private static readonly HashSet<string> PickerThumbnailExtensions = new(StringComparer.OrdinalIgnoreCase)
+        { ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".ico" };
+    private static StringComparer PathComparer => OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
+    private static StringComparison PathComparison => OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
+
     private readonly FilesViewModel _viewModel;
     private readonly SystemAppWindowChrome _windowChrome;
+    private readonly ObservableCollection<PickerSelection> _pickerSelection = [];
+    private readonly HashSet<IDisposable> _ownedPickerThumbnails = new(ReferenceEqualityComparer.Instance);
+    private readonly bool _hadInitialPickerSelection;
+    private bool _syncingPickerSelection;
+    private IReadOnlyList<string>? _portalSelection;
     private PointerPressedEventArgs? _fileDragPress;
     private FileEntryViewModel? _fileDragSource;
     private Point _fileDragStart;
@@ -40,9 +57,20 @@ public partial class FilesWindow : Window
     private bool _visualUpdatePending;
     private (FileEntryViewModel Entry, double Y, Vector Offset)? _viewportAnchor;
 
+    public DaisyFilePickerOptions? PickerOptions => _viewModel.PickerOptions;
+    public bool IsPickerMode => _viewModel.IsPickerMode;
+    public IReadOnlyList<string> SelectedPaths => _portalSelection ?? _pickerSelection.Select(item => item.Path).ToArray();
+    public bool WasConfirmed { get; private set; }
+    public int SelectedFilterIndex => FilterComboBox.SelectedIndex;
+
     public FilesWindow() : this(null, false) { }
 
-    internal FilesWindow(string? initialPath, bool selectItem)
+    public FilesWindow(DaisyFilePickerOptions options)
+        : this(ResolvePickerInitialFolder(options), selectItem: false, pickerOptions: options)
+    {
+    }
+
+    internal FilesWindow(string? initialPath, bool selectItem, DaisyFilePickerOptions? pickerOptions = null)
     {
         InitializeComponent();
         PropertyChanged += (_, args) =>
@@ -56,13 +84,23 @@ public partial class FilesWindow : Window
             ContentLayout,
             normalRowDefinitions: "44,Auto,*,Auto",
             fullscreenRowDefinitions: "0,Auto,*,Auto");
-        _viewModel = new FilesViewModel(ResolveInitialFolder(initialPath), initialPath, selectItem);
+        _viewModel = new FilesViewModel(
+            pickerOptions is not null ? ResolvePickerInitialFolder(pickerOptions) : ResolveInitialFolder(initialPath),
+            initialPath,
+            selectItem,
+            pickerOptions);
+        _hadInitialPickerSelection = pickerOptions?.InitialSelection?.Any(IsAllowedPickerFile) == true;
         Loc.RefreshOnChange(this, () =>
         {
             _viewModel.RefreshStandardLocationLabels();
+            if (IsPickerMode) UpdatePickerSelectionUi();
             Dispatcher.UIThread.Post(UpdateSidebarActiveState, DispatcherPriority.Render);
         });
         DataContext = _viewModel;
+        if (pickerOptions is not null)
+        {
+            InitializePickerMode(pickerOptions);
+        }
         _viewModel.PropertyChanged += (_, args) =>
         {
             if (args.PropertyName is nameof(FilesViewModel.IsPreviewPaneVisible) or nameof(FilesViewModel.ActiveTab))
@@ -73,6 +111,7 @@ public partial class FilesWindow : Window
             {
                 HookActiveTab();
                 UpdateSidebarActiveState();
+                if (IsPickerMode) SyncTabSelectionFromPicker();
             }
         };
         EntriesList.ContainerPrepared += (_, _) => ScheduleVisuals();
@@ -135,6 +174,7 @@ public partial class FilesWindow : Window
             _hookedTab.PropertyChanged -= OnActiveTabPropertyChanged;
             _hookedTab.RenameRequested -= StartRenameForEntry;
             _hookedTab.EntriesChanged -= ScheduleVisuals;
+            _hookedTab.EntriesChanged -= OnActiveTabEntriesChanged;
             _hookedTab.ProjectionChanging -= CaptureViewportAnchor;
             _hookedTab.ProjectionChanged -= RestoreViewportAnchor;
             _hookedTab.SetViewport([]);
@@ -148,10 +188,23 @@ public partial class FilesWindow : Window
             _hookedTab.PropertyChanged += OnActiveTabPropertyChanged;
             _hookedTab.RenameRequested += StartRenameForEntry;
             _hookedTab.EntriesChanged += ScheduleVisuals;
+            _hookedTab.EntriesChanged += OnActiveTabEntriesChanged;
             _hookedTab.ProjectionChanging += CaptureViewportAnchor;
             _hookedTab.ProjectionChanged += RestoreViewportAnchor;
             ScheduleVisuals();
+            if (IsPickerMode)
+            {
+                SyncTabSelectionFromPicker();
+                UpdatePickerSelectionUi();
+            }
         }
+    }
+
+    private void OnActiveTabEntriesChanged()
+    {
+        if (!IsPickerMode) return;
+        SyncTabSelectionFromPicker();
+        UpdatePickerSelectionUi();
     }
 
     private void OnActiveTabPropertyChanged(object? sender, global::System.ComponentModel.PropertyChangedEventArgs e)
@@ -162,6 +215,14 @@ public partial class FilesWindow : Window
             Dispatcher.UIThread.Post(UpdateBreadcrumbLayout, DispatcherPriority.Loaded);
             UpdateSidebarActiveState();
             ScheduleVisuals();
+            if (IsPickerMode)
+            {
+                UpdatePickerSelectionUi();
+            }
+        }
+        else if (IsPickerMode && e.PropertyName is nameof(FilesTabViewModel.IsLoading))
+        {
+            UpdatePickerSelectionUi();
         }
     }
 
@@ -295,6 +356,7 @@ public partial class FilesWindow : Window
             _hookedTab.PropertyChanged -= OnActiveTabPropertyChanged;
             _hookedTab.RenameRequested -= StartRenameForEntry;
             _hookedTab.EntriesChanged -= ScheduleVisuals;
+            _hookedTab.EntriesChanged -= OnActiveTabEntriesChanged;
             _hookedTab.ProjectionChanging -= CaptureViewportAnchor;
             _hookedTab.ProjectionChanged -= RestoreViewportAnchor;
             _hookedTab.SetViewport([]);
@@ -304,6 +366,8 @@ public partial class FilesWindow : Window
         _typeAheadReset?.Dispose();
         _tabDragActivationCancellation?.Cancel();
         _tabDragActivationCancellation?.Dispose();
+        foreach (var image in _ownedPickerThumbnails) image.Dispose();
+        _ownedPickerThumbnails.Clear();
         foreach (var tab in _viewModel.Tabs) tab.Dispose();
         _windowChrome.Dispose();
         base.OnClosed(e);
@@ -685,6 +749,13 @@ public partial class FilesWindow : Window
             return;
         }
 
+        if (IsPickerMode && e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.Control)
+        {
+            OnConfirmPickerClicked(ConfirmButton, new RoutedEventArgs(Button.ClickEvent));
+            e.Handled = true;
+            return;
+        }
+
         if ((e.Key == Key.F5 && e.KeyModifiers == KeyModifiers.None) ||
             (e.Key == Key.R && e.KeyModifiers == KeyModifiers.Control))
         {
@@ -713,12 +784,29 @@ public partial class FilesWindow : Window
         if (e.Source is TextBox or DaisyOS.Shell.Controls.SearchBar ||
             e.Source is Visual source && source.GetVisualAncestors().Any(visual => visual is TextBox or DaisyOS.Shell.Controls.SearchBar))
         {
+            if (IsPickerMode && e.Key == Key.Enter && ReferenceEquals(e.Source, SaveFileNameBox))
+            {
+                OnConfirmPickerClicked(ConfirmButton, new RoutedEventArgs(Button.ClickEvent));
+                e.Handled = true;
+            }
+            else if (IsPickerMode && e.Key == Key.Escape && ReferenceEquals(e.Source, SaveFileNameBox))
+            {
+                Close(null);
+                e.Handled = true;
+            }
             return;
         }
 
         if (e.Key == Key.Escape && _viewModel.ActiveTab.HasSearchQuery)
         {
             ClearSearch();
+            e.Handled = true;
+            return;
+        }
+
+        if (IsPickerMode && e.Key == Key.Escape)
+        {
+            Close(null);
             e.Handled = true;
             return;
         }
@@ -947,6 +1035,15 @@ public partial class FilesWindow : Window
 
         if (point.Properties.IsLeftButtonPressed)
         {
+            if (IsPickerMode)
+            {
+                HandlePickerEntryPointerPressed(entry, e);
+                (sender as Control)?.GetVisualAncestors().OfType<ListBox>().FirstOrDefault()?.Focus();
+                e.Pointer.Capture(sender as Control);
+                e.Handled = true;
+                return;
+            }
+
             var tab = _viewModel.ActiveTab;
             if (tab is not null)
             {
@@ -1635,6 +1732,41 @@ public partial class FilesWindow : Window
 
     private void OpenEntry(FileEntryViewModel entry)
     {
+        if (IsPickerMode && PickerOptions is { } options)
+        {
+            if (entry.IsDirectory)
+            {
+                _ = _viewModel.ActiveTab?.NavigateToAsync(entry.Path);
+                return;
+            }
+
+            if (options.SaveFile)
+            {
+                SaveFileNameBox.Text = entry.Name;
+                return;
+            }
+
+            if (options.SelectDirectory || !IsAllowedPickerFile(entry.Path))
+            {
+                return;
+            }
+
+            if (!options.AllowMultiple)
+            {
+                _pickerSelection.Clear();
+                _pickerSelection.Add(new PickerSelection(entry.Path, OwnPickerThumbnail(LoadPickerThumbnail(entry.Path, 80))));
+                SyncTabSelectionFromPicker();
+                UpdatePickerSelectionUi();
+                OnConfirmPickerClicked(ConfirmButton, new RoutedEventArgs(Button.ClickEvent));
+                return;
+            }
+
+            TogglePickerSelection(entry.Path);
+            SyncTabSelectionFromPicker();
+            UpdatePickerSelectionUi();
+            return;
+        }
+
         SelectEntry(entry);
         if (entry.IsDirectory)
         {
@@ -1658,6 +1790,364 @@ public partial class FilesWindow : Window
             (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t open that file."));
         }
     }
+
+    private void InitializePickerMode(DaisyFilePickerOptions options)
+    {
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        Loc.Bind(this, TitleProperty, Loc.Original(options.Title));
+        SelectionTray.ItemsSource = _pickerSelection;
+        AddFolderButton.IsVisible = options.AllowFolderContents || (options.SelectDirectory && options.AllowMultiple);
+        if (options.SelectDirectory)
+        {
+            AddFolderButtonLabel.Text = Loc.Get("Add this folder");
+        }
+
+        if (options.Filters is { Count: > 0 } filters)
+        {
+            FilterComboBox.ItemsSource = filters.Select(f => f.Name).ToArray();
+            FilterComboBox.SelectedIndex = Math.Clamp(options.SelectedFilterIndex, 0, filters.Count - 1);
+            FilterComboBox.IsVisible = true;
+        }
+
+        if (options.SaveFile)
+        {
+            SaveFileNameBox.IsVisible = true;
+            SaveFileNameBox.Text = Path.GetFileName(options.SuggestedName ?? "Untitled");
+            SaveFileNameBox.PropertyChanged += (_, e) =>
+            {
+                if (e.Property == TextBox.TextProperty)
+                {
+                    UpdatePickerSelectionUi();
+                }
+            };
+        }
+
+        foreach (var path in (options.InitialSelection ?? []).Where(IsAllowedPickerFile).Distinct(PathComparer).Take(options.AllowMultiple ? int.MaxValue : 1))
+        {
+            _pickerSelection.Add(new PickerSelection(path, OwnPickerThumbnail(LoadPickerThumbnail(path, 80))));
+        }
+
+        UpdatePickerSelectionUi();
+    }
+
+    private static string ResolvePickerInitialFolder(DaisyFilePickerOptions options)
+    {
+        if (!string.IsNullOrWhiteSpace(options.InitialFolder) && Directory.Exists(options.InitialFolder))
+            return Path.GetFullPath(options.InitialFolder);
+        var first = options.InitialSelection?.FirstOrDefault(File.Exists);
+        var parent = first is null ? null : Path.GetDirectoryName(first);
+        if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent)) return parent;
+        var pictures = Environment.GetFolderPath(Environment.SpecialFolder.MyPictures);
+        var imageOnly = options.AllowedExtensions.Count > 0 && options.AllowedExtensions.All(extension =>
+            PickerThumbnailExtensions.Contains("." + extension.Trim().TrimStart('*').TrimStart('.')));
+        return imageOnly && Directory.Exists(pictures) ? pictures : Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+    }
+
+    private bool IsAllowedPickerFile(string path)
+    {
+        if (!File.Exists(path)) return false;
+        var tab = _viewModel.ActiveTab;
+        if (tab is not null)
+        {
+            return tab.IsAllowedExtension(Path.GetExtension(path));
+        }
+
+        if (PickerOptions is not { } options) return true;
+        var requested = options.AllowedExtensions.Select(ext => ext.Trim()).Where(ext => ext.Length > 0).ToArray();
+        if (requested.Length == 0 || requested.Any(FilesTabViewModel.IsAllFilesPattern)) return true;
+        var allowed = requested
+            .Select(FilesTabViewModel.NormalizeExtension)
+            .Where(ext => ext is not null)
+            .Select(ext => ext!)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        return allowed.Contains(Path.GetExtension(path));
+    }
+
+    private void HandlePickerEntryPointerPressed(FileEntryViewModel entry, PointerPressedEventArgs e)
+    {
+        if (PickerOptions is not { } options || _viewModel.ActiveTab is not { } tab) return;
+
+        if (entry.IsDirectory)
+        {
+            _syncingPickerSelection = true;
+            try
+            {
+                tab.SelectedItems.Clear();
+                tab.SelectedItems.Add(entry);
+            }
+            finally { _syncingPickerSelection = false; }
+            if (options.SelectDirectory && !options.AllowMultiple)
+            {
+                UpdatePickerSelectionUi();
+            }
+            return;
+        }
+
+        if (options.SaveFile)
+        {
+            _syncingPickerSelection = true;
+            try
+            {
+                tab.SelectedItems.Clear();
+                tab.SelectedItems.Add(entry);
+            }
+            finally { _syncingPickerSelection = false; }
+            SaveFileNameBox.Text = entry.Name;
+            UpdatePickerSelectionUi();
+            return;
+        }
+
+        if (options.SelectDirectory || !IsAllowedPickerFile(entry.Path))
+        {
+            return;
+        }
+
+        if (options.AllowMultiple && e.KeyModifiers.HasFlag(KeyModifiers.Shift) && tab.SelectedEntry is { IsDirectory: false } anchor)
+        {
+            var startIndex = tab.FilteredEntries.IndexOf(anchor);
+            var endIndex = tab.FilteredEntries.IndexOf(entry);
+            if (startIndex >= 0 && endIndex >= 0)
+            {
+                var min = Math.Min(startIndex, endIndex);
+                var max = Math.Max(startIndex, endIndex);
+                for (var i = min; i <= max; i++)
+                {
+                    var candidate = tab.FilteredEntries[i];
+                    if (!candidate.IsDirectory && IsAllowedPickerFile(candidate.Path) &&
+                        !_pickerSelection.Any(item => string.Equals(item.Path, candidate.Path, PathComparison)))
+                    {
+                        _pickerSelection.Add(new PickerSelection(candidate.Path, OwnPickerThumbnail(LoadPickerThumbnail(candidate.Path, 80))));
+                    }
+                }
+                SyncTabSelectionFromPicker();
+                UpdatePickerSelectionUi();
+                return;
+            }
+        }
+
+        TogglePickerSelection(entry.Path);
+        SyncTabSelectionFromPicker();
+        UpdatePickerSelectionUi();
+    }
+
+    private void TogglePickerSelection(string path)
+    {
+        if (PickerOptions is not { } options) return;
+        var existing = _pickerSelection.FirstOrDefault(item => string.Equals(item.Path, path, PathComparison));
+        if (existing is not null)
+        {
+            _pickerSelection.Remove(existing);
+        }
+        else
+        {
+            if (!options.AllowMultiple)
+            {
+                _pickerSelection.Clear();
+            }
+            _pickerSelection.Add(new PickerSelection(path, OwnPickerThumbnail(LoadPickerThumbnail(path, 80))));
+        }
+    }
+
+    private void SyncTabSelectionFromPicker()
+    {
+        if (_syncingPickerSelection || _viewModel.ActiveTab is not { } tab) return;
+        _syncingPickerSelection = true;
+        try
+        {
+            var selectedPaths = _pickerSelection.Select(item => item.Path).ToHashSet(PathComparer);
+            foreach (var existing in tab.SelectedItems.ToArray())
+            {
+                if (!selectedPaths.Contains(existing.Path))
+                {
+                    tab.SelectedItems.Remove(existing);
+                }
+            }
+            foreach (var entry in tab.FilteredEntries)
+            {
+                if (selectedPaths.Contains(entry.Path) && !tab.SelectedItems.Contains(entry))
+                {
+                    tab.SelectedItems.Add(entry);
+                }
+            }
+        }
+        finally
+        {
+            _syncingPickerSelection = false;
+        }
+    }
+
+    private IImage? OwnPickerThumbnail(IImage? image)
+    {
+        if (image is IDisposable disposable) _ownedPickerThumbnails.Add(disposable);
+        return image;
+    }
+
+    private void ReleaseUnusedPickerThumbnails()
+    {
+        var retained = _pickerSelection.Select(item => item.Thumbnail)
+            .OfType<IDisposable>().ToHashSet(ReferenceEqualityComparer.Instance);
+        foreach (var image in _ownedPickerThumbnails.Where(image => !retained.Contains(image)).ToArray())
+        {
+            _ownedPickerThumbnails.Remove(image);
+            image.Dispose();
+        }
+    }
+
+    private static IImage? LoadPickerThumbnail(string path, int width)
+    {
+        if (!PickerThumbnailExtensions.Contains(Path.GetExtension(path))) return null;
+        try
+        {
+            var info = new FileInfo(path);
+            if (!info.Exists || info.Length > 64L * 1024 * 1024) return null;
+            using var stream = File.OpenRead(path);
+            return Bitmap.DecodeToWidth(stream, width);
+        }
+        catch { return null; }
+    }
+
+    private void UpdatePickerSelectionUi()
+    {
+        if (PickerOptions is not { } options) return;
+        ReleaseUnusedPickerThumbnails();
+        var currentFolder = _viewModel.ActiveTab?.CurrentPath ?? ResolvePickerInitialFolder(options);
+        var isLoading = _viewModel.ActiveTab?.IsLoading ?? false;
+        AddFolderButton.IsEnabled = !isLoading && (options.SelectDirectory ||
+            (_viewModel.ActiveTab?.FilteredEntries.Any(entry => !entry.IsDirectory && IsAllowedPickerFile(entry.Path)) ?? false));
+
+        if (options.SaveFile || options.SelectDirectory)
+        {
+            SelectionTitle.Text = options.SelectDirectory && _pickerSelection.Count > 0
+                ? Loc.Format("{0} folders selected", _pickerSelection.Count)
+                : currentFolder;
+            SelectionHint.Text = options.SaveFile ? Loc.Get("Choose a name and location.") : Loc.Get("Choose this folder.");
+            ConfirmButton.Content = !string.IsNullOrWhiteSpace(options.AcceptLabel)
+                ? options.AcceptLabel
+                : options.SaveFile ? Loc.Get("Save") : Loc.Get("Choose folder");
+            var name = SaveFileNameBox.Text;
+            ConfirmButton.IsEnabled = Directory.Exists(currentFolder) && (!options.SaveFile ||
+                (!string.IsNullOrWhiteSpace(name) && name == Path.GetFileName(name) && name is not "." and not ".." && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0));
+            SelectionTrayScroller.IsVisible = options.SelectDirectory && _pickerSelection.Count > 0;
+            return;
+        }
+
+        SelectionTitle.Text = _pickerSelection.Count switch
+        {
+            0 => Loc.Format("No {0} selected", options.ItemNamePlural),
+            1 => Loc.Format("1 {0} selected", options.ItemNameSingular),
+            _ => Loc.Format("{0} {1} selected", _pickerSelection.Count, options.ItemNamePlural)
+        };
+        SelectionHint.Text = _pickerSelection.Count == 0
+            ? Loc.Get(options.AllowMultiple ? "Select a file to continue." : "Select a file, or double-click it to open.")
+            : Loc.Get("Select an item again, or use ×, to remove it.");
+        SelectionTrayScroller.IsVisible = _pickerSelection.Count > 0;
+        ConfirmButton.IsEnabled = _pickerSelection.Count > 0 || _hadInitialPickerSelection;
+        if (!string.IsNullOrWhiteSpace(options.AcceptLabel))
+        {
+            ConfirmButton.Content = options.AcceptLabel;
+            return;
+        }
+
+        ConfirmButton.Content = _pickerSelection.Count switch
+        {
+            0 when _hadInitialPickerSelection => Loc.Format("Remove all {0}", options.ItemNamePlural),
+            0 => Loc.Get("Choose"),
+            1 => Loc.Format("Choose {0}", options.ItemNameSingular),
+            _ => Loc.Format("Choose {0} {1}", _pickerSelection.Count, options.ItemNamePlural)
+        };
+    }
+
+    private void OnPickerFilterChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (PickerOptions?.Filters is not { Count: > 0 } filters) return;
+        var index = FilterComboBox.SelectedIndex;
+        if (index < 0 || index >= filters.Count) return;
+        var filter = filters[index];
+        _viewModel.SetPickerFilterExtensions(filter.Extensions);
+        if (PickerOptions.SaveFile && !string.IsNullOrWhiteSpace(SaveFileNameBox.Text))
+        {
+            var firstExt = filter.Extensions
+                .Select(FilesTabViewModel.NormalizeExtension)
+                .FirstOrDefault(ext => !string.IsNullOrWhiteSpace(ext));
+            if (!string.IsNullOrWhiteSpace(firstExt))
+            {
+                var currentName = SaveFileNameBox.Text!;
+                var currentExt = Path.GetExtension(currentName);
+                if (!string.IsNullOrEmpty(currentExt) && !string.Equals(currentExt, firstExt, StringComparison.OrdinalIgnoreCase))
+                {
+                    SaveFileNameBox.Text = Path.GetFileNameWithoutExtension(currentName) + firstExt;
+                }
+            }
+        }
+    }
+
+    private void OnRemovePickerSelectionClicked(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button { DataContext: PickerSelection selection }) return;
+        _pickerSelection.Remove(selection);
+        SyncTabSelectionFromPicker();
+        UpdatePickerSelectionUi();
+    }
+
+    private void OnAddFolderClicked(object? sender, RoutedEventArgs e)
+    {
+        if (PickerOptions is not { } options || _viewModel.ActiveTab is not { } tab) return;
+        var currentFolder = tab.CurrentPath;
+        if (options.SelectDirectory)
+        {
+            if (!_pickerSelection.Any(item => PathComparer.Equals(item.Path, currentFolder)))
+                _pickerSelection.Add(new PickerSelection(currentFolder, null));
+            UpdatePickerSelectionUi();
+            return;
+        }
+
+        var candidates = tab.FilteredEntries.Where(entry => !entry.IsDirectory && IsAllowedPickerFile(entry.Path)).ToArray();
+        if (!options.AllowMultiple) _pickerSelection.Clear();
+        if (!options.AllowMultiple && candidates.Length > 0) candidates = [candidates[0]];
+        foreach (var entry in candidates)
+        {
+            if (_pickerSelection.Any(item => string.Equals(item.Path, entry.Path, PathComparison))) continue;
+            _pickerSelection.Add(new PickerSelection(entry.Path, OwnPickerThumbnail(LoadPickerThumbnail(entry.Path, 80))));
+        }
+        SyncTabSelectionFromPicker();
+        UpdatePickerSelectionUi();
+    }
+
+    private void OnConfirmPickerClicked(object? sender, RoutedEventArgs e)
+    {
+        if (!IsPickerMode || PickerOptions is not { } options || !ConfirmButton.IsEnabled) return;
+        var currentFolder = _viewModel.ActiveTab?.CurrentPath ?? ResolvePickerInitialFolder(options);
+        if (options.SaveFile || options.SelectDirectory)
+        {
+            var selectedFolder = options.SelectDirectory && !options.AllowMultiple && _viewModel.ActiveTab?.SelectedEntry is { IsDirectory: true } dirEntry
+                ? dirEntry.Path
+                : currentFolder;
+            _portalSelection = options.SaveFile
+                ? [Path.Combine(currentFolder, SaveFileNameBox.Text!)]
+                : _pickerSelection.Count > 0
+                    ? _pickerSelection.Select(item => item.Path).ToArray()
+                    : [selectedFolder];
+            if (!options.SaveFile && _portalSelection.Any(path => !Directory.Exists(path)))
+            {
+                SelectionHint.Text = Loc.Get("A selected folder is no longer available.");
+                return;
+            }
+            WasConfirmed = true;
+            Close(SelectedPaths);
+            return;
+        }
+
+        if (_pickerSelection.Any(item => !IsAllowedPickerFile(item.Path)))
+        {
+            SelectionHint.Text = Loc.Get("Some selected files are no longer available. Remove them or choose them again.");
+            return;
+        }
+
+        WasConfirmed = true;
+        Close(SelectedPaths);
+    }
+
+    private void OnCancelPickerClicked(object? sender, RoutedEventArgs e) => Close(null);
 
     private FileEntryViewModel? GetContextEntry(object? sender)
     {

@@ -1,0 +1,32 @@
+[package]
+name = "daisy-background"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+publish = false
+build = "build.rs"
+
+[lib]
+name = "daisy_idle"
+crate-type = ["cdylib", "rlib"]
+test = false
+doctest = false
+
+[[bin]]
+name = "daisyos-idle-monitor"
+path = "src/bin/idle.rs"
+test = false
+
+[dependencies]
+libc = { version = "=0.2.191", default-features = false }
+
+[profile.dev]
+panic = "abort"
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = true

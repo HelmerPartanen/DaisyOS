@@ -8,6 +8,7 @@ using System.Text.Json;
 using Directory = global::System.IO.Directory;
 using File = global::System.IO.File;
 using Path = global::System.IO.Path;
+using DaisyOS.Shell.Apps.Files.Picker;
 using DaisyOS.Shell.Apps.Files.Services;
 
 namespace DaisyOS.Shell.Apps.Files;
@@ -17,6 +18,7 @@ public sealed class FilesViewModel : INotifyPropertyChanged
     private FilesTabViewModel? _activeTab;
     private bool _isPreviewPaneVisible;
     private FilesPreferences _currentPreferences;
+    private IReadOnlyCollection<string>? _pickerAllowedExtensions;
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
@@ -24,6 +26,9 @@ public sealed class FilesViewModel : INotifyPropertyChanged
     public ObservableCollection<SidebarLocation> PinnedLocations { get; } = [];
     public ObservableCollection<SidebarLocation> StandardLocations { get; } = [];
     public ObservableCollection<VolumeInfo> Volumes { get; } = [];
+
+    public DaisyFilePickerOptions? PickerOptions { get; }
+    public bool IsPickerMode => PickerOptions is not null;
 
     public bool IsPreviewPaneVisible
     {
@@ -68,9 +73,24 @@ public sealed class FilesViewModel : INotifyPropertyChanged
         _isPreviewPaneVisible = _currentPreferences.IsPreviewPaneVisible;
     }
 
-    public FilesViewModel(string initialPath, string? itemToReveal = null, bool selectItem = false)
+    public FilesViewModel(string initialPath, string? itemToReveal = null, bool selectItem = false, DaisyFilePickerOptions? pickerOptions = null)
         : this(FilesPreferencesService.Load())
     {
+        PickerOptions = pickerOptions;
+        if (pickerOptions is not null)
+        {
+            var pickerPrefs = DaisyFilePickerPreferencesStore.Load();
+            _currentPreferences = _currentPreferences with
+            {
+                IsGridView = pickerPrefs.IsGridView,
+                SortColumn = pickerPrefs.SortColumn is "Name" or "Date" or "Type" or "Size" ? pickerPrefs.SortColumn : "Name",
+                SortAscending = pickerPrefs.SortAscending
+            };
+            _pickerAllowedExtensions = pickerOptions.Filters is { Count: > 0 } filters && pickerOptions.SelectedFilterIndex >= 0 && pickerOptions.SelectedFilterIndex < filters.Count
+                ? filters[pickerOptions.SelectedFilterIndex].Extensions
+                : pickerOptions.AllowedExtensions;
+        }
+
         LoadStandardLocations();
         LoadPinnedLocations(_currentPreferences.StarredPaths ?? []);
         RefreshVolumes();
@@ -82,10 +102,22 @@ public sealed class FilesViewModel : INotifyPropertyChanged
         }
     }
 
+    public void SetPickerFilterExtensions(IReadOnlyCollection<string> extensions)
+    {
+        _pickerAllowedExtensions = extensions;
+        if (PickerOptions is null) return;
+        foreach (var tab in Tabs)
+        {
+            tab.SetPickerFilter(_pickerAllowedExtensions, PickerOptions.SelectDirectory, PickerOptions.ItemNamePlural);
+        }
+    }
+
     public FilesTabViewModel NewTab(string? path = null)
     {
         path ??= Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-        var tab = new FilesTabViewModel(path, _currentPreferences);
+        var tab = PickerOptions is not null
+            ? new FilesTabViewModel(path, _currentPreferences, allowedExtensions: _pickerAllowedExtensions ?? PickerOptions.AllowedExtensions, foldersOnly: PickerOptions.SelectDirectory, itemNamePlural: PickerOptions.ItemNamePlural)
+            : new FilesTabViewModel(path, _currentPreferences);
         tab.PreferencesChanged += () =>
         {
             UpdatePreferencesFromTab(tab);
@@ -184,7 +216,8 @@ public sealed class FilesViewModel : INotifyPropertyChanged
     {
         foreach (var name in new[] { "Home", "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music" })
             AddStandardLocation(name, UserDirectoryPaths.Current[name]);
-        AddStandardLocation("Trash", UserTrashPaths.Files);
+        if (!IsPickerMode)
+            AddStandardLocation("Trash", UserTrashPaths.Files);
     }
 
     private void AddStandardLocation(string name, string path)
@@ -231,6 +264,15 @@ public sealed class FilesViewModel : INotifyPropertyChanged
             IsPreviewPaneVisible = IsPreviewPaneVisible,
             StarredPaths = PinnedLocations.Select(l => l.Path).ToArray()
         };
+
+        if (IsPickerMode)
+        {
+            DaisyFilePickerPreferencesStore.Save(new DaisyFilePickerPreferences(
+                _currentPreferences.SortColumn,
+                _currentPreferences.SortAscending,
+                _currentPreferences.IsGridView));
+            return;
+        }
 
         FilesPreferencesService.Save(_currentPreferences);
     }

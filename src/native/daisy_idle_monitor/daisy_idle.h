@@ -21,6 +21,9 @@ int daisy_idle_monitor_is_available(void);
  * @param on_idle Callback invoked when user has been idle for timeout_ms.
  * @param on_resumed Callback invoked when user activity resumes.
  * @param user_data Opaque pointer passed to callbacks.
+ * Callbacks run on a native worker thread and must return promptly. Do not
+ * call stop from a callback; callbacks and user_data must remain valid until
+ * stop returns. Stop each handle once, with no concurrent stop calls.
  * @return Opaque handle to the monitor instance, or NULL on failure.
  */
 void *daisy_idle_monitor_start(uint32_t timeout_ms,

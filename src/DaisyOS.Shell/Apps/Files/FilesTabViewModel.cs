@@ -43,6 +43,10 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
     private bool _showDateColumn = true;
     private bool _showTypeColumn = true;
     private bool _showSizeColumn = true;
+    private HashSet<string>? _allowedExtensions;
+    private bool _filterByExtensions;
+    private bool _foldersOnly;
+    private string _itemNamePlural = "files";
 
     private readonly DirectorySnapshotService _snapshots;
     private readonly IFileUiDispatcher _ui;
@@ -127,12 +131,15 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
         private set { if (SetProperty(ref _loadError, value)) NotifyEmptyState(); }
     }
     public bool HasLoadError => !string.IsNullOrEmpty(LoadError);
-    public bool HasHiddenEntriesOnly => !HasSearchQuery && !ShowHiddenFiles && Entries.Count > 0 && FilteredEntries.Count == 0;
+    public bool HasHiddenEntriesOnly => !HasSearchQuery && !ShowHiddenFiles && Entries.Count > 0 && FilteredEntries.Count == 0 && Entries.All(e => e.IsHidden);
+    public bool HasFilteredOutEntriesOnly => !HasSearchQuery && (_filterByExtensions || _foldersOnly) && Entries.Any(e => !e.IsHidden || ShowHiddenFiles) && FilteredEntries.Count == 0;
     private bool IsTrashLocation => FileLocationPresentation.Resolve(CurrentPath).Kind == FileLocationKind.Trash;
     public string EmptyTitle => HasLoadError ? Loc.Get("Couldn’t open this folder")
         : HasSearchQuery ? Loc.Get("No matching files")
+        : HasFilteredOutEntriesOnly ? Loc.Format("No {0} here", _itemNamePlural)
         : HasHiddenEntriesOnly ? Loc.Get("No visible files") : IsTrashLocation ? Loc.Get("Trash is empty") : Loc.Get("This folder is empty");
     public string EmptyMessage => LoadError ?? (HasSearchQuery ? Loc.Get("Try a different search or clear the filter.")
+        : HasFilteredOutEntriesOnly ? Loc.Get("Try another folder or change the file type filter.")
         : HasHiddenEntriesOnly ? Loc.Get("Show hidden files to see the items in this folder.") : string.Empty);
     public bool ShowSearchClearInStatusBar => HasSearchQuery && !IsEmpty;
     public bool HasEmptyMessage => EmptyMessage.Length > 0;
@@ -143,7 +150,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
 
     private void NotifyEmptyState()
     {
-        foreach (var name in new[] { nameof(IsEmpty), nameof(ShowSearchClearInStatusBar), nameof(HasLoadError), nameof(HasHiddenEntriesOnly), nameof(EmptyTitle), nameof(EmptyMessage),
+        foreach (var name in new[] { nameof(IsEmpty), nameof(ShowSearchClearInStatusBar), nameof(HasLoadError), nameof(HasHiddenEntriesOnly), nameof(HasFilteredOutEntriesOnly), nameof(EmptyTitle), nameof(EmptyMessage),
             nameof(HasEmptyMessage), nameof(HasEmptyAction), nameof(EmptyIcon), nameof(EmptyActionLabel), nameof(EmptyActionIcon) })
             OnPropertyChanged(name);
     }
@@ -344,7 +351,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
     public bool CanGoForward => _forwardHistory.Count > 0;
     public bool CanGoUp => !string.IsNullOrEmpty(CurrentPath) && Directory.GetParent(CurrentPath) != null;
 
-    public FilesTabViewModel(string initialPath, FilesPreferences? initialPreferences = null, DirectorySnapshotService? snapshots = null, bool navigateImmediately = true, IFileUiDispatcher? uiDispatcher = null, bool watchFiles = true)
+    public FilesTabViewModel(string initialPath, FilesPreferences? initialPreferences = null, DirectorySnapshotService? snapshots = null, bool navigateImmediately = true, IFileUiDispatcher? uiDispatcher = null, bool watchFiles = true, IEnumerable<string>? allowedExtensions = null, bool foldersOnly = false, string itemNamePlural = "files")
     {
         _snapshots = snapshots ?? new DirectorySnapshotService();
         _ui = uiDispatcher ?? new AvaloniaFileUiDispatcher();
@@ -361,6 +368,11 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             _showTypeColumn = initialPreferences.ShowTypeColumn;
             _showSizeColumn = initialPreferences.ShowSizeColumn;
             _hasUserSelectedViewMode = true;
+        }
+
+        if (allowedExtensions is not null || foldersOnly)
+        {
+            SetPickerFilter(allowedExtensions, foldersOnly, itemNamePlural);
         }
 
         SelectedItems.CollectionChanged += (s, e) =>
@@ -1051,9 +1063,49 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
         return destination.StartsWith(source, StringComparison.Ordinal);
     }
 
-    private readonly record struct ViewOptions(string Query, bool Hidden, string Sort, bool Ascending);
-    private ViewOptions GetViewOptions() => new(SearchQuery.Trim(), ShowHiddenFiles, SortColumn, SortAscending);
+    public void SetPickerFilter(IEnumerable<string>? allowedExtensions, bool foldersOnly = false, string itemNamePlural = "files")
+    {
+        _foldersOnly = foldersOnly;
+        _itemNamePlural = string.IsNullOrWhiteSpace(itemNamePlural) ? "files" : itemNamePlural;
+        var requestedTypes = (allowedExtensions ?? [])
+            .Select(extension => extension.Trim())
+            .Where(extension => extension.Length > 0)
+            .ToArray();
+        _filterByExtensions = !foldersOnly && requestedTypes.Length > 0 && !requestedTypes.Any(IsAllFilesPattern);
+        _allowedExtensions = _filterByExtensions
+            ? requestedTypes.Where(extension => !IsAllFilesPattern(extension))
+                .Select(NormalizeExtension)
+                .Where(extension => extension is not null)
+                .Select(extension => extension!)
+                .ToHashSet(StringComparer.OrdinalIgnoreCase)
+            : null;
+        NotifyEmptyState();
+        ApplyFilterAndSort();
+    }
+
+    internal bool IsAllowedExtension(string? extension) =>
+        !_foldersOnly && (!_filterByExtensions || (_allowedExtensions is not null && !string.IsNullOrEmpty(extension) && _allowedExtensions.Contains(extension)));
+
+    internal static bool IsAllFilesPattern(string pattern) => pattern is "*" or "*.*";
+
+    internal static string? NormalizeExtension(string pattern)
+    {
+        var extension = pattern.StartsWith("*.", StringComparison.Ordinal)
+            ? pattern[1..]
+            : pattern.StartsWith(".", StringComparison.Ordinal)
+                ? pattern
+                : pattern.IndexOfAny(['*', '/', '\\']) < 0
+                    ? "." + pattern.TrimStart('.')
+                    : string.Empty;
+        return extension.Length > 1 && extension[1..].IndexOfAny(['*', '/', '\\']) < 0
+            ? extension
+            : null;
+    }
+
+    private readonly record struct ViewOptions(string Query, bool Hidden, string Sort, bool Ascending, HashSet<string>? AllowedExtensions, bool FilterByExtensions, bool FoldersOnly);
+    private ViewOptions GetViewOptions() => new(SearchQuery.Trim(), ShowHiddenFiles, SortColumn, SortAscending, _allowedExtensions, _filterByExtensions, _foldersOnly);
     private static bool Matches(FileEntryViewModel entry, ViewOptions options) =>
+        (entry.IsDirectory || (!options.FoldersOnly && (!options.FilterByExtensions || (options.AllowedExtensions is not null && options.AllowedExtensions.Contains(entry.Extension))))) &&
         (options.Hidden || !entry.IsHidden) && (options.Query.Length == 0 ||
             (options.Query.Contains('*') || options.Query.Contains('?')
                 ? FileSystemName.MatchesSimpleExpression(options.Query, entry.NameSortKey, ignoreCase: true)
@@ -1085,6 +1137,7 @@ public sealed class FilesTabViewModel : INotifyPropertyChanged, IDisposable
             token.ThrowIfCancellationRequested();
             ref readonly var e = ref entries[i];
             return
+            (e.Snapshot.IsDirectory || (!options.FoldersOnly && (!options.FilterByExtensions || (options.AllowedExtensions is not null && options.AllowedExtensions.Contains(e.Snapshot.Extension))))) &&
             (options.Hidden || !(e.Snapshot.Name.StartsWith(".", StringComparison.Ordinal) || (e.Snapshot.Attributes & global::System.IO.FileAttributes.Hidden) != 0)) &&
             (options.Query.Length == 0 || (options.Query.Contains('*') || options.Query.Contains('?')
                 ? FileSystemName.MatchesSimpleExpression(options.Query, e.Snapshot.Name, ignoreCase: true)

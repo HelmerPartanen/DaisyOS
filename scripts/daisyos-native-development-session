@@ -451,7 +451,8 @@ install_kwin_bridge() {
 
 ensure_idle_monitor() {
   local idle_lib="$source_root/src/native/daisy_idle_monitor/build/libdaisy_idle.so"
-  if [[ ! -f "$idle_lib" ]]; then
+  if [[ ! -f "$idle_lib" || "$source_root/src/native/daisy_idle_monitor/ext-idle-notify-v1.xml" -nt "$idle_lib" ]] ||
+      find "$source_root/src/native/daisy_background" -path '*/target' -prune -o -type f -newer "$idle_lib" -print -quit | read -r _; then
     log_message "Building native idle monitor..."
     bash "$source_root/scripts/build-native-idle-monitor.sh" >> "$session_log" 2>&1 || true
   fi
