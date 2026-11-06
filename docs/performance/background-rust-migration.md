@@ -15,7 +15,10 @@ No installed services were restarted or replaced during this work.
 This is a small physical-memory improvement. **A C-to-Rust rewrite is not a
 credible route to tens of megabytes of savings from these C helpers.** The big
 resident costs belong to the C#/.NET services and the C++ Qt/KDE launcher.
-Those services have not been migrated in this change.
+The idle-monitor change did not migrate those services. A subsequent
+[launcher migration](launcher-rust-migration.md) now replaces the resident
+Qt/KDE daemon with a Rust broker and an on-demand KDE helper; desktop services
+and Continuity remain managed.
 
 ## Repeated A/B results
 
@@ -104,8 +107,8 @@ Priority for a subsequent larger migration:
    protocol, pairing, trust storage, revocation, TLS, session gating and transfer
    tests as acceptance criteria. Its 78 MiB PSS is an opportunity ceiling, not a
    promise: the replacement also needs crypto/network buffers and feature state.
-3. Evaluate a small Rust launcher broker with KDE launch semantics delegated on
-   demand. Measure repeated launches as well as idle memory; activation tokens,
+3. **Implemented subsequently:** a small Rust launcher broker with KDE launch
+   semantics delegated on demand; see the linked launcher report. Measure repeated launches as well as idle memory; activation tokens,
    desktop actions, URI expansion, D-Bus activation and idempotent requests must
    survive. Dropping KIO semantics to reduce idle memory would be a regression.
 4. Keep the tiny C helpers unless a measured workload identifies a leak or
@@ -115,8 +118,9 @@ Priority for a subsequent larger migration:
    Continuity media RAM comes largely from GStreamer/codec/frame buffers; measure
    active streams and queue depth before changing its implementation language.
 
-No projected percentage or aggregate megabyte saving is asserted for these
-unimplemented architectural changes. The audit establishes priorities and a
+No projected percentage or aggregate megabyte saving is asserted for the
+remaining unimplemented architectural changes. The subsequent launcher report
+contains measured savings for the implemented launcher migration. The audit establishes priorities and a
 repeatable baseline, not an unmeasured claim of a complete daemon migration.
 
 ## Reproduce and validate

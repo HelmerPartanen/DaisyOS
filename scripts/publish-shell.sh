@@ -89,6 +89,7 @@ dotnet publish src/DaisyOS.Shell/DaisyOS.Shell.csproj \
   "${publish_properties[@]}"
 
 install -m755 "$repo_root/services/DaisyLaunch/build/daisy-launch" "$output_dir/daisy-launch"
+install -m755 "$repo_root/services/DaisyLaunch/build/daisy-launch-backend" "$output_dir/daisy-launch-backend"
 install -m755 "$repo_root/src/native/daisy_busy_cursor/build/daisyos-busy-cursor-v1.so" "$output_dir/daisyos-busy-cursor-v1.so"
 install -m755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menus-v4.so" "$output_dir/daisyos-window-menus-v4.so"
 "$repo_root/scripts/install-window-menu-icons.sh" --root "$output_dir/window-menus-root"

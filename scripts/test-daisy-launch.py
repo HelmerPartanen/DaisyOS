@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if '--inside' not in sys.argv:
     with tempfile.TemporaryDirectory(prefix='daisy-launch-test-') as temp:
         env = os.environ.copy()
-        env.update(XDG_DATA_HOME=temp+'/data', XDG_CACHE_HOME=temp+'/cache', XDG_CONFIG_HOME=temp+'/config', QT_QPA_PLATFORM='offscreen')
+        env.update(XDG_DATA_HOME=temp+'/data', XDG_CACHE_HOME=temp+'/cache', XDG_CONFIG_HOME=temp+'/config', QT_QPA_PLATFORM='offscreen', QT_QPA_PLATFORMTHEME='', XDG_CURRENT_DESKTOP='KDE', GTK_USE_PORTAL='0', GIO_USE_PORTALS='0')
         raise SystemExit(subprocess.run(['dbus-run-session','--',sys.executable,__file__,'--inside',temp],env=env).returncode)
 
 import dbus
@@ -50,8 +50,9 @@ Exec=/bin/false
 Name=Hang
 Exec=/bin/false
 """)
+(apps/'org.daisyos.tryexecfixture.desktop').write_text('[Desktop Entry]\nType=Application\nName=Missing executable\nTryExec=/daisyos-test-does-not-exist\nExec=/bin/true\n')
 subprocess.run(['kbuildsycoca6','--noincremental'],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-process=subprocess.Popen([str(ROOT/'services/DaisyLaunch/build/daisy-launch')],stdout=None,stderr=None)
+process=subprocess.Popen([os.environ.get('DAISY_LAUNCH_TEST_BINARY', str(ROOT/'services/DaisyLaunch/build/daisy-launch'))],stdout=None,stderr=None)
 bus=dbus.SessionBus()
 events=[]
 class ActivationFixture(dbus.service.Object):
@@ -68,7 +69,7 @@ name=dbus.service.BusName('org.daisyos.activatefixture',server_bus)
 receiver=ActivationFixture(name,'/org/daisyos/activatefixture')
 loop=GLib.MainLoop(); threading.Thread(target=loop.run,daemon=True).start()
 try:
-    for _ in range(200):
+    for _ in range(750):
         if bus.name_has_owner('org.daisyos.Launcher1'): break
         time.sleep(.02)
     api=dbus.Interface(bus.get_object('org.daisyos.Launcher1','/org/daisyos/Launcher1'),'org.daisyos.Launcher1')
@@ -90,6 +91,9 @@ try:
     if os.environ.get('DAISYOS_LAUNCH_TELEMETRY')=='0': assert trace=={}
     else: assert 'dispatch_accepted' in trace and 'daemon_received' in trace
     assert 'private-token' not in json.dumps(trace) and str(root) not in json.dumps(trace)
+    unavailable=launch('org.daisyos.tryexecfixture.desktop')
+    try: api.Await(unavailable); raise AssertionError('Missing TryExec accepted')
+    except dbus.DBusException as e: assert e.get_dbus_name().endswith('.NotFound')
     bad=launch('org.daisyos.missing.desktop')
     try: api.Await(bad); raise AssertionError('Missing entry accepted')
     except dbus.DBusException as e: assert e.get_dbus_name().endswith('.NotFound')
@@ -110,7 +114,9 @@ try:
     assert events[-1]==('open',['file:///tmp/fixture%20with%20spaces.txt'])
     acted=launch('org.daisyos.activatefixture.desktop',action='Ping'); assert api.Await(acted)
     assert events[-1]==('action','Ping')
-    hang=launch('org.daisyos.activatefixture.desktop',action='Hang'); api.Cancel(hang)
+    hang=launch('org.daisyos.activatefixture.desktop',action='Hang')
+    unblocked=launch(); assert api.Await(unblocked), 'Pending D-Bus activation blocked later launch'
+    api.Cancel(hang)
     try: api.Await(hang); raise AssertionError('Cancelled request accepted')
     except dbus.DBusException as e: assert e.get_dbus_name().endswith('.Cancelled')
     second=dbus.bus.BusConnection(os.environ['DBUS_SESSION_BUS_ADDRESS'])
@@ -122,10 +128,20 @@ try:
         if any(e['id']=='org.daisyos.addedfixture.desktop' for e in json.loads(api.Catalog())): break
         time.sleep(.02)
     else: raise AssertionError('Registry did not refresh')
+    binary=os.environ.get('DAISY_LAUNCH_TEST_BINARY',str(ROOT/'services/DaisyLaunch/build/daisy-launch'))
+    assert any(e['id']=='org.daisyos.launchtest.desktop' for e in json.loads(subprocess.check_output([binary,'--catalog'],text=True)))
+    if Path(binary).with_name('daisy-launch-backend').exists():
+        started=time.monotonic()
+        subprocess.run([binary,'--launch','org.daisyos.launchtest.desktop'],capture_output=True,check=True,timeout=2)
+        assert time.monotonic()-started<2, 'CLI waited for application exit'
     # Relaunch a sleeping fixture immediately before testing process survival.
     time.sleep(.15)
+    previous_pid = pidfile.read_text()
     survival=launch(); assert api.Await(survival)
-    time.sleep(.1)
+    for _ in range(250):
+        if pidfile.read_text() != previous_pid: break
+        time.sleep(.02)
+    else: raise AssertionError('Accepted application did not reach fixture startup')
     process.terminate(); process.wait(timeout=5)
     os.kill(int(pidfile.read_text()),0) # launched application survives the service
     print('PASS: registry, KIO dispatch, actions, idempotence, missing entries, URI validation, private traces, app survival, D-Bus Activate/Open/actions, cancellation, owner isolation, live registry refresh')

@@ -23,6 +23,7 @@
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QFileDevice>
 #include <QProcess>
 #include <QStandardPaths>
 #include <QTimer>
@@ -33,6 +34,7 @@
 #include <chrono>
 #include <iostream>
 #include <memory>
+#include <fcntl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>
@@ -254,13 +256,14 @@ class Launcher : public QObject, protected QDBusContext {
   Q_OBJECT
   Q_CLASSINFO("D-Bus Interface", "org.daisyos.Launcher1")
   Q_PROPERTY(uint ApiVersion READ apiVersion CONSTANT)
-  std::shared_ptr<const Snapshot> snapshot = discover();
+  std::shared_ptr<const Snapshot> snapshot;
   QHash<QString, std::shared_ptr<Request>> requests;
   QSet<QString> authorizedCallers;
   const bool telemetryEnabled =
       qEnvironmentVariable("DAISYOS_LAUNCH_TELEMETRY") != "0";
   QTimer debounce;
   bool rebuilding = false;
+  bool resolveActivation = false;
   bool authorized() {
     if (!calledFromDBus())
       return true;
@@ -312,6 +315,13 @@ class Launcher : public QObject, protected QDBusContext {
     auto snap = snapshot;
     auto lookupStarted = now();
     auto metadata = snap->apps.value(r->app);
+    if (!metadata.service && !r->app.startsWith('/')) {
+      metadata.service = KService::serviceByStorageId(r->app);
+      if (metadata.service) {
+        metadata.dbusActivatable = metadata.service->property<bool>("DBusActivatable");
+        for (const auto &action : metadata.service->actions()) metadata.actions.insert(action.name(), action);
+      }
+    }
     if (r->app.startsWith('/')) {
       metadata.service = KService::Ptr(new KService(r->app));
       if (!metadata.service->isValid() || !metadata.service->isApplication()) {
@@ -321,6 +331,11 @@ class Launcher : public QObject, protected QDBusContext {
       KDesktopFile file(r->app);
       metadata.dbusActivatable = file.desktopGroup().readEntry("DBusActivatable", false);
       for (const auto &action : metadata.service->actions()) metadata.actions.insert(action.name(), action);
+    }
+    if (metadata.service && !r->app.startsWith('/')) {
+      KDesktopFile file(metadata.service->entryPath());
+      const auto tryExec = file.desktopGroup().readEntry("TryExec", QString{});
+      if (!tryExec.isEmpty() && QStandardPaths::findExecutable(tryExec).isEmpty()) metadata.service.reset();
     }
     auto app = metadata.service;
     auto lookupFinished = now();
@@ -352,6 +367,9 @@ class Launcher : public QObject, protected QDBusContext {
       QString path = "/" + name;
       path.replace('.', '/');
       path.replace('-', '_');
+#ifdef DAISY_LAUNCH_BACKEND
+      if (resolveActivation) { emit ActivationResolved(r->id, name, path); return; }
+#endif
       QVariantMap data;
       if (!r->token.isEmpty())
         data.insert("activation-token", r->token);
@@ -391,7 +409,9 @@ class Launcher : public QObject, protected QDBusContext {
   }
 
 public:
-  explicit Launcher(QObject *parent = nullptr) : QObject(parent) {
+  explicit Launcher(bool oneShot = false, bool resolve = false, QObject *parent = nullptr) : QObject(parent), resolveActivation(resolve) {
+    snapshot = oneShot ? std::make_shared<Snapshot>() : discover();
+    if (oneShot) return;
     // Watch application directories even in sessions without kded/sycoca
     // maintenance.
     auto files = new KDirWatch(this);
@@ -563,7 +583,7 @@ public slots:
     if (!authorized())
       return {};
     auto r = requests.value(id);
-    if (!r || r->owner != message().service())
+    if (!r || (calledFromDBus() && r->owner != message().service()))
       return {};
     if (!telemetryEnabled)
       return "{}";
@@ -593,6 +613,7 @@ public slots:
     }
   }
 signals:
+  void ActivationResolved(QString requestId, QString service, QString path);
   void LaunchStateChanged(QString requestId, QString state);
   void LaunchFailed(QString requestId, QString errorCode, QString message);
   void RegistryChanged();
@@ -631,13 +652,64 @@ int main(int argc, char **argv) {
   updateCursorEnvironment();
   QObject::connect(cursorWatcher.data(), &KConfigWatcher::configChanged, &app,
                    [updateCursorEnvironment] { updateCursorEnvironment(); });
-  Launcher launcher;
   const auto args = app.arguments();
+#ifdef DAISY_LAUNCH_BACKEND
+  if (args.size() == 2 && args[1] == "--broker-launch") {
+    // Private pipe transport: activation tokens never enter process arguments.
+    QFile input;
+    if (!input.open(stdin, QIODevice::ReadOnly, QFileDevice::DontCloseHandle)) return 2;
+    const auto bytes = input.read(2 * 1024 * 1024 + 1);
+    QJsonParseError parseError;
+    const auto document = QJsonDocument::fromJson(bytes, &parseError);
+    if (bytes.size() > 2 * 1024 * 1024 || parseError.error != QJsonParseError::NoError || !document.isObject()) return 2;
+    const auto request = document.object();
+    // Launched applications must not inherit the broker result pipe: otherwise
+    // wait_with_output would wait for the application to exit, not dispatch.
+    const int reportFd = fcntl(STDOUT_FILENO, F_DUPFD_CLOEXEC, 3);
+    const int nullFd = open("/dev/null", O_WRONLY | O_CLOEXEC);
+    if (reportFd < 0 || nullFd < 0 || dup2(nullFd, STDOUT_FILENO) < 0) return 2;
+    close(nullFd);
+    Launcher launcher(true, true);
+    QStringList uris;
+    for (const auto &uri : request.value("uris").toArray()) uris.append(uri.toString());
+    const auto report = [&](const QJsonObject &result, int status) {
+      QFile output;
+      if (output.open(reportFd, QIODevice::WriteOnly, QFileDevice::DontCloseHandle)) {
+        output.write(QJsonDocument(result).toJson(QJsonDocument::Compact));
+        output.write("\n");
+        output.flush();
+      }
+      close(reportFd);
+      app.exit(status);
+    };
+    QObject::connect(&launcher, &Launcher::ActivationResolved, &app, [&](QString callbackId, QString service, QString path) {
+      report(QJsonObject{{"activation", QJsonObject{{"service", service}, {"path", path}}},
+                         {"trace", QJsonDocument::fromJson(launcher.Trace(callbackId).toUtf8()).object()}}, 0);
+    });
+    QObject::connect(&launcher, &Launcher::LaunchStateChanged, &app, [&](QString callbackId, QString state) {
+      if (state == "Accepted" || state == "BackendFailed" || state == "NotFound" || state == "TimedOut" || state == "InvalidArgument") {
+        report(QJsonObject{{"error", state == "Accepted" ? QString{} : state},
+                           {"trace", QJsonDocument::fromJson(launcher.Trace(callbackId).toUtf8()).object()}}, state == "Accepted" ? 0 : 1);
+      }
+    });
+    if (!launcher.Launch(QUuid::createUuid().toString(QUuid::Id128), request.value("app").toString(),
+                         request.value("action").toString(), uris, request.value("token").toString(), {})) return 2;
+    return app.exec();
+  }
+#endif
+  Launcher launcher(args.size() > 2 && args[1] == "--launch");
   if (args.size() == 2 && args[1] == "--catalog") {
     std::cout << launcher.Catalog().toUtf8().constData() << std::endl;
     return 0;
   }
   if (args.size() > 2 && args[1] == "--launch") {
+#ifdef DAISY_LAUNCH_BACKEND
+    // The CLI fallback also returns on dispatch. Apps must not retain pipes
+    // owned by SafeCommandRunner after this helper has exited.
+    const int nullFd = open("/dev/null", O_RDWR | O_CLOEXEC);
+    if (nullFd < 0 || dup2(nullFd, STDIN_FILENO) < 0 || dup2(nullFd, STDOUT_FILENO) < 0 || dup2(nullFd, STDERR_FILENO) < 0) return 2;
+    close(nullFd);
+#endif
     QStringList uris;
     QString action, token;
     for (int i = 3; i + 1 < args.size(); i += 2) {
@@ -664,6 +736,9 @@ int main(int argc, char **argv) {
       return 2;
     return app.exec();
   }
+#ifdef DAISY_LAUNCH_BACKEND
+  return 2;
+#endif
   auto bus = QDBusConnection::connectToBus(QDBusConnection::SessionBus,
                                            "daisy-launch-api");
   if (!bus.registerObject("/org/daisyos/Launcher1", &launcher,

@@ -26,7 +26,7 @@ for application in Files Mail Notes Settings DiskManager AppInstaller; do
   fi
 done
 
-if [[ ! -x "$publish_dir/daisy-launch" ]]; then
+if [[ ! -x "$publish_dir/daisy-launch" || ! -x "$publish_dir/daisy-launch-backend" ]]; then
   echo "DaisyLaunch is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
   exit 1
 fi
