@@ -465,8 +465,8 @@
                         <Image x:Name="DeptPreviewWallpaper" Stretch="UniformToFill" />
                         <Border x:Name="DeptPreviewTint" Background="Black" Opacity="0" IsHitTestVisible="False" />
                         <StackPanel x:Name="DeptPreviewClockArea" VerticalAlignment="Top" HorizontalAlignment="Center" Margin="0,72,0,0" Spacing="4">
-                          <TextBlock x:Name="DeptPreviewDate" FontSize="24" Foreground="White" HorizontalAlignment="Center" />
-                          <TextBlock x:Name="DeptPreviewClock" Text="9:41" FontSize="104" FontWeight="Bold" Foreground="White" />
+                          <TextBlock x:Name="DeptPreviewDate" FontSize="{DynamicResource TypeSizeHeading}" Foreground="White" HorizontalAlignment="Center" />
+                          <TextBlock x:Name="DeptPreviewClock" Text="9:41" FontSize="{DynamicResource TypeSizeDisplayHero}" FontWeight="Bold" Foreground="White" />
                         </StackPanel>
                         <controls:DeptEffectPresenter x:Name="DeptPreviewForeground" />
                       </Grid>

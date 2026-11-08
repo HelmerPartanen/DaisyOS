@@ -361,13 +361,27 @@ public class DesktopViewModel : INotifyPropertyChanged
         RefreshTrashIcon();
     }
 
-    private void InitializeDesktopWatcher()
+    public static string GetDesktopDirectoryPath()
     {
         var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
         if (string.IsNullOrWhiteSpace(desktopPath))
         {
-            desktopPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
+            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (!string.IsNullOrWhiteSpace(userProfile))
+            {
+                desktopPath = Path.Combine(userProfile, "Desktop");
+            }
         }
+        if (string.IsNullOrWhiteSpace(desktopPath))
+        {
+            desktopPath = Path.Combine(Path.GetTempPath(), "DaisyOS", "Desktop");
+        }
+        return desktopPath;
+    }
+
+    private void InitializeDesktopWatcher()
+    {
+        var desktopPath = GetDesktopDirectoryPath();
 
         try
         {
@@ -578,7 +592,8 @@ public class DesktopViewModel : INotifyPropertyChanged
             AddWidget("desktop.widget.clock", columnSpan: 3, rowSpan: 2, content: clockWidget, label: "Sweep Clock", initialCol: 999, initialRow: 2);
         }
 
-        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var desktopPath = GetDesktopDirectoryPath();
+        if (Directory.Exists(desktopPath))
         {
             var index = 1;
             foreach (var path in Directory.EnumerateFileSystemEntries(desktopPath)
@@ -825,7 +840,7 @@ public class DesktopViewModel : INotifyPropertyChanged
 
     public DesktopItemViewModel? CreateNewFolder(DesktopGridMetrics? metrics = null)
     {
-        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var desktopPath = GetDesktopDirectoryPath();
         Directory.CreateDirectory(desktopPath);
 
         string folderName = "New Folder";
@@ -860,7 +875,7 @@ public class DesktopViewModel : INotifyPropertyChanged
 
     public DesktopItemViewModel? CreateNewTextFile(DesktopGridMetrics? metrics = null)
     {
-        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var desktopPath = GetDesktopDirectoryPath();
         Directory.CreateDirectory(desktopPath);
 
         string fileName = "New Document.txt";
@@ -942,7 +957,7 @@ public class DesktopViewModel : INotifyPropertyChanged
                 return;
             }
 
-            var parentDir = Path.GetDirectoryName(oldPath) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+            var parentDir = Path.GetDirectoryName(oldPath) ?? GetDesktopDirectoryPath();
             var newPath = Path.Combine(parentDir, newName);
 
             // Final guard: ensure the resolved path stays within the parent directory.
@@ -1195,7 +1210,7 @@ public class DesktopViewModel : INotifyPropertyChanged
         if (!item.CanBeCompressed) return;
 
         var sourcePath = item.State.Id;
-        var parentDir = Path.GetDirectoryName(sourcePath) ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var parentDir = Path.GetDirectoryName(sourcePath) ?? GetDesktopDirectoryPath();
         var baseName = Path.GetFileNameWithoutExtension(sourcePath);
         var zipPath = Path.Combine(parentDir, $"{baseName}.zip");
         int counter = 2;
@@ -1255,7 +1270,7 @@ public class DesktopViewModel : INotifyPropertyChanged
         var (files, op) = await DaisyOS.Shell.Apps.Files.Services.ClipboardService.GetFilesAsync(clipboard);
         if (files == null || files.Count == 0) return;
 
-        var desktopPath = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        var desktopPath = GetDesktopDirectoryPath();
         Directory.CreateDirectory(desktopPath);
 
         bool anyAdded = false;
@@ -1383,13 +1398,13 @@ public class DesktopViewModel : INotifyPropertyChanged
 
     public void OpenInTerminal(string? directoryPath = null)
     {
-        directoryPath ??= Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
+        directoryPath ??= GetDesktopDirectoryPath();
         TerminalLauncher.OpenTerminal(directoryPath);
     }
 
     public void OpenInFiles(string? directoryPath = null)
     {
-        (Application.Current as App)?.ShowFiles(directoryPath ?? Environment.GetFolderPath(Environment.SpecialFolder.Desktop));
+        (Application.Current as App)?.ShowFiles(directoryPath ?? GetDesktopDirectoryPath());
     }
 
     public void OpenSettings(string? section = null)

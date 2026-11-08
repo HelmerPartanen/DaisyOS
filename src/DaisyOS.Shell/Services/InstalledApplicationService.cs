@@ -148,11 +148,7 @@ public sealed class InstalledApplicationService
 
     public string? AddToDesktop(AppEntry app)
     {
-        var desktop = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
-        if (string.IsNullOrWhiteSpace(desktop))
-        {
-            desktop = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Desktop");
-        }
+        var desktop = ViewModels.DesktopViewModel.GetDesktopDirectoryPath();
         return AddToDesktop(app, desktop);
     }
 

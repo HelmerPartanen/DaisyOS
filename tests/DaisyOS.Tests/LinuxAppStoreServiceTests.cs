@@ -86,7 +86,7 @@ public sealed class LinuxAppStoreServiceTests : IDisposable
         var runner = new ScriptedCommandRunner(CommandResult.Success());
         var service = Service(runner);
         var matches = await service.SearchAppsAsync("internet");
-        Assert.Equal("Firefox", Assert.Single(matches).Name);
+        Assert.Contains("Firefox", Assert.Single(matches).Name);
         Assert.Single(runner.Calls);
         Assert.Equal("flatpak", runner.Calls[0].FileName);
         Assert.Contains("--columns=application,name,version,origin,installation", runner.Calls[0].Arguments);

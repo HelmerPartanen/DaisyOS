@@ -469,5 +469,6 @@
     <Setter Property="TextBlock.LineHeight" Value="{DynamicResource TypeLineCaption}" />
     <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
   </Style>
+  <!-- Button.IconButton provided by AppToolbarStyles.axaml -->
   <StyleInclude Source="avares://DaisyOS.Shell/Styles/AppToolbarStyles.axaml" />
 </Styles>

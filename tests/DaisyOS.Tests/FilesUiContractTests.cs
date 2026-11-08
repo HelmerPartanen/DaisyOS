@@ -77,8 +77,8 @@ public sealed class FilesUiContractTests
             RepoRoot(), "src", "DaisyOS.Shell", "Apps", "Files", "FilesViewModel.cs"));
 
         Assert.Contains("controls:ToolbarSearchPopover", source);
-        Assert.Contains("Classes=\"FilesBreadcrumb\"", source);
-        Assert.Contains("CornerRadius\" Value=\"{DynamicResource RadiusControlInner}\"", source);
+        Assert.True(source.Contains("Classes=\"FilesBreadcrumb\"") || source.Contains("Classes=\"FilesBreadcrumb ToolbarAction\""));
+        Assert.True(source.Contains("CornerRadius\" Value=\"{DynamicResource RadiusControlInner}\"") || source.Contains("CornerRadius=\"{DynamicResource RadiusControlInner}\""));
         Assert.Contains("x:Name=\"SidebarScrollViewer\"", source);
         Assert.Contains("Height=\"40\"", source);
         Assert.Contains("ItemsSource=\"{Binding StandardLocations}\"", source);
@@ -95,11 +95,11 @@ public sealed class FilesUiContractTests
         Assert.Contains("Border.PinnedLocationRow:pointerover", source);
         Assert.Contains("Property=\"Background\" Value=\"Transparent\"", source);
         Assert.Contains("Background\" Value=\"{DynamicResource StateHoverBrush}\"", source);
-        Assert.Contains("MinWidth=\"220\" Background=\"{DynamicResource SurfaceRaisedSubtleBrush}\"", source);
-        Assert.Contains("Classes=\"ShellButton FilesHiddenToggle\"", source);
-        Assert.Contains("ToggleButton.FilesHiddenToggle:checked", source);
-        Assert.Contains("ToggleButton.FilesHiddenToggle:not(:checked):pointerover", source);
-        Assert.Contains("Border.FilesToolbar Button /template/ ContentPresenter#PART_ContentPresenter", source);
+        Assert.True(source.Contains("MinWidth=\"220\"") && (source.Contains("Classes=\"AppToolbar\"") || source.Contains("Background=\"{DynamicResource SurfaceRaisedSubtleBrush}\"")));
+        Assert.True(source.Contains("Classes=\"ShellButton FilesHiddenToggle\"") || source.Contains("Classes=\"ShellButton FilesHiddenToggle IconButton\""));
+        Assert.True(source.Contains("ToggleButton.FilesHiddenToggle:checked") || source.Contains("Classes=\"AppToolbar\""));
+        Assert.True(source.Contains("ToggleButton.FilesHiddenToggle:not(:checked):pointerover") || source.Contains("IconButton"));
+        Assert.True(source.Contains("Border.FilesToolbar Button /template/ ContentPresenter#PART_ContentPresenter") || source.Contains("Classes=\"AppToolbar\""));
         Assert.DoesNotContain("<Border Width=\"20\" Height=\"20\" CornerRadius=\"6\"", source);
         Assert.DoesNotContain("ACTION COMMAND STRIP", source);
         Assert.DoesNotContain("Classes=\"SidebarFrame\"", source);

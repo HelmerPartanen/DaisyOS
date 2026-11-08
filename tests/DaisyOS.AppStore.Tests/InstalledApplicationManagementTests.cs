@@ -43,7 +43,7 @@ public sealed class InstalledApplicationManagementTests
         Assert.True(target.CanManage);
         Assert.Equal(scope, target.InstallationScope);
         Assert.True(await service.UninstallAsync(target, TestContext.Current.CancellationToken));
-        Assert.Equal(new[] { "uninstall", scopeArgument, "-y", "--noninteractive", "org.example.ScopeTest" }, runner.Calls[1]);
+        Assert.Equal(new[] { "uninstall", scopeArgument, "-y", "--noninteractive", "--", "org.example.ScopeTest" }, runner.Calls[1]);
         Assert.True(await service.RepairAsync(target, TestContext.Current.CancellationToken));
         Assert.Equal(new[] { "install", scopeArgument, "--reinstall", "-y", "--noninteractive", "--", "company-repo", "org.example.ScopeTest" }, runner.Calls[2]);
     }

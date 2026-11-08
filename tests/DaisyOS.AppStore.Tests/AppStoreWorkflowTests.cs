@@ -297,7 +297,7 @@ public sealed class AppStoreWorkflowTests
         {
             Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick();
             var card = vm.Apps.Single(c => c.Id == Item(0).Id);
-            var buttons = window.GetVisualDescendants().OfType<Button>().Where(b => ReferenceEquals(b.DataContext, card) && b.Classes.Contains("Compact")).ToArray();
+            var buttons = window.GetVisualDescendants().OfType<Button>().Where(b => ReferenceEquals(b.DataContext, card) && (b.Classes.Contains("Small") || b.Classes.Contains("Compact"))).ToArray();
             Assert.NotEmpty(buttons);
             foreach (var button in buttons) { Assert.Contains("Primary", button.Classes); Assert.DoesNotContain("Secondary", button.Classes); }
             card.InstallState = AppInstallState.NotInstalled; Dispatcher.UIThread.RunJobs();
