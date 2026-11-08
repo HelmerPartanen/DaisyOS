@@ -215,7 +215,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for code formatting guidelines, branch wo
 
 DaisyOS is licensed under the [MIT License](LICENSE).
 
-<img width="1920" height="1080" alt="Screenshot 2026-11-08 22 00 41 741-39c852f10cd744d1a2eea33cc2ab9604" src="https://github.com/user-attachments/assets/852378f0-e0a3-4798-b8e6-7f51735b930f" />
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a16ff3fd-1de0-490b-9657-64eccb558736" />
+
 
 <img width="1920" height="1080" alt="Screenshot 2026-11-08 22 01 28 425-cae7707a1b264f7293e454cf992c0de7" src="https://github.com/user-attachments/assets/7435805b-b6f8-47b2-82a2-13e030ad6330" />
 
