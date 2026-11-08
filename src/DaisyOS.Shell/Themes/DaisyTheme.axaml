@@ -59,8 +59,8 @@
         Large shell surfaces use two distinct perimeter roles.
         Ordinary borders and dividers keep Stroke*.
     -->
-    <Color x:Key="ShellFrameOuterEdgeColor">#33000000</Color>
-    <Color x:Key="ShellFrameInnerHighlightColor">#26FFFFFF</Color>
+    <Color x:Key="ShellFrameOuterEdgeColor">#66000000</Color>
+    <Color x:Key="ShellFrameInnerHighlightColor">#99FFFFFF</Color>
     <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
 
     <!-- Interaction states -->
@@ -311,8 +311,8 @@
 
 
 
-      <Color x:Key="ShellFrameOuterEdgeColor">#99000000</Color>
-      <Color x:Key="ShellFrameInnerHighlightColor">#1FFFFFFF</Color>
+      <Color x:Key="ShellFrameOuterEdgeColor">#BF000000</Color>
+      <Color x:Key="ShellFrameInnerHighlightColor">#33FFFFFF</Color>
       <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
       <Color x:Key="DesktopHoverColor">#33FFFFFF</Color>
       <Color x:Key="StatePressedColor">#24FFFFFF</Color>

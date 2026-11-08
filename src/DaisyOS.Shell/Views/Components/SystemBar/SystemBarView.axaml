@@ -44,17 +44,17 @@
   <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
 </Style>
 
-<!-- Foreground color for System Bar glyphs, icons, and clock text. -->
+<!-- Match the bottom media widget: primary text, tertiary symbols. -->
 <Style Selector="Border#SystemBarFrame Button TextBlock">
-  <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/>
 </Style>
 
 <Style Selector="Border#SystemBarFrame Button controls|DaisyIcon">
-  <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource ContentTertiaryBrush}"/>
 </Style>
 
 <Style Selector="Border#SystemBarFrame Button controls|WifiSignalIcon">
-  <Setter Property="ActiveBrush" Value="{DynamicResource ContentSecondaryBrush}"/>
+  <Setter Property="ActiveBrush" Value="{DynamicResource ContentTertiaryBrush}"/>
   <Setter Property="InactiveBrush" Value="{DynamicResource ContentTertiaryBrush}"/>
 </Style>
 
@@ -138,7 +138,7 @@
                     x:Name="SystemBarWifiIcon"
                     IsVisible="False"
                     SignalPercent="0"
-                    ActiveBrush="{DynamicResource ContentSecondaryBrush}"
+                    ActiveBrush="{DynamicResource ContentTertiaryBrush}"
                     InactiveBrush="{DynamicResource ContentTertiaryBrush}"
                     InactiveBandOpacity="{DynamicResource WifiInactiveBandOpacity}"/>
 
@@ -147,7 +147,7 @@
                     Icon="Ethernet"
                     IsVisible="False"
                     Size="{DynamicResource ShellStatusIconSize}"
-                    Foreground="{DynamicResource ContentSecondaryBrush}"
+                    Foreground="{DynamicResource ContentTertiaryBrush}"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"/>
 
@@ -155,7 +155,7 @@
                     x:Name="SystemBarOfflineIcon"
                     Icon="globe"
                     Size="{DynamicResource ShellStatusIconSize}"
-                    Foreground="{DynamicResource ContentSecondaryBrush}"
+                    Foreground="{DynamicResource ContentTertiaryBrush}"
                     HorizontalAlignment="Center"
                     VerticalAlignment="Center"/>
 
@@ -166,7 +166,7 @@
                   Icon="bluetooth"
                   IsVisible="False"
                   Size="{DynamicResource ShellStatusIconSize}"
-                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Foreground="{DynamicResource ContentTertiaryBrush}"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center"/>
 
@@ -174,7 +174,7 @@
                   x:Name="SystemBarVolumeIcon"
                   Icon="speaker-high"
                   Size="{DynamicResource ShellStatusIconSize}"
-                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Foreground="{DynamicResource ContentTertiaryBrush}"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center"/>
 
@@ -184,7 +184,8 @@
                   IconWidth="24"
                   IconHeight="18"
                   LabelFontSize="{DynamicResource TypeSizeBodySmall}"
-                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  SubtleIcon="True"
+                  Foreground="{DynamicResource ContentPrimaryBrush}"
                   VerticalAlignment="Center"/>
 
             </StackPanel>
@@ -219,7 +220,7 @@
                   x:Name="SystemBarNotificationIcon"
                   Icon="bell"
                   Size="{DynamicResource ShellStatusIconSize}"
-                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Foreground="{DynamicResource ContentTertiaryBrush}"
                   HorizontalAlignment="Center"
                   VerticalAlignment="Center"/>
 
@@ -282,7 +283,7 @@
                   IsVisible="False"
                   FontSize="{DynamicResource TypeSizeBodySmall}"
                   FontWeight="Medium"
-                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Foreground="{DynamicResource ContentPrimaryBrush}"
                   TextAlignment="Center"
                   VerticalAlignment="Center"/>
 
@@ -290,7 +291,7 @@
                   x:Name="ClockText"
                   FontSize="{DynamicResource TypeSizeBodySmall}"
                   FontWeight="Medium"
-                  Foreground="{DynamicResource ContentSecondaryBrush}"
+                  Foreground="{DynamicResource ContentPrimaryBrush}"
                   TextAlignment="Center"
                   VerticalAlignment="Center"/>
 

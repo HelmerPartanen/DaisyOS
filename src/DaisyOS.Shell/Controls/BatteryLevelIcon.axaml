@@ -8,6 +8,11 @@
       <Setter Property="FillBrush" Value="{DynamicResource ContentSecondaryBrush}" />
       <Setter Property="BaseBrush" Value="{DynamicResource ContentTertiaryBrush}" />
     </Style>
+    <!-- Subtle matches tertiary system bar symbols while Low/Critical/Charging keep their semantic fills. -->
+    <Style Selector="controls|BatteryLevelIcon.Subtle">
+      <Setter Property="FillBrush" Value="{DynamicResource ContentTertiaryBrush}" />
+      <Setter Property="BaseBrush" Value="{DynamicResource ContentTertiaryBrush}" />
+    </Style>
     <Style Selector="controls|BatteryLevelIcon.Low">
       <Setter Property="FillBrush" Value="#FFCC00" />
     </Style>

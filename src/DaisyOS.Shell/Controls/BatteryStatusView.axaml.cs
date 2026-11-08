@@ -19,16 +19,20 @@ public partial class BatteryStatusView : UserControl
         AvaloniaProperty.Register<BatteryStatusView, double>(nameof(IconHeight), 18);
     public static readonly StyledProperty<double> LabelFontSizeProperty =
         AvaloniaProperty.Register<BatteryStatusView, double>(nameof(LabelFontSize), 13);
+    public static readonly StyledProperty<bool> SubtleIconProperty =
+        AvaloniaProperty.Register<BatteryStatusView, bool>(nameof(SubtleIcon));
 
     static BatteryStatusView()
     {
         ChargePercentProperty.Changed.AddClassHandler<BatteryStatusView>((view, _) => view.UpdatePresentation());
+        SubtleIconProperty.Changed.AddClassHandler<BatteryStatusView>((view, _) => view.UpdateIconStyle());
     }
 
     public BatteryStatusView()
     {
         InitializeComponent();
         UpdatePresentation();
+        UpdateIconStyle();
     }
 
     public int ChargePercent
@@ -42,11 +46,18 @@ public partial class BatteryStatusView : UserControl
     public double IconWidth { get => GetValue(IconWidthProperty); set => SetValue(IconWidthProperty, value); }
     public double IconHeight { get => GetValue(IconHeightProperty); set => SetValue(IconHeightProperty, value); }
     public double LabelFontSize { get => GetValue(LabelFontSizeProperty); set => SetValue(LabelFontSizeProperty, value); }
+    public bool SubtleIcon { get => GetValue(SubtleIconProperty); set => SetValue(SubtleIconProperty, value); }
 
     private void UpdatePresentation()
     {
         if (this.FindControl<TextBlock>("PercentText") is { } percent)
             percent.Text = $"{Math.Clamp(ChargePercent, 0, 100)}%";
+    }
+
+    private void UpdateIconStyle()
+    {
+        if (this.FindControl<BatteryLevelIcon>("LevelIcon") is { } icon)
+            icon.Classes.Set("Subtle", SubtleIcon);
     }
 
     internal static bool IsChargingState(string? state) =>

@@ -42,11 +42,12 @@ public sealed class SystemBarThemeTests
                 window.RequestedThemeVariant = theme;
                 Dispatcher.UIThread.RunJobs();
                 var rgb = theme == ThemeVariant.Light ? "000000" : "F5F5F5";
-                Assert.Equal(Color.Parse("#CC" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(wifi.ActiveBrush).Color);
+                Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(wifi.ActiveBrush).Color);
                 Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(wifi.InactiveBrush).Color);
                 Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(bands[0].Stroke).Color);
-                Assert.Equal(Color.Parse("#CC" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(bands[1].Stroke).Color);
-                Assert.Equal(Color.Parse("#CC" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(battery.FillBrush).Color);
+                Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(bands[1].Stroke).Color);
+                Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(battery.FillBrush).Color);
+                Assert.Equal(Color.Parse("#99" + rgb), Assert.IsAssignableFrom<ISolidColorBrush>(battery.BaseBrush).Color);
             }
         }
         finally { window.Close(); }
