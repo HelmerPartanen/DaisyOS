@@ -1,4 +1,5 @@
-<img width="1920" height="1080" alt="DaisyOS Desktop" src="https://github.com/user-attachments/assets/2e5c54f0-1579-4417-bed3-29d772725dff" />
+<img width="1920" height="1080" alt="Screenshot 2026-11-08 22 00 34 567-8247bbe942ee4b7d98cbf6bed9667d0a" src="https://github.com/user-attachments/assets/ab7c52c2-341a-4f97-9d98-f91b52765fa2" />
+
 
 # DaisyOS
 
@@ -30,7 +31,7 @@ For protocol specifications, wire format definitions, and security threat models
 
 ## Desktop Shell & Design
 
-<img width="1920" height="1080" alt="DaisyOS Shell and Applications" src="https://github.com/user-attachments/assets/d7700922-30a6-4a7e-b664-7816c2ed36eb" />
+<img width="1920" height="1080" alt="Screenshot 2026-11-08 22 01 28 425-cae7707a1b264f7293e454cf992c0de7" src="https://github.com/user-attachments/assets/7435805b-b6f8-47b2-82a2-13e030ad6330" />
 
 The shell (`src/DaisyOS.Shell`) is implemented in Avalonia and runs as a Wayland layer-shell surface managed by KWin 6.
 
@@ -213,3 +214,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for code formatting guidelines, branch wo
 ## License
 
 DaisyOS is licensed under the [MIT License](LICENSE).
+
+<img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a16ff3fd-1de0-490b-9657-64eccb558736" />
+
+<img width="1920" height="1080" alt="Screenshot 2026-11-08 22 01 12 041-3e0aaed511134c79b64a71ae838b9480" src="https://github.com/user-attachments/assets/f98b1616-bce2-45f6-b28c-994ccdaf718d" />
+
+<img width="1920" height="1080" alt="Screenshot 2026-11-08 22 02 41 096-855b512019f74cc8be33bf517a2ba009" src="https://github.com/user-attachments/assets/f7dbef58-c76a-4b4f-9d50-6e56cbbc7e20" />
