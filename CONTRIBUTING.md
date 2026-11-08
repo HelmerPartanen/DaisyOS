@@ -1,6 +1,13 @@
 # Contributing to DaisyOS
 
-Thank you for contributing to DaisyOS! This guide outlines our engineering standards, architecture, development workflows, and pull request process. These standards ensure smooth collaboration in a multi-person production environment, following best practices seen at Apple and Microsoft.
+Thank you for contributing! This guide outlines our engineering standards, architecture, development workflows, and pull request process. These standards ensure smooth collaboration in a multi-person production environment. We are hoping that contributors will help us find and fix idiotic and bad implementations/features and help us improve the overall user experience and performance of this project. Feel free to test and create new innovative and intuitive features that will help users in their daily tasks.
+
+# Guidelines
+
+- Dont push features that are not fully tested.
+- Dont add features that only a tiny group of users will use.
+- Every feature/task should always take as little effort as possible for the user to perform.
+- When adding a new feature, make it perfect. Make it intuitive and easy to use.
 
 ---
 

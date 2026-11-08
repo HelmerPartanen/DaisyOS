@@ -300,7 +300,7 @@
                  KeyDown="OnRenameKeyDown"
                  LostFocus="OnRenameLostFocus"
                  FontSize="{DynamicResource TypeSizeCaption}"
-                 MinLines="1" MaxLines="2"
+                 MinLines="1" MaxLines="3"
                  TextAlignment="Center" HorizontalContentAlignment="Center" />
     </controls:DesktopRenameHost>
 

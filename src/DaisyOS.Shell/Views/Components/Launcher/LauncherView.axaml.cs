@@ -451,7 +451,12 @@ public partial class LauncherView : UserControl
         _lastPageChangeTime = now;
     }
 
-    private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(180) };
+    private readonly DispatcherTimer _pageDragIdle = new() { Interval = TimeSpan.FromMilliseconds(500) };
+    internal TimeSpan PageDragIdleTimeout
+    {
+        get => _pageDragIdle.Interval;
+        set => _pageDragIdle.Interval = value;
+    }
     private Vector _pageAxisTravel;
     private bool? _pageHorizontal;
     private readonly SwipeVelocityTracker _pageVelocity = new();

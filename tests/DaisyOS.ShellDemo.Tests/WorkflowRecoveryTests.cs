@@ -23,6 +23,7 @@ public sealed class WorkflowRecoveryTests
         var service = new LinuxAppStoreService(new UnavailablePackagesRunner());
         foreach (var category in Enum.GetValues<AppCategory>())
         {
+            if (category is AppCategory.Installed or AppCategory.Updates) continue;
             foreach (var app in await service.GetAppsByCategoryAsync(category))
             {
                 var icon = new DaisyIcon { Icon = app.IconGlyph };

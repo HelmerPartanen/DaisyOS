@@ -256,7 +256,7 @@
         <!-- ===================================================== -->
 
         <Button x:Name="CalendarButton"
-                Classes="ShellButton"
+                Classes="Ghost ShellButton"
                 Height="{DynamicResource ControlHeightStandard}"
                 Padding="8,0"
                 Background="Transparent"

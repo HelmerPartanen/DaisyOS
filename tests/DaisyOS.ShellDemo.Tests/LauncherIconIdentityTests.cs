@@ -25,6 +25,7 @@ public sealed class LauncherIconIdentityTests
         var model = new LauncherViewModel(null, Enumerable.Range(0, 80)
             .Select(i => new AppEntry($"identity-{i}", $"App {i:00}", "", "", false)).ToArray());
         var launcher = new LauncherView(model);
+        launcher.PageDragIdleTimeout = TimeSpan.FromSeconds(5);
         if (!animated) launcher.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;
         var window = new Window { Width = 1280, Height = 800, Content = launcher };
         var icons = new List<WriteableBitmap>();

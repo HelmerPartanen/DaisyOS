@@ -98,8 +98,10 @@ internal sealed class ThemeImageTransition : IObservable<IImage?>
         public void Dispose() { if (ReferenceEquals(owner._observer, observer)) owner._observer = null; }
     }
 
-    private sealed class BlendedImage(IImage from, IImage to, double progress, Size size) : IImage
+    internal sealed class BlendedImage(IImage from, IImage to, double progress, Size size) : IImage
     {
+        internal IImage Target => to;
+        internal IImage Source => from;
         public Size Size { get; } = size;
         public void Draw(DrawingContext context, Rect sourceRect, Rect destRect)
         {

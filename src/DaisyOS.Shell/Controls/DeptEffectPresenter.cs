@@ -65,6 +65,9 @@ public sealed class DeptEffectPresenter : Control
         _glyphs = glyphs;
         _allowed = allowed;
         _foregroundScrim = foregroundScrim;
+        _baseMargin = Math.Clamp(Bounds.Height > 0 ? Bounds.Height * ClockTopFraction : 40, 24, 96);
+        _placedTop = _baseMargin;
+        _area.Margin = new Thickness(0, _baseMargin, 0, 0);
         wallpaper.PropertyChanged += (_, e) =>
         {
             if (e.Property == Image.SourceProperty) ScheduleAnalysis();
@@ -84,7 +87,7 @@ public sealed class DeptEffectPresenter : Control
         _strength = Math.Clamp(strength, 0, 30);
         if (changed) _layoutKey = null;
         if (needsAnalysis) ScheduleAnalysis();
-        if (changed && (!needsAnalysis || _masks is not null || !_enabled || _strength == 0)) RefreshLayout();
+        if (changed) RefreshLayout();
     }
 
     private void Stop()
@@ -159,10 +162,17 @@ public sealed class DeptEffectPresenter : Control
         }
     }
 
+    private static Bitmap? ResolveBitmap(IImage? image)
+    {
+        if (image is Bitmap bmp) return bmp;
+        if (image is DaisyOS.Shell.Services.Theming.ThemeImageTransition.BlendedImage blended && blended.Target is Bitmap target) return target;
+        return null;
+    }
+
     private string GetSourceIdentity()
     {
         if (!string.IsNullOrEmpty(WallpaperIdentity)) return WallpaperIdentity;
-        if (_wallpaper?.Source is { } img) return RuntimeHelpers.GetHashCode(img).ToString();
+        if (ResolveBitmap(_wallpaper?.Source) is { } img) return RuntimeHelpers.GetHashCode(img).ToString();
         return "none";
     }
 
@@ -194,7 +204,8 @@ public sealed class DeptEffectPresenter : Control
             return;
         }
 
-        if (_wallpaper?.Source is not Bitmap bitmapSource || Bounds.Width <= 0 || Bounds.Height <= 0)
+        var bitmapSource = ResolveBitmap(_wallpaper?.Source);
+        if (bitmapSource is null || Bounds.Width <= 0 || Bounds.Height <= 0)
         {
             _request?.Cancel();
             _request?.Dispose();
@@ -259,7 +270,7 @@ public sealed class DeptEffectPresenter : Control
         // Defer until layout and any image swap have settled. Capture only a small analysis image on the UI thread.
         Dispatcher.UIThread.Post(async () =>
         {
-            if (token.IsCancellationRequested || _wallpaper.Source is not Bitmap source || Bounds.Width <= 0 || Bounds.Height <= 0) return;
+            if (token.IsCancellationRequested || ResolveBitmap(_wallpaper?.Source) is not Bitmap source || Bounds.Width <= 0 || Bounds.Height <= 0) return;
             try
             {
                 var currentCrop = Crop(source.Size, Bounds.Size);
@@ -298,11 +309,11 @@ public sealed class DeptEffectPresenter : Control
         _request?.Cancel();
         _request?.Dispose();
         _request = null;
-        _source = _wallpaper?.Source;
+        _source = ResolveBitmap(_wallpaper?.Source);
         _analyzedSize = Bounds.Size;
         _analyzedIdentity = WallpaperIdentity;
         _masks = masks;
-        if (_wallpaper?.Source is Bitmap bmp && Bounds.Width > 0 && Bounds.Height > 0)
+        if (ResolveBitmap(_wallpaper?.Source) is Bitmap bmp && Bounds.Width > 0 && Bounds.Height > 0)
         {
             var cropKey = QuantizeCrop(Crop(bmp.Size, Bounds.Size));
             _scheduledAnalysisSignature = (bmp, cropKey.X, cropKey.Y, cropKey.W, cropKey.H, _enabled, _automatic);
@@ -367,7 +378,7 @@ public sealed class DeptEffectPresenter : Control
         // Only invalidate the visual when state that actually affects Render() changes.
         var renderStateKey = _maskBitmap is null
             ? "empty"
-            : $"{origin.Value.X:F2}|{origin.Value.Y:F2}|{_clock.Bounds.Width:F1}|{_clock.Bounds.Height:F1}|{_area.Opacity:F3}|{Bounds.Width:F1}|{Bounds.Height:F1}|{ForegroundTintOpacity:F3}|{allowed}|{_wallpaper?.Source == _source}";
+            : $"{origin.Value.X:F2}|{origin.Value.Y:F2}|{_clock.Bounds.Width:F1}|{_clock.Bounds.Height:F1}|{_area.Opacity:F3}|{Bounds.Width:F1}|{Bounds.Height:F1}|{ForegroundTintOpacity:F3}|{allowed}|{ResolveBitmap(_wallpaper?.Source) == _source}";
         if (renderStateKey != _renderStateKey)
         {
             _renderStateKey = renderStateKey;
@@ -542,7 +553,7 @@ public sealed class DeptEffectPresenter : Control
 
     public override void Render(DrawingContext context)
     {
-        if (_maskBitmap is null || _maskBrush is null || _selectedMask is null || _source is null || _clock is null || _area is null || _wallpaper?.Source != _source || (_allowed is not null && !_allowed())) return;
+        if (_maskBitmap is null || _maskBrush is null || _selectedMask is null || _source is null || _clock is null || _area is null || ResolveBitmap(_wallpaper?.Source) != _source || (_allowed is not null && !_allowed())) return;
         var origin = _clock.TranslatePoint(default, this);
         if (origin is null) return;
         var clockClip = new Rect(origin.Value, _clock.Bounds.Size).Intersect(new Rect(Bounds.Size));

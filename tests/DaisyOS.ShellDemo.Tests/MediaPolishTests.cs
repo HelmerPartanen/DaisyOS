@@ -119,14 +119,20 @@ public sealed class MediaPolishTests
         {
             library.Open();
             library.FindControl<Button>("MediaCategoryButton")!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            library.GoTo(2);
             window.UpdateLayout();
-            var preview = library.FindControl<Grid>("MediaPreviewsPanel")!.GetVisualDescendants().OfType<Border>().Single(b => Equals(b.Tag, "5,6"));
+            var track = library.FindControl<Grid>("CarouselTrack")!;
+            var preview = track.Children[2] as Control;
+            Assert.NotNull(preview);
             (string type, int columns, int rows)? request = null;
             library.WidgetDragRequested += (type, columns, rows, _, _, _) => request = (type, columns, rows);
-            var position = preview.TranslatePoint(new Point(preview.Bounds.Width / 2, preview.Bounds.Height / 2), window)!.Value;
-            window.MouseMove(position);
-            window.MouseDown(position, MouseButton.Left);
-            window.MouseUp(position, MouseButton.Left);
+            using var pointer = new Avalonia.Input.Pointer(Avalonia.Input.Pointer.GetNextFreeId(), PointerType.Mouse, true);
+            var press = new PointerPressedEventArgs(preview, pointer, window,
+                new Point(preview.Bounds.Width / 2, preview.Bounds.Height / 2), 0,
+                new PointerPointProperties(RawInputModifiers.LeftMouseButton, PointerUpdateKind.LeftButtonPressed),
+                KeyModifiers.None);
+            preview.RaiseEvent(press);
+            Dispatcher.UIThread.RunJobs();
             Assert.Equal(("media", 5, 6), request);
         }
         finally { window.Close(); }

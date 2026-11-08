@@ -86,11 +86,57 @@ internal sealed class MpvWallpaperSession : IDisposable
         deadline.CancelAfter(timeout);
         try
         {
-            using var preview = await PreviewAsync(path, 16, 16, deadline.Token);
-            return preview is not null;
+            return await CanDecodeWithHelperAsync(
+                Path.Combine(AppContext.BaseDirectory, "daisy-mpv-preview"), path, 16, 16, deadline.Token);
         }
         catch (OperationCanceledException) when (!token.IsCancellationRequested) { return false; }
     }
+
+    internal static Task<bool> CanDecodeWithHelperAsync(string helper, string path, int width, int height,
+        CancellationToken token) => Task.Run(async () =>
+    {
+        token.ThrowIfCancellationRequested();
+        if (width <= 0 || height <= 0 || width > 4096 || height > 4096) return false;
+        if (!File.Exists(helper)) return false;
+        var temporary = Directory.CreateTempSubdirectory("daisy-video-preview-");
+        using var deadline = CancellationTokenSource.CreateLinkedTokenSource(token);
+        deadline.CancelAfter(TimeSpan.FromSeconds(20));
+        try
+        {
+            var output = Path.Combine(temporary.FullName, "poster.bgra");
+            var start = new ProcessStartInfo(helper)
+            {
+                UseShellExecute = false,
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                WorkingDirectory = AppContext.BaseDirectory
+            };
+            foreach (var argument in new[] { Path.GetFullPath(path), width.ToString(global::System.Globalization.CultureInfo.InvariantCulture),
+                         height.ToString(global::System.Globalization.CultureInfo.InvariantCulture), output })
+                start.ArgumentList.Add(argument);
+            using var process = Process.Start(start);
+            if (process is null) return false;
+            var errors = process.StandardError.ReadToEndAsync();
+            var stdout = process.StandardOutput.ReadToEndAsync();
+            try { await process.WaitForExitAsync(deadline.Token); }
+            finally
+            {
+                if (!process.HasExited)
+                {
+                    try { process.Kill(entireProcessTree: true); }
+                    catch (InvalidOperationException) { /* The child exited during cancellation. */ }
+                    await process.WaitForExitAsync();
+                }
+                await Task.WhenAll(errors, stdout);
+            }
+            if (process.ExitCode != 0 || !File.Exists(output)) return false;
+            var expectedBytes = checked(width * height * 4);
+            return new FileInfo(output).Length == expectedBytes;
+        }
+        catch (OperationCanceledException) when (!token.IsCancellationRequested) { return false; }
+        catch (Exception exception) when (exception is IOException or global::System.ComponentModel.Win32Exception) { return false; }
+        finally { temporary.Delete(recursive: true); }
+    }, token);
 
     public static Task<WriteableBitmap?> PreviewAsync(string path, int width = 960, int height = 540,
         CancellationToken token = default) => PreviewWithHelperAsync(
@@ -149,7 +195,7 @@ internal sealed class MpvWallpaperSession : IDisposable
             catch { bitmap.Dispose(); throw; }
         }
         catch (OperationCanceledException) when (!token.IsCancellationRequested) { return null; }
-        catch (Exception exception) when (exception is IOException or global::System.ComponentModel.Win32Exception) { return null; }
+        catch (Exception exception) when (exception is IOException or global::System.ComponentModel.Win32Exception or InvalidOperationException) { return null; }
         finally { temporary.Delete(recursive: true); }
     }, token);
 

@@ -314,14 +314,18 @@ public partial class LockScreenWindow : Window
         else
         {
             var scale = fontSize / ReferenceGlyphFontSize;
-            result = new Rect[referenceBands.Length];
+            var list = new List<Rect>(referenceBands.Length);
             for (var i = 0; i < referenceBands.Length; i++)
             {
                 var b = referenceBands[i];
                 var scaledTop = Math.Round(b.Top * scale);
                 var scaledBottom = Math.Max(scaledTop + 1, Math.Round(b.Bottom * scale));
-                result[i] = new Rect(b.Left * scale, scaledTop, b.Width * scale, scaledBottom - scaledTop);
+                for (var y = scaledTop; y < scaledBottom; y++)
+                {
+                    list.Add(new Rect(b.Left * scale, y, b.Width * scale, 1));
+                }
             }
+            result = list.ToArray();
         }
 
         lock (GlyphBandsCacheGate)
