@@ -23,6 +23,10 @@ jobs:
           cache: true
           cache-dependency-path: '**/*.csproj'
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libpolkit-agent-1-dev libwayland-dev wayland-protocols cmake ninja-build
       - name: Restore
         run: dotnet restore
 
@@ -84,6 +88,10 @@ jobs:
           cache: true
           cache-dependency-path: '**/*.csproj'
 
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libpolkit-agent-1-dev libwayland-dev wayland-protocols cmake ninja-build
       - name: Build nightly artifact
         run: scripts/build-release.sh --channel nightly
 

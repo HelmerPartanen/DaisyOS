@@ -23,7 +23,7 @@ Thank you for contributing to DaisyOS! This guide outlines our engineering stand
 ├── os/                   # OS packaging, ArchISO profiles, and systemd services
 ├── packaging/            # Distribution packaging (Arch PKGBUILD, KWin scripts, portals)
 ├── scripts/              # Build, test, acceptance, and developer automation scripts
-├── services/             # Core OS daemon services (DaisyLaunch)
+├── services/             # Core OS daemons and resident services (DaisyLaunch Rust broker)
 ├── src/                  # Primary application and system source code
 │   ├── DaisyOS.Core/     # Shared contracts, models, and file storage primitives
 │   ├── DaisyOS.System/   # Linux system services (Audio, Bluetooth, Displays, Gaming)
@@ -32,7 +32,7 @@ Thank you for contributing to DaisyOS! This guide outlines our engineering stand
 │   ├── DaisyOS.Notes/    # Notes application
 │   ├── DaisyOS.Settings/ # System settings application
 │   ├── DaisyOS.Installer/# System installer
-│   └── native/           # C/C++ native helpers (window decoration, portal capture)
+│   └── native/           # Native Rust brokers (portals, idle) and C/C++ plugins
 └── tests/                # Automated unit and integration test suites
 ```
 
@@ -42,6 +42,7 @@ Thank you for contributing to DaisyOS! This guide outlines our engineering stand
 
 - **Operating System:** Linux (Arch Linux recommended, Ubuntu/Debian supported for development)
 - **.NET SDK:** 10.0+ (Check with `dotnet --version`)
+- **Rust Toolchain:** 1.82+ / stable (`rustc --version`, `cargo --version`)
 - **Native Build Tools:** `gcc`/`clang`, `cmake` (3.25+), `make` or `ninja`
 - **Compositor & Display:** KWin 6.x (Wayland), `wayland-scanner`, `pkg-config`
 - **Libraries:** `polkit-agent-1`, `wayland-client`, `libpulse`, `bluez`
@@ -133,6 +134,10 @@ scripts/publish-shell.sh
 ### C. Localization
 - User-facing strings in `DaisyOS.Shell` must be localized using `Loc.Get("...")` or `{DynamicResource Loc_...}`.
 - Run `python3 scripts/localization/update-catalog.py` when adding new localized strings to update `Messages.resx`.
+
+### D. Background Services in Rust
+- Always prefer Rust for new resident background features, hardware/session monitors, and IPC brokers. Follow the **"Resident Broker + On-Demand UI Helper"** architectural pattern outlined in the [README](README.md#developing-background-features-in-rust).
+- Format and lint all Rust code with `cargo fmt --check` and `cargo clippy --workspace -- -D warnings`. Ensure `cargo test --workspace` passes before opening a pull request.
 
 ---
 

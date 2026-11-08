@@ -90,19 +90,74 @@ slice. The current desktop and app launch routes remain available while parity
 is verified; this is not a completed shell replacement. See the
 [migration inventory, decisions and cutover gates](docs/migration/RUST_SLINT_MIGRATION.md).
 
+---
+
+## Developing Background Features in Rust
+
+DaisyOS prioritizes **Rust for new background services, system daemons, and OS brokers**. If you are planning or implementing a new background feature, please follow these conventions before writing managed (.NET/C#) or heavy C++ code.
+
+### Why Rust for Background Features?
+
+Background processes (request brokers, hardware watchers, idle monitors, portal backends, and session daemons) run 24/7 across the desktop lifecycle:
+
+- **Strict Resident Memory Budget (PSS):** Managed runtimes (.NET/Avalonia) and full GUI toolkits (Qt/KDE) carry large idle memory footprints (often 15–50+ MiB PSS). In contrast, resident Rust daemons idle at **~1–2 MiB PSS or less** (for example, migrating `DaisyLaunch` to a resident Rust broker reduced idle PSS by 88% from 13.3 MiB to 1.6 MiB, and the `daisy_idle` monitor idles at ~180 KiB PSS).
+- **Predictable Latency & Zero GC:** Background monitors and IPC brokers must respond instantly without garbage collection pauses, memory leaks, or erratic scheduling.
+- **System Safety & Reliability:** Rust's memory safety guarantees and explicit error handling prevent silent background daemon crashes that compromise desktop session stability.
+
+### Core Architectural Pattern: "Resident Broker + On-Demand UI Helper"
+
+To keep the system lightweight and responsive, avoid keeping GUI toolkits permanently resident in the background:
+
+1. **Headless Resident Broker (Rust):** The persistent background daemon runs as a lean, headless Rust process. It handles the event loop, watches hardware/system events, manages state, and exposes D-Bus endpoints (`zbus`). It never loads a graphical toolkit.
+2. **On-Demand UI Helper:** When interactive user feedback is required (such as a consent dialog, password prompt, file picker, or notification window), the Rust broker spawns or leases an ephemeral UI worker (Avalonia or Slint) on-demand. When the interaction finishes, the UI process exits or enters a dormant state, freeing all GUI assets from memory.
+
+### What Qualifies as a "Background Feature"?
+
+- **D-Bus Service Brokers:** Session and system bus endpoints (`org.daisyos.*`, `org.freedesktop.*`) that coordinate apps or desktop operations (e.g., `services/DaisyLaunch/rust`).
+- **Hardware & State Monitors:** Daemons observing Wayland protocols, power/battery events, network changes, audio routing, or user idle time (e.g., `src/native/daisy_background`).
+- **Desktop Portals & Permission Brokers:** Headless handlers for XDG desktop portals (ScreenCast, RemoteDesktop, InputCapture, GlobalShortcuts, Notifications, Polkit) like `src/native/daisy_desktop_services`.
+- **Background Tasks & Synchronizers:** LAN discovery, device pairing coordination, or background file transfer workers.
+
+### Code Organization
+
+Place new background implementations according to their scope:
+
+- **Standalone Daemons & Session Services:** `services/<ServiceName>/rust/` (e.g. [`services/DaisyLaunch/rust`](services/DaisyLaunch/rust))
+- **Native OS Brokers & C-ABI Libraries:** `src/native/<service_name>/` (e.g. [`src/native/daisy_desktop_services`](src/native/daisy_desktop_services), [`src/native/daisy_background`](src/native/daisy_background))
+- **Shared Workspace Crates:** `crates/` (e.g. `crates/daisy-platform`, `crates/daisy-core`)
+
+### Recommended Stack & Guidelines
+
+- **D-Bus Communication:** Use [`zbus`](https://crates.io/crates/zbus) (with `tokio`) for defining D-Bus interfaces, methods, and signal emitters.
+- **Serialization:** Use `serde` and `serde_json` for structured wire payloads and IPC protocols.
+- **Wayland & System APIs:** Link against standard system shared libraries (`libc`, `wayland-client`) using minimal FFI bindings rather than heavyweight standalone runtimes.
+- **Shell / C# Interoperability:** Interface with the Avalonia shell through asynchronous D-Bus methods/signals (via `Tmds.DBus` on the C# side) or via a clean C ABI (`cdylib` with `extern "C"` functions, explicit ownership boundaries, and bounded thread stacks).
+- **Dependency & Memory Hygiene:** Keep dependency trees minimal. Avoid pulling large crates into resident background services, and configure release builds with `opt-level = "z"` or `"s"`, `lto = true`, `panic = "abort"`, and `strip = true`.
+
+### Existing Reference Implementations
+
+- [`services/DaisyLaunch/rust`](services/DaisyLaunch/rust): Resident D-Bus request broker (`org.daisyos.Launcher1`) with worker leasing.
+- [`src/native/daisy_desktop_services`](src/native/daisy_desktop_services): Resident portal broker for notifications, session capture, and Polkit integration.
+- [`src/native/daisy_background`](src/native/daisy_background): High-efficiency Wayland idle monitor (`libdaisy_idle.so` C ABI and standalone daemon).
+- [docs/performance/background-rust-migration.md](docs/performance/background-rust-migration.md): Background process RAM audit and `no_std` / FFI design principles.
+- [docs/performance/launcher-rust-migration.md](docs/performance/launcher-rust-migration.md): Resident broker + on-demand helper architecture and memory audit.
+
+---
+
 ## Contributor Guide
 
 ### Prerequisites
 
 - **OS**: Linux (Arch Linux recommended; Fedora and Ubuntu work for development).
 - **.NET SDK**: 10.0+ (`dotnet --version`).
+- **Rust Toolchain**: 1.82+ / stable (`rustc --version`, `cargo --version`).
 - **C/C++ Toolchain**: `gcc` or `clang`, `cmake` (3.25+), `ninja` or `make`, `pkg-config`.
 - **System Libraries**: `wayland-client`, `wayland-protocols`, `kwin` dev headers (KWin 6.x), `libpulse`, `bluez`, `libei`, `gstreamer`, `polkit-agent-1`.
 
 ### Build
 
 ```bash
-git clone https://github.com/helmeri/DaisyOS.git
+git clone https://github.com/HelmerPartanen/DaisyOS
 cd DaisyOS
 
 dotnet restore
@@ -152,7 +207,7 @@ daisyos-native-development memory status
 
 ## Testing
 
-DaisyOS includes automated tests for design token contracts, backend logic, and headless Avalonia UI components:
+DaisyOS includes automated tests for design token contracts, backend logic, headless Avalonia UI components, and Rust native services:
 
 ```bash
 # Run design token and core contract tests
@@ -163,6 +218,14 @@ dotnet test tests/DaisyOS.ShellDemo.Tests/DaisyOS.ShellDemo.Tests.csproj
 
 # Run shell component and service tests
 dotnet test tests/DaisyOS.Shell.Tests/DaisyOS.Shell.Tests.csproj
+
+# Run Rust unit and workspace tests
+cargo test --workspace
+
+# Lint Rust background services and native brokers
+cargo clippy --manifest-path services/DaisyLaunch/rust/Cargo.toml -- -D warnings
+cargo clippy --manifest-path src/native/daisy_desktop_services/Cargo.toml -- -D warnings
+cargo clippy --manifest-path src/native/daisy_background/Cargo.toml -- -D warnings
 
 # Run the full automated test suite
 scripts/test.sh
@@ -175,6 +238,8 @@ Note: All XAML views must use token references (`{DynamicResource TypeSize...}`,
 ## Repository Structure
 
 ```
+├── apps/                     # Rust Slint migration applications
+├── crates/                   # Rust platform, core, and native UI workspace crates
 ├── docs/                     # Architecture specs, audits, and guides
 │   ├── apps/                 # Application-specific documentation
 │   ├── architecture/         # Layer specs, typography, and motion rules
@@ -183,7 +248,7 @@ Note: All XAML views must use token references (`{DynamicResource TypeSize...}`,
 ├── os/                       # ArchISO profiles, systemd service units, and OS configs
 ├── packaging/                # Arch PKGBUILDs, KWin decoration scripts, portal configs
 ├── scripts/                  # Build, test, and developer automation scripts
-├── services/                 # Core OS daemon helpers (DaisyLaunch)
+├── services/                 # Core OS daemons and resident services (DaisyLaunch Rust broker)
 ├── src/
 │   ├── DaisyOS.Shell/        # Primary Wayland desktop shell and widgets
 │   ├── DaisyOS.System/       # Linux hardware services (Audio, Network, Displays)
@@ -196,7 +261,7 @@ Note: All XAML views must use token references (`{DynamicResource TypeSize...}`,
 │   ├── DaisyOS.DiskManager/  # Disk partition and storage manager
 │   ├── DaisyOS.AppInstaller/ # AppImage and package installer
 │   ├── DaisyOS.Installer/    # System installation wizard
-│   └── native/               # Native C++ plugins (KWin frame effects, portal capture)
+│   └── native/               # Native Rust brokers (portals, idle) and C/C++ KWin plugins
 └── tests/
     ├── DaisyOS.Tests/            # Design tokens and backend unit tests
     ├── DaisyOS.ShellDemo.Tests/  # Headless Avalonia UI and widget tests

@@ -27,7 +27,7 @@
     <Exec Command="bash &quot;$(MSBuildProjectDirectory)/../../scripts/build-mail-renderer.sh&quot;" />
   </Target>
   <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-    <None Include="../native/daisy_mail_renderer/build/daisy-mail-renderer" Link="daisy-mail-renderer" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="../native/daisy_mail_renderer/build/daisy-mail-renderer" Link="daisy-mail-renderer" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_mail_renderer/build/daisy-mail-renderer')" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../native/daisy_idle_monitor/build/libdaisy_idle.so" Link="libdaisy_idle.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_idle_monitor/build/libdaisy_idle.so')" />

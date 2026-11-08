@@ -51,3 +51,8 @@ power-profiles-daemon
 p7zip
 unzip
 zip
+
+# Mail credential storage
+libsecret
+libnotify
+gnome-keyring

@@ -51,6 +51,11 @@ power-profiles-daemon
 p7zip
 unzip
 zip
+
+# Mail credential storage
+libsecret
+libnotify
+gnome-keyring
 nvidia-open
 nvidia-utils
 lib32-nvidia-utils
