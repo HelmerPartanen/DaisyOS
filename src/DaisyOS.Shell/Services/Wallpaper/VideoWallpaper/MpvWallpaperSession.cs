@@ -15,6 +15,8 @@ internal sealed class MpvWallpaperSession : IDisposable
     private IDisposable? _hostLease;
     public bool IsPaused { get; private set; }
     public static bool Enabled => OperatingSystem.IsLinux() && Environment.GetEnvironmentVariable("DAISYOS_VIDEO_BACKEND") != "legacy";
+    public static bool CanHost(Window? host) =>
+        Enabled && string.Equals(host?.PlatformImpl?.GetType().Name, "LayerShellWindowImpl", StringComparison.Ordinal);
 
     public static async Task<MpvWallpaperSession> CreateAsync(Window host, string path, int width, int height,
         double scale, VideoMetadata metadata, double startSeconds = 0)

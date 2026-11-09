@@ -272,6 +272,62 @@ public sealed class LockScreenMediaTests
         }
     }
 
+    [AvaloniaFact]
+    public async Task LockScreenPlaysCanvasVideoWhenExpanded()
+    {
+        var videoPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "../../../../../tests/DaisyOS.Shell.Tests/Fixtures/video.mp4"));
+        if (!File.Exists(videoPath))
+            videoPath = Path.GetFullPath("tests/DaisyOS.Shell.Tests/Fixtures/video.mp4");
+
+        var fakeMedia = new FakeMediaSessionService
+        {
+            CurrentSession = new MediaSession(
+                Title: "Let it happen",
+                Artist: "Tame Impala",
+                AlbumArtPath: null,
+                PositionSeconds: 45,
+                DurationSeconds: 180,
+                IsPlaying: true,
+                SourceIdentity: "spotify",
+                SourceUrl: $"file://{videoPath}")
+        };
+
+        var window = new LockScreenWindow(
+            wallpaperSource: "solid:#3D2B24",
+            lockService: new PreviewLockService(),
+            isSecondary: false,
+            mediaService: fakeMedia)
+        {
+            WindowState = WindowState.Normal,
+            Width = 1280,
+            Height = 720
+        };
+
+        window.Show();
+        try
+        {
+            await Task.Delay(200);
+            Dispatcher.UIThread.RunJobs();
+            await window.RefreshMediaAsync();
+            await Task.Delay(200);
+            Dispatcher.UIThread.RunJobs();
+
+            Assert.Equal(videoPath, window.ActiveCanvasVideoPath);
+
+            await window.SetMediaExpandedAsync(true);
+            await Task.Delay(500);
+            Dispatcher.UIThread.RunJobs();
+
+            var canvasWallpaper = window.FindControl<WallpaperLayer>("LockCanvasWallpaper")!;
+            Assert.True(canvasWallpaper.IsVisible);
+            Assert.Equal(WallpaperLayer.WallpaperPresentationState.Presented, canvasWallpaper.PresentationState);
+        }
+        finally
+        {
+            window.Close();
+        }
+    }
+
     internal static string CreateSyntheticCurrentsArtwork()
     {
         var path = Path.Combine(Path.GetTempPath(), $"daisy-currents-art-{Guid.NewGuid():N}.png");

@@ -336,6 +336,10 @@ public partial class WallpaperLayer : UserControl
         if (e.Property == Visual.IsVisibleProperty)
         {
             UpdateVisibilityAndPauseState();
+            if (IsVisible && _presentedWallpaperUri is null && (_requestedWallpaperUri ?? WallpaperUri) is { } uri && HasUsablePresentationSize())
+            {
+                RequestWallpaperLoad(uri);
+            }
         }
     }
 
@@ -420,9 +424,10 @@ public partial class WallpaperLayer : UserControl
 
         if (_wallpaperImageService is null && _videoWallpaperService is null && _mpvSession is null)
         {
-            if (_requestedWallpaperUri is not null)
+            var pendingUri = _requestedWallpaperUri ?? WallpaperUri;
+            if (pendingUri is not null)
             {
-                RequestWallpaperLoad(_requestedWallpaperUri);
+                RequestWallpaperLoad(pendingUri);
             }
 
             return;
@@ -501,25 +506,32 @@ public partial class WallpaperLayer : UserControl
             string resolvedPath = ResolveWallpaperPath(wallpaperUri);
             if (!string.IsNullOrEmpty(resolvedPath) && WallpaperFileTypes.IsVideo(resolvedPath))
             {
-                if (MpvWallpaperSession.Enabled && _attachedWindow is not null)
+                if (MpvWallpaperSession.CanHost(_attachedWindow))
                 {
-                    var metadata = await VideoMetadata.ProbeAsync(resolvedPath);
-                    if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
-
-                    var targetWidth = GetPresentationWidth();
-                    var targetHeight = GetPresentationHeight();
-                    var cached = await VideoWallpaperOptimization.TryGetCachedAsync(resolvedPath, metadata, targetWidth, targetHeight);
-                    if (cached != null && cached != resolvedPath && File.Exists(cached))
+                    try
                     {
-                        var cachedMetadata = await VideoMetadata.ProbeAsync(cached);
+                        var metadata = await VideoMetadata.ProbeAsync(resolvedPath);
                         if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
-                        await LoadNativeVideoAsync(cached, wallpaperUri, cachedMetadata, requestVersion, derivative: true,
-                            optimizedWidth: targetWidth, optimizedHeight: targetHeight);
+
+                        var targetWidth = GetPresentationWidth();
+                        var targetHeight = GetPresentationHeight();
+                        var cached = await VideoWallpaperOptimization.TryGetCachedAsync(resolvedPath, metadata, targetWidth, targetHeight);
+                        if (cached != null && cached != resolvedPath && File.Exists(cached))
+                        {
+                            var cachedMetadata = await VideoMetadata.ProbeAsync(cached);
+                            if (!_isLoaded || requestVersion != Volatile.Read(ref _loadRequestVersion)) return;
+                            await LoadNativeVideoAsync(cached, wallpaperUri, cachedMetadata, requestVersion, derivative: true,
+                                optimizedWidth: targetWidth, optimizedHeight: targetHeight);
+                            return;
+                        }
+
+                        await LoadNativeVideoAsync(resolvedPath, wallpaperUri, metadata, requestVersion);
                         return;
                     }
-
-                    await LoadNativeVideoAsync(resolvedPath, wallpaperUri, metadata, requestVersion);
-                    return;
+                    catch (Exception ex) when (ex is not (OutOfMemoryException or AccessViolationException))
+                    {
+                        global::System.Console.Error.WriteLine($"[wallpaper] Native video presentation failed, falling back to software decoder: {ex.Message}");
+                    }
                 }
 
                 // Opening a container and negotiating a hardware decoder can take noticeable
