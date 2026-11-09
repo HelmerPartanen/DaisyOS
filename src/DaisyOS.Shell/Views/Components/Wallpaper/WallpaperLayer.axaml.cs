@@ -91,9 +91,13 @@ public partial class WallpaperLayer : UserControl
 
     internal string? OutputName { get; set; }
     internal bool FollowDesktopWallpaper { get; set; } = true;
+    private bool _isMediaVideo;
 
     internal void SetMediaVideo(string path)
     {
+        // A media canvas is explicitly opened by the user, rather than an
+        // ambient live wallpaper. Keep it playing on battery as well.
+        _isMediaVideo = true;
         if (string.Equals(WallpaperUri, path, StringComparison.Ordinal))
             RequestWallpaperLoad(path);
         else
@@ -104,6 +108,7 @@ public partial class WallpaperLayer : UserControl
 
     internal void ClearWallpaper()
     {
+        _isMediaVideo = false;
         Interlocked.Increment(ref _refreshRequestVersion);
         Interlocked.Increment(ref _loadRequestVersion);
         _requestedWallpaperUri = null;
@@ -370,7 +375,7 @@ public partial class WallpaperLayer : UserControl
                                  && (IgnoreDesktopOcclusion || (!_isConsoleMode && !_isGameRunning))
                                  && (IgnoreDesktopOcclusion || !_gamingModeActive)
                                  // Battery saver: keep the first frame as a still image.
-                                 && !(_app?.IsLiveWallpaperPausedForBattery ?? false)));
+                                 && (_isMediaVideo || !(_app?.IsLiveWallpaperPausedForBattery ?? false))));
 
         _videoDemand?.SetVisible(shouldRender);
         if (!hasPlayer) return;

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Reflection;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -321,6 +322,37 @@ public sealed class LockScreenMediaTests
             var canvasWallpaper = window.FindControl<WallpaperLayer>("LockCanvasWallpaper")!;
             Assert.True(canvasWallpaper.IsVisible);
             Assert.Equal(WallpaperLayer.WallpaperPresentationState.Presented, canvasWallpaper.PresentationState);
+
+            // The desktop's battery preference must not freeze a canvas after
+            // its first frame. Exercise the real pause decision for both layers.
+            var app = new DaisyOS.Shell.App();
+            app.SessionState.RemoteWrite = (_, _) => { };
+            app.SessionState.SetPreference(
+                DaisyOS.Shell.Services.Idle.PowerPreferences.PauseLiveWallpaperOnBatteryKey, "true");
+            const BindingFlags privateInstance = BindingFlags.Instance | BindingFlags.NonPublic;
+            typeof(DaisyOS.Shell.App).GetField("_onBatteryPower", privateInstance)!.SetValue(app, true);
+            Assert.True(app.IsLiveWallpaperPausedForBattery);
+            var appField = typeof(WallpaperLayer).GetField("_app", privateInstance)!;
+            var updatePlayback = typeof(WallpaperLayer).GetMethod("UpdateVisibilityAndPauseState", privateInstance)!;
+            appField.SetValue(canvasWallpaper, app);
+            try
+            {
+                updatePlayback.Invoke(canvasWallpaper, null);
+                Assert.Equal(WallpaperLayer.WallpaperPresentationState.Presented, canvasWallpaper.PresentationState);
+
+                // Clearing the canvas restores normal wallpaper power policy.
+                canvasWallpaper.ClearWallpaper();
+                canvasWallpaper.WallpaperUri = null;
+                canvasWallpaper.WallpaperUri = videoPath;
+                await Task.Delay(500);
+                Dispatcher.UIThread.RunJobs();
+                updatePlayback.Invoke(canvasWallpaper, null);
+                Assert.Equal(WallpaperLayer.WallpaperPresentationState.Paused, canvasWallpaper.PresentationState);
+            }
+            finally
+            {
+                appField.SetValue(canvasWallpaper, null);
+            }
         }
         finally
         {
