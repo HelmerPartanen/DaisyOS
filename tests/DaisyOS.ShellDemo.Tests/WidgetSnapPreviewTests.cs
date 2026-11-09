@@ -33,9 +33,12 @@ public class WidgetSnapPreviewTests
             Assert.InRange(outline.AnimatedBounds.X, 20, 399.9);
             // CaptureRenderedFrame drains render jobs and can finish short animations.
             // Tick once to sample the live transition instead.
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
-            await Task.Delay(30);
+            await Task.Delay(50);
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
             AvaloniaHeadlessPlatform.ForceRenderTimerTick();
+            Avalonia.Threading.Dispatcher.UIThread.RunJobs();
             Assert.InRange(outline.AnimatedBounds.X, 20.1, 399.9);
             var intermediate = outline.AnimatedBounds;
             outline.TargetBounds = first.WithX(200);

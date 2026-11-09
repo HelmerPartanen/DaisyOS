@@ -274,14 +274,17 @@ public sealed class WallpaperImageService : IAsyncDisposable
             _diagnostics.CacheReplacementCount++;
         }
 
-        // Raise change notification on UI thread
-        if (Dispatcher.UIThread.CheckAccess())
+        // Raise change notification on UI thread if subscribed
+        if (WallpaperBitmapChanged is { } handler)
         {
-            WallpaperBitmapChanged?.Invoke(this, resultBitmap);
-        }
-        else
-        {
-            await Dispatcher.UIThread.InvokeAsync(() => WallpaperBitmapChanged?.Invoke(this, resultBitmap));
+            if (Dispatcher.UIThread.CheckAccess())
+            {
+                handler(this, resultBitmap);
+            }
+            else
+            {
+                await Dispatcher.UIThread.InvokeAsync(() => handler(this, resultBitmap));
+            }
         }
 
         return resultBitmap;
@@ -459,17 +462,7 @@ public sealed class WallpaperImageService : IAsyncDisposable
 
         if (bitmapsToDispose.Count > 0)
         {
-            if (Dispatcher.UIThread.CheckAccess())
-            {
-                foreach (var bitmap in bitmapsToDispose) bitmap.Dispose();
-            }
-            else
-            {
-                await Dispatcher.UIThread.InvokeAsync(() =>
-                {
-                    foreach (var bitmap in bitmapsToDispose) bitmap.Dispose();
-                });
-            }
+            foreach (var bitmap in bitmapsToDispose) bitmap.Dispose();
         }
 
         _regenCts?.Dispose();
