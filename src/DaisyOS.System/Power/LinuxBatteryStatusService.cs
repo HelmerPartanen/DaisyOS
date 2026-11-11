@@ -6,9 +6,21 @@ namespace DaisyOS.System.Power;
 public sealed class LinuxBatteryStatusService : IBatteryStatusService
 {
     private const string PowerSupplyPath = "/sys/class/power_supply";
+    private const string ChassisTypePath = "/sys/class/dmi/id/chassis_type";
+
+    // SMBIOS chassis types that describe stationary desktop systems. Some
+    // desktop boards or UPS integrations expose a battery-like power supply;
+    // that should not create a laptop-style status indicator in the shell.
+    private static readonly HashSet<int> DesktopChassisTypes =
+    [3, 4, 5, 6, 7, 15, 16, 17, 23, 35, 36];
 
     public async Task<BatteryStatus> GetStatusAsync(CancellationToken cancellationToken = default)
     {
+        if (await IsDesktopChassisAsync(cancellationToken))
+        {
+            return new BatteryStatus(false, null, "Unavailable", "Desktop systems do not have a built-in battery.");
+        }
+
         if (!Directory.Exists(PowerSupplyPath))
         {
             return new BatteryStatus(false, null, "Unavailable", "No power supply information was found.");
@@ -32,6 +44,12 @@ public sealed class LinuxBatteryStatusService : IBatteryStatusService
         }
 
         return new BatteryStatus(false, null, "Unavailable", "No battery power supply was found.");
+    }
+
+    private static async Task<bool> IsDesktopChassisAsync(CancellationToken cancellationToken)
+    {
+        var chassisType = await ReadTextAsync(ChassisTypePath, cancellationToken);
+        return int.TryParse(chassisType, out var type) && DesktopChassisTypes.Contains(type);
     }
 
     private static async Task<bool> IsBatteryAsync(string directory, CancellationToken cancellationToken)
