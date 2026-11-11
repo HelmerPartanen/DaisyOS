@@ -13,6 +13,9 @@ Toggle **Gaming Mode** on the Gaming page in Settings. When enabled:
 
 The Performance profile is used only when Power Profiles Daemon advertises it. Gaming Mode snapshots and restores the previous profile; Settings can disable the PPD profile or separately opt in to performance boosts on battery. Thermal protections remain owned by the platform and kernel.
 
+Phase 7's advanced scheduling inventory and experiment/rollback policy are
+documented in [phase-7-tuning-policy.md](gaming/phase-7-tuning-policy.md).
+
 ### Built-in GameMode access
 
 The ISO includes GameMode and a narrowly scoped policy that lets the active local desktop session use its CPU governor helper without a password or group setup. The live account also belongs to the installed GameMode group. Optional GPU clock/core-management helpers retain GameMode's normal authorization rules; the default image does not enable overclocking.

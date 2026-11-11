@@ -112,6 +112,128 @@ def cpu_power_capabilities() -> dict:
     }
 
 
+def parse_cpu_list(value: str) -> set[int]:
+    cpus: set[int] = set()
+    for part in value.strip().split(","):
+        if not part:
+            continue
+        bounds = part.split("-", 1)
+        try:
+            start = int(bounds[0])
+            end = int(bounds[1]) if len(bounds) == 2 else start
+        except ValueError:
+            return set()
+        if start < 0 or end < start or end - start > 65536:
+            return set()
+        cpus.update(range(start, end + 1))
+    return cpus
+
+
+def kernel_configuration() -> str:
+    release = command(["uname", "-r"], timeout=3)
+    candidates = [Path(f"/boot/config-{release}"), Path("/proc/config.gz")]
+    for path in candidates:
+        try:
+            if path.name == "config.gz":
+                result = subprocess.run(["zcat", str(path)], capture_output=True, text=True, timeout=5)
+                if result.returncode == 0:
+                    return result.stdout
+            else:
+                return path.read_text(encoding="utf-8", errors="replace")
+        except (OSError, subprocess.TimeoutExpired):
+            pass
+    return ""
+
+
+def advanced_scheduling_inventory() -> dict:
+    config = kernel_configuration()
+    keys = ("CONFIG_SCHED_BORE", "CONFIG_SCHED_CLASS_EXT", "CONFIG_SCHED_POC_SELECTOR",
+            "CONFIG_PREEMPT_DYNAMIC", "CONFIG_HZ", "CONFIG_NUMA", "CONFIG_BPF")
+    compiled = {}
+    for key in keys:
+        match = re.search(rf"^{re.escape(key)}=(.*)$", config, re.MULTILINE)
+        disabled = re.search(rf"^# {re.escape(key)} is not set$", config, re.MULTILINE)
+        compiled[key] = match.group(1) if match else ("n" if disabled else "Unknown")
+    scx_state = read("/sys/kernel/sched_ext/state")
+    scx_operators = sorted(read(str(path)) for path in Path("/sys/kernel/sched_ext").glob("*/ops")
+                           if path.is_file())
+    return {
+        "kernelConfigCapabilities": compiled,
+        "schedExtRuntimeState": scx_state,
+        "schedExtActiveOperators": scx_operators,
+        "schedExtLoaderProcessPresent": command(["pgrep", "-x", "scx_loader"], timeout=2) not in
+        {"Unavailable", "Failed or timed out", "No output"},
+        "scxPackages": package_versions(["scx-scheds", "scx-scheds-git", "scx-loader"]),
+        "policy": "DaisyOS does not select or start BORE or sched_ext schedulers",
+    }
+
+
+def irq_policy_inventory() -> dict:
+    online = parse_cpu_list(read("/sys/devices/system/cpu/online"))
+    masks = []
+    for path in Path("/proc/irq").glob("[0-9]*/smp_affinity_list"):
+        value = read(str(path))
+        parsed = parse_cpu_list(value) if value != "Unknown" else set()
+        if parsed:
+            masks.append(parsed)
+    if not shutil.which("systemctl"):
+        irqbalance = "systemctl unavailable"
+    else:
+        irqbalance = command(["systemctl", "is-active", "irqbalance.service"], timeout=3)
+        if irqbalance == "Unavailable":
+            irqbalance = "inactive or unit unavailable"
+    return {
+        "irqbalanceServiceState": irqbalance,
+        "irqAffinityMasksRead": len(masks),
+        "masksDifferentFromOnlineCpuSet": sum(mask != online for mask in masks) if online else None,
+        "policy": "DaisyOS preserves kernel/device IRQ affinity and does not rewrite IRQ masks",
+    }
+
+
+def cpu_memory_placement_inventory() -> dict:
+    status = read("/proc/self/status")
+    allowed = re.search(r"(?m)^Cpus_allowed_list:\s*(.+)$", status)
+    core_types: dict[str, int] = {}
+    sibling_groups: set[str] = set()
+    for path in Path("/sys/devices/system/cpu").glob("cpu[0-9]*/topology/core_type"):
+        core_type = read(str(path))
+        if core_type != "Unknown":
+            core_types[core_type] = core_types.get(core_type, 0) + 1
+    for path in Path("/sys/devices/system/cpu").glob("cpu[0-9]*/topology/thread_siblings_list"):
+        value = read(str(path))
+        if value != "Unknown":
+            sibling_groups.add(value)
+    nodes = Path("/sys/devices/system/node")
+    return {
+        "currentProcessAllowedCpus": allowed.group(1).strip() if allowed else "Unknown",
+        "heterogeneousCoreTypeCounts": core_types,
+        "threadSiblingGroups": len(sibling_groups),
+        "onlineNumaNodes": read(str(nodes / "online")) if nodes.exists() else "Unavailable",
+        "numaNodeCount": len(list(nodes.glob("node[0-9]*"))) if nodes.exists() else 0,
+        "currentProcessMemoryPolicy": command(["numactl", "--show"], timeout=3),
+        "policy": "DaisyOS does not pin game CPU affinity or impose NUMA memory binding",
+    }
+
+
+def io_shader_inventory() -> dict:
+    devices = []
+    for path in sorted(Path("/sys/block").glob("*/queue/scheduler")):
+        scheduler = read(str(path))
+        rotational = read(str(path.parent / "rotational"))
+        devices.append({"device": path.parents[1].name, "scheduler": scheduler, "rotational": rotational})
+    home_cache = Path.home() / ".cache"
+    shader_caches = {
+        "mesa": (home_cache / "mesa_shader_cache").is_dir() or (home_cache / "mesa_shader_cache_db").is_dir(),
+        "dxvk": (home_cache / "dxvk-cache").is_dir(),
+        "vkd3d": (home_cache / "vkd3d-cache").is_dir(),
+    }
+    return {
+        "blockDevices": devices,
+        "shaderCacheDirectoriesPresent": shader_caches,
+        "shaderCompilationPolicy": "DaisyOS does not change shader compiler priority or cache policy",
+    }
+
+
 def power_profile_capabilities() -> dict:
     current = command(["powerprofilesctl", "get"], timeout=3)
     listing = command(["powerprofilesctl", "list"], timeout=3)
@@ -272,7 +394,10 @@ def collect() -> dict:
         "cpu": cpu_summary(),
         "cpu_frequency_driver": read("/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"),
         "cpu_power_capabilities": cpu_power_capabilities(),
-        "cpu_scheduler": read("/sys/block/nvme0n1/queue/scheduler"),
+        "advanced_scheduling": advanced_scheduling_inventory(),
+        "irq_policy": irq_policy_inventory(),
+        "cpu_memory_placement": cpu_memory_placement_inventory(),
+        "io_shader_policy": io_shader_inventory(),
         "gpu_and_kernel_driver": gpu_summary(),
         "vulkan_64_bit_probe": vulkan,
         "vulkan_32_bit_loader": "Present" if Path("/usr/lib32/libvulkan.so.1").exists() else "Not found",
@@ -320,7 +445,9 @@ def format_report(report: dict) -> str:
     labels = [
         ("kernel", "Kernel"), ("architecture", "Architecture"), ("cpu", "CPU (lscpu JSON)"),
         ("cpu_frequency_driver", "CPU frequency driver"), ("cpu_power_capabilities", "CPU policy capabilities"),
-        ("cpu_scheduler", "Block scheduler (NVMe 0)"),
+        ("advanced_scheduling", "Scheduler capabilities and runtime"),
+        ("irq_policy", "IRQ policy"), ("cpu_memory_placement", "CPU and memory placement"),
+        ("io_shader_policy", "I/O and shader policy"),
         ("gpu_and_kernel_driver", "GPU and kernel driver"), ("vulkan_64_bit_probe", "Vulkan 64-bit"),
         ("vulkan_32_bit_loader", "Vulkan 32-bit loader"), ("vulkan_icd_manifests", "Vulkan ICD manifests"),
         ("vulkan_32_bit_probe", "Vulkan 32-bit device probe"),
