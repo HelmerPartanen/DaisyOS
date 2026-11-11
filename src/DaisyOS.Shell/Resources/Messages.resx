@@ -7817,4 +7817,20 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comme
   <data name="Loc_6C986329C247" xml:space="preserve">
     <value>Overlap adjusts automatically to keep the clock readable.</value>
   </data>
+  <data name="Loc_6215A5F41168" xml:space="preserve">
+    <value>Open Steam Library</value>
+    <comment>Source: Open Steam Library</comment>
+  </data>
+  <data name="Loc_9136C1F079CC" xml:space="preserve">
+    <value>Choose a Proton version per game in Properties &gt; Compatibility. Clear Force to restore Steam's default.</value>
+    <comment>Source: Choose a Proton version per game in Properties &gt; Compatibility. Clear Force to restore Steam's default.</comment>
+  </data>
+  <data name="Loc_EE7293D99FC5" xml:space="preserve">
+    <value>Steam is not installed or could not be opened.</value>
+    <comment>Source: Steam is not installed or could not be opened.</comment>
+  </data>
+  <data name="Loc_47775A77E4C2" xml:space="preserve">
+    <value>Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.</value>
+    <comment>Source: Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.</comment>
+  </data>
 </root>

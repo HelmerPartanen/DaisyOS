@@ -7600,4 +7600,20 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</com
     <value>Kirjasimen vahvuus</value>
     <comment>Source: Font weight</comment>
   </data>
+  <data name="Loc_6215A5F41168" xml:space="preserve">
+    <value>Avaa Steamin kirjasto</value>
+    <comment>Source: Open Steam Library</comment>
+  </data>
+  <data name="Loc_9136C1F079CC" xml:space="preserve">
+    <value>Valitse pelikohtainen Proton-versio kohdassa Ominaisuudet &gt; Yhteensopivuus. Poista pakotus käytöstä palauttaaksesi Steamin oletuksen.</value>
+    <comment>Source: Choose a Proton version per game in Properties &gt; Compatibility. Clear Force to restore Steam's default.</comment>
+  </data>
+  <data name="Loc_EE7293D99FC5" xml:space="preserve">
+    <value>Steamia ei ole asennettu tai sitä ei voitu avata.</value>
+    <comment>Source: Steam is not installed or could not be opened.</comment>
+  </data>
+  <data name="Loc_47775A77E4C2" xml:space="preserve">
+    <value>Proton-yhteensopivuus vaihtelee peleittäin. Huijaamisenesto riippuu pelin julkaisijasta.</value>
+    <comment>Source: Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.</comment>
+  </data>
 </root>

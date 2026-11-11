@@ -113,24 +113,56 @@ def ntsync_status() -> str:
 
 
 def proton_tools() -> list[str]:
+    return sorted((path.name for path in proton_tool_directories()), key=str.casefold)
+
+
+def proton_tool_directories() -> list[Path]:
     home = Path.home()
-    roots = [
+    steam_roots = [
         home / ".local/share/Steam",
         home / ".steam/steam",
         home / ".steam/root",
         home / ".var/app/com.valvesoftware.Steam/data/Steam",
     ]
-    tools: set[str] = set()
-    for root in roots:
+    libraries = set(steam_roots)
+    library_path = re.compile(r'"path"\s+"([^"]+)"')
+    for root in steam_roots:
+        manifest = root / "steamapps/libraryfolders.vdf"
+        try:
+            text = manifest.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            continue
+        for match in library_path.finditer(text):
+            value = match.group(1)
+            if value.startswith("/"):
+                libraries.add(Path(value))
+    tools: dict[str, Path] = {}
+    for root in libraries:
         common = root / "steamapps/common"
         if common.is_dir():
-            tools.update(path.name for path in common.glob("Proton*") if path.is_dir())
+            tools.update({path.name: path for path in common.glob("Proton*") if path.is_dir()})
+    for root in steam_roots:
         custom = root / "compatibilitytools.d"
         if custom.is_dir():
             for path in custom.iterdir():
                 if path.is_dir() and (path / "compatibilitytool.vdf").is_file():
-                    tools.add(path.name)
-    return sorted(tools, key=str.casefold)
+                    tools[path.name] = path
+    return sorted(tools.values(), key=lambda path: path.name.casefold())
+
+
+def proton_component_inventory() -> list[dict[str, str]]:
+    dxvk_markers = ["files/lib/wine/dxvk", "files/lib64/wine/dxvk"]
+    vkd3d_markers = ["files/lib/wine/vkd3d-proton", "files/lib64/wine/vkd3d-proton"]
+    inventory = []
+    for tool in proton_tool_directories():
+        dxvk = any((tool / marker).is_dir() for marker in dxvk_markers)
+        vkd3d = any((tool / marker).is_dir() for marker in vkd3d_markers)
+        inventory.append({
+            "tool": tool.name,
+            "DXVK payload": "detected" if dxvk else "not detected in standard path",
+            "VKD3D-Proton payload": "detected" if vkd3d else "not detected in standard path",
+        })
+    return inventory
 
 
 def collect() -> dict:
@@ -176,6 +208,7 @@ def collect() -> dict:
         "vulkan_32_bit_loader": "Present" if Path("/usr/lib32/libvulkan.so.1").exists() else "Not found",
         "vulkan_32_bit_probe": vulkan32,
         "installed_proton_tools": proton_tools(),
+        "proton_component_inventory": proton_component_inventory(),
         "umu_runner": "Installed" if shutil.which("umu-run") else "Not installed",
         "ntsync_kernel_status": ntsync_status(),
         "opengl_renderer": glx_renderer,
@@ -183,7 +216,7 @@ def collect() -> dict:
         "vulkan_icd_manifests": manifests,
         "packages": package_versions([
             "mesa", "lib32-mesa", "vulkan-icd-loader", "lib32-vulkan-icd-loader",
-            "nvidia-open", "nvidia-utils", "lib32-nvidia-utils", "steam", "gamemode",
+            "nvidia-open", "nvidia-utils", "lib32-nvidia-utils", "steam", "umu-launcher", "gamemode",
             "gamescope", "mangohud", "wine",
         ]),
         "steam_version": command(["steam", "--version"], timeout=5),
@@ -220,6 +253,7 @@ def format_report(report: dict) -> str:
         ("vulkan_32_bit_loader", "Vulkan 32-bit loader"), ("vulkan_icd_manifests", "Vulkan ICD manifests"),
         ("vulkan_32_bit_probe", "Vulkan 32-bit device probe"),
         ("installed_proton_tools", "Installed Proton tools (detected Steam libraries)"),
+        ("proton_component_inventory", "Proton DXVK/VKD3D payload markers"),
         ("umu_runner", "UMU runner"), ("ntsync_kernel_status", "NTSYNC kernel status"),
         ("opengl_renderer", "OpenGL renderer"), ("software_renderer_detected", "Software renderer detected"),
         ("steam_version", "Steam"), ("gamemode_version", "GameMode"), ("session_type", "Session type"),

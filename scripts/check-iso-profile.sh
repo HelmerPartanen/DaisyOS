@@ -176,6 +176,7 @@ required_packages=(
   xterm
   qemu-guest-agent
   steam
+  umu-launcher
   vulkan-tools
   vulkan-icd-loader
   lib32-mesa

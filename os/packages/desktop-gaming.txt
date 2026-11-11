@@ -31,6 +31,7 @@ xdg-desktop-portal-kde
 polkit-kde-agent
 powerdevil
 steam
+umu-launcher
 gamemode
 lib32-gamemode
 gamescope

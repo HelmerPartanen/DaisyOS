@@ -1713,7 +1713,14 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 Toggle("Gaming Mode", "gaming.mode", false, value => { if (shell is not null) shell.SessionState.GamingMode = value; }),
                 Toggle("Turn on automatically when a game starts", GamingModeAutomation.AutomaticPreferenceKey,
                     shell?.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false",
-                    value => shell?.SetPreference(GamingModeAutomation.AutomaticPreferenceKey, value ? "true" : "false")));
+                    value => shell?.SetPreference(GamingModeAutomation.AutomaticPreferenceKey, value ? "true" : "false")),
+                SettingsAction("Open Steam Library", "Choose a Proton version per game in Properties > Compatibility. Clear Force to restore Steam's default.", "game-controller", () =>
+                {
+                    var result = new SafeProcessLauncher().Launch("steam", []);
+                    if (!result.Succeeded)
+                        (Application.Current as App)?.Feedback.Show(Loc.Get("Steam is not installed or could not be opened."));
+                }),
+                Secondary(Loc.Get("Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.")));
         }
 
         private Button SettingsAction(string title, string description, string icon, Action activate, string? value = null, bool literalTitle = false, bool literalDescription = false)

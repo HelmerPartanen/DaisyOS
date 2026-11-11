@@ -211,7 +211,7 @@ require_profile_package() {
   fi
 }
 
-for package in mesa lib32-mesa vulkan-tools vulkan-icd-loader lib32-vulkan-icd-loader; do
+for package in mesa lib32-mesa vulkan-tools vulkan-icd-loader lib32-vulkan-icd-loader umu-launcher; do
   require_profile_package "$gaming" "$package"
 done
 

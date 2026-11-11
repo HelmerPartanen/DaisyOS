@@ -25,6 +25,37 @@ The game-controller button in the system bar provides the same Gaming Mode switc
 and a separate choice for silencing non-critical popups. Advanced options remain
 on the Gaming page so the system bar stays compact.
 
+## Proton and non-Steam compatibility
+
+Steam owns Proton Stable, Experimental, and per-game compatibility selection.
+Open Settings → Notifications → Gaming → **Open Steam Library**, select the
+game, then open Properties → Compatibility. Select a compatibility tool for
+that game, or clear **Force the use of a specific compatibility tool** to return
+to Steam's default. DaisyOS does not rewrite Steam's compatibility configuration.
+
+Optional Proton-GE builds can be installed per-user by a trusted tool such as
+ProtonUp-Qt. Steam discovers local tools in
+`~/.steam/root/compatibilitytools.d/` ([Valve's installation instructions](https://github.com/ValveSoftware/Proton#install-proton-locally)); restart Steam if a newly installed tool does not appear. DaisyOS does not redistribute Proton-GE.
+
+For non-Steam Windows games, the gaming profile includes `umu-launcher`. Give
+each game its own prefix and ID, for example:
+
+```sh
+GAMEID=umu-my-game WINEPREFIX="$HOME/Games/umu/my-game" umu-run "/path/to/game.exe"
+```
+
+UMU ([upstream project](https://github.com/Open-Wine-Components/umu-launcher)) may obtain its Proton/runtime components on first use. It runs as the logged
+in user and stores the prefix under that user's home. Use the game's publisher
+or storefront launcher when it supplies the required environment. Compatibility
+is unknown unless that exact game/runtime/driver path has been tested. In
+particular, anti-cheat support depends on the publisher and may be unavailable.
+
+The diagnostics report lists Proton tools in common Steam library locations and
+checks for standard DXVK and VKD3D-Proton payload directories. Payload presence
+does not prove that Direct3D 9/10/11 or Direct3D 12 launches correctly. NTSYNC
+status reports kernel/module availability only; DaisyOS does not load the
+module or force Proton to use it.
+
 ## Fullscreen games
 
 With auto-hide enabled, the taskbar and system bar remain independently available above fullscreen games. Move the pointer to the bottom center for the taskbar or bottom right for the system bar. Each bar keeps its own hide timer. Hidden bars pass input through; the narrow reveal target does not request keyboard focus. Games that lock the pointer must release it before the pointer can reach the screen edge.
