@@ -6,6 +6,10 @@
 DaisyOS is an Arch Linux-based desktop operating system built around a custom C# / .NET 10 and Avalonia shell, managed by KWin on Wayland. It pairs the flexibility of Arch Linux with a dedicated native shell, desktop widgets, a core set of first-party applications, and built-in cross-device Continuity.
 
 ---
+Read the tutorial for installing and starting the development session.
+[TUTORIAL.MD](TUTORIAL.md)
+
+---
 
 ## Continuity
 
@@ -273,6 +277,7 @@ Note: All XAML views must use token references (`{DynamicResource TypeSize...}`,
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for code formatting guidelines, branch workflows, and PR requirements.
+
 
 ---
 
