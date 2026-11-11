@@ -96,8 +96,7 @@ install -m755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menu
 install -Dm755 "$repo_root/src/native/daisy_window_menu/build/daisyos-window-menus-v4.so" "$output_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so"
 install -d "$output_dir/window-menus-root/etc/xdg"
 kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v4Enabled --type bool true
-kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Plugins --key blurEnabled --type bool true
-kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Effect-blur --key BlurStrength 4
+"$repo_root/scripts/configure-kwin-blur.sh" --stage-root "$output_dir/window-menus-root"
 
 mkdir -p "$output_dir/cursor-themes"
 cp -a "$repo_root/artifacts/cursors/"DaisyOS-* "$output_dir/cursor-themes/"
@@ -148,6 +147,7 @@ echo ""
 "$repo_root/scripts/build-librepods.sh"
 "$repo_root/scripts/stage-airpods.sh" --root "$output_dir/airpods-root"
 "$repo_root/scripts/install-system-fonts.sh" --root "$output_dir/fonts-root"
+"$repo_root/scripts/stage-plasma-wallpaper.sh" --root "$output_dir/plasma-wallpaper-root"
 
 shell_binary="$output_dir/DaisyOS.Shell"
 if [ -f "$shell_binary" ]; then

@@ -23,6 +23,11 @@ package() {
     return 1
   fi
   cp -a "$srcdir/fonts-root/." "$pkgdir/"
+  if [[ ! -f "$srcdir/plasma-wallpaper-root/usr/share/plasma/wallpapers/org.daisyos.wallpaper/metadata.json" ]]; then
+    echo "Missing DaisyOS Plasma wallpaper provider; publish the current release payload first." >&2
+    return 1
+  fi
+  cp -a "$srcdir/plasma-wallpaper-root/." "$pkgdir/"
   if [[ ! -d "$srcdir/window-menus-root/usr/share/daisyos/window-menu-icons" ]]; then
     echo "Missing DaisyOS window menus; publish the current release payload first." >&2
     return 1

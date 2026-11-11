@@ -120,7 +120,6 @@ bool DaisyDecoration::init()
 
     connect(window(), &KDecoration3::DecoratedWindow::widthChanged, this, &DaisyDecoration::updateLayout);
     connect(window(), &KDecoration3::DecoratedWindow::maximizedChanged, this, &DaisyDecoration::updateLayout);
-    connect(window(), &KDecoration3::DecoratedWindow::adjacentScreenEdgesChanged, this, &DaisyDecoration::updateLayout);
     connect(window(), &KDecoration3::DecoratedWindow::activeChanged, this, &DaisyDecoration::updateActiveState);
     connect(window(), &KDecoration3::DecoratedWindow::captionChanged, this, qOverload<>(&DaisyDecoration::update));
     connect(window(), &KDecoration3::DecoratedWindow::nextScaleChanged, this, &DaisyDecoration::updateLayout);
@@ -356,8 +355,9 @@ qreal DaisyDecoration::captionGlyphSize() const
 
 QPainterPath DaisyDecoration::titleBarClip(qreal inset) const
 {
-    const bool square = window()->isMaximizedHorizontally() || window()->isMaximizedVertically()
-        || window()->adjacentScreenEdges() != Qt::Edges();
+    // Match DaisyFrame's radius rule. Merely touching an output edge must not
+    // square the decoration while the compositor still rounds the window.
+    const bool square = window()->isMaximized();
     const qreal radius = square ? 0.0 : (window()->isActive() ? m_activeCornerRadius : m_inactiveCornerRadius);
     return DaisyFramePainter::titleBarClip(DaisyFramePainter::inset(QRectF(rect()), inset),
         std::max<qreal>(0.0, m_titleBarHeight - inset), std::max<qreal>(0.0, radius - inset));

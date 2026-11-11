@@ -122,8 +122,8 @@
             Height="{DynamicResource ShellChromeHeight}"
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
-            Padding="1"
-            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            Padding="0"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
             CornerRadius="{DynamicResource RoundedXL}">
       <Border.Transitions>
         <Transitions>

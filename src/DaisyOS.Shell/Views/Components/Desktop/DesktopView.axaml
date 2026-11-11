@@ -128,8 +128,8 @@
          widgets underneath it, rather than only the wallpaper. -->
     <controls:ShellFrameBorder x:Name="DesktopWidgetContextMenuHost"
             IsVisible="False" HorizontalAlignment="Left" VerticalAlignment="Top"
-            ZIndex="500" MinWidth="200" Padding="1"
-            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            ZIndex="500" MinWidth="200" Padding="0"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
             CornerRadius="{DynamicResource RoundedLG}"
             BoxShadow="{DynamicResource ElevationFlyoutShadow}">
       <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"

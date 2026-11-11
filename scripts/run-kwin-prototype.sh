@@ -24,8 +24,7 @@ fi
 socket_name="daisyos-kwin-$$"
 
 if command -v kwriteconfig6 >/dev/null 2>&1; then
-  kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
-  kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
+  "$repo_root/scripts/configure-kwin-blur.sh" --runtime
   for conflict in scale fade glide squash magiclamp minimizeanimation maximize login kscreen; do
     kwriteconfig6 --file kwinrc --group Plugins --key "${conflict}Enabled" false
   done

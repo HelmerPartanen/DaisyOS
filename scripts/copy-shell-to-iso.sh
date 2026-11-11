@@ -76,6 +76,13 @@ ln -sfn ../daisy-launch.service "$iso_root/usr/lib/systemd/user/graphical-sessio
 # Embed the same licensed font in Avalonia and install it for Qt/GTK/Fontconfig.
 "$repo_root/scripts/install-system-fonts.sh" --root "$iso_root"
 
+# Plasma discovers wallpaper providers from its standard system package path.
+[[ -f "$publish_dir/plasma-wallpaper-root/usr/share/plasma/wallpapers/org.daisyos.wallpaper/metadata.json" ]] || {
+  echo 'DaisyOS Plasma wallpaper provider is missing. Publish again.' >&2
+  exit 1
+}
+cp -a "$publish_dir/plasma-wallpaper-root/." "$iso_root/"
+
 # Native Xcursor themes are consumed by KWin, GTK, Qt and XWayland.
 mkdir -p "$iso_root/usr/share/icons" "$iso_root/etc/xdg"
 cp -a "$publish_dir/cursor-themes/"DaisyOS-* "$iso_root/usr/share/icons/"
@@ -89,8 +96,7 @@ kwriteconfig6 --file "$iso_root/etc/xdg/kcminputrc" --group Libinput --group Def
 install -d "$iso_root/etc/skel/.config"
 kwriteconfig6 --file "$iso_root/etc/skel/.config/kcminputrc" --group Mouse --key cursorTheme DaisyOS-Dark
 kwriteconfig6 --file "$iso_root/etc/skel/.config/kcminputrc" --group Mouse --key cursorSize 32
-kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Plugins --key blurEnabled --type bool true
-kwriteconfig6 --file "$iso_root/etc/xdg/kwinrc" --group Effect-blur --key BlurStrength 4
+"$repo_root/scripts/configure-kwin-blur.sh" --stage-root "$iso_root"
 
 # KWin window menus use the native DaisyOS renderer on every request path.
 [[ -f "$publish_dir/window-menus-root/usr/lib/qt6/plugins/kwin/effects/plugins/daisyos-window-menus-v4.so" ]] || { echo 'DaisyOS native window menus are missing. Publish again.' >&2; exit 1; }

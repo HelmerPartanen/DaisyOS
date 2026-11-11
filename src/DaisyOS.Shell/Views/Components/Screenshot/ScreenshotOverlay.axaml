@@ -306,9 +306,9 @@
             Margin="0,32,0,0"
             Opacity="0"
             IsHitTestVisible="False"
-            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
             CornerRadius="{DynamicResource RoundedXLInset}"
-            Padding="1"
+            Padding="0"
             BoxShadow="{DynamicResource ElevationFlyoutShadow}">
       <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
               CornerRadius="{DynamicResource RoundedXLInset}"
@@ -336,7 +336,7 @@
       <controls:ShellFrameBorder x:Name="CountdownMaterial" Width="88"
               Height="88"
               HorizontalAlignment="Center"
-              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
               CornerRadius="{DynamicResource RadiusPill}"
               Padding="2"
               BoxShadow="{DynamicResource ElevationFlyoutShadow}">
@@ -384,9 +384,9 @@
             VerticalAlignment="Bottom"
             Margin="0,0,0,48"
             Opacity="0"
-            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
             CornerRadius="{DynamicResource RoundedXL}"
-            Padding="1"
+            Padding="0"
             BoxShadow="{DynamicResource ElevationShellDialogShadow}"
             PointerPressed="OnToolbarPointerPressed">
       <controls:ShellFrameBorder Background="Transparent"

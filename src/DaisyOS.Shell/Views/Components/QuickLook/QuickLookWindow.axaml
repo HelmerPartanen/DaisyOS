@@ -14,9 +14,9 @@
         Topmost="True">
 
   <controls:ShellFrameBorder Margin="16"
-          Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+          Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
           CornerRadius="{DynamicResource RoundedLG}"
-          Padding="1"
+          Padding="0"
           BoxShadow="{DynamicResource ElevationDialogShadow}">
     <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
             CornerRadius="{DynamicResource RoundedLGInset}"

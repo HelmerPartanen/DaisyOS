@@ -12,8 +12,8 @@
     </Style>
   </UserControl.Styles>
 
-  <controls:ShellFrameBorder x:Name="MaterialFrame" Margin="16" Padding="1"
-                            CornerRadius="28" Background="{DynamicResource ShellFrameOuterEdgeBrush}">
+  <controls:ShellFrameBorder x:Name="MaterialFrame" Margin="16" Padding="0"
+                            CornerRadius="28" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1">
     <controls:ShellFrameBorder CornerRadius="27" BorderThickness="1"
                               BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
                               Background="Transparent" BackgroundSizing="InnerBorderEdge">

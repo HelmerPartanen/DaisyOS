@@ -76,8 +76,8 @@
 </Style>
   </UserControl.Styles>
 <controls:ShellFrameBorder x:Name="MaterialFrame"
-        Padding="1"
-        Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+        Padding="0"
+        Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
         CornerRadius="{DynamicResource RoundedXXL}"
         BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}">
 

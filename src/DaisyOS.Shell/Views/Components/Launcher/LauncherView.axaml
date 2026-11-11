@@ -91,7 +91,7 @@
       <controls:ShellFrameBorder x:Name="LauncherRootBorder"
               MaxWidth="{DynamicResource LauncherPanelMaxWidth}" MaxHeight="{DynamicResource LauncherPanelMaxHeight}"
               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-              Background="{DynamicResource ShellFrameOuterEdgeBrush}" Padding="1"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1" Padding="0"
               CornerRadius="{DynamicResource RoundedXXL}"
               BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
               RenderTransformOrigin="50%,50%" ClipToBounds="False">
@@ -320,8 +320,8 @@
 
       <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
               HorizontalAlignment="Left" VerticalAlignment="Top"
-              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
-              CornerRadius="{DynamicResource RoundedLG}" Padding="1"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedLG}" Padding="0"
               BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="100">
         <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                 CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
@@ -360,8 +360,8 @@
 
       <controls:ShellFrameBorder x:Name="LauncherAppContextMenuHost" IsVisible="False" Width="204"
               HorizontalAlignment="Left" VerticalAlignment="Top"
-              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
-              CornerRadius="{DynamicResource RoundedLG}" Padding="1"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              CornerRadius="{DynamicResource RoundedLG}" Padding="0"
               BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="101">
         <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}" CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
           <Border Background="{DynamicResource ContextMenuBackgroundBrush}" CornerRadius="{DynamicResource RoundedMD}" Padding="4">

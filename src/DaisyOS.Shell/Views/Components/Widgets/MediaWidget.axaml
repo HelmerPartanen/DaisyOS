@@ -32,8 +32,8 @@
   <Grid ClipToBounds="False">
     <controls:ShellFrameBorder x:Name="MediaFrame"
             Height="52"
-            Padding="1"
-            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            Padding="0"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
             CornerRadius="{DynamicResource RoundedXL}"
             PointerPressed="OnMediaPointerPressed">
       <controls:ShellFrameBorder Background="Transparent"
@@ -104,8 +104,8 @@
             ZIndex="200"
             MinWidth="184"
             MaxWidth="240"
-            Padding="1"
-            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+            Padding="0"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
             CornerRadius="{DynamicResource RoundedLG}"
             BoxShadow="{DynamicResource ElevationFlyoutShadow}"
             IsHitTestVisible="True">

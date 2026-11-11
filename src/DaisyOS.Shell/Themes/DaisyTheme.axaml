@@ -59,8 +59,8 @@
         Large shell surfaces use two distinct perimeter roles.
         Ordinary borders and dividers keep Stroke*.
     -->
-    <Color x:Key="ShellFrameOuterEdgeColor">#66000000</Color>
-    <Color x:Key="ShellFrameInnerHighlightColor">#99FFFFFF</Color>
+      <Color x:Key="ShellFrameOuterEdgeColor">#99000000</Color>
+      <Color x:Key="ShellFrameInnerHighlightColor">#1AFFFFFF</Color>
     <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
 
     <!-- Interaction states -->
@@ -278,7 +278,7 @@
 
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
-      <Color x:Key="SurfaceBaseColor">#00000000</Color>
+      <Color x:Key="SurfaceBaseColor">#26000000</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <!-- Fullscreen launcher glass. See the light theme for the contract. -->
       <Color x:Key="LauncherBackdropColor">#1A000000</Color>
@@ -311,8 +311,8 @@
 
 
 
-      <Color x:Key="ShellFrameOuterEdgeColor">#BF000000</Color>
-      <Color x:Key="ShellFrameInnerHighlightColor">#26FFFFFF</Color>
+      <Color x:Key="ShellFrameOuterEdgeColor">#99000000</Color>
+      <Color x:Key="ShellFrameInnerHighlightColor">#1AFFFFFF</Color>
       <SolidColorBrush x:Key="ShellSurfaceInnerBorderBrush" Color="{StaticResource ShellFrameInnerHighlightColor}" />
       <Color x:Key="DesktopHoverColor">#33FFFFFF</Color>
       <Color x:Key="StatePressedColor">#24FFFFFF</Color>

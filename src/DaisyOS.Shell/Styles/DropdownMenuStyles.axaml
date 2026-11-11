@@ -35,9 +35,9 @@
         <Border x:Name="MenuBlurHost"
                 Margin="{DynamicResource SpaceInset4}"
                 MinWidth="{DynamicResource MenuMinWidth}"
-                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                 CornerRadius="{DynamicResource RoundedLG}"
-                Padding="{DynamicResource BorderThicknessDefault}"
+                Padding="0"
                 BoxShadow="{DynamicResource ElevationFlyoutShadow}">
           <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                   CornerRadius="{DynamicResource RoundedLGInset}"
@@ -65,9 +65,9 @@
     <Setter Property="Template">
       <ControlTemplate>
         <Border x:Name="MenuBlurHost" Margin="{DynamicResource SpaceInset4}"
-                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                 CornerRadius="{DynamicResource RoundedLG}"
-                Padding="{DynamicResource BorderThicknessDefault}"
+                Padding="0"
                 BoxShadow="{DynamicResource ElevationFlyoutShadow}">
           <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                   CornerRadius="{DynamicResource RoundedLGInset}"
@@ -105,9 +105,9 @@
         <Border x:Name="MenuBlurHost"
                 Margin="{DynamicResource SpaceInset4}"
                 MinWidth="{DynamicResource MenuMinWidth}"
-                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                 CornerRadius="{DynamicResource RoundedLG}"
-                Padding="{DynamicResource BorderThicknessDefault}"
+                Padding="0"
                 BoxShadow="{DynamicResource ElevationFlyoutShadow}">
           <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                   CornerRadius="{DynamicResource RoundedLGInset}"
@@ -240,9 +240,9 @@
                       Margin="16"
                       MinWidth="{Binding Bounds.Width, RelativeSource={RelativeSource TemplatedParent}}"
                       HorizontalAlignment="Stretch"
-                      Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                      Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                       CornerRadius="{DynamicResource RoundedLG}"
-                      Padding="1"
+                      Padding="0"
                       BoxShadow="{DynamicResource ElevationFlyoutShadow}">
                 <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                         CornerRadius="{DynamicResource RoundedLGInset}"
@@ -433,9 +433,9 @@
             <Border x:Name="MenuBlurHost"
                     Margin="16"
                     MinWidth="184"
-                    Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                    Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                     CornerRadius="{DynamicResource RoundedLG}"
-                    Padding="1"
+                    Padding="0"
                     BoxShadow="{DynamicResource ElevationFlyoutShadow}">
               <Border Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                       CornerRadius="{DynamicResource RoundedLGInset}"

@@ -11,8 +11,8 @@
 
   <controls:ShellFrameBorder Margin="24,24,24,28"
                             HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
-                            CornerRadius="{DynamicResource RoundedXL}" Padding="1"
+                            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                            CornerRadius="{DynamicResource RoundedXL}" Padding="0"
                             BoxShadow="{DynamicResource ElevationFlyoutShadow}">
     <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                                BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"

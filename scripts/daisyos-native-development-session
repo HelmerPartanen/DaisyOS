@@ -268,13 +268,11 @@ configure_kwin_for_daisyos() {
   # effect performs the actual sampling, so it must be enabled before the
   # compositor starts or every Daisy glass surface becomes a flat tint after
   # a fresh login/reboot.
-  kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
   kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shapecornersEnabled false
   kwriteconfig6 --file kwinrc --group Plugins --key daisyframeEnabled true
   kwriteconfig6 --file kwinrc --group Plugins --key forceblurEnabled false
-  # Keep compositor blur deliberately restrained. KWin uses an integer scale;
-  # four is DaisyOS's visual default for every native glass region.
-  kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
+  # Preserve the user's selected blur strength and disable additive grain.
+  "$source_root/scripts/configure-kwin-blur.sh" --runtime
   # The compositor effect owns the same two one-pixel frame strokes used by
   # shell surfaces. Keep outlines on for every application state; only corner
   # clipping is suppressed where a window touches screen edges.

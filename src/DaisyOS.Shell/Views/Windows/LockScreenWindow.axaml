@@ -177,8 +177,8 @@
         <!-- User Avatar with Taskbar Shell Frame Material -->
         <controls:ShellFrameBorder x:Name="AvatarBorder" Width="48"
                 Height="48"
-                Padding="1"
-                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                Padding="0"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                 CornerRadius="24"
                 HorizontalAlignment="Center">
           <controls:ShellFrameBorder BorderThickness="1"
@@ -215,8 +215,8 @@
         <!-- Password Pill Container with Taskbar Shell Frame Material -->
         <controls:ShellFrameBorder x:Name="PasswordPillBorder"
                 MinHeight="40"
-                Padding="1"
-                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                Padding="0"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                 CornerRadius="20"
                 HorizontalAlignment="Center">
           <controls:ShellFrameBorder BorderThickness="1"
@@ -378,8 +378,8 @@
 
     <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
             HorizontalAlignment="Left" VerticalAlignment="Top"
-            Background="{DynamicResource ShellFrameOuterEdgeBrush}"
-            CornerRadius="{DynamicResource RoundedLG}" Padding="1"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+            CornerRadius="{DynamicResource RoundedLG}" Padding="0"
             BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="100">
       <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
               CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
@@ -420,8 +420,8 @@
       <controls:ShellFrameBorder x:Name="CollapsedMediaBorder"
                                  Width="354"
                                  Height="160"
-                                 Padding="1"
-                                 Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                                 Padding="0"
+                                 Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                                  CornerRadius="{DynamicResource RoundedXXL}"
                                  RenderTransformOrigin="0.5,0.5">
         <controls:ShellFrameBorder BorderThickness="1"
@@ -577,9 +577,9 @@
                 PointerPressed="OnExpandedArtworkPointerPressed"
                 Width="312"
                 Height="312"
-                Padding="1"
+                Padding="0"
                 HorizontalAlignment="Center"
-                Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                 CornerRadius="{DynamicResource RoundedXXL}"
                 BoxShadow="{DynamicResource LockScreenMediaArtworkShadow}">
           <Panel>
@@ -625,8 +625,8 @@
         <!-- Expanded Media Control Card -->
         <controls:ShellFrameBorder x:Name="ExpandedMediaBorder"
                                    Width="354"
-                                   Padding="1"
-                                   Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+                                   Padding="0"
+                                   Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                                    CornerRadius="{DynamicResource RoundedXXL}"
                                    HorizontalAlignment="Center"
                                    RenderTransformOrigin="0.5,0.5">
@@ -777,10 +777,10 @@
       <Border x:Name="MorphingArtworkBorder"
               Width="126"
               Height="126"
-              Padding="1"
+              Padding="0"
               HorizontalAlignment="Left"
               VerticalAlignment="Top"
-              Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
               CornerRadius="14"
               BoxShadow="{DynamicResource LockScreenMediaMorphShadow}"
               IsVisible="False"

@@ -2,9 +2,9 @@
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
              x:Class="DaisyOS.Shell.Views.Components.Volume.VolumeIndicator"
              IsVisible="False" IsHitTestVisible="False" Focusable="False">
-  <controls:ShellFrameBorder x:Name="MaterialFrame" Width="320" Margin="24,24,24,80" Padding="1"
+  <controls:ShellFrameBorder x:Name="MaterialFrame" Width="320" Margin="24,24,24,80" Padding="0"
                             HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                            Background="{DynamicResource ShellFrameOuterEdgeBrush}" CornerRadius="{DynamicResource RadiusPill}">
+                            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1" CornerRadius="{DynamicResource RadiusPill}">
     <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
                               BorderThickness="1" BackgroundSizing="InnerBorderEdge" CornerRadius="{DynamicResource RadiusPill}">
       <Border Background="{DynamicResource SurfaceBaseBrush}" CornerRadius="{DynamicResource RadiusPill}" Padding="4,4,12,4">

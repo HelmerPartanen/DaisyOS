@@ -4,7 +4,7 @@
              x:Class="DaisyOS.Shell.Views.Components.SystemBar.AppTrayView"
              ClipToBounds="False">
   <controls:ShellFrameBorder x:Name="TrayMaterialFrame"
-      Width="280" Padding="1" Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+      Width="280" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
       CornerRadius="{DynamicResource RoundedXXL}" BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}">
     <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
         BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">

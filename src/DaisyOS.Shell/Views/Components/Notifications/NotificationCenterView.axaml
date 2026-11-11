@@ -3,7 +3,7 @@
  xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
  xmlns:notifications="clr-namespace:DaisyOS.Shell.Views.Components.Notifications"
  Width="340" MaxHeight="600" ClipToBounds="False">
- <controls:ShellFrameBorder x:Name="MaterialFrame" Padding="1" Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+ <controls:ShellFrameBorder x:Name="MaterialFrame" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
          BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}" CornerRadius="{DynamicResource RoundedXXL}">
   <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
            BackgroundSizing="InnerBorderEdge" BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
@@ -38,7 +38,7 @@
        <ItemsControl.ItemTemplate>
         <DataTemplate>
          <!-- Same double-border frame as NotificationToastView so panel cards match toasts exactly. -->
-         <controls:ShellFrameBorder Classes="ToastCard" Margin="0,0,0,8" Padding="1" Background="{DynamicResource ShellFrameOuterEdgeBrush}"
+         <controls:ShellFrameBorder Classes="ToastCard" Margin="0,0,0,8" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
                    CornerRadius="{DynamicResource RoundedXXL}">
           <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
                     BackgroundSizing="InnerBorderEdge" BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">

@@ -98,8 +98,7 @@ atomic_install 0755 "$build_dir/daisyframe.so" "$plugin_dir/daisyframe.so"
 
 kwriteconfig6 --file kwinrc --group Plugins --key kwin4_effect_shapecornersEnabled false
 kwriteconfig6 --file kwinrc --group Plugins --key daisyframeEnabled true
-kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
-kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
+"$repo_root/scripts/configure-kwin-blur.sh" --runtime
 kwriteconfig6 --file kwinrc --group Round-Corners --key Size 16
 kwriteconfig6 --file kwinrc --group Round-Corners --key InactiveCornerRadius 16
 kwriteconfig6 --file kwinrc --group Round-Corners --key AnimationDuration 180

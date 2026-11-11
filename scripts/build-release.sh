@@ -89,6 +89,7 @@ if [[ ! -f "$shell_binary" ]]; then
   exit 1
 fi
 chmod +x "$shell_binary"
+"$repo_root/scripts/stage-plasma-wallpaper.sh" --root "$publish_dir/plasma-wallpaper-root"
 
 mkdir -p "$output_dir"
 find "$output_dir" -maxdepth 1 -type f \

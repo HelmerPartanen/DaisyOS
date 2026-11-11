@@ -98,8 +98,7 @@ if command -v kwriteconfig6 >/dev/null 2>&1; then
   kwriteconfig6 --file kwinrc --group Plugins --key windowviewEnabled false
   # KWin Zoom owns the built-in three-finger desktop magnification gesture.
   kwriteconfig6 --file kwinrc --group Plugins --key zoomEnabled false
-  kwriteconfig6 --file kwinrc --group Plugins --key blurEnabled true
-  kwriteconfig6 --file kwinrc --group Effect-blur --key BlurStrength 4
+  "$repo_root/scripts/configure-kwin-blur.sh" --runtime
   kwriteconfig6 --file kglobalshortcutsrc --group plasmashell --key 'activate application launcher' 'none,none,Activate Application Launcher'
   kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Task Overview' 'Meta+Tab,Meta+Tab,Toggle DaisyOS Task Overview'
   kwriteconfig6 --file kglobalshortcutsrc --group kwin --key 'DaisyOS Task Overview Alt' 'none,none,Toggle DaisyOS Task Overview'

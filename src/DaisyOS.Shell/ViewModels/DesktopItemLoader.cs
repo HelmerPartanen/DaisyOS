@@ -88,8 +88,13 @@ public static class DesktopItemLoader
     internal static string ResolveFileIconPath(string path, bool isLight)
     {
         var directory = Directory.Exists(path);
+        if (directory)
+        {
+            return GetAppIconPath("files", isLight);
+        }
+
         var extension = Path.GetExtension(path).ToLowerInvariant();
-        if (!directory && string.Equals(extension, ".appimage", StringComparison.OrdinalIgnoreCase))
+        if (string.Equals(extension, ".appimage", StringComparison.OrdinalIgnoreCase))
         {
             var appImageIcon = DaisyOS.Shell.Services.AppImageIconCache.GetOrExtractIconPath(path);
             if (!string.IsNullOrWhiteSpace(appImageIcon))
@@ -97,18 +102,16 @@ public static class DesktopItemLoader
                 return appImageIcon;
             }
         }
-        var mimeIcon = directory ? "folder" :
-            DaisyOS.Shell.Apps.Files.Services.FileVisualResolver.GetMimeIconName(extension);
+        var mimeIcon = DaisyOS.Shell.Apps.Files.Services.FileVisualResolver.GetMimeIconName(extension);
         var resolved = ResolveIconPath(mimeIcon, isLight);
         if (!string.IsNullOrWhiteSpace(resolved)) return resolved;
-        var genericIcon = directory ? "inode-directory" :
-            mimeIcon.StartsWith("text-", StringComparison.Ordinal) ? "text-x-generic" :
+        var genericIcon = mimeIcon.StartsWith("text-", StringComparison.Ordinal) ? "text-x-generic" :
             mimeIcon.StartsWith("image-", StringComparison.Ordinal) ? "image-x-generic" :
             mimeIcon.StartsWith("audio-", StringComparison.Ordinal) ? "audio-x-generic" :
             mimeIcon.StartsWith("video-", StringComparison.Ordinal) ? "video-x-generic" : "application-x-generic";
         resolved = ResolveIconPath(genericIcon, isLight);
         return !string.IsNullOrWhiteSpace(resolved) ? resolved :
-            $"avares://DaisyOS.Shell/Assets/FileIcons/{(directory ? "Folder" : "Document")}.svg";
+            "avares://DaisyOS.Shell/Assets/FileIcons/Document.svg";
     }
 
     public static string ResolveIconPath(string iconName) => ResolveIconPath(iconName, IsCurrentThemeLight());
