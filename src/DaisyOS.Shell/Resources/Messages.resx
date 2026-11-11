@@ -7833,4 +7833,28 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml.cs</comme
     <value>Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.</value>
     <comment>Source: Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.</comment>
   </data>
+  <data name="Loc_A82CE6532687" xml:space="preserve">
+    <value>Open GOverlay</value>
+    <comment>Source: Open GOverlay</comment>
+  </data>
+  <data name="Loc_88EDE58B7576" xml:space="preserve">
+    <value>Configure optional MangoHud and GameMode launch settings.</value>
+    <comment>Source: Configure optional MangoHud and GameMode launch settings.</comment>
+  </data>
+  <data name="Loc_D32AAB066DA5" xml:space="preserve">
+    <value>GOverlay is optional. Install it from the DaisyOS gaming package profile.</value>
+    <comment>Source: GOverlay is optional. Install it from the DaisyOS gaming package profile.</comment>
+  </data>
+  <data name="Loc_E393FBAB2EB3" xml:space="preserve">
+    <value>Optional Gamescope: add gamescope -f -- %command% to one game's Steam launch options. Remove it to disable. Do not stack frame limiters.</value>
+    <comment>Source: Optional Gamescope: add gamescope -f -- %command% to one game's Steam launch options. Remove it to disable. Do not stack frame limiters.</comment>
+  </data>
+  <data name="Loc_92800E7A81F0" xml:space="preserve">
+    <value>Toggle FPS and performance overlay</value>
+    <comment>Source: Toggle FPS and performance overlay</comment>
+  </data>
+  <data name="Loc_B1CE64619BD7" xml:space="preserve">
+    <value>Show or hide the MangoHud-backed monitor. Capture runs only while it is visible.</value>
+    <comment>Source: Show or hide the MangoHud-backed monitor. Capture runs only while it is visible.</comment>
+  </data>
 </root>

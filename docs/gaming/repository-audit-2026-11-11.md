@@ -31,7 +31,7 @@ The only image architecture declared in the ISO profile is `x86_64`; no minimum 
 
 ## First implementation slice
 
-Phase 0's repository inventory is complete; physical-hardware baselines remain pending. Phase 1 now has a read-only `daisyos-gaming-diagnostics` host report, an optional i686 probe source/build path, and explicit ISO/package-profile dependencies for the 64-bit and 32-bit Mesa/Vulkan stack. Profile validation keeps NVIDIA libraries in the NVIDIA profile. Diagnostics distinguish loader presence from actual device enumeration. Phase 2 adds per-game Steam guidance, UMU packaging and isolated-prefix instructions, Proton/DXVK/VKD3D inventory, and NTSYNC detection. The current development host lacks Steam and the 32-bit compiler runtime, so Phase 1/2 runtime acceptance remains pending; no Vulkan or game compatibility is claimed.
+Phase 0's repository inventory is complete; physical-hardware baselines remain pending. Phase 1 now has a read-only `daisyos-gaming-diagnostics` host report, an optional i686 probe source/build path, and explicit ISO/package-profile dependencies for the 64-bit and 32-bit Mesa/Vulkan stack. Profile validation keeps NVIDIA libraries in the NVIDIA profile. Diagnostics distinguish loader presence from actual device enumeration. Phase 2 adds per-game Steam guidance, UMU packaging and isolated-prefix instructions, Proton/DXVK/VKD3D inventory, and NTSYNC detection. Phase 3 exposes GameMode and MangoHud controls, adds optional Gamescope/GOverlay packaging, and documents per-game launch options without a global frame cap. The development host lacks Steam and gaming tools, so game-path runtime acceptance remains pending.
 
 ## Ownership map and next gates
 

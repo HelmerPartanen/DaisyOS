@@ -85,6 +85,8 @@ CPU is total system utilization and **SYS RAM** is whole-system memory in GiB (t
 
 FPS capture is built into the shipped desktop session. The image includes native and 32-bit MangoHud libraries, and the bundled Steam/Lutris launchers carry Vulkan and OpenGL telemetry into their games. Users open the monitor with **Meta + R**; they do not edit Steam launch options, install telemetry packages, set environment variables, or press a logging hotkey.
 
+The same monitor can be shown or hidden from Settings → Notifications → Gaming. MangoHud's hidden capture request is active only while the monitor is visible; hiding it stops capture. The monitor does not impose a frame cap.
+
 The shell discovers each renderer's per-process control socket and starts hidden capture while the monitor is visible. It prefers the focused renderer and stops capture when the monitor closes. Applications outside a game-launcher tree do not receive a global OpenGL preload. Vulkan applications inherit the session's disabled-by-default capture layer; capture activates only when the monitor is open. Initial FPS can take a few seconds to appear. No active renderer means **—**.
 
 The telemetry folder is selected automatically under the user's runtime directory, with a cache fallback. Explicit directory overrides and `daisyos-game` remain available for developer diagnostics or launching games outside the normal desktop routes, rather than user setup requirements. The signed local-runtime installer supports development machines; the ISO uses distribution packages.
@@ -138,8 +140,9 @@ The following tools are detected via `which`:
 |-------------|------------------------------------------------|
 | **Steam**   | Game storefront and launcher                   |
 | **GameMode**| System performance optimization while gaming   |
-| **MangoHud**| FPS overlay for games                          |
+| **MangoHud**| FPS overlay and telemetry source for DaisyOS's monitor |
 | **Gamescope**| Fullscreen game isolation and upscaling       |
+| **GOverlay**| Optional MangoHud and GameMode configuration GUI |
 | **Wine**    | Compatibility support for Windows software      |
 
 ## Controllers and diagnostics
@@ -152,7 +155,7 @@ Missing tools are reported as optional capabilities, not fatal errors. Diagnosti
 
 ## Gaming package profile
 
-`os/packages/desktop-gaming.txt` extends the normal desktop profile with Steam, Vulkan diagnostics, 32-bit Mesa and Vulkan support, GameMode, Gamescope, MangoHud, Wine, Winetricks, and Lutris. It is optional and requires Arch's `multilib` repository.
+`os/packages/desktop-gaming.txt` extends the normal desktop profile with Steam, Vulkan diagnostics, 32-bit Mesa and Vulkan support, GameMode, Gamescope, GOverlay, MangoHud, UMU, Wine, Winetricks, and Lutris. It is optional and requires Arch's `multilib` repository.
 
 `os/packages/desktop-gaming-nvidia.txt` is the same profile plus the NVIDIA driver stack (`nvidia-open`, `nvidia-utils`, `lib32-nvidia-utils`) for Turing (RTX 20-series / Quadro RTX) and newer GPUs. `nvidia-utils` enables `nvidia_drm` kernel modesetting, which KWin Wayland requires. Older NVIDIA GPUs need the legacy driver and are not covered by this profile.
 
@@ -162,7 +165,16 @@ Steam launch-option examples:
 
 - GameMode: `gamemoderun %command%`
 - MangoHud: `mangohud %command%`
+- Gamescope: `gamescope -f -- %command%`
 - Both: `mangohud gamemoderun %command%`
+
+Use Gamescope only for selected games that benefit from its nested compositor,
+scaling, or frame limit. Remove the wrapper to disable it. Keep one owner for a
+frame cap (game, Gamescope, or driver); DaisyOS does not stack a global cap.
+GameMode remains controlled by Gaming Mode and automatic game detection. The
+FPS monitor is independently shown/hidden in Settings or with **Meta + R**.
+GOverlay is an optional configuration GUI from the gaming package profile; it
+does not launch games or add wrappers by itself.
 
 Proton is managed through Steam. Start with the version Steam selects for the game; Proton Experimental is an opt-in fallback for newer fixes. Compatibility varies by title, especially for games with anti-cheat systems.
 

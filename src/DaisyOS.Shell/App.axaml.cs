@@ -232,6 +232,8 @@ public partial class App : Application
         PreferenceChanged?.Invoke(this, (key, value));
     }
 
+    public void ToggleGamingOverlay() => HandleShellAction("gaming-overlay");
+
     public void SetDoNotDisturb(bool enabled)
     {
         SessionState.DoNotDisturb = enabled;

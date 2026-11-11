@@ -35,6 +35,7 @@ umu-launcher
 gamemode
 lib32-gamemode
 gamescope
+goverlay
 mangohud
 lib32-mangohud
 wine

@@ -177,6 +177,8 @@ required_packages=(
   qemu-guest-agent
   steam
   umu-launcher
+  gamescope
+  goverlay
   vulkan-tools
   vulkan-icd-loader
   lib32-mesa

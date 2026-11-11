@@ -7616,4 +7616,28 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</com
     <value>Proton-yhteensopivuus vaihtelee peleittäin. Huijaamisenesto riippuu pelin julkaisijasta.</value>
     <comment>Source: Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.</comment>
   </data>
+  <data name="Loc_A82CE6532687" xml:space="preserve">
+    <value>Avaa GOverlay</value>
+    <comment>Source: Open GOverlay</comment>
+  </data>
+  <data name="Loc_88EDE58B7576" xml:space="preserve">
+    <value>Määritä MangoHud- ja GameMode-käynnistysasetuksia.</value>
+    <comment>Source: Configure optional MangoHud and GameMode launch settings.</comment>
+  </data>
+  <data name="Loc_D32AAB066DA5" xml:space="preserve">
+    <value>GOverlay on valinnainen. Asenna se DaisyOSin pelipakettiprofiilista.</value>
+    <comment>Source: GOverlay is optional. Install it from the DaisyOS gaming package profile.</comment>
+  </data>
+  <data name="Loc_E393FBAB2EB3" xml:space="preserve">
+    <value>Valinnainen Gamescope: lisää gamescope -f -- %command% yhden pelin Steamin käynnistysvalintoihin. Poista valinta käytöstä poistamiseksi. Älä käytä useita ruudunpäivityksen rajoittimia yhtä aikaa.</value>
+    <comment>Source: Optional Gamescope: add gamescope -f -- %command% to one game's Steam launch options. Remove it to disable. Do not stack frame limiters.</comment>
+  </data>
+  <data name="Loc_92800E7A81F0" xml:space="preserve">
+    <value>Näytä tai piilota FPS- ja suorituskykymittari</value>
+    <comment>Source: Toggle FPS and performance overlay</comment>
+  </data>
+  <data name="Loc_B1CE64619BD7" xml:space="preserve">
+    <value>Näytä tai piilota MangoHud-pohjainen mittari. Mittaus toimii vain sen näkyessä.</value>
+    <comment>Source: Show or hide the MangoHud-backed monitor. Capture runs only while it is visible.</comment>
+  </data>
 </root>

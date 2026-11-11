@@ -67,6 +67,8 @@ umu-launcher
 lutris
 gamemode
 lib32-gamemode
+gamescope
+goverlay
 mangohud
 lib32-mangohud
 lib32-vulkan-icd-loader

@@ -1720,6 +1720,14 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     if (!result.Succeeded)
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Steam is not installed or could not be opened."));
                 }),
+                SettingsAction("Toggle FPS and performance overlay", "Show or hide the MangoHud-backed monitor. Capture runs only while it is visible.", "game-controller", () => shell?.ToggleGamingOverlay()),
+                SettingsAction("Open GOverlay", "Configure optional MangoHud and GameMode launch settings.", "sliders-horizontal", () =>
+                {
+                    var result = new SafeProcessLauncher().Launch("goverlay", []);
+                    if (!result.Succeeded)
+                        (Application.Current as App)?.Feedback.Show(Loc.Get("GOverlay is optional. Install it from the DaisyOS gaming package profile."));
+                }),
+                Secondary(Loc.Get("Optional Gamescope: add gamescope -f -- %command% to one game's Steam launch options. Remove it to disable. Do not stack frame limiters.")),
                 Secondary(Loc.Get("Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.")));
         }
 
