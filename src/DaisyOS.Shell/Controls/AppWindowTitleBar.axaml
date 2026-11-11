@@ -44,6 +44,8 @@
 
   <Border Background="{DynamicResource SurfaceBaseSolidBrush}"
           BorderThickness="0"
+          CornerRadius="{DynamicResource AppWindowTopCornerRadius}"
+          ClipToBounds="True"
           PointerPressed="OnTitleBarPointerPressed">
     <Grid ColumnDefinitions="*,Auto">
       <StackPanel Grid.Column="1" Orientation="Horizontal">

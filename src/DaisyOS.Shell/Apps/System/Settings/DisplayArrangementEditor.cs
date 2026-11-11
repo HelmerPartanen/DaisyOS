@@ -33,11 +33,13 @@ internal sealed class DisplayArrangementEditor : UserControl
             HorizontalAlignment = HorizontalAlignment.Right };
         _overlap = new TextBlock { Text = Loc.Get("Displays must not overlap. Use Mirror displays to show the same content."),
             TextWrapping = TextWrapping.Wrap, IsVisible = false };
-        var coordinates = new WrapPanel { Orientation = Orientation.Horizontal };
-        coordinates.Children.Add(new TextBlock { Text = Loc.Get("Horizontal position"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 8, 0) });
-        coordinates.Children.Add(_x);
-        coordinates.Children.Add(new TextBlock { Text = Loc.Get("Vertical position"), VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(16, 0, 8, 0) });
-        coordinates.Children.Add(_y);
+        var coordinates = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), RowDefinitions = new RowDefinitions("Auto,Auto"), ColumnSpacing = 12, RowSpacing = 8 };
+        var horizontal = new TextBlock { Text = Loc.Get("Horizontal position"), VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetRow(horizontal, 0); Grid.SetColumn(horizontal, 0); coordinates.Children.Add(horizontal);
+        Grid.SetRow(_x, 0); Grid.SetColumn(_x, 1); _x.HorizontalAlignment = HorizontalAlignment.Stretch; coordinates.Children.Add(_x);
+        var vertical = new TextBlock { Text = Loc.Get("Vertical position"), VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetRow(vertical, 1); Grid.SetColumn(vertical, 0); coordinates.Children.Add(vertical);
+        Grid.SetRow(_y, 1); Grid.SetColumn(_y, 1); _y.HorizontalAlignment = HorizontalAlignment.Stretch; coordinates.Children.Add(_y);
         Content = new StackPanel { Spacing = 12, Children =
         {
             new TextBlock { Text = Loc.Get("Drag displays to match their physical arrangement."), TextWrapping = TextWrapping.Wrap },

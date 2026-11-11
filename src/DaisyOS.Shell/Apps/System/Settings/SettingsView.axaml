@@ -71,6 +71,26 @@
       <Setter Property="MinHeight" Value="60" />
       <Setter Property="Background" Value="Transparent" />
     </Style>
+    <Style Selector="TextBox.ManualDateTimeInput">
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="4,6" />
+      <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <Style Selector="TextBox.ManualDateTimeInput:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="TextBox.ManualDateTimeInput:focus">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputHoverBrush}" />
+    </Style>
+    <Style Selector="Border.ManualDateTimeGroup">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource ShellSurfaceInnerBorderBrush}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
+    </Style>
     <!-- Semantic row icons are intentionally bare glyphs: they assist scanning without creating
          another competing card or badge layer. -->
     <Style Selector="controls|DaisyIcon.SettingsRowIcon">
@@ -250,6 +270,13 @@
             </Grid>
           </Button>
 
+          <Button x:Name="NavBattery" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Battery">
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="battery-full" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="Battery" Classes="NavLabel" />
+            </Grid>
+          </Button>
+
           <Button x:Name="NavNetwork" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Network">
             <Grid ColumnDefinitions="24,*">
               <controls:DaisyIcon Icon="wifi-02" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
@@ -292,10 +319,24 @@
             </Grid>
           </Button>
 
+          <Button x:Name="NavPassword" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Password">
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="lock" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="Password" Classes="NavLabel" />
+            </Grid>
+          </Button>
+
           <Button x:Name="NavNotifications" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Notifications">
             <Grid ColumnDefinitions="24,*">
               <controls:DaisyIcon Icon="bell" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_788011833A5A}" Classes="NavLabel" />
+            </Grid>
+          </Button>
+
+          <Button x:Name="NavGaming" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Gaming">
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="game-controller" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_0FADFA228814}" Classes="NavLabel" />
             </Grid>
           </Button>
 

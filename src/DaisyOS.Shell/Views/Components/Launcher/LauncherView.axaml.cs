@@ -1064,6 +1064,8 @@ public partial class LauncherView : UserControl
         // Position margins participate in DesiredSize. Never include the
         // previous anchor offset when measuring a reopened menu.
         menu.Margin = default;
+        menu.MaxWidth = double.PositiveInfinity;
+        menu.MaxHeight = double.PositiveInfinity;
         menu.IsVisible = true;
         menu.Measure(Size.Infinity);
         var targetScreen = button.PointToScreen(default);
@@ -1110,11 +1112,14 @@ public partial class LauncherView : UserControl
         var buttonTopLeft = new Point(
             (buttonScreen.X - surfaceScreen.X) / scale,
             (buttonScreen.Y - surfaceScreen.Y) / scale);
-        var width = Math.Max(menu.DesiredSize.Width, 184);
-        var height = menu.DesiredSize.Height;
+        var width = Math.Min(Math.Max(menu.DesiredSize.Width, 184), Math.Max(0, surface.Bounds.Width - 12));
+        menu.MaxWidth = width;
+        menu.MaxHeight = Math.Max(0, surface.Bounds.Height - 12);
+        menu.Measure(new Size(width, menu.MaxHeight));
+        var height = Math.Min(menu.DesiredSize.Height, menu.MaxHeight);
         menu.Margin = new Thickness(
-            Math.Max(6, buttonTopLeft.X + button.Bounds.Width - width),
-            Math.Max(6, buttonTopLeft.Y - height), 0, 0);
+            Math.Clamp(buttonTopLeft.X + button.Bounds.Width - width, 6, Math.Max(6, surface.Bounds.Width - width - 6)),
+            Math.Clamp(buttonTopLeft.Y - height, 6, Math.Max(6, surface.Bounds.Height - height - 6)), 0, 0);
         PowerMenuVisibilityChanged?.Invoke(this, true);
         menu.Focus();
         e.Handled = true;

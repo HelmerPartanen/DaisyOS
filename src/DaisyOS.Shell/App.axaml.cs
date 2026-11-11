@@ -260,6 +260,13 @@ public partial class App : Application
         _appearanceSettings = _appearanceSettingsStore.Load();
         _automaticThemeScheduler = new AutomaticThemeScheduler(theme => _ = ApplyThemeVariantAsync(theme));
         Notifications.SetDoNotDisturb(SessionState.DoNotDisturb);
+        Notifications.IsApplicationAllowed = sourceApp =>
+        {
+            var appId = sourceApp.Trim();
+            if (appId.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)) appId = appId[..^8];
+            var key = "notifications.app." + appId.ToLowerInvariant();
+            return SessionState.GetPreference(key, "true") != "false";
+        };
         Notifications.NotificationActionTriggered += OnNotificationActionTriggered;
         if (_applicationStartup is null)
             AppearanceChanged += (_, _) => _ = ExportWindowDecorationThemeAsync();

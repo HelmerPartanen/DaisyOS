@@ -296,6 +296,11 @@ namespace DaisyOS.Shell.Views.Components.Desktop
                     await shell.LaunchDesktopApplicationAsync(item.State.Id, activation);
                     return;
                 }
+                if (item.IsDirectory && Application.Current is App fileShell)
+                {
+                    fileShell.ShowFiles(item.State.Id);
+                    return;
+                }
                 if (item.Id.Value == DesktopItemViewModel.TrashItemId && Application.Current is App desktopShell)
                 {
                     await desktopShell.ShowTrashAsync();

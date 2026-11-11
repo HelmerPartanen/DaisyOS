@@ -15,6 +15,7 @@ internal sealed class SystemAppWindowChrome : IDisposable
 {
     private static readonly ConditionalWeakTable<Window, SystemAppWindowChrome> Instances = new();
     private readonly Window _window;
+    private readonly Border? _windowFrame;
     private readonly Control _titleBar;
     private readonly Grid _contentLayout;
     private readonly string _normalRowDefinitions;
@@ -35,6 +36,22 @@ internal sealed class SystemAppWindowChrome : IDisposable
         _contentLayout = contentLayout;
         _normalRowDefinitions = normalRowDefinitions;
         _fullscreenRowDefinitions = fullscreenRowDefinitions;
+
+        // Clip the complete client surface at the window's rounded corners.
+        // Clipping only the titlebar control leaves adjacent content and caption
+        // buttons free to paint outside the app window's shape.
+        if (_window.Content is Control content)
+        {
+            _window.Content = null;
+            _windowFrame = new Border
+            {
+                Background = Avalonia.Media.Brushes.Transparent,
+                CornerRadius = new CornerRadius(16),
+                ClipToBounds = true,
+                Child = content
+            };
+            _window.Content = _windowFrame;
+        }
 
         Instances.Add(_window, this);
         _window.PropertyChanged += OnWindowPropertyChanged;
@@ -205,6 +222,8 @@ internal sealed class SystemAppWindowChrome : IDisposable
             _fullscreenRowDefinitions);
         _titleBar.IsVisible = presentation.TitleBarVisible;
         _contentLayout.RowDefinitions = new RowDefinitions(presentation.RowDefinitions);
+        if (_windowFrame is not null)
+            _windowFrame.CornerRadius = presentation.FillsDisplay ? default : new CornerRadius(16);
         if (state != WindowState.Normal) _window.Cursor = null;
     }
 

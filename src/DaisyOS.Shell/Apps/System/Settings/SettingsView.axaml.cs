@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Templates;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -90,8 +91,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private static readonly (string Title, string[] Categories)[] NavigationGroups =
         [
             ("SYSTEM", ["System", "Displays", "Sound"]),
+            ("HARDWARE", ["Battery"]),
             ("CONNECTIONS", ["Network", "Ethernet", "Bluetooth", "Continuity"]),
-            ("PERSONALIZATION", ["Appearance", "LockScreen", "Notifications", "Apps"]),
+            ("PERSONALIZATION", ["Appearance", "LockScreen", "Notifications", "Apps", "Password"]),
+            ("GAMING", ["Gaming"]),
             ("MANAGEMENT", ["Storage", "Accessibility", "Input", "DateTime", "About"])
         ];
 
@@ -101,6 +104,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Continuity", "CONTINUITY", "Text clipboard", "Share copied text with a trusted device", "continuity clipboard copy paste"),
             new("Continuity", "CONTINUITY", "File sharing", "Send files to a paired DaisyOS device", "continuity file transfer send receive"),
             new("System", "POWER", "Power mode", "Battery saver, performance mode, energy", "power battery energy performance saver"),
+            new("Battery", "BATTERY", "Battery", "Battery status, charging and power saving", "battery charging percentage power saver sleep"),
+            new("Password", "PASSWORD", "Account password", "Manage password, passwordless sign-in, biometric sign-in and hint", "password security fingerprint biometric no password hint login sign-in"),
             new("System", "DESKTOP", "System bar date", "Show the date beside the clock", "clock date taskbar system bar"),
             new("Displays", "DISPLAY", "Resolution", "Choose display resolution", "resolution display screen size monitor 1080p 1440p 4k"),
             new("Displays", "DISPLAY", "Display scale", "Text and app size", "scale zoom display text size"),
@@ -126,6 +131,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Accessibility", "DISPLAY", "High contrast", "Increase contrast between text and surfaces", "high contrast accessibility visibility"),
             new("Accessibility", "VISION", "Reduce motion", "Reduce desktop movement animations", "motion animation accessibility"),
             new("Notifications", "FOCUS", "Do not disturb", "Pause notification interruptions", "do not disturb focus notifications quiet"),
+            new("Gaming", "GAMING MODE", "Gaming Mode", "Improve game performance and reduce interruptions", "gaming game mode performance battery games"),
+            new("Gaming", "GAME TOOLS", "FPS overlay", "Show game performance statistics", "gaming fps overlay mangohud"),
             new("InstalledApps", "", "Installed apps", "Repair or uninstall applications", "installed apps applications uninstall repair remove modify"),
             new("Apps", "DEFAULT APPLICATIONS", "Default apps", "Web links and new-file defaults", "default app browser links files"),
             new("Input", "LANGUAGE", "System language", "Choose the desktop language", "language locale translation english finnish suomi kieli"),
@@ -522,6 +529,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 "LockScreen" => Loc.Get("Lock Screen"),
                 "Displays" => Loc.Get("Displays"),
+                "Battery" => Loc.Get("Battery"),
+                "Password" => Loc.Get("Password"),
                 "Sound" => Loc.Get("Sound"),
                 "Network" => Loc.Get("Wi-Fi"),
                 "Ethernet" => Loc.Get("Ethernet"),
@@ -587,12 +596,15 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var description = category switch
             {
                 "Displays" => Loc.Get("Arrange screens and tune how content is presented."),
+                "Battery" => Loc.Get("Review battery status and choose how your device uses power."),
+                "Password" => Loc.Get("Manage your account password, sign-in options, biometric access, and hint."),
                 "Sound" => Loc.Get("Choose devices and control every active audio stream."),
                 "Network" => Loc.Get("Manage Wi-Fi and wireless networks."),
                 "Ethernet" => Loc.Get("Manage your wired connection."),
                 "Bluetooth" => Loc.Get("Connect and manage nearby accessories."),
                 "Continuity" => Loc.Get("Use your keyboard, mouse and speakers across nearby DaisyOS computers."),
                 "Notifications" => Loc.Get("Control when the desktop may interrupt you."),
+                "Gaming" => Loc.Get("Configure game performance, automatic activation, and gaming tools."),
                 "Apps" => Loc.Get("Manage installed applications and choose which apps open common content."),
                 "InstalledApps" => Loc.Get("Find, repair, or remove applications installed on this computer."),
                 "Storage" => Loc.Get("Understand how space is used across mounted drives."),
@@ -608,12 +620,15 @@ namespace DaisyOS.Shell.Apps.System.Settings
             switch (category)
             {
                 case "Displays": BuildDisplays(buildVersion); break;
+                case "Battery": BuildBattery(buildVersion); break;
+                case "Password": BuildPassword(); break;
                 case "Sound": BuildSound(buildVersion); break;
                 case "Network": BuildNetwork(buildVersion); break;
                 case "Ethernet": BuildEthernet(buildVersion); break;
                 case "Bluetooth": BuildBluetooth(buildVersion); break;
                 case "Continuity": BuildContinuity(buildVersion); break;
                 case "Notifications": BuildNotifications(); break;
+                case "Gaming": BuildGaming(); break;
                 case "Apps": BuildApps(buildVersion); break;
                 case "InstalledApps": BuildInstalledApplicationsSection(buildVersion); break;
                 case "Storage": BuildStorage(); break;
@@ -627,77 +642,101 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private void BuildSystem(int buildVersion)
         {
-            var checking = Secondary(Loc.Get("Reading system power profile…"));
-            CategoryContent.Children.Add(checking);
-            _ = BuildSystemAsync(buildVersion, checking);
+            AddSection(Loc.Get("DESKTOP"), null,
+                Toggle("Show date in the system bar", "system.show-date", false, value => { if (Application.Current is App app) app.SessionState.ShowDateInSystemBar = value; }));
         }
 
         private async Task BuildSystemAsync(int buildVersion, TextBlock checking)
         {
-            var powerService = new LinuxPowerService(new SafeCommandRunner());
-            var runner = new SafeCommandRunner();
-            var profileTask = runner.RunAsync("powerprofilesctl", ["get"], TimeSpan.FromSeconds(2));
             var batteryTask = new LinuxBatteryStatusService().GetStatusAsync();
-            await Task.WhenAll(profileTask, batteryTask);
-            var profileStatus = await profileTask;
             var batteryStatus = await batteryTask;
-            PowerBatteryIcon.Percentage = batteryStatus.ChargePercent ?? 0;
-            PowerBatteryIcon.IsCharging = BatteryStatusView.IsChargingState(batteryStatus.State);
+            if (buildVersion != _categoryBuildVersion) return;
+            CategoryContent.Children.Remove(checking);
+            AddPowerAndSleepSections(batteryStatus.IsPresent);
+        }
 
+        private void BuildBattery(int buildVersion)
+        {
+            var checking = Secondary(Loc.Get("Reading battery status…"));
+            CategoryContent.Children.Add(checking);
+            _ = BuildBatteryAsync(buildVersion, checking);
+        }
+
+        private async Task BuildBatteryAsync(int buildVersion, TextBlock checking)
+        {
+            var runner = new SafeCommandRunner();
+            var batteryTask = new LinuxBatteryStatusService().GetStatusAsync();
+            var profileTask = runner.RunAsync("powerprofilesctl", ["get"], TimeSpan.FromSeconds(2));
+            await Task.WhenAll(batteryTask, profileTask);
             if (buildVersion != _categoryBuildVersion) return;
             CategoryContent.Children.Remove(checking);
 
-            if (profileStatus.Succeeded && !string.IsNullOrWhiteSpace(profileStatus.StandardOutput))
+            var battery = await batteryTask;
+            if (battery.IsPresent)
             {
-                var currentProfile = profileStatus.StandardOutput.Trim() switch
+                if (battery.ChargePercent is { } chargePercent)
                 {
-                    "power-saver" => "Power saver",
-                    "performance" => "Performance",
-                    _ => "Balanced"
-                };
-                AddSection(Loc.Get("POWER"), Loc.Get("Choose how the system balances battery life and speed."),
-                    Picker("Power mode", "power.mode", currentProfile, async mode =>
-                    {
-                        if (!await powerService.SetPowerProfileAsync(mode))
-                        {
-                            (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the power mode. The system power-profile service rejected the request."));
-                            ShowCategory("System");
-                        }
-                    }, "Balanced", "Power saver", "Performance"));
-            }
-            else
-            {
-                AddUnavailableMessage(Loc.Get("Power modes aren’t available because the system power-profile service is missing or stopped."));
-            }
-
-            if (batteryStatus.IsPresent)
-            {
-                if (batteryStatus.ChargePercent is { } chargePercent)
-                {
-                    var batteryView = new BatteryStatusView
+                    var view = new BatteryStatusView
                     {
                         ChargePercent = chargePercent,
-                        IsCharging = BatteryStatusView.IsChargingState(batteryStatus.State),
-                        StateText = Loc.Get(batteryStatus.State),
-                        ShowState = true,
-                        Foreground = TryBrush("ContentSecondaryBrush"),
-                        VerticalAlignment = VerticalAlignment.Center
+                        IsCharging = BatteryStatusView.IsChargingState(battery.State),
+                        StateText = Loc.Get(battery.State), ShowState = true,
+                        Foreground = TryBrush("ContentSecondaryBrush"), VerticalAlignment = VerticalAlignment.Center
                     };
-                    ToolTip.SetTip(batteryView, batteryStatus.Detail);
-                    AddSection(Loc.Get("BATTERY"), Loc.Get("Live status reported by the system power supply."),
-                        PreferenceRow(Loc.Get("Battery"), null, batteryView));
+                    ToolTip.SetTip(view, battery.Detail);
+                    AddSection(Loc.Get("BATTERY STATUS"), Loc.Get("Live status reported by the system power supply."),
+                        PreferenceRow(Loc.Get("Battery"), null, view));
                 }
-                else
-                {
-                    AddSection(Loc.Get("BATTERY"), Loc.Get("Live status reported by the system power supply."),
-                        InfoRow(Loc.Get("Battery"), Loc.Get(batteryStatus.State)));
-                }
+                else AddSection(Loc.Get("BATTERY STATUS"), null, InfoRow(Loc.Get("Battery"), Loc.Get(battery.State)));
             }
+            else AddSection(Loc.Get("BATTERY STATUS"), null,
+                InfoRow(Loc.Get("Battery"), Loc.Get("This device does not report a built-in battery.")));
 
-            AddPowerAndSleepSections(batteryStatus.IsPresent);
+            if (profileTask.Result.Succeeded)
+            {
+                var profile = profileTask.Result.StandardOutput.Trim() switch
+                {
+                    "power-saver" => "Power saver", "performance" => "Performance", _ => "Balanced"
+                };
+                AddSection(Loc.Get("POWER MODE"), Loc.Get("Choose how the system balances battery life and speed."),
+                    Picker("Power mode", "power.mode", profile, async mode =>
+                    {
+                        var powerService = new LinuxPowerService(runner);
+                        if (!await powerService.SetPowerProfileAsync(mode))
+                            (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the power mode. The system power-profile service rejected the request."));
+                        else (Application.Current as App)?.SetPreference("power.mode", mode);
+                    }, "Balanced", "Power saver", "Performance"));
+            }
+            else AddUnavailableMessage(Loc.Get("Power modes aren’t available because the system power-profile service is missing or stopped."));
 
-            AddSection(Loc.Get("DESKTOP"), null,
-                Toggle("Show date in the system bar", "system.show-date", false, value => { if (Application.Current is App app) app.SessionState.ShowDateInSystemBar = value; }));
+            AddPowerAndSleepSections(battery.IsPresent);
+        }
+
+        private void BuildPassword()
+        {
+            var app = Application.Current as App;
+            var rows = new List<Control>
+            {
+                SettingsAction("Open User Accounts", "Set or remove your account password and configure fingerprint sign-in in KDE User Manager.", "user-circle", () =>
+                {
+                    var launcher = new SafeProcessLauncher();
+                    var result = launcher.Launch("systemsettings", ["kcm_users"]);
+                    if (!result.Succeeded) result = launcher.Launch("kcmshell6", ["users"]);
+                    if (!result.Succeeded) app?.Feedback.Show(Loc.Get("KDE User Manager could not be opened."));
+                })
+            };
+            AddSection(Loc.Get("SIGN-IN"), Loc.Get("Account password and biometric sign-in are managed by KDE and your system’s PAM configuration."), rows.ToArray());
+
+            var hint = new TextBox
+            {
+                Text = app?.GetPreference("security.password-hint", "") ?? "",
+                PlaceholderText = Loc.Get("A reminder only you will understand"),
+                MinHeight = 40, VerticalContentAlignment = VerticalAlignment.Center,
+                HorizontalAlignment = HorizontalAlignment.Stretch
+            };
+            hint.TextChanged += (_, _) => app?.SetPreference("security.password-hint", hint.Text ?? "");
+            AddSection(Loc.Get("PASSWORD HINT"), Loc.Get("This hint is saved on this device. Never include your password in it."),
+                PreferenceRow(Loc.Get("Hint"), null, hint));
         }
 
         private void AddPowerAndSleepSections(bool hasBattery)
@@ -736,13 +775,18 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 Loc.Get("Choose what happens when you stop using the computer. The display stays on and the computer stays awake while Gaming Mode is on or an app such as a video player asks to keep it awake."),
                 sleepRows.ToArray());
 
+            AddSection(Loc.Get("POWER"), Loc.Get("Choose how the system balances battery life and speed."),
+                Picker("Power mode", "power.mode", (app?.GetPreference("power.mode", "Balanced") ?? "Balanced"), async mode =>
+                {
+                    var powerService = new LinuxPowerService(new SafeCommandRunner());
+                    if (!await powerService.SetPowerProfileAsync(mode))
+                    {
+                        app?.Feedback.Show(Loc.Get("Couldn’t change the power mode. The system power-profile service rejected the request."));
+                    }
+                    else app?.SetPreference("power.mode", mode);
+                }, "Balanced", "Power saver", "Performance"));
+
             var energyRows = new List<Control>();
-            if (hasBattery)
-            {
-                energyRows.Add(Toggle("Pause live wallpapers on battery", PowerPreferences.PauseLiveWallpaperOnBatteryKey,
-                    PowerPreferences.ParseBool(Current(PowerPreferences.PauseLiveWallpaperOnBatteryKey, "true"), true),
-                    SaveBool(PowerPreferences.PauseLiveWallpaperOnBatteryKey)));
-            }
             energyRows.Add(Toggle("Free desktop memory while gaming or locked", PowerPreferences.ReleaseMemoryWhenGamingKey,
                 PowerPreferences.ParseBool(Current(PowerPreferences.ReleaseMemoryWhenGamingKey, "true"), true),
                 SaveBool(PowerPreferences.ReleaseMemoryWhenGamingKey)));
@@ -884,6 +928,65 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
             var displayRows = new List<Control>();
             displayRows.Add(InfoRow(Loc.Get("Selected display"), $"{display.Name} ({display.Width} × {display.Height}){(display.IsPrimary ? " • Main Display" : "")}"));
+
+            var rotationChoices = new (string Label, string Value)[]
+            {
+                ("Landscape", "none"), ("Portrait, rotated left", "left"),
+                ("Portrait, rotated right", "right"), ("Landscape, flipped", "inverted")
+            };
+            var currentRotation = display.Rotation switch { 2 => "left", 4 => "inverted", 8 => "right", _ => "none" };
+            displayRows.Add(Picker("Orientation", "display.orientation", rotationChoices.First(x => x.Value == currentRotation).Label, selected =>
+            {
+                var rotation = rotationChoices.FirstOrDefault(x => x.Label == selected).Value ?? "none";
+                _ = ApplyKScreenSettingAsync(outputName, "orientation", _ => $"output.{outputName}.rotation.{rotation}", buildVersion);
+            }, rotationChoices.Select(x => x.Label).ToArray()));
+
+            if (display.Brightness >= 0)
+            {
+                var brightness = new Slider { Minimum = 0, Maximum = 100, Value = Math.Clamp(display.Brightness, 0, 100), Width = 220, VerticalAlignment = VerticalAlignment.Center };
+                var brightnessValue = new TextBlock { Text = $"{Math.Clamp(display.Brightness, 0, 100)}%", MinWidth = 42, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right };
+                var brightnessPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Children = { brightness, brightnessValue } };
+                var brightnessTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
+                int lastBrightness = (int)Math.Clamp(display.Brightness, 0, 100);
+                brightness.PropertyChanged += (_, args) =>
+                {
+                    if (args.Property != RangeBase.ValueProperty) return;
+                    var value = (int)Math.Round(brightness.Value);
+                    brightnessValue.Text = $"{value}%";
+                    lastBrightness = value;
+                    brightnessTimer.Stop(); brightnessTimer.Start();
+                };
+                brightnessTimer.Tick += async (_, _) =>
+                {
+                    brightnessTimer.Stop();
+                    await DisplayCommandRunner.RunAsync("kscreen-doctor", [$"output.{outputName}.brightness.{lastBrightness}"], TimeSpan.FromSeconds(3));
+                };
+                displayRows.Add(PreferenceRow(Loc.Get("Brightness"), Loc.Get("Screen brightness for this display."), brightnessPanel));
+            }
+
+            var colorSources = new[] { "sRGB", "EDID", "ICC" };
+            var currentColorSource = display.ColorProfileSource is { Length: > 0 } source && colorSources.Contains(source) ? source : "sRGB";
+            displayRows.Add(Picker("Color profile", "display.color-profile", currentColorSource, selected =>
+                _ = ApplyKScreenSettingAsync(outputName, "color profile", _ => $"output.{outputName}.colorProfileSource.{selected}", buildVersion), colorSources));
+
+            displayRows.Add(Picker("Color accuracy", "display.color-accuracy", display.WideColorGamutEnabled ? "Wide color" : "Standard color", selected =>
+                _ = ApplyKScreenSettingAsync(outputName, "color accuracy", _ => $"output.{outputName}.wcg.{(selected == "Wide color" ? "enable" : "disable")}", buildVersion),
+                "Standard color", "Wide color"));
+
+            if (display.MaxBpc > 0)
+            {
+                var bitDepths = new[] { 6, 8, 10, 12, 16 }.Where(value => value <= display.MaxBpc).ToArray();
+                if (bitDepths.Length > 0)
+                {
+                    var bitDepthOptions = bitDepths.Select(value => $"{value}-bit").ToArray();
+                    var currentBpc = Math.Clamp(display.MaxBpc, bitDepths[0], bitDepths[^1]);
+                    displayRows.Add(Picker("Color bit rate", "display.color-bit-rate", $"{currentBpc}-bit", selected =>
+                    {
+                        if (int.TryParse(selected.Replace("-bit", ""), out var bpc))
+                            _ = ApplyKScreenSettingAsync(outputName, "color bit rate", _ => $"output.{outputName}.maxBpc.{bpc}", buildVersion);
+                    }, bitDepthOptions));
+                }
+            }
 
             displayRows.Add(Picker("Resolution", "display.resolution", currentResolutionText, selectedResolution =>
             {
@@ -1339,7 +1442,13 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 AddSection(Loc.Get("WI-FI"), Loc.Get("Choose a network to connect to."),
                     Toggle("Wi-Fi", "network.wifi", radio.IsEnabled, value => { _ = SetWifi(value); }),
-                    InfoRow(Loc.Get("Current connection"), connected ? networkStatus.DisplayName : Loc.Get("Not connected")));
+                    PreferenceRow(Loc.Get("Current connection"), null,
+                        InfoValue(connected ? networkStatus.DisplayName : Loc.Get("Not connected")),
+                        leadingOverride: connected
+                            ? CreateWifiSignalIcon(networkStatus.SignalPercent ?? 0)
+                            : new DaisyIcon { Icon = "wifi-off", Foreground = TryBrush("ContentSecondaryBrush"), Width = 20, Height = 20,
+                                VerticalAlignment = VerticalAlignment.Center, HorizontalAlignment = HorizontalAlignment.Center,
+                                Margin = new Thickness(0, 0, 14, 0) }));
 
                 if (radio.IsEnabled && wirelessNetworks is { IsAvailable: true })
                 {
@@ -1708,9 +1817,42 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             AddSection(Loc.Get("FOCUS"), Loc.Get("Notifications still appear in Notification Centre while focus is on."),
                 Toggle("Do not disturb", "notifications.dnd", false, value => { if (Application.Current is App app) app.SetDoNotDisturb(value); }));
+
+            var service = new InstalledApplicationService();
+            var apps = service.GetInstalledApplications()
+                .Where(app => app.LaunchKind != AppLaunchKind.Internal)
+                .OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+            if (apps.Length == 0)
+            {
+                AddUnavailableMessage(Loc.Get("No applications are available to configure."));
+                return;
+            }
+
+            var rows = new List<Control>();
             var shell = Application.Current as App;
-            AddSection(Loc.Get("GAMING"), Loc.Get("Gaming Mode requests GameMode while you play. Performance requests are suppressed on battery by default; you can opt in below."),
-                Toggle("Gaming Mode", "gaming.mode", false, value => { if (shell is not null) shell.SessionState.GamingMode = value; }),
+            foreach (var application in apps)
+            {
+                var appId = application.Id.Trim();
+                if (appId.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)) appId = appId[..^8];
+                var key = "notifications.app." + appId.ToLowerInvariant();
+                var iconPath = DesktopItemLoader.ResolveApplicationIconPath([application.Icon, application.Id, application.Name]);
+                var icon = new Image { Width = 24, Height = 24, Stretch = Avalonia.Media.Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center };
+                try { if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath)) icon.Source = new Bitmap(iconPath); }
+                catch { }
+                var enabled = shell?.GetPreference(key, "true") != "false";
+                var toggle = new ToggleSwitch { IsChecked = enabled, VerticalAlignment = VerticalAlignment.Center };
+                toggle.Click += (_, _) => shell?.SetPreference(key, toggle.IsChecked == true ? "true" : "false");
+                var label = new TextBlock { Text = application.Name, Classes = { "SettingsLabel" }, VerticalAlignment = VerticalAlignment.Center };
+                rows.Add(PreferenceRow(application.Name, null, toggle, leadingOverride: icon));
+            }
+            AddSection(Loc.Get("APP NOTIFICATIONS"), Loc.Get("Choose which installed applications can send notifications."), rows.ToArray());
+        }
+
+        private void BuildGaming()
+        {
+            var shell = Application.Current as App;
+            AddSection(Loc.Get("GAMING MODE"), Loc.Get("Improve game performance and reduce interruptions while you play."),
+                Toggle("Gaming Mode", "gaming.mode", shell?.SessionState.GamingMode == true, value => { if (shell is not null) shell.SessionState.GamingMode = value; }),
                 Toggle("Turn on automatically when a game starts", GamingModeAutomation.AutomaticPreferenceKey,
                     shell?.GetPreference(GamingModeAutomation.AutomaticPreferenceKey, "true") != "false",
                     value => shell?.SetPreference(GamingModeAutomation.AutomaticPreferenceKey, value ? "true" : "false")),
@@ -1719,34 +1861,49 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     value => shell?.SetPreference(GamingPowerPolicy.BatteryBoostPreferenceKey, value ? "true" : "false")),
                 Toggle("Use Performance power profile while gaming", GamingPowerPolicy.PerformanceProfilePreferenceKey,
                     shell?.GetPreference(GamingPowerPolicy.PerformanceProfilePreferenceKey, "true") != "false",
-                    value => shell?.SetPreference(GamingPowerPolicy.PerformanceProfilePreferenceKey, value ? "true" : "false")),
-                SettingsAction("Open Steam Library", "Choose a Proton version per game in Properties > Compatibility. Clear Force to restore Steam's default.", "game-controller", () =>
+                    value => shell?.SetPreference(GamingPowerPolicy.PerformanceProfilePreferenceKey, value ? "true" : "false")));
+
+            var toolsSection = new StackPanel { Spacing = 12 };
+            var toolsHeading = new StackPanel { Spacing = 4 };
+            toolsHeading.Children.Add(new TextBlock { Text = SentenceCase(Loc.Get("GAME TOOLS")), Classes = { "SettingsSectionTitle" } });
+            toolsHeading.Children.Add(Secondary(Loc.Get("Open tools for your games and performance monitoring.")));
+            toolsSection.Children.Add(toolsHeading);
+            var toolCards = new StackPanel { Spacing = 8 };
+            toolCards.Children.Add(SettingsAction("Open Steam Library", "Choose a Proton version per game in Properties > Compatibility. Clear Force to restore Steam's default.", "game-controller", () =>
                 {
                     var result = new SafeProcessLauncher().Launch("steam", []);
                     if (!result.Succeeded)
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Steam is not installed or could not be opened."));
-                }),
-                SettingsAction("Toggle FPS and performance overlay", "Show or hide the MangoHud-backed monitor. Capture runs only while it is visible.", "game-controller", () => shell?.ToggleGamingOverlay()),
-                SettingsAction("Open GOverlay", "Configure optional MangoHud and GameMode launch settings.", "sliders-horizontal", () =>
+                }));
+            toolCards.Children.Add(SettingsAction("Toggle FPS and performance overlay", "Show or hide the MangoHud-backed monitor. Capture runs only while it is visible.", "game-controller", () => shell?.ToggleGamingOverlay()));
+            toolCards.Children.Add(SettingsAction("Open GOverlay", "Configure optional MangoHud and GameMode launch settings.", "sliders-horizontal", () =>
                 {
                     var result = new SafeProcessLauncher().Launch("goverlay", []);
                     if (!result.Succeeded)
                         (Application.Current as App)?.Feedback.Show(Loc.Get("GOverlay is optional. Install it from the DaisyOS gaming package profile."));
-                }),
-                Secondary(Loc.Get("Optional Gamescope: add gamescope -f -- %command% to one game's Steam launch options. Remove it to disable. Do not stack frame limiters.")),
-                Secondary(Loc.Get("Proton compatibility varies by game. Anti-cheat support depends on each game's publisher.")));
+                }));
+            toolsSection.Children.Add(toolCards);
+            CategoryContent.Children.Add(toolsSection);
+
+            var notes = new StackPanel { Spacing = 8, Margin = new Thickness(2, 0) };
+            var gamescope = Secondary(Loc.Get("Optional Gamescope: add gamescope -f -- %command% to one game's Steam launch options. Remove it to disable. Do not stack frame limiters."));
+            gamescope.TextWrapping = TextWrapping.Wrap;
+            var compatibility = Secondary(Loc.Get("Proton compatibility varies by game. Anti-cheat support depends on each game's publisher."));
+            compatibility.TextWrapping = TextWrapping.Wrap;
+            notes.Children.Add(gamescope);
+            notes.Children.Add(compatibility);
+            CategoryContent.Children.Add(notes);
         }
 
         private Button SettingsAction(string title, string description, string icon, Action activate, string? value = null, bool literalTitle = false, bool literalDescription = false)
         {
             var glyph = new DaisyIcon { Icon = icon, Size = 20, Margin = new Thickness(0, 0, 14, 0), VerticalAlignment = VerticalAlignment.Center };
             glyph.Bind(DaisyIcon.ForegroundProperty, this.GetResourceObservable("ContentSecondaryBrush"));
-            var label = new TextBlock { Classes = { "SettingsLabel" }, TextWrapping = TextWrapping.NoWrap, TextTrimming = TextTrimming.CharacterEllipsis };
+            var label = new TextBlock { Classes = { "SettingsLabel" }, TextWrapping = TextWrapping.Wrap };
             if (literalTitle) label.Text = title;
             else Loc.Bind(label, TextBlock.TextProperty, title);
             var detail = Secondary(literalDescription ? description : Loc.Get(description));
-            detail.TextWrapping = TextWrapping.NoWrap;
-            detail.TextTrimming = TextTrimming.CharacterEllipsis;
+            detail.TextWrapping = TextWrapping.Wrap;
             var labels = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center, Children = { label, detail } };
             var size = Secondary(value ?? "");
             size.VerticalAlignment = VerticalAlignment.Center;
@@ -1782,21 +1939,54 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
             var defaultRows = new List<Control>();
 
+            Border AppPicker(string title, string key, IReadOnlyList<AppAssociationInfo> choices, string selectedDesktopId,
+                Func<AppAssociationInfo, Task> onChanged)
+            {
+                var selected = choices.FirstOrDefault(app => string.Equals(app.DesktopId, selectedDesktopId, StringComparison.OrdinalIgnoreCase)) ?? choices[0];
+                var picker = new ComboBox
+                {
+                    MinWidth = 210, MaxWidth = 440, Height = 40,
+                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                    VerticalContentAlignment = VerticalAlignment.Center,
+                    ItemTemplate = new FuncDataTemplate<AppAssociationInfo>((item, _) => BuildAppChoice(item)),
+                    SelectionBoxItemTemplate = new FuncDataTemplate<AppAssociationInfo>((item, _) => BuildAppChoice(item))
+                };
+                picker.Classes.Add("ThemeModePicker");
+                foreach (var choice in choices) picker.Items.Add(choice);
+                picker.SelectedItem = selected;
+                picker.SelectionChanged += async (_, _) =>
+                {
+                    if (picker.SelectedItem is AppAssociationInfo chosen && chosen.DesktopId != selected.DesktopId)
+                        await onChanged(chosen);
+                };
+                return PreferenceRow(Loc.Get(title), null, picker);
+            }
+
+            Control BuildAppChoice(AppAssociationInfo choice)
+            {
+                var path = DesktopItemLoader.ResolveApplicationIconPath([choice.IconName, choice.DesktopId, choice.DisplayName]);
+                var image = new Image { Width = 24, Height = 24, Stretch = Avalonia.Media.Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center };
+                try { if (!string.IsNullOrWhiteSpace(path) && File.Exists(path)) image.Source = new Bitmap(path); }
+                catch { }
+                return new StackPanel
+                {
+                    Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center,
+                    Children = { image, new TextBlock { Text = choice.DisplayName, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis } }
+                };
+            }
+
             // 1. Web Browser
             if (status.AvailableBrowsers.Count > 0)
             {
-                var browserNames = status.AvailableBrowsers.Select(b => b.DisplayName).Distinct().ToArray();
-                var currentBrowser = status.AvailableBrowsers.FirstOrDefault(b => string.Equals(b.DesktopId, status.CurrentBrowserDesktopId, StringComparison.OrdinalIgnoreCase))?.DisplayName
-                    ?? browserNames[0];
-                defaultRows.Add(Picker("Web browser", "apps.default-browser", currentBrowser, async chosenName =>
+                var browsers = status.AvailableBrowsers.GroupBy(b => b.DesktopId, StringComparer.OrdinalIgnoreCase).Select(group => group.First()).ToArray();
+                defaultRows.Add(AppPicker("Web browser", "apps.default-browser", browsers, status.CurrentBrowserDesktopId, async app =>
                 {
-                    var app = status.AvailableBrowsers.FirstOrDefault(b => b.DisplayName == chosenName);
-                    if (app is not null && !await defaultAppsService.SetDefaultBrowserAsync(app.DesktopId))
+                    if (!await defaultAppsService.SetDefaultBrowserAsync(app.DesktopId))
                     {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the default browser."));
                         ShowCategory("Apps");
                     }
-                }, browserNames));
+                }));
             }
             else
             {
@@ -1806,35 +1996,29 @@ namespace DaisyOS.Shell.Apps.System.Settings
             // 2. File Manager
             if (status.AvailableFileManagers.Count > 0)
             {
-                var fmNames = status.AvailableFileManagers.Select(f => f.DisplayName).Distinct().ToArray();
-                var currentFm = status.AvailableFileManagers.FirstOrDefault(f => string.Equals(f.DesktopId, status.CurrentFileManagerDesktopId, StringComparison.OrdinalIgnoreCase))?.DisplayName
-                    ?? fmNames[0];
-                defaultRows.Add(Picker("File manager", "apps.default-filemanager", currentFm, async chosenName =>
+                var fileManagers = status.AvailableFileManagers.GroupBy(f => f.DesktopId, StringComparer.OrdinalIgnoreCase).Select(group => group.First()).ToArray();
+                defaultRows.Add(AppPicker("File manager", "apps.default-filemanager", fileManagers, status.CurrentFileManagerDesktopId, async app =>
                 {
-                    var app = status.AvailableFileManagers.FirstOrDefault(f => f.DisplayName == chosenName);
-                    if (app is not null && !await defaultAppsService.SetDefaultFileManagerAsync(app.DesktopId))
+                    if (!await defaultAppsService.SetDefaultFileManagerAsync(app.DesktopId))
                     {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the default file manager."));
                         ShowCategory("Apps");
                     }
-                }, fmNames));
+                }));
             }
 
             // 3. Text Editor
             if (status.AvailableTextEditors.Count > 0)
             {
-                var editorNames = status.AvailableTextEditors.Select(e => e.DisplayName).Distinct().ToArray();
-                var currentEd = status.AvailableTextEditors.FirstOrDefault(e => string.Equals(e.DesktopId, status.CurrentTextEditorDesktopId, StringComparison.OrdinalIgnoreCase))?.DisplayName
-                    ?? editorNames[0];
-                defaultRows.Add(Picker("Text editor", "apps.default-editor", currentEd, async chosenName =>
+                var editors = status.AvailableTextEditors.GroupBy(e => e.DesktopId, StringComparer.OrdinalIgnoreCase).Select(group => group.First()).ToArray();
+                defaultRows.Add(AppPicker("Text editor", "apps.default-editor", editors, status.CurrentTextEditorDesktopId, async app =>
                 {
-                    var app = status.AvailableTextEditors.FirstOrDefault(e => e.DisplayName == chosenName);
-                    if (app is not null && !await defaultAppsService.SetDefaultTextEditorAsync(app.DesktopId))
+                    if (!await defaultAppsService.SetDefaultTextEditorAsync(app.DesktopId))
                     {
                         (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t change the default text editor."));
                         ShowCategory("Apps");
                     }
-                }, editorNames));
+                }));
             }
 
             AddSection(Loc.Get("DEFAULT APPLICATIONS"), Loc.Get("The system uses these choices to open web links and documents."), defaultRows.ToArray());
@@ -2607,6 +2791,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var result = await new LinuxDateTimeSettingsService(new SafeCommandRunner()).SetAutomaticTimeAsync(enabled);
                 if (buildVersion != _categoryBuildVersion)
                 {
+                    automaticTime.IsEnabled = true;
                     return;
                 }
 
@@ -2655,6 +2840,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var result = await new LinuxDateTimeSettingsService(new SafeCommandRunner()).SetTimeZoneAsync(selected.Id);
                 if (buildVersion != _categoryBuildVersion)
                 {
+                    zonePicker.IsEnabled = true;
                     return;
                 }
 
@@ -2686,7 +2872,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var currentTimePattern = useTwelveHourTime ? "dddd, d MMMM yyyy, h:mm tt" : "dddd, d MMMM yyyy, HH:mm";
             var currentTimeRow = InfoRow(Loc.Get("Current time"), status.LocalTime.ToString(currentTimePattern, global::System.Globalization.CultureInfo.CurrentCulture));
             var currentTimeLabel = currentTimeRow.GetVisualDescendants().OfType<TextBlock>().LastOrDefault();
-            TimePicker? manualTimePicker = null;
+            TextBox? manualTimeInput = null;
 
             var timeFormatPicker = Picker("Time format", "time.clock-format", currentClockFormat, selected =>
             {
@@ -2696,8 +2882,12 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var pattern = twelveHour ? "dddd, d MMMM yyyy, h:mm tt" : "dddd, d MMMM yyyy, HH:mm";
                 if (currentTimeLabel is not null)
                     currentTimeLabel.Text = status.LocalTime.ToString(pattern, global::System.Globalization.CultureInfo.CurrentCulture);
-                if (manualTimePicker is not null)
-                    manualTimePicker.ClockIdentifier = twelveHour ? "12HourClock" : "24HourClock";
+                if (manualTimeInput is not null)
+                {
+                    if (TimeOnly.TryParse(manualTimeInput.Text, CultureInfo.CurrentCulture, DateTimeStyles.None, out var currentTime))
+                        manualTimeInput.Text = currentTime.ToString(twelveHour ? "h:mm tt" : "HH:mm", CultureInfo.CurrentCulture);
+                    manualTimeInput.PlaceholderText = twelveHour ? "h:mm tt" : "HH:mm";
+                }
             }, "24-hour", "12-hour");
 
             AddSection(Loc.Get("TIME"), Loc.Get("Choose how your computer sets the date and time."),
@@ -2709,7 +2899,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             if (!status.AutomaticTime)
             {
                 var manualRow = ManualDateTimeRow(status.LocalTime, buildVersion, useTwelveHourTime);
-                manualTimePicker = manualRow.GetVisualDescendants().OfType<TimePicker>().FirstOrDefault();
+                manualTimeInput = manualRow.GetVisualDescendants().OfType<TextBox>().FirstOrDefault(input => input.Name == "ManualTimeInput");
                 AddSection(Loc.Get("MANUAL TIME"), Loc.Get("Set the date and time only when automatic time is turned off."),
                     manualRow);
             }
@@ -2718,16 +2908,27 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         private Border ManualDateTimeRow(DateTimeOffset localTime, int buildVersion, bool useTwelveHour = false)
         {
-            var datePicker = new DatePicker
+            var dateInput = new TextBox
             {
-                SelectedDate = localTime,
-                VerticalAlignment = VerticalAlignment.Center
+                Name = "ManualDateInput",
+                Text = localTime.ToString("d MMM yyyy", CultureInfo.CurrentCulture),
+                PlaceholderText = "Date",
+                Width = 136,
+                MinWidth = 0,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Classes = { "ManualDateTimeInput" }
             };
-            var timePicker = new TimePicker
+            var timeInput = new TextBox
             {
-                SelectedTime = localTime.TimeOfDay,
-                ClockIdentifier = useTwelveHour ? "12HourClock" : "24HourClock",
-                VerticalAlignment = VerticalAlignment.Center
+                Name = "ManualTimeInput",
+                Text = localTime.ToString(useTwelveHour ? "h:mm tt" : "HH:mm", CultureInfo.CurrentCulture),
+                PlaceholderText = useTwelveHour ? "h:mm tt" : "HH:mm",
+                Width = 82,
+                MinWidth = 0,
+                HorizontalContentAlignment = HorizontalAlignment.Center,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                Classes = { "ManualDateTimeInput" }
             };
             var apply = Loc.Bind(DaisyOS.Shell.Services.Theming.TypographyPolicy.BindHeight(new Button
             {
@@ -2739,17 +2940,19 @@ namespace DaisyOS.Shell.Apps.System.Settings
             apply.Classes.Add("Small");
             apply.Click += async (_, _) =>
             {
-                if (datePicker.SelectedDate is not { } date || timePicker.SelectedTime is not { } time)
+                if (!DateOnly.TryParse(dateInput.Text, CultureInfo.CurrentCulture, DateTimeStyles.None, out var date)
+                    || !(TimeOnly.TryParseExact(timeInput.Text, ["HH:mm", "h:mm tt"], CultureInfo.CurrentCulture, DateTimeStyles.None, out var time)))
                 {
                     (Application.Current as App)?.Feedback.Show(Loc.Get("Choose both a date and a time."));
                     return;
                 }
 
                 apply.IsEnabled = false;
-                var local = date.Date + time;
+                var local = date.ToDateTime(time, DateTimeKind.Unspecified);
                 var result = await new LinuxDateTimeSettingsService(new SafeCommandRunner()).SetLocalTimeAsync(local);
                 if (buildVersion != _categoryBuildVersion)
                 {
+                    apply.IsEnabled = true;
                     return;
                 }
 
@@ -2763,13 +2966,31 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 ShowCategory("DateTime");
             };
 
-            var controls = new StackPanel
+            var joinedFields = new Border
             {
-                Orientation = Orientation.Horizontal,
-                Spacing = 8,
-                VerticalAlignment = VerticalAlignment.Center,
-                Children = { datePicker, timePicker, apply }
+                Classes = { "ManualDateTimeGroup" },
+                Child = new StackPanel
+                {
+                    Orientation = Orientation.Horizontal,
+                    Spacing = 0,
+                    Children =
+                    {
+                        new DaisyIcon { Icon = "calendar", Size = 18, Foreground = TryBrush("ContentSecondaryBrush"),
+                            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(10, 0, 8, 0) },
+                        dateInput,
+                        new Border { Width = 1, Height = 22, Background = TryBrush("StrokeDefaultBrush"),
+                            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(4, 0) },
+                        new DaisyIcon { Icon = "clock", Size = 18, Foreground = TryBrush("ContentSecondaryBrush"),
+                            VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 4, 0) },
+                        timeInput
+                    }
+                }
             };
+            var controls = new WrapPanel { Orientation = Orientation.Horizontal, ItemWidth = double.NaN, ItemHeight = double.NaN,
+                HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+            controls.Children.Add(joinedFields);
+            controls.Children.Add(new Border { Width = 8 });
+            controls.Children.Add(apply);
             return PreferenceRow(Loc.Get("Date and time"), null, controls);
         }
 
@@ -3084,8 +3305,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             return PreferenceRow(Loc.Get(title), null, picker);
         }
 
-        private Border InfoRow(string title, string value) =>
-            PreferenceRow(title, null, DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
+        private Control InfoValue(string value) =>
+            DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
             {
                 Text = value,
                 FontSize = 13,
@@ -3095,7 +3316,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 TextAlignment = TextAlignment.Right,
                 MaxWidth = 360,
                 TextWrapping = TextWrapping.Wrap
-            }, "BodySmall"));
+            }, "BodySmall");
+
+        private Border InfoRow(string title, string value) =>
+            PreferenceRow(title, null, InfoValue(value));
 
         private Border VolumeRow(string title, bool input)
         {
@@ -3224,7 +3448,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 row.SizeChanged += (_, _) =>
                 {
                     var fontScale = (Application.Current?.Resources["TypeSizeBody"] as double? ?? 14) / 14;
-                    var narrow = row.Bounds.Width < 600 * fontScale && trailing is not ToggleSwitch;
+                    var narrow = row.Bounds.Width < 600 * fontScale && trailing is not ToggleSwitch && trailing is not WrapPanel;
                     if (trailing is ComboBox picker && double.IsNaN(picker.Width))
                     {
                         var available = row.Bounds.Width - row.Padding.Left - row.Padding.Right - (hasLeading ? 38 : 0);
@@ -3270,7 +3494,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             "Input volume" => new("microphone"),
             "Mute microphone" => new("microphone-slash"),
 
-            "Current connection" or "Connection" or "Internet access" => new("globe"),
+            "Current connection" or "Connection" or "Internet access" => new("wifi-02"),
             "Ethernet" or "Ethernet status" or "Wired" => new("Ethernet"),
             "Wi-Fi" or "Wi-Fi status" => new("wifi-02"),
             "Bluetooth" => new("bluetooth"),

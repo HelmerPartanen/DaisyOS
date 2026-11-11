@@ -529,6 +529,7 @@
 <!-- One geometry contract for normal application windows and modal pickers.
      KWin consumes the matching scalar through WindowDecorationThemeService. -->
 <CornerRadius x:Key="AppWindowCornerRadius">16</CornerRadius>
+<CornerRadius x:Key="AppWindowTopCornerRadius">16,16,0,0</CornerRadius>
 <CornerRadius x:Key="AppWindowCornerRadiusInset">15</CornerRadius>
 <CornerRadius x:Key="AppWindowContentCornerRadius">14</CornerRadius>
 <x:Double x:Key="AppWindowCornerRadiusValue">16</x:Double>

@@ -553,8 +553,10 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         protected override Size MeasureOverride(Size availableSize)
         {
             var limit = this.TryFindResource("TaskbarMaximumWidth", out var resource) && resource is double value ? value : 1200;
-            var taskbarScale = this.TryFindResource("TaskbarScale", out var scaleResource) && scaleResource is double configuredScale ? configuredScale : 1;
-            var available = Math.Min(limit, double.IsFinite(availableSize.Width) ? Math.Max(0, availableSize.Width - 24) : limit) / taskbarScale;
+            // MeasureOverride receives the unscaled layout slot. The transform is
+            // applied after layout, so the child must reserve room for its scaled
+            // width inside the parent's available width.
+            var available = Math.Min(limit, double.IsFinite(availableSize.Width) ? Math.Max(0, availableSize.Width - 24) : limit);
             if (Math.Abs(_availableWidth - available) > 0.1)
             {
                 _availableWidth = available;

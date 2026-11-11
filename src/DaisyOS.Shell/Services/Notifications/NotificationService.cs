@@ -19,6 +19,8 @@ public sealed class NotificationService : INotificationService
     public event EventHandler<bool>? DoNotDisturbChanged;
     public event EventHandler<NotificationItem>? NotificationActionTriggered;
 
+    public Func<string, bool>? IsApplicationAllowed { get; set; }
+
     public bool IsDoNotDisturb
     {
         get
@@ -46,6 +48,13 @@ public sealed class NotificationService : INotificationService
     public void Add(NotificationItem notification)
     {
         ArgumentNullException.ThrowIfNull(notification);
+
+        var sourceApp = notification.SourceAppId;
+        if (!string.IsNullOrWhiteSpace(sourceApp) && IsApplicationAllowed?.Invoke(sourceApp) == false)
+        {
+            DismissById(notification.Id);
+            return;
+        }
 
         bool posted = false;
         int newUnreadCount = 0;

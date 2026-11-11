@@ -34,7 +34,11 @@ public sealed record DetectedDisplay(
     bool HdrAvailable = false,
     int Rotation = 1,
     int OutputId = 0,
-    string? MirrorSource = null)
+    string? MirrorSource = null,
+    int Brightness = -1,
+    int MaxBpc = 0,
+    string? IccProfilePath = null,
+    string? ColorProfileSource = null)
 {
     public int LogicalWidth => (int)Math.Ceiling((Rotation is 2 or 4 or 6 or 8 ? Height : Width) / Scale);
     public int LogicalHeight => (int)Math.Ceiling((Rotation is 2 or 4 or 6 or 8 ? Width : Height) / Scale);
@@ -350,7 +354,11 @@ public static partial class DisplaySettingsHelper
                 target.TryGetProperty("rotation", out var rotation) ? ScalarInt(rotation, 1) : 1,
                 target.TryGetProperty("id", out var outputId) ? ScalarInt(outputId) : 0,
                 target.TryGetProperty("replicationSource", out var source) && ScalarText(source) is { } sourceName && sourceName != "0"
-                    ? sourceName : null);
+                    ? sourceName : null,
+                target.TryGetProperty("brightness", out var brightness) ? ScalarInt(brightness, -1) : -1,
+                target.TryGetProperty("maxBpc", out var maxBpc) ? ScalarInt(maxBpc) : 0,
+                target.TryGetProperty("iccProfilePath", out var iccPath) ? ScalarText(iccPath) : null,
+                target.TryGetProperty("colorProfileSource", out var colorSource) ? ScalarText(colorSource) : null);
         }
         catch
         {
