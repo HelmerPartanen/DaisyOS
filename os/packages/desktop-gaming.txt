@@ -20,6 +20,7 @@ mesa
 lib32-mesa
 libglvnd
 vulkan-tools
+vulkan-icd-loader
 lib32-vulkan-icd-loader
 noto-fonts
 ttf-dejavu

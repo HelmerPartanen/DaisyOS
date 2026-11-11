@@ -31,6 +31,17 @@ With auto-hide enabled, the taskbar and system bar remain independently availabl
 
 ## Performance validation
 
+### Compatibility diagnostics
+
+Run `daisyos-gaming-diagnostics` to collect the detected GPU/driver, Vulkan
+loader evidence, available Proton tools in common Steam library locations,
+UMU presence, and NTSYNC kernel/device status. Use `--json` for a machine
+readable report. NTSYNC detection is informational: DaisyOS does not load the
+module or force a Proton synchronization mode. Steam remains responsible for
+selecting Stable, Experimental, or another installed compatibility tool per
+game. The report does not establish that a game or anti-cheat system is
+compatible.
+
 The overlay's CPU percentage averages all logical CPUs. A busy game thread can limit FPS while total CPU and GPU utilization remain below 100%. Utilization alone does not identify a bottleneck or prove that the wrong GPU is in use.
 
 Compare the same in-game scene and settings, recording frame times, per-thread CPU use, GPU clocks/power/utilization, and background load. Check the game's frame limit and VSync, active output refresh rate, Vulkan driver/device, and GameMode registration. Repeat with the hardware overlay hidden to measure its cost. Do not force CPU affinity, GPU overclocks, or global driver overrides without measurements.

@@ -93,8 +93,9 @@ audit is complete.
 | Plan milestone | Status | Evidence / remaining gate |
 |---|---|---|
 | Phase 0 — repository audit and baseline | **Repository audit complete; hardware baseline pending** | [Repository audit](repository-audit-2026-11-11.md) inventories image, packages, kernel/boot, session, services and validation. No controlled physical-GPU baseline has been captured. |
-| Phase 1 — gaming foundation | **In progress: diagnostics and optional 32-bit probe implemented** | `daisyos-gaming-diagnostics` is staged in the ISO and reports GPU/kernel driver, 64-bit Vulkan output when available, OpenGL renderer/software-rendering warning, packages and session/power context. `scripts/build-vulkan32-probe.sh` can build an i686 Vulkan enumerator on a host with a multilib toolchain; diagnostics run it when installed. The UI labels 32-bit loader presence without claiming device enumeration. Probe build on a configured machine and reference-GPU validation remain open. |
-| Phases 2–10 | **Not started** | No Proton policy, gaming daemon, power/scheduler tuning, alternate kernel, desktop gaming integration, package optimization or continuous benchmark suite has been implemented under this plan. |
+| Phase 1 — gaming foundation | **Repository implementation complete; hardware acceptance pending** | The report, optional i686 probe, explicit Vulkan package dependencies, and profile guards are implemented. This host lacks Steam and the 32-bit Vulkan stack; physical Vulkan enumeration and Steam game launch have not been verified, so Phase 1 release exit criteria are not yet met. |
+| Phase 2 — compatibility stack | **Started: read-only compatibility inventory** | Diagnostics now lists installed Proton tools in common Steam roots, detects `umu-run`, and reports NTSYNC kernel/device availability without enabling it. Proton selection UX, native/DXVK/VKD3D launch validation, controller/overlay checks, and compatibility messaging remain open. |
+| Phases 3–10 | **Not started** | No gaming-tool settings UI, power/scheduler tuning, gaming daemon, alternate kernel, desktop gaming integration, package optimization or continuous benchmark suite has been implemented under this plan. |
 
 This status records repository work, not general release readiness. Do not
 mark hardware-dependent checklist items complete until the corresponding

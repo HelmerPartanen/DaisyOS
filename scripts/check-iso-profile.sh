@@ -176,6 +176,10 @@ required_packages=(
   xterm
   qemu-guest-agent
   steam
+  vulkan-tools
+  vulkan-icd-loader
+  lib32-mesa
+  lib32-vulkan-icd-loader
   lutris
   gamemode
   lib32-gamemode

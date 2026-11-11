@@ -202,11 +202,21 @@ if missing="$(comm -23 <(profile_packages "$gaming") <(profile_packages "$gaming
   exit 1
 fi
 
-for package in nvidia-utils lib32-nvidia-utils; do
-  if ! grep -Fxq "$package" <<<"$(profile_packages "$gaming_nvidia")"; then
-    echo "NVIDIA gaming profile does not install $package."
+require_profile_package() {
+  local profile="$1"
+  local package="$2"
+  if ! grep -Fxq "$package" <<<"$(profile_packages "$profile")"; then
+    echo "Gaming profile ${profile#"$repo_root/"} is missing required graphics package $package."
     exit 1
   fi
+}
+
+for package in mesa lib32-mesa vulkan-tools vulkan-icd-loader lib32-vulkan-icd-loader; do
+  require_profile_package "$gaming" "$package"
+done
+
+for package in nvidia-open nvidia-utils lib32-nvidia-utils; do
+  require_profile_package "$gaming_nvidia" "$package"
 done
 
 require_text "$package_dir/daisyos-repo.conf" \

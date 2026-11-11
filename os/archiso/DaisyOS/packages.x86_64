@@ -60,6 +60,8 @@ libheif
 libde265
 
 # Gaming and automatic hardware-monitor telemetry, native and 32-bit Proton.
+vulkan-tools
+vulkan-icd-loader
 steam
 lutris
 gamemode

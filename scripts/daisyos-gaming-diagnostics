@@ -97,6 +97,42 @@ def vulkan32_probe() -> str:
     return f"Failed (exit {result.returncode}): {detail}"
 
 
+def ntsync_status() -> str:
+    device = Path("/dev/ntsync")
+    if device.exists():
+        if os.access(device, os.R_OK | os.W_OK):
+            return "Kernel device present and accessible; Proton/runtime use not verified"
+        return "Kernel device present but not accessible to this user"
+    module = Path("/sys/module/ntsync")
+    if module.exists():
+        return "Kernel module loaded; device node unavailable"
+    modules = command(["modinfo", "-F", "filename", "ntsync"], timeout=3)
+    if modules not in {"Unavailable", "Failed or timed out", "No output"}:
+        return "Kernel module available but not loaded"
+    return "Not detected in the running kernel"
+
+
+def proton_tools() -> list[str]:
+    home = Path.home()
+    roots = [
+        home / ".local/share/Steam",
+        home / ".steam/steam",
+        home / ".steam/root",
+        home / ".var/app/com.valvesoftware.Steam/data/Steam",
+    ]
+    tools: set[str] = set()
+    for root in roots:
+        common = root / "steamapps/common"
+        if common.is_dir():
+            tools.update(path.name for path in common.glob("Proton*") if path.is_dir())
+        custom = root / "compatibilitytools.d"
+        if custom.is_dir():
+            for path in custom.iterdir():
+                if path.is_dir() and (path / "compatibilitytool.vdf").is_file():
+                    tools.add(path.name)
+    return sorted(tools, key=str.casefold)
+
+
 def collect() -> dict:
     vulkan = command(["vulkaninfo", "--summary"], timeout=15)
     if vulkan not in {"Unavailable", "Failed or timed out", "No output"}:
@@ -139,6 +175,9 @@ def collect() -> dict:
         "vulkan_64_bit_probe": vulkan,
         "vulkan_32_bit_loader": "Present" if Path("/usr/lib32/libvulkan.so.1").exists() else "Not found",
         "vulkan_32_bit_probe": vulkan32,
+        "installed_proton_tools": proton_tools(),
+        "umu_runner": "Installed" if shutil.which("umu-run") else "Not installed",
+        "ntsync_kernel_status": ntsync_status(),
         "opengl_renderer": glx_renderer,
         "software_renderer_detected": software_renderer,
         "vulkan_icd_manifests": manifests,
@@ -180,6 +219,8 @@ def format_report(report: dict) -> str:
         ("gpu_and_kernel_driver", "GPU and kernel driver"), ("vulkan_64_bit_probe", "Vulkan 64-bit"),
         ("vulkan_32_bit_loader", "Vulkan 32-bit loader"), ("vulkan_icd_manifests", "Vulkan ICD manifests"),
         ("vulkan_32_bit_probe", "Vulkan 32-bit device probe"),
+        ("installed_proton_tools", "Installed Proton tools (detected Steam libraries)"),
+        ("umu_runner", "UMU runner"), ("ntsync_kernel_status", "NTSYNC kernel status"),
         ("opengl_renderer", "OpenGL renderer"), ("software_renderer_detected", "Software renderer detected"),
         ("steam_version", "Steam"), ("gamemode_version", "GameMode"), ("session_type", "Session type"),
         ("desktop_session", "Desktop session"), ("compositor_processes", "Compositor processes"),

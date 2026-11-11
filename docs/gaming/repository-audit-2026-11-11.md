@@ -31,7 +31,7 @@ The only image architecture declared in the ISO profile is `x86_64`; no minimum 
 
 ## First implementation slice
 
-Phase 0's repository inventory is complete; physical-hardware baselines remain pending. The first Phase 1 foundation slice is a read-only `daisyos-gaming-diagnostics` host report. It records observed values and distinguishes Vulkan loader/manifest presence from an executed 32-bit Vulkan test. An optional i686 probe source and build script now enumerate physical devices through the 32-bit Vulkan loader when built and installed. The shell status continues to distinguish loader presence from device enumeration. The current development host lacks the 32-bit compiler runtime, so probe execution and reference-GPU evidence remain follow-up work; no 32-bit readiness is claimed.
+Phase 0's repository inventory is complete; physical-hardware baselines remain pending. Phase 1 now has a read-only `daisyos-gaming-diagnostics` host report, an optional i686 probe source/build path, and explicit ISO/package-profile dependencies for the 64-bit and 32-bit Mesa/Vulkan stack. Profile validation keeps NVIDIA libraries in the NVIDIA profile. Diagnostics distinguish loader presence from actual device enumeration. The current development host lacks the 32-bit compiler runtime, so probe execution and reference-GPU evidence remain follow-up work; no 32-bit readiness is claimed.
 
 ## Ownership map and next gates
 
@@ -40,4 +40,4 @@ Phase 0's repository inventory is complete; physical-hardware baselines remain p
 - Game session lifecycle: `GamingModeAutomation` and `GameModeController`; no kernel/power tuning ownership is added in this milestone.
 - Performance evidence: existing frame-time analyzer/comparator plus recorded hardware, driver, display, and power context.
 
-Next gates: (1) capture reports on supported physical GPUs, (2) implement and verify actual 32-bit Vulkan device enumeration, (3) validate Steam/native and Proton/DXVK/VKD3D launch paths, and only then (4) consider measured runtime or packaging changes. Keep the stock kernel and current recovery paths intact.
+Hardware release gates remain: (1) capture reports on supported physical GPUs, (2) build and verify actual 32-bit Vulkan device enumeration, and (3) validate Steam/native and Proton/DXVK/VKD3D launch paths. Phase 2 work can proceed as read-only discovery while those device checks are pending; do not claim compatibility or change kernel/runtime defaults without that evidence. Keep the stock kernel and current recovery paths intact.
