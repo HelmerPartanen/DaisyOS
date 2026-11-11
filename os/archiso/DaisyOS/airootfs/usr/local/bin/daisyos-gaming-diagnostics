@@ -50,11 +50,80 @@ def cpu_summary() -> str:
         return output
     try:
         rows = json.loads(output).get("lscpu", [])
-        wanted = {"Architecture", "CPU(s)", "Model name", "Thread(s) per core"}
+        wanted = {"Architecture", "CPU(s)", "Vendor ID", "Model name", "Thread(s) per core"}
         values = {row.get("field", "").rstrip(":"): row.get("data", "Unknown") for row in rows}
         return "; ".join(f"{key}: {values.get(key, 'Unknown')}" for key in sorted(wanted))
     except (json.JSONDecodeError, AttributeError, TypeError):
         return "lscpu returned an unrecognized format"
+
+
+def cpu_power_capabilities() -> dict:
+    """Read the kernel's advertised CPU policy capabilities without changing them."""
+    policies = []
+    for directory in sorted(Path("/sys/devices/system/cpu/cpufreq").glob("policy[0-9]*")):
+        values = {}
+        for filename, label in (
+            ("affected_cpus", "cpus"),
+            ("scaling_driver", "driver"),
+            ("scaling_governor", "governor"),
+            ("scaling_available_governors", "available_governors"),
+            ("energy_performance_preference", "epp"),
+            ("energy_performance_available_preferences", "available_epp"),
+            ("scaling_min_freq", "minimum_khz"),
+            ("scaling_max_freq", "maximum_khz"),
+            ("cpuinfo_min_freq", "hardware_minimum_khz"),
+            ("cpuinfo_max_freq", "hardware_maximum_khz"),
+        ):
+            path = directory / filename
+            if path.exists():
+                value = read(str(path))
+                if value != "Unknown":
+                    values[label] = value
+        policies.append({"policy": directory.name, **values})
+
+    core_types: dict[str, int] = {}
+    for path in Path("/sys/devices/system/cpu").glob("cpu[0-9]*/topology/core_type"):
+        value = read(str(path))
+        if value != "Unknown":
+            core_types[value] = core_types.get(value, 0) + 1
+
+    amd_pstate = {}
+    for name in ("status", "cppc_dynamic_boost"):
+        path = Path("/sys/devices/system/cpu/amd_pstate") / name
+        if path.exists():
+            value = read(str(path))
+            if value != "Unknown":
+                amd_pstate[name] = value
+
+    intel_pstate = {}
+    for name in ("status", "no_turbo"):
+        path = Path("/sys/devices/system/cpu/intel_pstate") / name
+        if path.exists():
+            value = read(str(path))
+            if value != "Unknown":
+                intel_pstate[name] = value
+
+    return {
+        "policy_count": len(policies),
+        "policies": policies,
+        "heterogeneous_core_type_counts": core_types,
+        "amd_pstate": amd_pstate,
+        "intel_pstate": intel_pstate,
+    }
+
+
+def power_profile_capabilities() -> dict:
+    current = command(["powerprofilesctl", "get"], timeout=3)
+    listing = command(["powerprofilesctl", "list"], timeout=3)
+    # Keep only profile identifiers. powerprofilesctl presentation details vary
+    # by version; the active profile is always queried independently above.
+    available = sorted(set(re.findall(r"(?m)^\s*\*?\s*(power-saver|balanced|performance):?\s*$", listing)))
+    return {
+        "daemon": "Installed" if shutil.which("powerprofilesctl") else "Not installed",
+        "active": current,
+        "available": available if listing not in {"Unavailable", "Failed or timed out", "No output"} else [],
+        "listing_status": "Available" if listing not in {"Unavailable", "Failed or timed out", "No output"} else listing,
+    }
 
 
 def gpu_summary() -> str:
@@ -183,7 +252,7 @@ def collect() -> dict:
     env = os.environ
     compositor = env.get("XDG_CURRENT_DESKTOP") or env.get("XDG_SESSION_DESKTOP") or "Unknown"
     session_type = env.get("XDG_SESSION_TYPE", "Unknown")
-    power_profile = command(["powerprofilesctl", "get"], timeout=3)
+    power_profiles = power_profile_capabilities()
     thermal = command(["systemd-detect-virt"], timeout=3)
     vulkan32 = vulkan32_probe()
     vulkan_software = bool(re.search(r"(llvmpipe|lavapipe|software rasterizer|deviceType\s*[:=]\s*PHYSICAL_DEVICE_TYPE_CPU)", vulkan, re.I))
@@ -202,6 +271,7 @@ def collect() -> dict:
         "architecture": command(["uname", "-m"], timeout=3),
         "cpu": cpu_summary(),
         "cpu_frequency_driver": read("/sys/devices/system/cpu/cpu0/cpufreq/scaling_driver"),
+        "cpu_power_capabilities": cpu_power_capabilities(),
         "cpu_scheduler": read("/sys/block/nvme0n1/queue/scheduler"),
         "gpu_and_kernel_driver": gpu_summary(),
         "vulkan_64_bit_probe": vulkan,
@@ -224,7 +294,8 @@ def collect() -> dict:
         "session_type": session_type,
         "desktop_session": compositor,
         "compositor_processes": command(["pgrep", "-a", "-f", "kwin_wayland|kwin_x11|Xorg|sway"], timeout=3),
-        "power_profile": power_profile,
+        "power_profile": power_profiles["active"],
+        "power_profile_capabilities": power_profiles,
         "power_source": power_source(),
         "thermal_throttling": "Not measured by this initial report",
         "virtualization": thermal,
@@ -248,7 +319,8 @@ def format_report(report: dict) -> str:
     lines = ["DaisyOS Gaming Diagnostics", "=" * 26]
     labels = [
         ("kernel", "Kernel"), ("architecture", "Architecture"), ("cpu", "CPU (lscpu JSON)"),
-        ("cpu_frequency_driver", "CPU frequency driver"), ("cpu_scheduler", "Block scheduler (NVMe 0)"),
+        ("cpu_frequency_driver", "CPU frequency driver"), ("cpu_power_capabilities", "CPU policy capabilities"),
+        ("cpu_scheduler", "Block scheduler (NVMe 0)"),
         ("gpu_and_kernel_driver", "GPU and kernel driver"), ("vulkan_64_bit_probe", "Vulkan 64-bit"),
         ("vulkan_32_bit_loader", "Vulkan 32-bit loader"), ("vulkan_icd_manifests", "Vulkan ICD manifests"),
         ("vulkan_32_bit_probe", "Vulkan 32-bit device probe"),
@@ -258,7 +330,8 @@ def format_report(report: dict) -> str:
         ("opengl_renderer", "OpenGL renderer"), ("software_renderer_detected", "Software renderer detected"),
         ("steam_version", "Steam"), ("gamemode_version", "GameMode"), ("session_type", "Session type"),
         ("desktop_session", "Desktop session"), ("compositor_processes", "Compositor processes"),
-        ("power_profile", "Power profile"), ("power_source", "Power source"),
+        ("power_profile", "Power profile"), ("power_profile_capabilities", "Power profile capabilities"),
+        ("power_source", "Power source"),
         ("thermal_throttling", "Thermal throttling"), ("packages", "Package versions"),
     ]
     for key, label in labels:

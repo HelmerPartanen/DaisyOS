@@ -74,7 +74,10 @@ internal sealed class GamingModeAutomation : IDisposable
                             finally { Volatile.Write(ref _policyPending, 0); }
                         });
                     }
-                    _controller.SetActive(Volatile.Read(ref _gamingModeRequested));
+                    var allowBatteryBoost = _state.GetPreference(GamingPowerPolicy.BatteryBoostPreferenceKey, "false") == "true";
+                    var shouldEnable = Volatile.Read(ref _gamingModeRequested) &&
+                        GamingPowerPolicy.ShouldEnableGameMode(allowBatteryBoost);
+                    _controller.SetActive(shouldEnable);
                     _controller.UpdateGameProcesses(processes);
                     await _frameTelemetry.UpdateAsync(_telemetryVisible(), _telemetryWindowPid(), cancellationToken).ConfigureAwait(false);
                 }
