@@ -9,7 +9,7 @@ internal static class GamingPowerPolicy
 {
     public const string BatteryBoostPreferenceKey = "gaming.allow-battery-boost";
 
-    public static bool ShouldEnableGameMode(bool allowBatteryBoost)
+    public static bool ShouldEnablePerformanceBoost(bool allowBatteryBoost)
     {
         try
         {

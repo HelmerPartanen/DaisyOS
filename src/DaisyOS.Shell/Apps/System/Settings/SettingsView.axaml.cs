@@ -1717,6 +1717,9 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 Toggle("Allow Gaming Mode performance boost on battery", GamingPowerPolicy.BatteryBoostPreferenceKey,
                     shell?.GetPreference(GamingPowerPolicy.BatteryBoostPreferenceKey, "false") == "true",
                     value => shell?.SetPreference(GamingPowerPolicy.BatteryBoostPreferenceKey, value ? "true" : "false")),
+                Toggle("Use Performance power profile while gaming", GamingPowerProfileController.EnabledPreferenceKey,
+                    shell?.GetPreference(GamingPowerProfileController.EnabledPreferenceKey, "true") != "false",
+                    value => shell?.SetPreference(GamingPowerProfileController.EnabledPreferenceKey, value ? "true" : "false")),
                 SettingsAction("Open Steam Library", "Choose a Proton version per game in Properties > Compatibility. Clear Force to restore Steam's default.", "game-controller", () =>
                 {
                     var result = new SafeProcessLauncher().Launch("steam", []);

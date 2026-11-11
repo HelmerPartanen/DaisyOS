@@ -18,6 +18,7 @@ internal sealed class GamingModeAutomation : IDisposable
     private readonly GameModeController _controller;
     private readonly GameProcessDetector _detector;
     private readonly GameFrameTelemetryController _frameTelemetry = new();
+    private readonly GamingPowerProfileController _powerProfileController;
     private readonly Func<bool> _telemetryVisible;
     private readonly Func<int> _telemetryWindowPid;
     private readonly AutomaticGamingModePolicy _policy = new();
@@ -28,7 +29,8 @@ internal sealed class GamingModeAutomation : IDisposable
 
     public GamingModeAutomation(ShellSessionState state, Func<bool> automaticEnabled,
         GameModeController? controller = null, GameProcessDetector? detector = null,
-        Func<bool>? telemetryVisible = null, Func<int>? telemetryWindowPid = null)
+        Func<bool>? telemetryVisible = null, Func<int>? telemetryWindowPid = null,
+        GamingPowerProfileController? powerProfileController = null)
     {
         _state = state;
         _automaticEnabled = automaticEnabled;
@@ -36,6 +38,7 @@ internal sealed class GamingModeAutomation : IDisposable
         _detector = detector ?? new();
         _telemetryVisible = telemetryVisible ?? (() => false);
         _telemetryWindowPid = telemetryWindowPid ?? (() => 0);
+        _powerProfileController = powerProfileController ?? new();
     }
 
     public void Start()
@@ -76,7 +79,10 @@ internal sealed class GamingModeAutomation : IDisposable
                     }
                     var allowBatteryBoost = _state.GetPreference(GamingPowerPolicy.BatteryBoostPreferenceKey, "false") == "true";
                     var shouldEnable = Volatile.Read(ref _gamingModeRequested) &&
-                        GamingPowerPolicy.ShouldEnableGameMode(allowBatteryBoost);
+                        GamingPowerPolicy.ShouldEnablePerformanceBoost(allowBatteryBoost);
+                    var usePerformanceProfile = shouldEnable &&
+                        _state.GetPreference(GamingPowerProfileController.EnabledPreferenceKey, "true") != "false";
+                    await _powerProfileController.SetActiveAsync(usePerformanceProfile, cancellationToken).ConfigureAwait(false);
                     _controller.SetActive(shouldEnable);
                     _controller.UpdateGameProcesses(processes);
                     await _frameTelemetry.UpdateAsync(_telemetryVisible(), _telemetryWindowPid(), cancellationToken).ConfigureAwait(false);
@@ -93,6 +99,9 @@ internal sealed class GamingModeAutomation : IDisposable
         catch (OperationCanceledException) { }
         finally
         {
+            try { await _powerProfileController.SetActiveAsync(false, CancellationToken.None).ConfigureAwait(false); }
+            catch (Exception ex) { Console.Error.WriteLine($"[gaming-mode] Could not restore the power profile: {ex.Message}"); }
+            _powerProfileController.Dispose();
             await _frameTelemetry.UpdateAsync(false, 0, CancellationToken.None).ConfigureAwait(false);
             _controller.Dispose();
             _lifetime.Dispose();
