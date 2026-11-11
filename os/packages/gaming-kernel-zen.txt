@@ -1,0 +1,4 @@
+# Optional experimental kernel overlay for a DaisyOS gaming installation.
+# Install alongside the stock `linux` package so it remains a boot fallback.
+linux-zen
+linux-zen-headers
