@@ -278,7 +278,7 @@
 
     <ResourceDictionary x:Key="Dark">
       <Color x:Key="SurfaceCanvasColor">#FF171717</Color>
-      <Color x:Key="SurfaceBaseColor">#26000000</Color>
+      <Color x:Key="SurfaceBaseColor">#33000000</Color>
     <Color x:Key="SurfaceBaseColorSolid">#FF171717</Color>
       <!-- Fullscreen launcher glass. See the light theme for the contract. -->
       <Color x:Key="LauncherBackdropColor">#1A000000</Color>

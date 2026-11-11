@@ -17,13 +17,7 @@ fi
 
 command -v kwriteconfig6 >/dev/null || { echo 'kwriteconfig6 is required.' >&2; exit 1; }
 
-configured_strength=""
-if command -v kreadconfig6 >/dev/null; then
-  configured_strength="$(kreadconfig6 --file kwinrc --group Effect-blur --key BlurStrength --default '' 2>/dev/null || true)"
-fi
-if [[ ! "$configured_strength" =~ ^([1-9]|1[0-5])$ ]]; then
-  configured_strength=1
-fi
+readonly configured_strength=4
 
 write_blur_config() {
   local config_file="$1"
@@ -33,13 +27,11 @@ write_blur_config() {
 }
 
 if [[ "$mode" == "--runtime" ]]; then
-  # Respect the user's selected blur amount, while always removing KWin's
-  # additive grain pass. A missing strength gets the DaisyOS default.
+  # DaisyOS always uses the same blur strength and disables additive grain.
   write_blur_config kwinrc
 else
-  # System defaults cover the live ISO; skeleton defaults become the
-  # persistent per-user config after installation and take precedence over
-  # later distro defaults.
+  # Set both system and new-user configs so these values persist across live
+  # sessions and installation.
   install -d "$stage_root/etc/xdg" "$stage_root/etc/skel/.config"
   write_blur_config "$stage_root/etc/xdg/kwinrc"
   write_blur_config "$stage_root/etc/skel/.config/kwinrc"
