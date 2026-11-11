@@ -121,3 +121,70 @@ entry afterward. Only fixture windows close. It measures process/dispatch to
 initial content rendered; pointer-click delay and physical presentation need a
 separate live check. Reports record each route independently and do not alter
 the OS performance score.
+
+## Capture a complete DaisyOS desktop-session idle baseline
+
+Create an annotation file for the fixed Release build, display, appearance,
+and background-service state. For example:
+
+```json
+{
+  "buildConfiguration": "Release",
+  "buildId": "<shell release commit or package version>",
+  "displayConfiguration": "1920x1080 @ 100%",
+  "theme": "Dark",
+  "wallpaper": "static",
+  "openApplicationWindows": 0,
+  "foregroundLoad": "none",
+  "backgroundFeaturesEnabled": true
+}
+```
+
+Run the sampler after a fresh login from a terminal in that session:
+
+```bash
+python3 scripts/benchmark-desktop-session.py \
+  --duration 300 --interval 30 --milestones 0,30,300 \
+  --state fresh-login-idle --metadata workload.json \
+  --output artifacts/performance/session-run-1.json
+```
+
+Repeat with new output names for at least three fresh logins. Use the installed
+Release shell, one display at a fixed resolution and scale, the default static
+wallpaper and theme, no open application windows, and leave DaisyOS background
+features enabled. Do not run a build, profiler, IDE, browser, game, or other
+heavy foreground task during capture. Record deviations in `workload.json` and
+pass it with `--metadata`. The tool is read-only; it does not close windows,
+restart the compositor, simulate input, or claim a controlled idle run when the
+operator has not annotated the workload.
+
+Reports include process PSS/RSS/private bytes and CPU deltas grouped into the
+shell, KWin, DaisyOS services, and desktop platform processes. PSS is the primary
+attributable-memory figure; system `MemTotal - MemAvailable`, cgroup
+`memory.current`, swap, and PSI are separate context and must not be added to
+the PSS total. Per-process cgroups are listed independently because their
+`memory.current` values can overlap through parent scopes. GPU allocation is
+not process PSS and needs a driver-specific capture.
+
+The native shell writes a readiness marker after the desktop surface's first
+composition batch completes on the render thread. The sampler pairs that
+timestamp with the shell process start time to report startup readiness; this is
+not physical KWin presentation. Interactive latency still requires visible GUI
+actions, so pair captures with `benchmark-os-performance.py` and the launch-route
+benchmark on the same machine, build, and session state. The sampler records
+process selection and inaccessible smaps counts so incomplete or
+developer-contaminated captures are visible rather than silently accepted.
+After three fresh logins, compare the matching reports:
+
+```bash
+python3 scripts/compare-desktop-session-runs.py \
+  artifacts/performance/session-run-1.json \
+  artifacts/performance/session-run-2.json \
+  artifacts/performance/session-run-3.json \
+  --output artifacts/performance/session-baseline.json
+```
+
+The comparator reports median, MAD, and range for settled memory, CPU, and
+system-pressure context. It exits unsuccessfully when fewer than three runs are
+provided, the environment/annotations differ, the five-minute samples are
+missing, PSS coverage is incomplete, or the 700 MiB median budget is exceeded.

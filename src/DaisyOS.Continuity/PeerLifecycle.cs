@@ -25,6 +25,8 @@ public sealed partial class ContinuityDaemon
             _nearby.Remove(id);
             _recentLive.RemoveAll(l => l.Info.PeerId == id);
             _peerConnectionFailures.Remove(id);
+            _peerConnectionFailureCounts.Remove(id);
+            _peerRetryAfter.Remove(id);
             if (_peerOperations.TryGetValue(id, out var operations))
                 foreach (var operation in operations.ToArray()) _ = operation.CancelAsync();
             _clipboard.ClearPeer(id);
@@ -97,7 +99,16 @@ public sealed partial class ContinuityDaemon
     }
 
     private readonly Dictionary<string, string> _peerConnectionFailures = [];
+    private readonly Dictionary<string, int> _peerConnectionFailureCounts = [];
+    private readonly Dictionary<string, DateTimeOffset> _peerRetryAfter = [];
     private readonly SemaphoreSlim _peerReconcile = new(1, 1);
+
+    internal static TimeSpan TrustedPeerRetryDelay(int consecutiveFailures)
+    {
+        var exponent = Math.Clamp(consecutiveFailures - 1, 0, 3);
+        return TimeSpan.FromSeconds(Math.Min(60, 10 * (1 << exponent)));
+    }
+
     private async Task MaintainPeersAsync()
     {
         await ReconcilePeersAsync();
@@ -119,6 +130,11 @@ public sealed partial class ContinuityDaemon
             }
             foreach (var id in peers)
             {
+                lock (_gate)
+                {
+                    if (_peerRetryAfter.TryGetValue(id, out var retryAt) && retryAt > DateTimeOffset.UtcNow)
+                        continue;
+                }
                 try
                 {
                     using var timeout = CreateSharingLifetime(_stop.Token);
@@ -132,6 +148,8 @@ public sealed partial class ContinuityDaemon
                     {
                         if (!Ready || !_state.Settings.Peers.TryGetValue(id, out var peer)) continue;
                         _peerConnectionFailures.Remove(id);
+                        _peerConnectionFailureCounts.Remove(id);
+                        _peerRetryAfter.Remove(id);
                         _nearby[id] = new(id, peer.Name, PeerAddress(id), "Trusted · verified", true, peer.Clipboard, peer.Files,
                             peer.Input, peer.Handoff, peer.Screen, peer.Audio, peer.InputEdge);
                         StartPendingClipboard(id);
@@ -149,6 +167,9 @@ public sealed partial class ContinuityDaemon
                     {
                         if (_nearby.TryGetValue(id, out var peer)) _nearby[id] = peer with { Status = "Trusted · unreachable" };
                         var failure = ex.GetType().Name + ": " + ex.Message;
+                        var consecutiveFailures = _peerConnectionFailureCounts.GetValueOrDefault(id) + 1;
+                        _peerConnectionFailureCounts[id] = consecutiveFailures;
+                        _peerRetryAfter[id] = DateTimeOffset.UtcNow + TrustedPeerRetryDelay(consecutiveFailures);
                         if (_peerConnectionFailures.GetValueOrDefault(id) != failure)
                             Console.Error.WriteLine("[continuity] trusted_peer_retry: " + failure);
                         _peerConnectionFailures[id] = failure;

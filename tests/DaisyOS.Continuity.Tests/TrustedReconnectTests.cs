@@ -7,6 +7,16 @@ namespace DaisyOS.Continuity.Tests;
 public sealed class TrustedReconnectTests
 {
     [Fact]
+    public void OfflineTrustedPeerRetriesUseBoundedExponentialBackoff()
+    {
+        Assert.Equal(TimeSpan.FromSeconds(10), ContinuityDaemon.TrustedPeerRetryDelay(1));
+        Assert.Equal(TimeSpan.FromSeconds(20), ContinuityDaemon.TrustedPeerRetryDelay(2));
+        Assert.Equal(TimeSpan.FromSeconds(40), ContinuityDaemon.TrustedPeerRetryDelay(3));
+        Assert.Equal(TimeSpan.FromSeconds(60), ContinuityDaemon.TrustedPeerRetryDelay(4));
+        Assert.Equal(TimeSpan.FromSeconds(60), ContinuityDaemon.TrustedPeerRetryDelay(20));
+    }
+
+    [Fact]
     public async Task TrustedPeerAutomaticallyStartsAndRestoresInputWithoutPairingOrLiveCommands()
     {
         var root = Path.Combine(Path.GetTempPath(), "daisy-trusted-reconnect-" + Guid.NewGuid().ToString("N"));

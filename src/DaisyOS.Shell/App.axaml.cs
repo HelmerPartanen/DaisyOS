@@ -12,6 +12,7 @@ using Avalonia.Styling;
 using Avalonia.VisualTree;
 using Avalonia.Platform;
 using Avalonia.Platform.Storage;
+using Avalonia.Rendering.Composition;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.Services.Appearance;
 using DaisyOS.Shell.Services.Localization;
@@ -844,6 +845,7 @@ public partial class App : Application
         {
             ConfigureShellOverlays(shell);
             StartCompositorBridge(shell);
+            _ = RecordInitialShellFrameAsync(desktopSurface);
         };
         wallpaperSurface.Show();
         StartNativeDisplayTracking(wallpaperSurface);
@@ -866,6 +868,25 @@ public partial class App : Application
         SetNativeSurfaceVisible(metricsSurface, shell.IsMetricsPanelVisible, captureKeyboard: true);
         SetNativeSurfaceVisible(localSendSurface, false, captureKeyboard: true);
         LayerShellWindow.SetInputPassthrough(toastSurface, !toastContent.HasActiveToasts);
+    }
+
+    private static async Task RecordInitialShellFrameAsync(TopLevel topLevel)
+    {
+        try
+        {
+            var animationFrame = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            topLevel.RequestAnimationFrame(_ => animationFrame.TrySetResult());
+            await animationFrame.Task.WaitAsync(TimeSpan.FromSeconds(10));
+            var visual = ElementComposition.GetElementVisual(topLevel)
+                ?? throw new InvalidOperationException("The shell desktop surface has no composition visual.");
+            await visual.Compositor.RequestCompositionBatchCommitAsync().Rendered.WaitAsync(TimeSpan.FromSeconds(10));
+            Console.Error.WriteLine(
+                $"[daisy-shell-ready] pid={Environment.ProcessId} utc={DateTimeOffset.UtcNow:O} stage=initial-desktop-rendered");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"[daisy-shell-ready] pid={Environment.ProcessId} stage=failed error={ex.Message}");
+        }
     }
 
     private static void SetNativeSurfaceVisible(Window surface, bool visible, bool captureKeyboard)

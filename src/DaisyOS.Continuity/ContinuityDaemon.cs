@@ -74,6 +74,13 @@ public sealed partial class ContinuityDaemon : IAsyncDisposable, IPathMethodHand
                 if (!found) { _nearby.Remove(id); return; }
                 if (_nearby.Count >= 128 && !_nearby.ContainsKey(id)) return;
                 var peer = _state.Settings.Peers.GetValueOrDefault(id);
+                var newlyReachable = !_nearby.TryGetValue(id, out var previous) || previous.Address != address;
+                if (peer is not null && newlyReachable)
+                {
+                    _peerConnectionFailures.Remove(id);
+                    _peerConnectionFailureCounts.Remove(id);
+                    _peerRetryAfter.Remove(id);
+                }
                 if (peer is not null) _diagnostic = "";
                 _nearby[id] = new(id, SecureState.SafeName(name), address, peer is null ? "Discovered" : "Trusted · discovered", peer is not null, peer?.Clipboard ?? false, peer?.Files ?? false);
             }
