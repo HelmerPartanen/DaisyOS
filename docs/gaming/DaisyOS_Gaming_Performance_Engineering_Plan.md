@@ -93,8 +93,8 @@ audit is complete.
 | Plan milestone | Status | Evidence / remaining gate |
 |---|---|---|
 | Phase 0 — repository audit and baseline | **Repository audit complete; hardware baseline pending** | [Repository audit](repository-audit-2026-11-11.md) inventories image, packages, kernel/boot, session, services and validation. No controlled physical-GPU baseline has been captured. |
-| Phase 1 — gaming foundation | **In progress: diagnostic foundation implemented** | `daisyos-gaming-diagnostics` is staged in the ISO and reports GPU/kernel driver, 64-bit Vulkan output when available, OpenGL renderer/software-rendering warning, packages and session/power context. The UI now labels 32-bit loader presence without claiming device enumeration. Actual 32-bit Vulkan enumeration and reference-GPU validation remain open. |
-| Phases 2–7 | **Not started** | No Proton policy, gaming daemon, power/scheduler tuning or alternate kernel has been implemented under this plan. |
+| Phase 1 — gaming foundation | **In progress: diagnostics and optional 32-bit probe implemented** | `daisyos-gaming-diagnostics` is staged in the ISO and reports GPU/kernel driver, 64-bit Vulkan output when available, OpenGL renderer/software-rendering warning, packages and session/power context. `scripts/build-vulkan32-probe.sh` can build an i686 Vulkan enumerator on a host with a multilib toolchain; diagnostics run it when installed. The UI labels 32-bit loader presence without claiming device enumeration. Probe build on a configured machine and reference-GPU validation remain open. |
+| Phases 2–10 | **Not started** | No Proton policy, gaming daemon, power/scheduler tuning, alternate kernel, desktop gaming integration, package optimization or continuous benchmark suite has been implemented under this plan. |
 
 This status records repository work, not general release readiness. Do not
 mark hardware-dependent checklist items complete until the corresponding

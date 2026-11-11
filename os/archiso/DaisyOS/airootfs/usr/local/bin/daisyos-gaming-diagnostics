@@ -74,6 +74,29 @@ def gpu_summary() -> str:
     return "\n".join(rows) or "No display controller reported"
 
 
+def vulkan32_probe() -> str:
+    configured = os.environ.get("DAISYOS_VULKAN32_PROBE")
+    candidates = [Path(configured)] if configured else []
+    candidates.extend([
+        Path("/usr/lib/daisyos/daisyos-vulkan32-probe"),
+        Path(shutil.which("daisyos-vulkan32-probe") or "/nonexistent"),
+    ])
+    executable = next((path for path in candidates if path.is_file() and os.access(path, os.X_OK)), None)
+    if executable is None:
+        return "Not run (optional 32-bit probe is not installed)"
+    try:
+        result = subprocess.run([str(executable)], capture_output=True, text=True, timeout=10, check=False)
+    except subprocess.TimeoutExpired:
+        return "Failed (probe timed out)"
+    except OSError:
+        return "Failed (probe could not start)"
+    output = result.stdout.strip().replace("\n", "; ")
+    if result.returncode == 0 and re.search(r"physical_devices=[1-9][0-9]*", output):
+        return f"Passed: {output}"
+    detail = output or result.stderr.strip().replace("\n", "; ") or "no details"
+    return f"Failed (exit {result.returncode}): {detail}"
+
+
 def collect() -> dict:
     vulkan = command(["vulkaninfo", "--summary"], timeout=15)
     if vulkan not in {"Unavailable", "Failed or timed out", "No output"}:
@@ -94,13 +117,14 @@ def collect() -> dict:
     session_type = env.get("XDG_SESSION_TYPE", "Unknown")
     power_profile = command(["powerprofilesctl", "get"], timeout=3)
     thermal = command(["systemd-detect-virt"], timeout=3)
+    vulkan32 = vulkan32_probe()
     vulkan_software = bool(re.search(r"(llvmpipe|lavapipe|software rasterizer|deviceType\s*[:=]\s*PHYSICAL_DEVICE_TYPE_CPU)", vulkan, re.I))
     glx = command(["glxinfo", "-B"], timeout=8)
     glx_renderer = next((line.strip() for line in glx.splitlines() if re.search(r"OpenGL renderer string:", line, re.I)), "Unavailable")
     software_renderer = vulkan_software or bool(re.search(r"(llvmpipe|softpipe|lavapipe)", glx_renderer, re.I))
     warnings = [
         "The 64-bit field runs vulkaninfo when available; it does not validate a game runtime.",
-        "The 32-bit field reports loader presence only. Actual 32-bit ICD enumeration is not yet implemented.",
+        "The 32-bit probe is only run when the optional i686 Vulkan probe is installed.",
         "Thermal throttling, VRR, display refresh, Proton version, and game launch paths require follow-up validation.",
     ]
     if software_renderer:
@@ -114,6 +138,7 @@ def collect() -> dict:
         "gpu_and_kernel_driver": gpu_summary(),
         "vulkan_64_bit_probe": vulkan,
         "vulkan_32_bit_loader": "Present" if Path("/usr/lib32/libvulkan.so.1").exists() else "Not found",
+        "vulkan_32_bit_probe": vulkan32,
         "opengl_renderer": glx_renderer,
         "software_renderer_detected": software_renderer,
         "vulkan_icd_manifests": manifests,
@@ -154,6 +179,7 @@ def format_report(report: dict) -> str:
         ("cpu_frequency_driver", "CPU frequency driver"), ("cpu_scheduler", "Block scheduler (NVMe 0)"),
         ("gpu_and_kernel_driver", "GPU and kernel driver"), ("vulkan_64_bit_probe", "Vulkan 64-bit"),
         ("vulkan_32_bit_loader", "Vulkan 32-bit loader"), ("vulkan_icd_manifests", "Vulkan ICD manifests"),
+        ("vulkan_32_bit_probe", "Vulkan 32-bit device probe"),
         ("opengl_renderer", "OpenGL renderer"), ("software_renderer_detected", "Software renderer detected"),
         ("steam_version", "Steam"), ("gamemode_version", "GameMode"), ("session_type", "Session type"),
         ("desktop_session", "Desktop session"), ("compositor_processes", "Compositor processes"),

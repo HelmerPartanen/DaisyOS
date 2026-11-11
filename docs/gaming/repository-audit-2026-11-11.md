@@ -31,7 +31,7 @@ The only image architecture declared in the ISO profile is `x86_64`; no minimum 
 
 ## First implementation slice
 
-Phase 0's repository inventory is complete; physical-hardware baselines remain pending. The first Phase 1 foundation slice is a read-only `daisyos-gaming-diagnostics` host report. It records observed values and distinguishes Vulkan loader/manifest presence from an executed 32-bit Vulkan test. The shell status now makes the same distinction. The current development host lacks the 32-bit compiler runtime, so a probe binary and reference-GPU evidence remain follow-up work; no 32-bit readiness is claimed.
+Phase 0's repository inventory is complete; physical-hardware baselines remain pending. The first Phase 1 foundation slice is a read-only `daisyos-gaming-diagnostics` host report. It records observed values and distinguishes Vulkan loader/manifest presence from an executed 32-bit Vulkan test. An optional i686 probe source and build script now enumerate physical devices through the 32-bit Vulkan loader when built and installed. The shell status continues to distinguish loader presence from device enumeration. The current development host lacks the 32-bit compiler runtime, so probe execution and reference-GPU evidence remain follow-up work; no 32-bit readiness is claimed.
 
 ## Ownership map and next gates
 
