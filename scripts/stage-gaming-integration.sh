@@ -9,6 +9,7 @@ root="${2%/}"
 install -Dm0644 "$repo_root/scripts/daisyos-gaming-environment" "$root/usr/local/lib/daisyos/gaming-environment"
 install -Dm0755 "$repo_root/scripts/daisyos-game-launcher" "$root/usr/local/bin/daisyos-game-launcher"
 install -Dm0755 "$repo_root/scripts/daisyos-game" "$root/usr/local/bin/daisyos-game"
+install -Dm0755 "$repo_root/scripts/daisyos-gaming-diagnostics" "$root/usr/local/bin/daisyos-gaming-diagnostics"
 install -Dm0644 "$repo_root/packaging/gaming/60-daisyos-gamemode.rules" "$root/usr/share/polkit-1/rules.d/60-daisyos-gamemode.rules"
 for application in steam lutris; do
   cat > "$root/usr/local/bin/$application" <<LAUNCHER

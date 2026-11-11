@@ -88,6 +88,18 @@ Before coding, create a short repository audit containing:
 Do not start modifying kernel, bootloader or power settings until this
 audit is complete.
 
+## Implementation status (updated 2026-11-11)
+
+| Plan milestone | Status | Evidence / remaining gate |
+|---|---|---|
+| Phase 0 — repository audit and baseline | **Repository audit complete; hardware baseline pending** | [Repository audit](repository-audit-2026-11-11.md) inventories image, packages, kernel/boot, session, services and validation. No controlled physical-GPU baseline has been captured. |
+| Phase 1 — gaming foundation | **In progress: diagnostic foundation implemented** | `daisyos-gaming-diagnostics` is staged in the ISO and reports GPU/kernel driver, 64-bit Vulkan output when available, OpenGL renderer/software-rendering warning, packages and session/power context. The UI now labels 32-bit loader presence without claiming device enumeration. Actual 32-bit Vulkan enumeration and reference-GPU validation remain open. |
+| Phases 2–7 | **Not started** | No Proton policy, gaming daemon, power/scheduler tuning or alternate kernel has been implemented under this plan. |
+
+This status records repository work, not general release readiness. Do not
+mark hardware-dependent checklist items complete until the corresponding
+physical-device evidence is recorded.
+
 ------------------------------------------------------------------------
 
 # 1. Product goals and performance philosophy

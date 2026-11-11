@@ -234,7 +234,7 @@ public sealed class LinuxGamingService : IGamingService
             parts.Add("Vulkan: Not detected");
         }
 
-        parts.Add($"32-bit Vulkan: {(vulkan32 ? "Ready" : "Not detected")}");
+        parts.Add($"32-bit Vulkan loader: {(vulkan32 ? "Installed; device enumeration not verified" : "Not detected")}");
         parts.Add(ToolDetail("Steam", steam));
         parts.Add(ToolDetail("GameMode", gamemode));
         parts.Add(ToolDetail("MangoHud", mangohud));

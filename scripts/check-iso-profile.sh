@@ -30,6 +30,7 @@ required_files=(
   airootfs/usr/local/bin/daisyos-session
   airootfs/usr/local/bin/daisyos-fallback-session
   airootfs/usr/local/bin/daisyos-game
+  airootfs/usr/local/bin/daisyos-gaming-diagnostics
   airootfs/usr/local/bin/daisyos-game-launcher
   airootfs/usr/local/bin/steam
   airootfs/usr/local/bin/lutris
