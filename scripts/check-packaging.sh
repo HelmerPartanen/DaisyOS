@@ -128,6 +128,9 @@ require_text "$package_dir/PKGBUILD" \
   "\\\$pkgdir/usr/lib/systemd/user/daisyos-shell\\.service" \
   "The systemd user service package path is missing."
 require_text "$package_dir/PKGBUILD" \
+  "daisyos-gamingd\\.service" \
+  "The per-user Gaming Coordinator service must be included in the package."
+require_text "$package_dir/PKGBUILD" \
   "\\\$pkgdir/usr/share/daisyos/defaults/settings\\.json" \
   "Vendor settings must be installed under /usr/share/daisyos/defaults."
 require_text "$package_dir/PKGBUILD" \

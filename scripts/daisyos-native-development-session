@@ -546,6 +546,13 @@ ensure_application_launcher() {
   fi
 }
 
+ensure_gaming_coordinator() {
+  "$source_root/scripts/install-user-gamingd.sh" --repo "$source_root" >> "$session_log" 2>&1 || {
+    log_message "DaisyOS could not install its Gaming Coordinator."
+    return 1
+  }
+}
+
 native_shell_binary() {
   printf '%s\n' "${DAISYOS_NATIVE_DEVELOPMENT_SHELL_BINARY:-$source_root/src/DaisyOS.Shell/bin/$shell_configuration/net10.0/DaisyOS.Shell}"
 }
@@ -740,6 +747,9 @@ start_compositor_and_shell() {
     return 1
   fi
   if ! ensure_application_launcher; then
+    return 1
+  fi
+  if ! ensure_gaming_coordinator; then
     return 1
   fi
   start_user_services

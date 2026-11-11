@@ -30,6 +30,10 @@ if [[ ! -x "$publish_dir/daisy-launch" || ! -x "$publish_dir/daisy-launch-backen
   echo "DaisyLaunch is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
   exit 1
 fi
+if [[ ! -x "$publish_dir/daisy-gamingd" || ! -f "$publish_dir/daisyos-gamingd.service" || ! -f "$publish_dir/org.daisyos.Gaming1.service" ]]; then
+  echo "DaisyOS Gaming daemon is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
+  exit 1
+fi
 
 if [[ ! -f "$publish_dir/daisyos-busy-cursor-v1.so" ]]; then
   echo "Native busy cursor is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
@@ -44,6 +48,11 @@ cp -a "$publish_dir"/. "$iso_shell_dir"/
 
 # Install a normal desktop launcher and on-demand file-manager bus activation.
 iso_root="$repo_root/os/archiso/DaisyOS/airootfs"
+install -Dm755 "$publish_dir/daisy-gamingd" "$iso_root/usr/lib/daisyos/daisy-gamingd"
+install -Dm644 "$publish_dir/daisyos-gamingd.service" "$iso_root/usr/lib/systemd/user/daisyos-gamingd.service"
+install -Dm644 "$publish_dir/org.daisyos.Gaming1.service" "$iso_root/usr/share/dbus-1/services/org.daisyos.Gaming1.service"
+install -d "$iso_root/usr/lib/systemd/user/graphical-session.target.wants"
+ln -sfn ../daisyos-gamingd.service "$iso_root/usr/lib/systemd/user/graphical-session.target.wants/daisyos-gamingd.service"
 "$repo_root/scripts/install-memory-resilience.sh" --root "$iso_root" --no-disk-swap --no-package --no-activate
 mkdir -p "$iso_root/usr/local/bin" "$iso_root/usr/share/applications" "$iso_root/usr/share/dbus-1/services"
 for application in Files Mail Notes Settings DiskManager AppInstaller; do

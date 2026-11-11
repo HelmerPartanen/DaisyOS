@@ -1,109 +1,121 @@
-using Avalonia.Threading;
 using DaisyOS.System.Gaming;
 using DaisyOS.Shell.Services.Diagnostics;
 
 namespace DaisyOS.Shell.Services;
 
 /// <summary>
-/// Detects Steam/Lutris games and owns GameMode requests. Process discovery
-/// and native GameMode calls stay off the input thread.
+/// Mirrors DaisyOS session preferences and active state to the user gaming
+/// daemon. Process detection and temporary system policy live in the daemon.
 /// </summary>
 internal sealed class GamingModeAutomation : IDisposable
 {
     public const string AutomaticPreferenceKey = "gaming.auto-enable";
-    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(3);
+    private const string ManualPreferenceKey = "gaming.manual-enabled";
+    private static readonly TimeSpan PollInterval = TimeSpan.FromSeconds(2);
 
     private readonly ShellSessionState _state;
     private readonly Func<bool> _automaticEnabled;
-    private readonly GameModeController _controller;
-    private readonly GameProcessDetector _detector;
+    private readonly DaisyGamingClient _client = new();
     private readonly GameFrameTelemetryController _frameTelemetry = new();
-    private readonly GamingPowerProfileController _powerProfileController;
     private readonly Func<bool> _telemetryVisible;
     private readonly Func<int> _telemetryWindowPid;
-    private readonly AutomaticGamingModePolicy _policy = new();
     private readonly CancellationTokenSource _lifetime = new();
-    private bool _gamingModeRequested;
-    private int _policyPending;
+    private int _lastObservedGamingMode;
+    private int _pendingManualUpdate;
+    private int _pendingManualValue;
     private int _stopping;
+    private DateTimeOffset _lastErrorLog;
 
     public GamingModeAutomation(ShellSessionState state, Func<bool> automaticEnabled,
-        GameModeController? controller = null, GameProcessDetector? detector = null,
-        Func<bool>? telemetryVisible = null, Func<int>? telemetryWindowPid = null,
-        GamingPowerProfileController? powerProfileController = null)
+        Func<bool>? telemetryVisible = null, Func<int>? telemetryWindowPid = null)
     {
         _state = state;
         _automaticEnabled = automaticEnabled;
-        _controller = controller ?? new();
-        _detector = detector ?? new();
         _telemetryVisible = telemetryVisible ?? (() => false);
         _telemetryWindowPid = telemetryWindowPid ?? (() => 0);
-        _powerProfileController = powerProfileController ?? new();
+        _lastObservedGamingMode = state.GamingMode ? 1 : 0;
     }
 
     public void Start()
     {
+        if (string.IsNullOrEmpty(_state.GetPreference(ManualPreferenceKey)))
+            _state.SetPreference(ManualPreferenceKey, _state.GamingMode ? "true" : "false");
         _state.Changed += OnStateChanged;
-        Volatile.Write(ref _gamingModeRequested, _state.GamingMode);
         _ = Task.Run(() => PollAsync(_lifetime.Token));
     }
 
-    private void OnStateChanged(object? sender, EventArgs e) =>
-        Volatile.Write(ref _gamingModeRequested, _state.GamingMode);
+    private void OnStateChanged(object? sender, EventArgs e)
+    {
+        var current = _state.GamingMode ? 1 : 0;
+        var previous = Interlocked.Exchange(ref _lastObservedGamingMode, current);
+        if (previous == current || Volatile.Read(ref _stopping) != 0) return;
+        Volatile.Write(ref _pendingManualValue, current);
+        Volatile.Write(ref _pendingManualUpdate, 1);
+        _state.SetPreference(ManualPreferenceKey, current == 1 ? "true" : "false");
+    }
 
     private async Task PollAsync(CancellationToken cancellationToken)
     {
-        using var timer = new PeriodicTimer(PollInterval);
+        bool? lastManual = null;
+        (bool Automatic, bool Battery, bool Performance)? lastConfig = null;
+        var timer = new PeriodicTimer(PollInterval);
         try
         {
             do
             {
                 try
                 {
-                    var processes = _detector.FindGameProcessIds();
-                    var running = processes.Count > 0;
-                    // A delayed UI update must not stop registration refreshes or
-                    // accumulate policy callbacks while the desktop is busy.
-                    if (Interlocked.Exchange(ref _policyPending, 1) == 0)
+                    var configuration = (
+                        Automatic: _automaticEnabled(),
+                        Battery: _state.GetPreference(GamingPowerPolicy.BatteryBoostPreferenceKey, "false") == "true",
+                        Performance: _state.GetPreference(GamingPowerPolicy.PerformanceProfilePreferenceKey, "true") != "false");
+                    if (lastConfig != configuration)
                     {
-                        Dispatcher.UIThread.Post(() =>
-                        {
-                            try
-                            {
-                                if (Volatile.Read(ref _stopping) == 0 &&
-                                    _policy.Evaluate(running, _automaticEnabled(), _state.GamingMode) is { } desired)
-                                    _state.GamingMode = desired;
-                            }
-                            finally { Volatile.Write(ref _policyPending, 0); }
-                        });
+                        await _client.ConfigureAsync(configuration.Automatic, configuration.Battery,
+                            configuration.Performance, cancellationToken).ConfigureAwait(false);
+                        lastConfig = configuration;
                     }
-                    var allowBatteryBoost = _state.GetPreference(GamingPowerPolicy.BatteryBoostPreferenceKey, "false") == "true";
-                    var shouldEnable = Volatile.Read(ref _gamingModeRequested) &&
-                        GamingPowerPolicy.ShouldEnablePerformanceBoost(allowBatteryBoost);
-                    var usePerformanceProfile = shouldEnable &&
-                        _state.GetPreference(GamingPowerProfileController.EnabledPreferenceKey, "true") != "false";
-                    await _powerProfileController.SetActiveAsync(usePerformanceProfile, cancellationToken).ConfigureAwait(false);
-                    _controller.SetActive(shouldEnable);
-                    _controller.UpdateGameProcesses(processes);
-                    await _frameTelemetry.UpdateAsync(_telemetryVisible(), _telemetryWindowPid(), cancellationToken).ConfigureAwait(false);
+
+                    var manual = _state.GetPreference(ManualPreferenceKey,
+                        _state.GamingMode ? "true" : "false") == "true";
+                    var userInitiated = Volatile.Read(ref _pendingManualUpdate) != 0;
+                    if (userInitiated)
+                        manual = Volatile.Read(ref _pendingManualValue) != 0;
+                    if (lastManual != manual || userInitiated)
+                    {
+                        await _client.SetManualEnabledAsync(manual, userInitiated, cancellationToken).ConfigureAwait(false);
+                        lastManual = manual;
+                        if (userInitiated && Volatile.Read(ref _pendingManualValue) == (manual ? 1 : 0))
+                            Interlocked.Exchange(ref _pendingManualUpdate, 0);
+                    }
+
+                    var active = await _client.GetGamingActiveAsync(cancellationToken).ConfigureAwait(false);
+                    var desired = active ? 1 : 0;
+                    if (Interlocked.Exchange(ref _lastObservedGamingMode, desired) != desired)
+                        _state.GamingMode = active;
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
-                    Console.Error.WriteLine($"[gaming-mode] Could not refresh game requests: {ex.Message}");
+                    _client.ResetConnection();
+                    lastConfig = null;
+                    lastManual = null;
+                    if (DateTimeOffset.UtcNow - _lastErrorLog >= TimeSpan.FromSeconds(30))
+                    {
+                        Console.Error.WriteLine($"[gaming-mode] Gaming daemon is unavailable: {ex.Message}");
+                        _lastErrorLog = DateTimeOffset.UtcNow;
+                    }
                 }
-            // Cancellation may complete the timer inline on the UI thread.
-            // Force the continuation onto the pool before native cleanup.
-            } while (await timer.WaitForNextTickAsync(cancellationToken).AsTask()
-                .ConfigureAwait(ConfigureAwaitOptions.ForceYielding));
+                try { await _frameTelemetry.UpdateAsync(_telemetryVisible(), _telemetryWindowPid(), cancellationToken).ConfigureAwait(false); }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                { Console.Error.WriteLine($"[gaming-mode] Could not update frame telemetry: {ex.Message}"); }
+            } while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false));
         }
         catch (OperationCanceledException) { }
         finally
         {
-            try { await _powerProfileController.SetActiveAsync(false, CancellationToken.None).ConfigureAwait(false); }
-            catch (Exception ex) { Console.Error.WriteLine($"[gaming-mode] Could not restore the power profile: {ex.Message}"); }
-            _powerProfileController.Dispose();
+            timer.Dispose();
             await _frameTelemetry.UpdateAsync(false, 0, CancellationToken.None).ConfigureAwait(false);
-            _controller.Dispose();
+            _client.Dispose();
             _lifetime.Dispose();
         }
     }
@@ -113,7 +125,5 @@ internal sealed class GamingModeAutomation : IDisposable
         if (Interlocked.Exchange(ref _stopping, 1) != 0) return;
         _state.Changed -= OnStateChanged;
         _lifetime.Cancel();
-        // The polling worker releases requests in its finally block. Never
-        // wait for a native GameMode call while shutting down the UI thread.
     }
 }

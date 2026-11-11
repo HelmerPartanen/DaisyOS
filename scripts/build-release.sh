@@ -40,7 +40,7 @@ if [[ "$print_config" == true ]]; then
   exit 0
 fi
 
-for command_name in dotnet tar sha256sum; do
+for command_name in dotnet cargo tar sha256sum; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     daisyos_release_error "$command_name is required for release builds."
     exit 1
@@ -60,6 +60,7 @@ properties=(
 )
 
 "$repo_root/scripts/build-desktop-services.sh"
+"$repo_root/scripts/build-daisy-gamingd.sh"
 "$repo_root/scripts/format-check.sh"
 dotnet restore
 dotnet build --configuration Release --no-restore "${properties[@]}"
@@ -76,6 +77,9 @@ dotnet publish src/DaisyOS.Shell/DaisyOS.Shell.csproj \
   --no-restore \
   --output "$publish_dir" \
   "${properties[@]}"
+install -m755 "$repo_root/services/DaisyGaming/rust/target/release/daisy-gamingd" "$publish_dir/daisy-gamingd"
+install -m644 "$repo_root/packaging/gaming/daisyos-gamingd.service" "$publish_dir/daisyos-gamingd.service"
+install -m644 "$repo_root/packaging/gaming/org.daisyos.Gaming1.service" "$publish_dir/org.daisyos.Gaming1.service"
 
 for application in Files Mail Notes Settings DiskManager AppInstaller; do
   dotnet publish "src/DaisyOS.$application/DaisyOS.$application.csproj" \

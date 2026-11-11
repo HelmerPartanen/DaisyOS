@@ -16,6 +16,7 @@ airootfs_image_tool_options=("-comp" "zstd" "-Xcompression-level" "15" "-b" "1M"
 file_permissions=(
   ["/usr/local/bin/daisyos-game"]="0:0:755"
   ["/usr/local/bin/daisyos-gaming-diagnostics"]="0:0:755"
+  ["/usr/lib/daisyos/daisy-gamingd"]="0:0:755"
   ["/usr/local/bin/daisyos-game-launcher"]="0:0:755"
   ["/usr/local/bin/steam"]="0:0:755"
   ["/usr/local/bin/lutris"]="0:0:755"

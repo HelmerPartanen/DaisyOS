@@ -36,6 +36,7 @@ package() {
   mkdir -p "$pkgdir/usr/lib/daisyos"
   mkdir -p "$pkgdir/usr/bin"
   mkdir -p "$pkgdir/usr/lib/systemd/user"
+  mkdir -p "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants"
   mkdir -p "$pkgdir/usr/share/daisyos/defaults"
   mkdir -p "$pkgdir/etc/daisyos"
 
@@ -45,6 +46,9 @@ package() {
   ln -s /usr/lib/daisyos/apps/Continuity/DaisyOS.Continuity "$pkgdir/usr/bin/daisyos-continuity"
   cp "$srcdir/daisyos-continuity.service" "$pkgdir/usr/lib/systemd/user/daisyos-continuity.service"
   cp "$srcdir/daisyos-shell.service" "$pkgdir/usr/lib/systemd/user/daisyos-shell.service"
+  install -Dm644 "$srcdir/daisyos-gamingd.service" "$pkgdir/usr/lib/systemd/user/daisyos-gamingd.service"
+  install -Dm644 "$srcdir/org.daisyos.Gaming1.service" "$pkgdir/usr/share/dbus-1/services/org.daisyos.Gaming1.service"
+  ln -sfn ../daisyos-gamingd.service "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/daisyos-gamingd.service"
   # Background mail check: installed system-wide and enabled for every user (like `systemctl --global enable`).
   cat > "$pkgdir/usr/lib/systemd/user/daisyos-mail-check.service" <<'UNIT'
 [Unit]

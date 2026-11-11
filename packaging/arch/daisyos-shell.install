@@ -3,5 +3,8 @@ post_install() {
   cat <<'EOF'
 To enable the DaisyOS shell service:
   systemctl --user enable --now daisyos-shell.service
+
+The DaisyOS Gaming Coordinator is started with graphical-session.target. To enable it explicitly:
+  systemctl --user enable --now daisyos-gamingd.service
 EOF
 }

@@ -9,7 +9,9 @@ Toggle **Gaming Mode** on the Gaming page in Settings. When enabled:
 - Non-critical notification toast popups are suppressed while you play when **Silence notifications** is enabled.
 - A `do_not_disturb_on` icon appears in the system bar with a `sports_esports` badge when Gaming Mode is the reason.
 - Turning Gaming Mode off returns to the user's normal notification behavior; the separate Do Not Disturb preference is not changed.
-- When GameMode is installed, the shell holds a GameMode request (`gamemoderun sleep infinity`) for as long as Gaming Mode is on, to activate the system-wide policy. The shell also registers detected Steam/Lutris game processes and their descendants with GameMode so configured per-process priority and I/O tuning apply to the game. Requests are released when Gaming Mode is disabled or the processes disappear. Available tuning depends on the installed GameMode configuration and permissions. Native requests run on a background worker, and the helper uses a parent-death signal (`setpriv`) so a shell crash or forced restart cannot leave its request running forever.
+- The per-user `daisy-gamingd` coordinator holds the GameMode request and registers detected Steam/Lutris game processes and their descendants so configured per-process priority and I/O tuning applies. It also owns automatic-game state and the reversible PPD performance profile. The shell sends fixed preferences over D-Bus and mirrors daemon status; it does not run a second game detector or power-profile controller. See the [coordinator API, state machine, and recovery behavior](gaming/daisy-gamingd.md).
+
+The Performance profile is used only when Power Profiles Daemon advertises it. Gaming Mode snapshots and restores the previous profile; Settings can disable the PPD profile or separately opt in to performance boosts on battery. Thermal protections remain owned by the platform and kernel.
 
 ### Built-in GameMode access
 
@@ -19,7 +21,7 @@ For development or older manually assembled systems, `scripts/configure-gaming.s
 
 ### Automatic Gaming Mode
 
-**Turn on automatically when a game starts** (Settings → Notifications, on by default) checks `/proc` every three seconds for a running Steam game (`reaper SteamLaunch AppId=…`, native or Proton) or a Lutris game (`lutris-wrapper`). Gaming Mode turns on when one starts and off when it exits. Gaming Mode that you switched on yourself is never switched off automatically, and switching it off during a game keeps it off until that game exits.
+**Turn on automatically when a game starts** (Settings → Notifications, on by default) uses the coordinator's `/proc` scan every three seconds for a running Steam game (`reaper SteamLaunch AppId=…`, native or Proton) or a Lutris game (`lutris-wrapper`). Gaming Mode turns on when one starts and off when it exits. Gaming Mode that you switched on yourself is never switched off automatically, and switching it off during a game keeps it off until that game exits.
 
 The game-controller button in the system bar provides the same Gaming Mode switch
 and a separate choice for silencing non-critical popups. Advanced options remain

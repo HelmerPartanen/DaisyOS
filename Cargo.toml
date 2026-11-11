@@ -2,7 +2,7 @@
 resolver = "2"
 members = ["crates/daisy-core", "crates/daisy-ui", "crates/daisy-platform", "apps/calculator", "apps/daisy-ui-gallery"]
 # Existing shipping daemons retain their own release and no_std profiles.
-exclude = ["services/DaisyLaunch/rust", "src/native/daisy_background", "src/native/daisy_desktop_services"]
+exclude = ["services/DaisyLaunch/rust", "services/DaisyGaming/rust", "src/native/daisy_background", "src/native/daisy_desktop_services"]
 
 [workspace.package]
 edition = "2021"
