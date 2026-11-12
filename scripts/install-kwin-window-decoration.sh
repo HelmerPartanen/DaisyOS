@@ -70,7 +70,6 @@ for required in \
   "$app_icon_dir/Settings.png" \
   "$app_icon_dir/Mail.png" \
   "$app_icon_dir/Notes.png" \
-  "$app_icon_dir/Calendar.png" \
   "$app_icon_dir/Calculator.png" \
   "$app_icon_dir/Files.png" \
   "$app_icon_dir/Store.png" \
@@ -80,7 +79,6 @@ for required in \
   "$application_dir/org.daisyos.settings.desktop" \
   "$application_dir/org.daisyos.mail.desktop" \
   "$application_dir/org.daisyos.notes.desktop" \
-  "$application_dir/org.daisyos.calendar.desktop" \
   "$application_dir/org.daisyos.calculator.desktop" \
   "$application_dir/org.daisyos.files.desktop" \
   "$application_dir/org.daisyos.appstore.desktop" \
@@ -140,6 +138,8 @@ else
   icons_root="$prefix/usr/share/icons/hicolor/256x256/apps"
 fi
 install -d -m 0755 "$install_root" "$manifest_root" "$applications_root" "$icons_root"
+# Remove metadata left by versions that shipped the retired Calendar app.
+rm -f -- "$applications_root/org.daisyos.calendar.desktop" "$icons_root/org.daisyos.calendar.png"
 install -m 0755 "$plugin_source" "$install_root/org.daisyos.decoration.so"
 
 # KWin receives org.daisyos.<app> as the Wayland app_id. Installing matching
@@ -149,7 +149,6 @@ declare -A app_icons=(
   [settings]=Settings.png
   [mail]=Mail.png
   [notes]=Notes.png
-  [calendar]=Calendar.png
   [calculator]=Calculator.png
   [files]=Files.png
   [appstore]=Store.png

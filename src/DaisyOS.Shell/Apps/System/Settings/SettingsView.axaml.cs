@@ -65,7 +65,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private Window? _displayOwner;
         private bool _closingForDisplayRevert;
         private bool _allowDisplayOwnerClose;
-        private bool _isScanningBluetooth = false;
         private readonly LinuxWirelessNetworkService _settingsWirelessService = new(new SafeCommandRunner());
         private readonly LinuxBluetoothService _settingsBluetoothService = new(new SafeCommandRunner());
         private readonly LinuxAudioService _settingsAudioService = new(new SafeCommandRunner());
@@ -105,13 +104,13 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Continuity", "CONTINUITY", "File sharing", "Send files to a paired DaisyOS device", "continuity file transfer send receive"),
             new("System", "POWER", "Power mode", "Battery saver, performance mode, energy", "power battery energy performance saver"),
             new("Battery", "BATTERY", "Battery", "Battery status, charging and power saving", "battery charging percentage power saver sleep"),
-            new("Password", "PASSWORD", "Account password", "Manage password, passwordless sign-in, biometric sign-in and hint", "password security fingerprint biometric no password hint login sign-in"),
+            new("Password", "PASSWORD", "Account password", "Manage account name, password, automatic sign-in and hint", "account user name password security no password hint login sign-in"),
             new("System", "DESKTOP", "System bar date", "Show the date beside the clock", "clock date taskbar system bar"),
             new("Displays", "DISPLAY", "Resolution", "Choose display resolution", "resolution display screen size monitor 1080p 1440p 4k"),
             new("Displays", "DISPLAY", "Display scale", "Text and app size", "scale zoom display text size"),
             new("Displays", "DISPLAY", "Refresh rate", "Choose a display refresh rate", "hertz hz 60 120 144 monitor"),
-            new("Displays", "DISPLAY", "Night light", "Reduce blue light in the evening", "night light blue comfort warm"),
-            new("Displays", "DISPLAY", "HDR", "Use high dynamic range when available", "hdr high dynamic range"),
+            new("Displays", "COLOR", "Night light", "Reduce blue light in the evening", "night light blue comfort warm"),
+            new("Displays", "COLOR", "HDR", "Use high dynamic range when available", "hdr high dynamic range"),
             new("Sound", "OUTPUT", "Output volume", "System output volume", "volume speaker audio sound"),
             new("Sound", "INPUT", "Microphone", "Microphone volume and mute", "mic microphone input mute"),
             new("Network", "WI-FI", "Wi-Fi", "Wireless radio and available networks", "wifi wireless network internet connect password"),
@@ -486,6 +485,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private void ShowCategory(string category, string? section = null)
         {
             _displayLoad?.Cancel();
+            _accountLoad?.Cancel();
             if (category == "Displays") _displayRefreshTimer.Start();
             else _displayRefreshTimer.Stop();
             if (!string.Equals(category, "Bluetooth", StringComparison.Ordinal)) StopAutomaticBluetoothDiscovery();
@@ -530,7 +530,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 "LockScreen" => Loc.Get("Lock Screen"),
                 "Displays" => Loc.Get("Displays"),
                 "Battery" => Loc.Get("Battery"),
-                "Password" => Loc.Get("Password"),
+                "Password" => Loc.Get("Account"),
                 "Sound" => Loc.Get("Sound"),
                 "Network" => Loc.Get("Wi-Fi"),
                 "Ethernet" => Loc.Get("Ethernet"),
@@ -597,7 +597,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 "Displays" => Loc.Get("Arrange screens and tune how content is presented."),
                 "Battery" => Loc.Get("Review battery status and choose how your device uses power."),
-                "Password" => Loc.Get("Manage your account password, sign-in options, biometric access, and hint."),
+                "Password" => Loc.Get("Manage your account details, password, sign-in options, and hint."),
                 "Sound" => Loc.Get("Choose devices and control every active audio stream."),
                 "Network" => Loc.Get("Manage Wi-Fi and wireless networks."),
                 "Ethernet" => Loc.Get("Manage your wired connection."),
@@ -621,7 +621,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 case "Displays": BuildDisplays(buildVersion); break;
                 case "Battery": BuildBattery(buildVersion); break;
-                case "Password": BuildPassword(); break;
+                case "Password": BuildPassword(buildVersion); break;
                 case "Sound": BuildSound(buildVersion); break;
                 case "Network": BuildNetwork(buildVersion); break;
                 case "Ethernet": BuildEthernet(buildVersion); break;
@@ -712,31 +712,26 @@ namespace DaisyOS.Shell.Apps.System.Settings
             AddPowerAndSleepSections(battery.IsPresent);
         }
 
-        private void BuildPassword()
+        private void BuildPassword(int buildVersion)
         {
             var app = Application.Current as App;
-            var rows = new List<Control>
-            {
-                SettingsAction("Open User Accounts", "Set or remove your account password and configure fingerprint sign-in in KDE User Manager.", "user-circle", () =>
-                {
-                    var launcher = new SafeProcessLauncher();
-                    var result = launcher.Launch("systemsettings", ["kcm_users"]);
-                    if (!result.Succeeded) result = launcher.Launch("kcmshell6", ["users"]);
-                    if (!result.Succeeded) app?.Feedback.Show(Loc.Get("KDE User Manager could not be opened."));
-                })
-            };
-            AddSection(Loc.Get("SIGN-IN"), Loc.Get("Account password and biometric sign-in are managed by KDE and your system’s PAM configuration."), rows.ToArray());
+            BuildAccountSettings(buildVersion);
 
             var hint = new TextBox
             {
+                Name = "PasswordHint",
+                Classes = { "SettingsTextInput" },
+                Width = 320,
                 Text = app?.GetPreference("security.password-hint", "") ?? "",
                 PlaceholderText = Loc.Get("A reminder only you will understand"),
                 MinHeight = 40, VerticalContentAlignment = VerticalAlignment.Center,
                 HorizontalAlignment = HorizontalAlignment.Stretch
             };
             hint.TextChanged += (_, _) => app?.SetPreference("security.password-hint", hint.Text ?? "");
-            AddSection(Loc.Get("PASSWORD HINT"), Loc.Get("This hint is saved on this device. Never include your password in it."),
-                PreferenceRow(Loc.Get("Hint"), null, hint));
+            var hintRow = PreferenceRow(Loc.Get("Hint"), null, hint);
+            hintRow.SizeChanged += (_, _) => hint.MaxWidth = Math.Max(0,
+                hintRow.Bounds.Width - hintRow.Padding.Left - hintRow.Padding.Right);
+            AddSection(Loc.Get("PASSWORD HINT"), Loc.Get("This hint is saved on this device. Never include your password in it."), hintRow);
         }
 
         private void AddPowerAndSleepSections(bool hasBattery)
@@ -837,12 +832,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var display = displays.FirstOrDefault(d => d.Name == _selectedDisplayName)
                 ?? displays.FirstOrDefault(d => d.IsPrimary) ?? displays[0];
             _selectedDisplayName = display.Name;
-            if (display is null)
-            {
-                AddUnavailableMessage(Loc.Get("The selected display disappeared while its settings were loading."));
-                return;
-            }
-
             if (displays.Count > 1)
             {
                 var monitorSelectorPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
@@ -943,14 +932,15 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
             if (display.Brightness >= 0)
             {
-                var brightness = new Slider { Minimum = 0, Maximum = 100, Value = Math.Clamp(display.Brightness, 0, 100), Width = 220, VerticalAlignment = VerticalAlignment.Center };
+                var brightness = new QuickSettingsSlider { Name = "DisplayBrightnessSlider", Icon = "sun", Minimum = 0, Maximum = 100,
+                    StepFrequency = 1, Value = Math.Clamp(display.Brightness, 0, 100), Width = 220, VerticalAlignment = VerticalAlignment.Center };
+                Avalonia.Automation.AutomationProperties.SetName(brightness, Loc.Get("Brightness"));
                 var brightnessValue = new TextBlock { Text = $"{Math.Clamp(display.Brightness, 0, 100)}%", MinWidth = 42, VerticalAlignment = VerticalAlignment.Center, TextAlignment = TextAlignment.Right };
                 var brightnessPanel = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12, Children = { brightness, brightnessValue } };
                 var brightnessTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(250) };
                 int lastBrightness = (int)Math.Clamp(display.Brightness, 0, 100);
-                brightness.PropertyChanged += (_, args) =>
+                brightness.ValueChanged += (_, _) =>
                 {
-                    if (args.Property != RangeBase.ValueProperty) return;
                     var value = (int)Math.Round(brightness.Value);
                     brightnessValue.Text = $"{value}%";
                     lastBrightness = value;
@@ -959,17 +949,21 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 brightnessTimer.Tick += async (_, _) =>
                 {
                     brightnessTimer.Stop();
-                    await DisplayCommandRunner.RunAsync("kscreen-doctor", [$"output.{outputName}.brightness.{lastBrightness}"], TimeSpan.FromSeconds(3));
+                    if (buildVersion != _categoryBuildVersion || token.IsCancellationRequested) return;
+                    try { await DisplayCommandRunner.RunAsync("kscreen-doctor", [$"output.{outputName}.brightness.{lastBrightness}"], TimeSpan.FromSeconds(3), token); }
+                    catch (OperationCanceledException) when (token.IsCancellationRequested) { }
                 };
+                brightness.DetachedFromVisualTree += (_, _) => brightnessTimer.Stop();
                 displayRows.Add(PreferenceRow(Loc.Get("Brightness"), Loc.Get("Screen brightness for this display."), brightnessPanel));
             }
 
+            var colorRows = new List<Control>();
             var colorSources = new[] { "sRGB", "EDID", "ICC" };
             var currentColorSource = display.ColorProfileSource is { Length: > 0 } source && colorSources.Contains(source) ? source : "sRGB";
-            displayRows.Add(Picker("Color profile", "display.color-profile", currentColorSource, selected =>
+            colorRows.Add(Picker("Color profile", "display.color-profile", currentColorSource, selected =>
                 _ = ApplyKScreenSettingAsync(outputName, "color profile", _ => $"output.{outputName}.colorProfileSource.{selected}", buildVersion), colorSources));
 
-            displayRows.Add(Picker("Color accuracy", "display.color-accuracy", display.WideColorGamutEnabled ? "Wide color" : "Standard color", selected =>
+            colorRows.Add(Picker("Color accuracy", "display.color-accuracy", display.WideColorGamutEnabled ? "Wide color" : "Standard color", selected =>
                 _ = ApplyKScreenSettingAsync(outputName, "color accuracy", _ => $"output.{outputName}.wcg.{(selected == "Wide color" ? "enable" : "disable")}", buildVersion),
                 "Standard color", "Wide color"));
 
@@ -980,7 +974,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 {
                     var bitDepthOptions = bitDepths.Select(value => $"{value}-bit").ToArray();
                     var currentBpc = Math.Clamp(display.MaxBpc, bitDepths[0], bitDepths[^1]);
-                    displayRows.Add(Picker("Color bit rate", "display.color-bit-rate", $"{currentBpc}-bit", selected =>
+                    colorRows.Add(Picker("Color bit rate", "display.color-bit-rate", $"{currentBpc}-bit", selected =>
                     {
                         if (int.TryParse(selected.Replace("-bit", ""), out var bpc))
                             _ = ApplyKScreenSettingAsync(outputName, "color bit rate", _ => $"output.{outputName}.maxBpc.{bpc}", buildVersion);
@@ -1021,7 +1015,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                     try { await ApplyHdrSettingAsync(outputName, enabled, buildVersion); }
                     finally { hdrToggle.IsEnabled = true; }
                 };
-                displayRows.Add(PreferenceRow(Loc.Get("Use HDR"),
+                colorRows.Add(PreferenceRow(Loc.Get("Use HDR"),
                     Loc.Get("Show a wider range of brightness and color on compatible displays."), hdrToggle));
             }
 
@@ -1043,9 +1037,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 }
                 finally { nightLightToggle.IsEnabled = true; }
             };
-            displayRows.Add(PreferenceRow(Loc.Get("Use night light"), null, nightLightToggle));
+            colorRows.Add(PreferenceRow(Loc.Get("Use night light"), null, nightLightToggle));
 
             AddSection(Loc.Get("DISPLAY"), Loc.Get("Resolution, scaling, and refresh rate for active displays."), displayRows.ToArray());
+            AddSection(Loc.Get("COLOR"), null, colorRows.ToArray());
 
         }
 
@@ -1780,7 +1775,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
         private async Task RunAutomaticBluetoothDiscoveryAsync(CancellationTokenSource lifetime)
         {
             var cancellationToken = lifetime.Token;
-            _isScanningBluetooth = true;
             try
             {
                 if (!await _settingsBluetoothService.StartDiscoveryAsync(cancellationToken))
@@ -1798,7 +1792,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { }
             finally
             {
-                _isScanningBluetooth = false;
                 try { await _settingsBluetoothService.StopDiscoveryAsync(CancellationToken.None); } catch { }
                 if (ReferenceEquals(_bluetoothDiscoveryLifetime, lifetime))
                     _bluetoothDiscoveryLifetime = null;
@@ -1810,7 +1803,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             _bluetoothDiscoveryLifetime?.Cancel();
             _bluetoothDiscoveryLifetime = null;
-            _isScanningBluetooth = false;
         }
 
         private void BuildNotifications()

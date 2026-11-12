@@ -25,7 +25,6 @@ public sealed class LinuxPamAuthenticationService : IAuthenticationService
 
     public bool Authenticate(string password)
     {
-        if (string.IsNullOrEmpty(password)) return false;
 
         IntPtr handle = IntPtr.Zero;
         var status = PamSuccess;

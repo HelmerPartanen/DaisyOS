@@ -57,7 +57,6 @@ public static class DesktopItemLoader
         return clean switch
         {
             "calculator" or "calculatoricon" or "calculator_dark" or "calculator_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Calculator.png",
-            "calendar" or "calendaricon" or "calendar_dark" or "calendar_light" => "avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png",
             "files" or "filesicon" or "files_dark" or "files_light" or "filemanager" or "file-manager" or "file_manager" => "avares://DaisyOS.Shell/Assets/AppIcons/Files.png",
             "launcher" or "launchericon" or "launcher_dark" or "launcher_light" or "start" => "avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png",
             "mail" or "org.daisyos.mail" => "avares://DaisyOS.Shell/Assets/AppIcons/Mail.png",

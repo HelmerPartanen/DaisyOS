@@ -71,7 +71,6 @@ public sealed class WorkflowPolishContractTests
     }
 
     [Theory]
-    [InlineData("Apps/Calendar/CalendarWindow.axaml")]
     [InlineData("Apps/Calculator/CalculatorWindow.axaml")]
     [InlineData("Apps/UIKit/UIKitWindow.axaml")]
     [InlineData("Apps/Files/Picker/DaisyFilePickerWindow.axaml")]

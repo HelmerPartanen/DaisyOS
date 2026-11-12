@@ -22,6 +22,22 @@ public sealed class StandaloneApplicationTests
     }
 
     [Fact]
+    public void RetiredCalendarPinsAreRemovedWithoutChangingOtherSavedPins()
+    {
+        var folder = Directory.CreateTempSubdirectory("daisy-retired-calendar-");
+        try
+        {
+            var path = Path.Combine(folder.FullName, "state.json");
+            File.WriteAllText(path, """
+                {"dockDefaultsInitialized":true,"dockOrder":["org.daisyos.files","calendar","org.daisyos.calendar","org.daisyos.calendar.desktop","org.example.app"]}
+                """);
+            var state = new ShellSessionState(path);
+            Assert.Equal(new[] { "org.daisyos.files", "org.example.app" }, state.DockOrder);
+        }
+        finally { folder.Delete(true); }
+    }
+
+    [Fact]
     public void NativeAppStartupSizeNeverExceedsLaptopWorkArea()
     {
         var result = NativeAppWindowSizing.Calculate(1280, 720, 760, 560,

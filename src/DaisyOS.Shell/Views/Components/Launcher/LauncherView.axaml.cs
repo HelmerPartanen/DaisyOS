@@ -1068,15 +1068,14 @@ public partial class LauncherView : UserControl
         menu.MaxHeight = double.PositiveInfinity;
         menu.IsVisible = true;
         menu.Measure(Size.Infinity);
-        var targetScreen = button.PointToScreen(default);
-        var overlayScreen = overlay.PointToScreen(default);
-        var scale = Math.Max(overlay.RenderScaling, 0.01);
-        var x = (targetScreen.X - overlayScreen.X) / scale + button.Bounds.Width;
-        var y = (targetScreen.Y - overlayScreen.Y) / scale;
+        var anchor = overlay.PointToClient(button.PointToScreen(default));
+        var anchorRight = overlay.PointToClient(button.PointToScreen(new Point(button.Bounds.Width, 0))).X;
+        var x = anchorRight;
+        var y = anchor.Y;
         var width = Math.Max(menu.DesiredSize.Width, 204);
         var height = menu.DesiredSize.Height;
         var bounds = overlay.Bounds;
-        if (x + width > bounds.Width - 6) x = (targetScreen.X - overlayScreen.X) / scale - width;
+        if (x + width > bounds.Width - 6) x = anchor.X - width;
         if (y + height > bounds.Height - 6) y = bounds.Height - height - 6;
         menu.Margin = new Thickness(Math.Clamp(x, 6, Math.Max(6, bounds.Width - width - 6)), Math.Clamp(y, 6, Math.Max(6, bounds.Height - height - 6)), 0, 0);
         AppContextMenuVisibilityChanged?.Invoke(this, true);
@@ -1093,7 +1092,7 @@ public partial class LauncherView : UserControl
 
         var menu = _powerMenu ?? this.FindControl<Border>("MenuBlurHost");
         var button = this.FindControl<Button>("PowerButton");
-        var surface = TopLevel.GetTopLevel(this);
+        var surface = menu is null ? null : TopLevel.GetTopLevel(menu);
         if (menu is null || button is null || surface is null) return;
         // Measure the real visible card before mapping its native overlay.
         // This also lets KWinBlur publish the region before the surface is
@@ -1101,25 +1100,21 @@ public partial class LauncherView : UserControl
         // Position margins participate in DesiredSize. Never include the
         // previous anchor offset when measuring a reopened menu.
         menu.Margin = default;
+        menu.MaxWidth = double.PositiveInfinity;
+        menu.MaxHeight = double.PositiveInfinity;
         menu.IsVisible = true;
         menu.Measure(Size.Infinity);
-        // The menu lives on a different layer surface, so visual-tree
-        // translation is not valid here and can return null when an app owns
-        // focus. Convert both native surfaces through screen pixels instead.
-        var buttonScreen = button.PointToScreen(default);
-        var surfaceScreen = surface.PointToScreen(default);
-        var scale = Math.Max(surface.RenderScaling, 0.01);
-        var buttonTopLeft = new Point(
-            (buttonScreen.X - surfaceScreen.X) / scale,
-            (buttonScreen.Y - surfaceScreen.Y) / scale);
+        // Let the backend map between surfaces. Wayland screen coordinates
+        // are logical; dividing them by RenderScaling scales the anchor twice.
+        var buttonTopRight = surface.PointToClient(button.PointToScreen(new Point(button.Bounds.Width, 0)));
         var width = Math.Min(Math.Max(menu.DesiredSize.Width, 184), Math.Max(0, surface.Bounds.Width - 12));
         menu.MaxWidth = width;
         menu.MaxHeight = Math.Max(0, surface.Bounds.Height - 12);
         menu.Measure(new Size(width, menu.MaxHeight));
         var height = Math.Min(menu.DesiredSize.Height, menu.MaxHeight);
         menu.Margin = new Thickness(
-            Math.Clamp(buttonTopLeft.X + button.Bounds.Width - width, 6, Math.Max(6, surface.Bounds.Width - width - 6)),
-            Math.Clamp(buttonTopLeft.Y - height, 6, Math.Max(6, surface.Bounds.Height - height - 6)), 0, 0);
+            Math.Clamp(buttonTopRight.X - width, 6, Math.Max(6, surface.Bounds.Width - width - 6)),
+            Math.Clamp(buttonTopRight.Y - height, 6, Math.Max(6, surface.Bounds.Height - height - 6)), 0, 0);
         PowerMenuVisibilityChanged?.Invoke(this, true);
         menu.Focus();
         e.Handled = true;

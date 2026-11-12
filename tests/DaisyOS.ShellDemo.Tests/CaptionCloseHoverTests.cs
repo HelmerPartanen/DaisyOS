@@ -24,7 +24,7 @@ public class CaptionCloseHoverTests
         Directory.CreateDirectory(folder);
         try
         {
-            foreach (var window in new Window[] { new SettingsWindow(), new FilesWindow(folder, false), new Window { Width = 360, Height = 100, Content = new DaisyOS.Shell.Apps.Calculator.CalculatorWindowTitleBar() }, new Window { Width = 360, Height = 100, Content = new DaisyOS.Shell.Apps.Calendar.CalendarWindowTitleBar() } })
+            foreach (var window in new Window[] { new SettingsWindow(), new FilesWindow(folder, false), new DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerWindow(new("Choose files", false, false, [], InitialFolder: folder)), new Window { Width = 360, Height = 100, Content = new DaisyOS.Shell.Apps.Calculator.CalculatorWindowTitleBar() } })
             {
                 window.RequestedThemeVariant = dark ? ThemeVariant.Dark : ThemeVariant.Light;
                 window.Show();

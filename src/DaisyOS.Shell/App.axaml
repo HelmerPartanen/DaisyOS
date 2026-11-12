@@ -11,7 +11,10 @@
         <ResourceInclude Source="avares://DaisyOS.Shell/Themes/WidgetContainerTheme.axaml" />
         <ResourceInclude Source="avares://DaisyOS.Shell/Themes/ToggleSwitchTheme.axaml" />
         <ResourceInclude Source="avares://DaisyOS.Shell/Themes/SelectionControlThemes.axaml" />
+        <ResourceInclude Source="avares://DaisyOS.Shell/Themes/SliderTheme.axaml" />
       </ResourceDictionary.MergedDictionaries>
+
+      <ControlTheme x:Key="{x:Type Slider}" TargetType="Slider" BasedOn="{StaticResource DaisySliderTheme}" />
 
       <ControlTheme x:Key="{x:Type ToggleSwitch}" TargetType="ToggleSwitch" BasedOn="{StaticResource DaisyToggleSwitchTheme}" />
 

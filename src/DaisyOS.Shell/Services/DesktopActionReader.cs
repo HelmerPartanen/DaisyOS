@@ -13,7 +13,6 @@ public static class DesktopActionReader
 {
     private static readonly Dictionary<string, string> BuiltInAppDesktopFiles = new(StringComparer.OrdinalIgnoreCase)
     {
-        ["calendar"] = "/usr/share/applications/daisyos-calendar.desktop",
         ["notes"] = "/usr/share/applications/daisyos-notes.desktop",
         ["calculator"] = "/usr/share/applications/daisyos-calculator.desktop",
         ["settings"] = "/usr/share/applications/daisyos-settings.desktop",

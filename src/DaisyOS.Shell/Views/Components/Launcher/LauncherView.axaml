@@ -30,7 +30,6 @@
           <Panel Grid.Row="0" Width="68" Height="62" HorizontalAlignment="Center">
             <Panel Width="58" Height="58"
                    HorizontalAlignment="Center" VerticalAlignment="Center">
-              <controls:LauncherCalendarIcon Width="58" Height="58" IsCalendar="{Binding IsCalendarIcon}" IsVisible="{Binding IsCalendarIcon}" />
               <Image Source="{Binding IconBitmap}" IsVisible="{Binding IsBitmapIconVisible}"
                      RenderOptions.BitmapInterpolationMode="HighQuality"
                      Width="58" Height="58" Stretch="Uniform" />

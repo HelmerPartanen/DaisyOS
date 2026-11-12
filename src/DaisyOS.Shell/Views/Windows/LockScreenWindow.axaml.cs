@@ -1710,14 +1710,8 @@ public partial class LockScreenWindow : Window
         if (_isAuthenticating || _dismissing) return;
 
         var password = PasswordBox.Text ?? string.Empty;
-        if (string.IsNullOrEmpty(password))
-        {
-            ErrorMessageText.Text = Loc.Get("Please enter your password.");
-            ErrorMessageText.IsVisible = true;
-            PasswordBox.Focus();
-            return;
-        }
-
+        // PAM decides whether an empty password is valid for this account.
+        // Accounts with a password must still pass normal system authentication.
         _isAuthenticating = true;
         ErrorMessageText.IsVisible = false;
         PasswordBox.IsReadOnly = true;

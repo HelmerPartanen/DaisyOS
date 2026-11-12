@@ -48,12 +48,16 @@ ctest --test-dir "$temp_dir/build" --output-on-failure
 [[ -f "$temp_dir/build/org.daisyos.decoration.so" ]]
 grep -a -Fq 'org.daisyos.decoration' "$temp_dir/build/org.daisyos.decoration.so"
 
+mkdir -p "$temp_dir/stage/usr/share/applications" "$temp_dir/stage/usr/share/icons/hicolor/256x256/apps"
+touch "$temp_dir/stage/usr/share/applications/org.daisyos.calendar.desktop" "$temp_dir/stage/usr/share/icons/hicolor/256x256/apps/org.daisyos.calendar.png"
 "$installer" --prefix "$temp_dir/stage" --debug >/dev/null
+[[ ! -e "$temp_dir/stage/usr/share/applications/org.daisyos.calendar.desktop" ]]
+[[ ! -e "$temp_dir/stage/usr/share/icons/hicolor/256x256/apps/org.daisyos.calendar.png" ]]
 [[ -f "$temp_dir/stage/usr/lib/qt6/plugins/org.kde.kdecoration3/org.daisyos.decoration.so" ]]
 [[ -f "$temp_dir/stage/etc/daisyos/kwin-window-decoration.conf" ]]
 grep -Fxq 'DAISYOS_KWIN_DECORATION_PLUGIN=org.daisyos.decoration' "$temp_dir/stage/etc/daisyos/kwin-window-decoration.conf"
 
-for app_id in settings notes calendar calculator files appstore uikit; do
+for app_id in settings notes calculator files appstore uikit; do
   [[ -f "$temp_dir/stage/usr/share/applications/org.daisyos.$app_id.desktop" ]]
   [[ -f "$temp_dir/stage/usr/share/icons/hicolor/256x256/apps/org.daisyos.$app_id.png" ]]
   grep -Fxq "Icon=org.daisyos.$app_id" "$temp_dir/stage/usr/share/applications/org.daisyos.$app_id.desktop"

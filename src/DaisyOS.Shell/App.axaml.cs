@@ -29,7 +29,6 @@ using DaisyOS.Shell.Apps.Calculator;
 using DaisyOS.Shell.Views.Windows;
 using DaisyOS.Shell.Apps.Files;
 using DaisyOS.Shell.Apps.Files.Services;
-using DaisyOS.Shell.Apps.Calendar;
 using DaisyOS.Shell.Apps.UIKit;
 using DaisyOS.Shell.Services.Windows;
 using DaisyOS.Shell.Services.Notifications;
@@ -71,7 +70,6 @@ public partial class App : Application
     private readonly LinuxSystemThemeService _systemThemeService = new(new SafeCommandRunner());
     private readonly LinuxPersonalizationService _personalizationService = new(new SafeCommandRunner());
     private CancellationTokenSource? _systemThemeSyncCancellation;
-    private CalendarWindow? _calendarWindow;
     private CalculatorWindow? _calculatorWindow;
     private DaisyOS.Shell.Apps.AppStore.AppStoreWindow? _appStoreWindow;
     private DaisyOS.Shell.Apps.AppStore.AppStoreViewModel? _appStoreSession;
@@ -2364,9 +2362,6 @@ public partial class App : Application
             case "calculator":
                 ShowCalculator();
                 return true;
-            case "calendar":
-                ShowCalendar();
-                return true;
             case "appstore":
                 ShowAppStore();
                 return true;
@@ -2774,33 +2769,6 @@ public partial class App : Application
         var result = await PackagedApplicationLauncher.LaunchAsync("Notes", newNote ? ["--new-note"] : []);
         if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
         if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
-    }
-
-    /// <summary>Opens one instance of the native DaisyOS Calendar app.</summary>
-    public void ShowCalendar()
-    {
-        HideLauncher(restoreFocus: false);
-        if (_nativeWindowTracker.RestoreAndActivate("calendar"))
-        {
-            return;
-        }
-
-        if (_calendarWindow is { IsVisible: false } cached)
-        {
-            _nativeWindowTracker.Register("calendar", cached);
-            ShowNormalApplicationWindow(cached);
-            cached.Activate();
-            return;
-        }
-        _calendarWindow = new CalendarWindow();
-        var calendarModel = _calendarWindow.DataContext as DaisyOS.Shell.Apps.Calendar.CalendarViewModel;
-        _lightweightWindows.Track(_calendarWindow, () => calendarModel?.SetActive(false),
-            () => calendarModel?.SetActive(true), () => _nativeWindowTracker.Unregister("calendar"));
-        SetNativeApplicationId(_calendarWindow, "calendar");
-        _nativeWindowTracker.Register("calendar", _calendarWindow);
-        _calendarWindow.Closed += (_, _) => _calendarWindow = null;
-
-        ShowNormalApplicationWindow(_calendarWindow);
     }
 
     /// <summary>Opens one instance of the native DaisyOS Calculator app.</summary>
@@ -3340,7 +3308,7 @@ public partial class App : Application
     {
         try
         {
-            var picker = new DaisyFilePickerWindow(options);
+            var picker = ClientSideDecorationsWindow.Create(() => new DaisyFilePickerWindow(options));
             SetNativeApplicationId(picker, "file-picker");
             if (requester is Window owner)
                 return await picker.ShowDialog<IReadOnlyList<string>?>(owner);
@@ -3646,6 +3614,6 @@ public partial class App : Application
                (0.0722 * Linearize(color.B));
     }
 
-    private static readonly string[] NativeAppIds = ["mail", "notes", "calendar", "calculator", "settings", "files", "uikit", "appstore", "taskmanager", "diskmanager", "appinstaller"];
+    private static readonly string[] NativeAppIds = ["mail", "notes", "calculator", "settings", "files", "uikit", "appstore", "taskmanager", "diskmanager", "appinstaller"];
 
 }

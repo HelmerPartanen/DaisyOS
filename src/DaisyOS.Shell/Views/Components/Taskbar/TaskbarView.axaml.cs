@@ -844,7 +844,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             if (id.StartsWith("org.daisyos.", StringComparison.OrdinalIgnoreCase))
             {
                 var nativeId = id["org.daisyos.".Length..].ToLowerInvariant();
-                if (nativeId is "mail" or "notes" or "files" or "settings" or "calendar" or "calculator" or "appstore" or "taskmanager" or "uikit" or "diskmanager" or "appinstaller")
+                if (nativeId is "mail" or "notes" or "files" or "settings" or "calculator" or "appstore" or "taskmanager" or "uikit" or "diskmanager" or "appinstaller")
                     return nativeId;
             }
             return id;
@@ -1399,7 +1399,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         private string ResolveInstalledAppId(string appId)
         {
             var normalized = NormalizeAppId(appId);
-            if (normalized is "mail" or "notes" or "files" or "settings" or "calendar" or "calculator" or "appstore" or "taskmanager" or "uikit" or "diskmanager" or "appinstaller")
+            if (normalized is "mail" or "notes" or "files" or "settings" or "calculator" or "appstore" or "taskmanager" or "uikit" or "diskmanager" or "appinstaller")
                 return normalized;
             var desktopFile = DesktopEntryResolver([appId]);
             return desktopFile is null ? normalized : NormalizeAppId(Path.GetFileName(desktopFile));
@@ -1424,16 +1424,6 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         private Control CreateAppIconContent(string appId)
         {
-            if (string.Equals(appId, "calendar", StringComparison.OrdinalIgnoreCase))
-            {
-                return new Grid
-                {
-                    Width = 32,
-                    Height = 32,
-                    Children = { new CalendarAppIcon() }
-                };
-            }
-
             if (string.Equals(appId, "appstore", StringComparison.OrdinalIgnoreCase))
             {
                 return new Grid
@@ -1548,15 +1538,6 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         private Button CreateAppIconButton(string appId)
         {
             var displayName = TaskbarAppLabel.Format(appId, _appNames.GetValueOrDefault(appId, appId));
-            if (string.Equals(appId, "calendar", StringComparison.OrdinalIgnoreCase)) displayName = "Calendar";
-            else if (string.Equals(appId, "diskmanager", StringComparison.OrdinalIgnoreCase)) displayName = "Disk Manager";
-            else if (string.Equals(appId, "mail", StringComparison.OrdinalIgnoreCase)) displayName = "Mail";
-            else if (string.Equals(appId, "notes", StringComparison.OrdinalIgnoreCase)) displayName = "Notes";
-            else if (string.Equals(appId, "calculator", StringComparison.OrdinalIgnoreCase)) displayName = "Calculator";
-            else if (string.Equals(appId, "settings", StringComparison.OrdinalIgnoreCase)) displayName = "Settings";
-            else if (string.Equals(appId, "files", StringComparison.OrdinalIgnoreCase)) displayName = "Files";
-            else if (string.Equals(appId, "appinstaller", StringComparison.OrdinalIgnoreCase)) displayName = "App Installer";
-            else if (string.Equals(appId, "appstore", StringComparison.OrdinalIgnoreCase)) displayName = "App Store";
 
             var panel = new Panel
             {

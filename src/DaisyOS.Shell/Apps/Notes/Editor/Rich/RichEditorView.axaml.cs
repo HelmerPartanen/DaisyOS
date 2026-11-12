@@ -545,9 +545,9 @@ public partial class RichEditorView : UserControl
         ImageImportError.IsVisible = false;
         try
         {
-            var picker = new DaisyFilePickerWindow(new DaisyFilePickerOptions("Insert image", false, false,
+            var picker = Avalonia.Wayland.ClientSideDecorationsWindow.Create(() => new DaisyFilePickerWindow(new DaisyFilePickerOptions("Insert image", false, false,
                 WallpaperFileTypes.ImagePatterns.Select(pattern => pattern.TrimStart('*')).ToArray(),
-                ItemNameSingular: "image", ItemNamePlural: "images"));
+                ItemNameSingular: "image", ItemNamePlural: "images")));
             var files = await picker.ShowDialog<IReadOnlyList<string>?>(owner);
             if (package != _package || files == null || files.Count == 0) return;
             await ImportImageAsync(files[0], package, anchor);

@@ -1,0 +1,21 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+  <!-- Plain Slider instances must use the same range surface as Daisy settings,
+       rather than falling back to Fluent's track and circular thumb. -->
+  <ControlTheme x:Key="DaisySliderTheme" TargetType="Slider">
+    <Setter Property="Focusable" Value="False" />
+    <Setter Property="Height" Value="40" />
+    <Setter Property="Template">
+      <ControlTemplate>
+        <controls:QuickSettingsSlider ShowIcon="False"
+                                      Minimum="{TemplateBinding Minimum}"
+                                      Maximum="{TemplateBinding Maximum}"
+                                      Value="{Binding Value, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}" />
+      </ControlTemplate>
+    </Setter>
+    <Style Selector="^:disabled">
+      <Setter Property="Opacity" Value="0.48" />
+    </Style>
+  </ControlTheme>
+</ResourceDictionary>

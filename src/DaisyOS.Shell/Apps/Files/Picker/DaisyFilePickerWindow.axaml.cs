@@ -19,7 +19,8 @@ namespace DaisyOS.Shell.Apps.Files.Picker;
 public partial class DaisyFilePickerWindow : Window
 {
     private readonly DaisyFilePickerOptions _options;
-    private readonly ObservableCollection<PickerEntry> _entries = [];
+    private readonly SystemAppWindowChrome _windowChrome;
+    private readonly List<PickerEntry> _entries = [];
     private readonly FastObservableCollection<PickerEntry> _visibleEntries = [];
     private DirectorySession? _session;
     private bool _visualUpdatePending;
@@ -68,6 +69,7 @@ public partial class DaisyFilePickerWindow : Window
         _hadInitialSelection = options.InitialSelection?.Any(IsAllowedFile) == true;
         _currentFolder = ResolveInitialFolder(options);
         InitializeComponent();
+        _windowChrome = new SystemAppWindowChrome(this, PickerTitleBar, PickerWindowLayout, normalRowDefinitions: "Auto,*");
         // Handle window navigation before a tile consumes arrow keys, and
         // keep a focus target when navigation removes the focused tile.
         AddHandler(KeyDownEvent, OnWindowKeyDown, RoutingStrategies.Tunnel);
@@ -529,7 +531,6 @@ public partial class DaisyFilePickerWindow : Window
         };
     }
 
-    private IOrderedEnumerable<PickerEntry> SortEntries(IEnumerable<PickerEntry> entries) => SortEntries(entries, _sortColumn, _sortAscending);
 
     private void UpdateSortHeaders()
     {
@@ -704,6 +705,7 @@ public partial class DaisyFilePickerWindow : Window
 
     protected override void OnClosed(EventArgs e)
     {
+        _windowChrome.Dispose();
         Interlocked.Increment(ref _navigationVersion);
         _filterVersion++;
         _session?.Dispose();
@@ -757,7 +759,6 @@ public sealed class PickerEntry : INotifyPropertyChanged
     public bool HasThumbnail => _file.HasThumbnail;
     public bool HasApplicationIcon => _file.HasApplicationIcon;
     public bool HasVisualImage => _file.HasVisualImage;
-    public Task LoadVisualAsync() => _file.LoadVisualAsync();
     public void ClearVisual() => _file.ClearVisual();
     public bool IsSelected { get => _isSelected; set { if (_isSelected == value) return; _isSelected = value; Changed(); } }
     public bool IsVisible { get => _isVisible; set { if (_isVisible == value) return; _isVisible = value; Changed(); } }

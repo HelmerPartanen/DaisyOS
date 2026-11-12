@@ -259,7 +259,6 @@
       <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator.png</Bitmap>
       <SolidColorBrush x:Key="CalendarTodayBackgroundBrush" Color="#FF000000" />
       <SolidColorBrush x:Key="CalendarTodayForegroundBrush" Color="#FFFFFFFF" />
-      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png</Bitmap>
       <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files.png</Bitmap>
       <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
       <Bitmap x:Key="AppIconMail">avares://DaisyOS.Shell/Assets/AppIcons/Mail.png</Bitmap>
@@ -474,7 +473,6 @@
       <Bitmap x:Key="AppIconCalculator">avares://DaisyOS.Shell/Assets/AppIcons/Calculator.png</Bitmap>
       <SolidColorBrush x:Key="CalendarTodayBackgroundBrush" Color="#FFFFFFFF" />
       <SolidColorBrush x:Key="CalendarTodayForegroundBrush" Color="#FF000000" />
-      <Bitmap x:Key="AppIconCalendar">avares://DaisyOS.Shell/Assets/AppIcons/Calendar.png</Bitmap>
       <Bitmap x:Key="AppIconFiles">avares://DaisyOS.Shell/Assets/AppIcons/Files.png</Bitmap>
       <Bitmap x:Key="AppIconLauncher">avares://DaisyOS.Shell/Assets/AppIcons/Launcher.png</Bitmap>
       <Bitmap x:Key="AppIconMail">avares://DaisyOS.Shell/Assets/AppIcons/Mail.png</Bitmap>

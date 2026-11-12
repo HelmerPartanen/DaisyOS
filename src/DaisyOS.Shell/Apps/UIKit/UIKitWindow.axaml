@@ -82,7 +82,7 @@
               <RadioButton Content="{DynamicResource Loc_8EFE56FAD474}" IsChecked="True" />
               <ToggleSwitch Content="{DynamicResource Loc_BE605E35B58B}" IsChecked="True" />
               <ToggleSwitch Content="{DynamicResource Loc_1A904852BB47}" IsEnabled="False" />
-              <Slider Minimum="0" Maximum="100" Value="64" />
+              <controls:QuickSettingsSlider Minimum="0" Maximum="100" Value="64" ShowIcon="False" />
             </StackPanel>
           </Border>
 

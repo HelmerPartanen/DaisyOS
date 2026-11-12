@@ -266,9 +266,7 @@
           <Grid>
             <Image Name="AppIcon"
                    Source="{Binding IconBitmap}"
-                   IsVisible="{Binding !IsCalendarIcon}"
                    RenderOptions.BitmapInterpolationMode="HighQuality" />
-            <controls:CalendarAppIcon Width="48" Height="48" IsVisible="{Binding IsCalendarIcon}" />
           </Grid>
         </Border>
 

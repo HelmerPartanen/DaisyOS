@@ -154,14 +154,6 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             AppLaunchKind.Internal,
             Categories: ["Utility", "Calculator"]),
         new(
-            "org.daisyos.calendar.desktop",
-            "Calendar",
-            "View calendar and upcoming events",
-            "org.daisyos.calendar",
-            IsPinned: false,
-            AppLaunchKind.Internal,
-            Categories: ["Office", "Calendar"]),
-        new(
             "org.daisyos.appstore.desktop",
             "App Store",
             "Discover and install applications for DaisyOS",

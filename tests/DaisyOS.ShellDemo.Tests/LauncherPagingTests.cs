@@ -61,17 +61,6 @@ public sealed class LauncherPagingTests
     }
 
     [AvaloniaFact]
-    public void LiveCalendarIconIsCreatedOnlyForCalendarTiles()
-    {
-        var icon = new DaisyOS.Shell.Controls.LauncherCalendarIcon();
-        Assert.Null(icon.Child);
-        icon.IsCalendar = true;
-        Assert.IsType<DaisyOS.Shell.Controls.CalendarAppIcon>(icon.Child);
-        icon.IsCalendar = false;
-        Assert.Null(icon.Child);
-    }
-
-    [AvaloniaFact]
     public void ReopeningFromALaterPageDoesNotAnimateAnOutgoingPage()
     {
         var model = new LauncherViewModel(null, Enumerable.Range(0, 100)

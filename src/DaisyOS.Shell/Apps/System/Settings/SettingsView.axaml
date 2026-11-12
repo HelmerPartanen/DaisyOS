@@ -71,6 +71,22 @@
       <Setter Property="MinHeight" Value="60" />
       <Setter Property="Background" Value="Transparent" />
     </Style>
+    <!-- Keep this preference editor's paint and hit area stable across Fluent
+         hover/focus states. Focus changes color without an animated fill or resize. -->
+    <Style Selector="TextBox.SettingsTextInput, TextBox.SettingsTextInput:pointerover, TextBox.SettingsTextInput:focus">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="CaretBrush" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="TextBox.SettingsTextInput /template/ Border#PART_BorderElement, TextBox.SettingsTextInput:pointerover /template/ Border#PART_BorderElement, TextBox.SettingsTextInput:focus /template/ Border#PART_BorderElement, TextBox.SettingsTextInput:focus-visible /template/ Border#PART_BorderElement">
+      <Setter Property="Background" Value="{DynamicResource SurfaceInputBrush}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource StrokeDefaultBrush}" />
+      <Setter Property="BorderThickness" Value="{DynamicResource BorderThicknessDefault}" />
+      <Setter Property="Transitions"><Transitions /></Setter>
+    </Style>
+    <Style Selector="TextBox.SettingsTextInput:focus /template/ Border#PART_BorderElement, TextBox.SettingsTextInput:focus-visible /template/ Border#PART_BorderElement">
+      <Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}" />
+    </Style>
     <Style Selector="TextBox.ManualDateTimeInput">
       <Setter Property="MinHeight" Value="40" />
       <Setter Property="Padding" Value="4,6" />
@@ -272,7 +288,9 @@
 
           <Button x:Name="NavBattery" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Battery">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="battery-full" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <controls:BatteryLevelIcon Width="24" Height="18" Percentage="0" IsCharging="False"
+                                         BaseBrush="{DynamicResource ContentPrimaryBrush}"
+                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
               <TextBlock Grid.Column="1" Text="Battery" Classes="NavLabel" />
             </Grid>
           </Button>
@@ -321,8 +339,8 @@
 
           <Button x:Name="NavPassword" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Password">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="lock" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
-              <TextBlock Grid.Column="1" Text="Password" Classes="NavLabel" />
+              <controls:DaisyIcon Icon="user-circle" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="Account" Classes="NavLabel" />
             </Grid>
           </Button>
 

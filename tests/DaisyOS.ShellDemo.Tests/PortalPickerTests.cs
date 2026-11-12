@@ -12,6 +12,31 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class PortalPickerTests
 {
     [AvaloniaFact]
+    public void PickerUsesSharedWindowChromeAcrossWindowStates()
+    {
+        var picker = new DaisyFilePickerWindow();
+        try
+        {
+            picker.Show();
+            Assert.Equal(WindowDecorations.None, picker.WindowDecorations);
+            var titleBar = picker.FindControl<DaisyOS.Shell.Controls.AppWindowTitleBar>("PickerTitleBar")!;
+            var frame = Assert.IsType<Border>(picker.Content);
+            Assert.True(titleBar.IsVisible);
+            Assert.Equal(new CornerRadius(16), frame.CornerRadius);
+            Assert.Equal(default, frame.BorderThickness);
+            picker.WindowState = WindowState.Maximized;
+            Assert.True(titleBar.IsVisible);
+            Assert.Equal(default, frame.CornerRadius);
+            picker.WindowState = WindowState.FullScreen;
+            Assert.False(titleBar.IsVisible);
+            picker.WindowState = WindowState.Normal;
+            Assert.True(titleBar.IsVisible);
+            Assert.Equal(new CornerRadius(16), frame.CornerRadius);
+        }
+        finally { picker.Close(); }
+    }
+
+    [AvaloniaFact]
     public void FolderModeConfirmsAnEmptyDirectory()
     {
         var folder = Directory.CreateTempSubdirectory("daisy-portal-picker-");

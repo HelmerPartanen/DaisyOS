@@ -64,7 +64,7 @@ public sealed class OverallPolishTests
             ((ListBox)entries).SelectedItem = entry;
             Assert.Equal(Path.Combine(folder, "b.bin"), Assert.Single(picker.SelectedPaths));
             var sidebar = picker.FindControl<Border>("NavigationSidebar")!;
-            Assert.Equal(picker.ClientSize.Height, sidebar.Bounds.Height);
+            Assert.Equal(picker.ClientSize.Height - picker.FindControl<DaisyOS.Shell.Controls.AppWindowTitleBar>("PickerTitleBar")!.Bounds.Height, sidebar.Bounds.Height);
             var locations = picker.FindControl<StackPanel>("LocationsPanel")!;
             Assert.Equal(4, locations.Spacing);
             foreach (var location in locations.Children.OfType<Button>()) Assert.Equal(locations.Bounds.Width, location.Bounds.Width);

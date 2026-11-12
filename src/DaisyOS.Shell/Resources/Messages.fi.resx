@@ -441,16 +441,6 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml</comment>
     <comment>Source: Buttons
 Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
   </data>
-  <data name="Loc_0AD702649781" xml:space="preserve">
-    <value>KALENTERI</value>
-    <comment>Source: CALENDAR
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
-  <data name="Loc_87DA6A26F40B" xml:space="preserve">
-    <value>KALENTERIT</value>
-    <comment>Source: CALENDARS
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
   <data name="Loc_DB9A4C7D4C19" xml:space="preserve">
     <value>CPU</value>
     <comment>Source: CPU
@@ -479,12 +469,12 @@ Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindow.axaml, src/DaisyOS.S
   <data name="Loc_D5D0A30B517E" xml:space="preserve">
     <value>Kalenteri</value>
     <comment>Source: Calendar
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarWindow.axaml, src/DaisyOS.Shell/ViewModels/DesktopViewModel.cs, src/DaisyOS.Shell/Views/Components/SystemBar/SystemBarView.axaml, src/DaisyOS.Shell/Views/Components/Taskbar/TaskbarView.axaml, src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/ViewModels/DesktopViewModel.cs, src/DaisyOS.Shell/Views/Components/SystemBar/SystemBarView.axaml, src/DaisyOS.Shell/Views/Components/Taskbar/TaskbarView.axaml, src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml</comment>
   </data>
   <data name="Loc_19766ED6CCB2" xml:space="preserve">
     <value>Peruuta</value>
     <comment>Source: Cancel
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml, src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml, src/DaisyOS.Shell/Apps/LocalSend/LocalSendWindow.axaml, src/DaisyOS.Shell/Apps/Notes/NoteTitleDialog.cs, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Views/Components/Launcher/LauncherView.axaml.cs, src/DaisyOS.Shell/Views/Dialogs/WifiPasswordDialog.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml, src/DaisyOS.Shell/Apps/LocalSend/LocalSendWindow.axaml, src/DaisyOS.Shell/Apps/Notes/NoteTitleDialog.cs, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Views/Components/Launcher/LauncherView.axaml.cs, src/DaisyOS.Shell/Views/Dialogs/WifiPasswordDialog.axaml</comment>
   </data>
   <data name="Loc_FE5A64D430AE" xml:space="preserve">
     <value>Caps Lock on päällä</value>
@@ -784,7 +774,7 @@ Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml</
   <data name="Loc_7D9EB7ACB13E" xml:space="preserve">
     <value>Sulje</value>
     <comment>Source: Close
-Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Calendar/CalendarWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml, src/DaisyOS.Shell/Services/StandaloneApplication.cs, src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml, src/DaisyOS.Shell/Services/StandaloneApplication.cs, src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml</comment>
   </data>
   <data name="Loc_961B2A04403E" xml:space="preserve">
     <value>Sulje (Esc)</value>
@@ -1116,16 +1106,6 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml.cs</comment>
     <comment>Source: Couldn’t update desktop settings: {0}
 Used by: src/DaisyOS.Shell/App.Applications.cs</comment>
   </data>
-  <data name="Loc_5651FAEE9626" xml:space="preserve">
-    <value>Luo tapahtuma</value>
-    <comment>Source: Create an event
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
-  <data name="Loc_4CA3168E38B7" xml:space="preserve">
-    <value>Luo tapahtuma suoraan viikkonäkymään.</value>
-    <comment>Source: Create an event to place it directly in the week view.
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
   <data name="Loc_82B9E1EF0B40" xml:space="preserve">
     <value>Luo kansio</value>
     <comment>Source: Create folder
@@ -1214,7 +1194,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   <data name="Loc_99C40AB40592" xml:space="preserve">
     <value>Päivämäärä</value>
     <comment>Source: Date
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/Files/FilesViewModel.cs, src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml.cs, src/DaisyOS.Shell/Apps/Files/FilesTabViewModel.cs, src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
   <data name="Loc_2459EA42894C" xml:space="preserve">
     <value>Päivämäärä ja aika</value>
@@ -1395,11 +1375,6 @@ Used by: src/DaisyOS.Shell/Controls/ShellMetricsPanel.axaml</comment>
     <value>Lopeta prosessi</value>
     <comment>Source: End Process
 Used by: src/DaisyOS.Shell/Apps/System/Diagnostics/TaskManagerView.axaml</comment>
-  </data>
-  <data name="Loc_E98982C9F2BA" xml:space="preserve">
-    <value>Päättyy</value>
-    <comment>Source: Ends
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
   <data name="Loc_3D81652794E5" xml:space="preserve">
     <value>Anna salasana</value>
@@ -2044,7 +2019,7 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Apps/
   <data name="Loc_9E47A676743F" xml:space="preserve">
     <value>Suurenna tai palauta</value>
     <comment>Source: Maximize or restore
-Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Calendar/CalendarWindowTitleBar.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml</comment>
   </data>
   <data name="Loc_D357175CFE89" xml:space="preserve">
     <value>Media</value>
@@ -2079,7 +2054,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   <data name="Loc_D72E311C4DDA" xml:space="preserve">
     <value>Pienennä</value>
     <comment>Source: Minimize
-Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Calendar/CalendarWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml</comment>
   </data>
   <data name="Loc_D23E867E38E8" xml:space="preserve">
     <value>Ma</value>
@@ -2110,11 +2085,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
     <value>M−</value>
     <comment>Source: M−
 Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorView.axaml</comment>
-  </data>
-  <data name="Loc_4D056E44EBA3" xml:space="preserve">
-    <value>UUSI TAPAHTUMA</value>
-    <comment>Source: NEW EVENT
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
   <data name="Loc_DCD1D5223F73" xml:space="preserve">
     <value>Nimi</value>
@@ -2166,11 +2136,6 @@ Used by: src/DaisyOS.Shell/Apps/Notes/NotesView.axaml</comment>
     <comment>Source: New Tab (Ctrl+T)
 Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml</comment>
   </data>
-  <data name="Loc_7CDC2E276045" xml:space="preserve">
-    <value>Uusi tapahtuma</value>
-    <comment>Source: New event
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
   <data name="Loc_74E53211FEF4" xml:space="preserve">
     <value>Seuraava kuukausi</value>
     <comment>Source: Next month
@@ -2185,11 +2150,6 @@ Used by: src/DaisyOS.Shell/DesktopWidgets/ImageWidget.axaml</comment>
     <value>Seuraava kappale</value>
     <comment>Source: Next track
 Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
-  </data>
-  <data name="Loc_21FBDE19CFB0" xml:space="preserve">
-    <value>Seuraava viikko</value>
-    <comment>Source: Next week
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
   <data name="Loc_A21A5DC62EE1" xml:space="preserve">
     <value>Seuraava vuosi</value>
@@ -2215,11 +2175,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml, 
     <value>Leikepöytähistoria on tyhjä</value>
     <comment>Source: No clipboard history yet
 Used by: src/DaisyOS.Shell/Views/Components/Clipboard/ClipboardHistoryWindow.axaml</comment>
-  </data>
-  <data name="Loc_770E6F5690DA" xml:space="preserve">
-    <value>Tässä näkymässä ei ole tapahtumia.</value>
-    <comment>Source: No events to show in this view.
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
   <data name="Loc_4797023B76BE" xml:space="preserve">
     <value>Ei tapahtumia tänään</value>
@@ -2536,11 +2491,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Launcher/LauncherView.axaml.cs</comm
     <comment>Source: Plain Text
 Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Code/CodeEditorControl.axaml</comment>
   </data>
-  <data name="Loc_BDB2F5C35273" xml:space="preserve">
-    <value>Suunnittele viikkosi</value>
-    <comment>Source: Plan your week
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
   <data name="Loc_436E61016E26" xml:space="preserve">
     <value>Toista</value>
     <comment>Source: Play
@@ -2650,11 +2600,6 @@ Used by: src/DaisyOS.Shell/DesktopWidgets/ImageWidget.axaml</comment>
     <value>Edellinen kappale</value>
     <comment>Source: Previous track
 Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
-  </data>
-  <data name="Loc_C0F8BBCD4176" xml:space="preserve">
-    <value>Edellinen viikko</value>
-    <comment>Source: Previous week
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
   <data name="Loc_91E33E3BA5C1" xml:space="preserve">
     <value>Edellinen vuosi</value>
@@ -2854,7 +2799,7 @@ Used by: src/DaisyOS.Shell/Apps/Notes/NotesView.axaml</comment>
   <data name="Loc_7BD2C90ACEBE" xml:space="preserve">
     <value>Palaa tähän päivään</value>
     <comment>Source: Return to today
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml, src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml</comment>
+Used by: src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml</comment>
   </data>
   <data name="Loc_F208C7F08DDF" xml:space="preserve">
     <value>Palataan työpöydälle</value>
@@ -2905,11 +2850,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <value>La</value>
     <comment>Source: Sa
 Used by: src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml</comment>
-  </data>
-  <data name="Loc_2EA84A3CF7AB" xml:space="preserve">
-    <value>Tallenna tapahtuma</value>
-    <comment>Source: Save event
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
   <data name="Loc_C4ECFE02822E" xml:space="preserve">
     <value>Tallenna otsikko</value>
@@ -3276,11 +3216,6 @@ Used by: src/DaisyOS.Shell/Apps/Notes/NotesView.axaml</comment>
     <comment>Source: Starting LocalSend and looking for nearby devices…
 Used by: src/DaisyOS.Shell/Apps/LocalSend/LocalSendWindow.axaml.cs</comment>
   </data>
-  <data name="Loc_96DBEDECA7DF" xml:space="preserve">
-    <value>Alkaa</value>
-    <comment>Source: Starts
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
   <data name="Loc_920E413C7D41" xml:space="preserve">
     <value>Tila</value>
     <comment>Source: Status
@@ -3584,12 +3519,12 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   <data name="Loc_7E8CD2056DA7" xml:space="preserve">
     <value>Otsikko</value>
     <comment>Source: Title
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml, src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
   </data>
   <data name="Loc_2B065C7C9CE4" xml:space="preserve">
     <value>Tänään</value>
     <comment>Source: Today
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml, src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml</comment>
+Used by: src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml</comment>
   </data>
   <data name="Loc_BCE74CE2D310" xml:space="preserve">
     <value>Kytkintoiminto</value>
@@ -3726,11 +3661,6 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml</comment>
     <comment>Source: Update status
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
-  <data name="Loc_71225448C001" xml:space="preserve">
-    <value>Lisää ensimmäinen tapahtuma valitsemalla yllä Uusi tapahtuma.</value>
-    <comment>Source: Use New event above to add your first event.
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
   <data name="Loc_3F57B7C28DC2" xml:space="preserve">
     <value>Käytä ensisijaista tyyliä päätoimintoon, hillittyä toissijaisiin ja huomaamatonta vähäisiin toimintoihin.</value>
     <comment>Source: Use Primary for the main action, Subtle for secondary actions, and Ghost for low-emphasis actions.
@@ -3811,16 +3741,6 @@ Used by: src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml</
     <comment>Source: Web browser
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
-  <data name="Loc_E78041AB51A8" xml:space="preserve">
-    <value>Viikko</value>
-    <comment>Source: Week
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
-  <data name="Loc_47CDB7664393" xml:space="preserve">
-    <value>Mitä suunnittelet?</value>
-    <comment>Source: What are you planning?
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
   <data name="Loc_3495E757855A" xml:space="preserve">
     <value>Valkoinen</value>
     <comment>Source: White
@@ -3887,11 +3807,6 @@ Used by: src/DaisyOS.Shell/Views/Windows/LockScreenWindow.axaml</comment>
     <value>Valokuvasi</value>
     <comment>Source: Your photos
 Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml</comment>
-  </data>
-  <data name="Loc_0DCFBD5190CF" xml:space="preserve">
-    <value>Aikataulusi</value>
-    <comment>Source: Your schedule
-Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
   <data name="Loc_9BE28BBE03FA" xml:space="preserve">
     <value>cos</value>
@@ -7285,5 +7200,205 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</com
   <data name="Loc_B1CE64619BD7" xml:space="preserve">
     <value>Näytä tai piilota MangoHud-pohjainen mittari. Mittaus toimii vain sen näkyessä.</value>
     <comment>Source: Show or hide the MangoHud-backed monitor. Capture runs only while it is visible.</comment>
+  </data>
+  <data name="Loc_41081D8E7363" xml:space="preserve">
+    <value>VÄRI</value>
+    <comment>Source: COLOR
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_DAEE7606B339" xml:space="preserve">
+    <value>Palauta</value>
+    <comment>Source: Reset
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_45EC3E23A66B" xml:space="preserve">
+    <value>Vedä näytöt vastaamaan niiden sijaintia työpöydälläsi. Reunat kohdistuvat automaattisesti.</value>
+    <comment>Source: Drag screens to match their positions on your desk. Edges snap together.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_A54486D13D68" xml:space="preserve">
+    <value>Siirrä näyttöä vetämällä. Tee tarkat säädöt nuolinäppäimillä.</value>
+    <comment>Source: Drag to move this display. Use arrow keys for precise adjustments.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_1739A4817466" xml:space="preserve">
+    <value>Näytöt eivät saa olla päällekkäin. Vedä näyttö toisen viereen.</value>
+    <comment>Source: Displays must not overlap. Drag a screen beside another.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_8045F095B9DF" xml:space="preserve">
+    <value>Muutoksia ei ole otettu käyttöön</value>
+    <comment>Source: Changes not applied
+Used by: src/DaisyOS.Shell/Apps/System/Settings/DisplayArrangementEditor.cs</comment>
+  </data>
+  <data name="Loc_7E1B0D5641F2" xml:space="preserve">
+    <value>Käyttäjätili</value>
+    <comment>Source: Account
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_2D75B76B2DCF" xml:space="preserve">
+    <value>KÄYTTÄJÄTILI</value>
+    <comment>Source: ACCOUNT
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_51C4ABBE1F6B" xml:space="preserve">
+    <value>Luetaan käyttäjätilin tietoja…</value>
+    <comment>Source: Reading account details…
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_4ADEAFB19934" xml:space="preserve">
+    <value>Käyttäjätilin asetukset eivät ole juuri nyt käytettävissä. Yritä uudelleen.</value>
+    <comment>Source: Account settings are unavailable right now. Try again.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_42A29BE1A363" xml:space="preserve">
+    <value>Käyttäjätilin asetukset tallennettiin.</value>
+    <comment>Source: Account settings saved.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_BB0A0BE301EB" xml:space="preserve">
+    <value>Muutos tallennettiin, mutta käyttäjätilin tietoja ei voitu päivittää.</value>
+    <comment>Source: The change was saved, but account details could not be refreshed.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_439C0452C62C" xml:space="preserve">
+    <value>Käyttäjätilin muutosta ei tehty. Tarkista käyttöoikeudet ja yritä uudelleen.</value>
+    <comment>Source: The account change was not completed. Check authorization and try again.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_E4F4DD8AB1F4" xml:space="preserve">
+    <value>Anna kelvollinen nimi.</value>
+    <comment>Source: Enter a valid account name.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_015DC912588D" xml:space="preserve">
+    <value>Salasanassa on oltava vähintään 8 merkkiä ja enintään 512 UTF-8-tavua.</value>
+    <comment>Source: Use a password with at least 8 characters and no more than 512 UTF-8 bytes.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_2976C7A28647" xml:space="preserve">
+    <value>Anna kelvollinen salasanavihje.</value>
+    <comment>Source: Enter a valid password hint.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_59A3633757A4" xml:space="preserve">
+    <value>Salasanan vaihtaminen ei ole käytettävissä tällä laitteella.</value>
+    <comment>Source: Password changes are unavailable on this device.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_B82E11DA3BC1" xml:space="preserve">
+    <value>Käyttäjätunnus</value>
+    <comment>Source: User name
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_F13A64BA2FEA" xml:space="preserve">
+    <value>Koko nimi</value>
+    <comment>Source: Full name
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_DAC7998FBA76" xml:space="preserve">
+    <value>Tilin tyyppi</value>
+    <comment>Source: Account type
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_E7D3E769F3F5" xml:space="preserve">
+    <value>Ylläpitäjä</value>
+    <comment>Source: Administrator
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_773DFBD804DC" xml:space="preserve">
+    <value>Tavallinen käyttäjä</value>
+    <comment>Source: Standard user
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_9B15CE9E25E9" xml:space="preserve">
+    <value>Käytä vähintään 8 merkkiä.</value>
+    <comment>Source: Use at least 8 characters.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_4E4116871BF1" xml:space="preserve">
+    <value>Aseta salasana</value>
+    <comment>Source: Set password
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_3F9C991F63A9" xml:space="preserve">
+    <value>Vaihda salasana</value>
+    <comment>Source: Change password
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_F694AAA8DA2C" xml:space="preserve">
+    <value>Salasanat eivät täsmää.</value>
+    <comment>Source: The passwords do not match.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_416691346AAE" xml:space="preserve">
+    <value>Salasanaa ei ole asetettu</value>
+    <comment>Source: No password is set
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_3248E54FDF0E" xml:space="preserve">
+    <value>Salasana on asetettava seuraavalla kirjautumiskerralla</value>
+    <comment>Source: A password must be set at next sign-in
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_A2FBE555D796" xml:space="preserve">
+    <value>Salasana on asetettu</value>
+    <comment>Source: A password is set
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_3DD9DF4441FB" xml:space="preserve">
+    <value>Uusi salasana</value>
+    <comment>Source: New password
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_5AC265F396A2" xml:space="preserve">
+    <value>Vahvista salasana</value>
+    <comment>Source: Confirm password
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_DFA4DA754384" xml:space="preserve">
+    <value>Salasanan hallinta</value>
+    <comment>Source: Password management
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_7BA8B3807ABE" xml:space="preserve">
+    <value>Kirjautumispalvelusi hallitsee tämän käyttäjätilin salasanaa.</value>
+    <comment>Source: Your sign-in provider manages this account’s password.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_3A5C24F2DC56" xml:space="preserve">
+    <value>Automaattinen kirjautuminen</value>
+    <comment>Source: Automatic sign-in
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_E0C8AC770381" xml:space="preserve">
+    <value>Kirjaudu tähän käyttäjätiliin ilman salasanaa tietokoneen käynnistyessä.</value>
+    <comment>Source: Sign in to this account without entering a password when the computer starts.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_DDAF79E10A50" xml:space="preserve">
+    <value>Poista salasana</value>
+    <comment>Source: Remove password
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_AAA08D6780FC" xml:space="preserve">
+    <value>Salasanan poistaminen sallii pääsyn tähän käyttäjätiliin ilman salasanaa.</value>
+    <comment>Source: Removing your password allows access to this account without a password.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_20650FE2688A" xml:space="preserve">
+    <value>Sinua voidaan pyytää tunnistautumaan ennen käyttäjätilin muutosten tallentamista.</value>
+    <comment>Source: You may be asked to authenticate before account changes are saved.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_51F2664A24E5" xml:space="preserve">
+    <value>Hallitse käyttäjätilisi tietoja, salasanaa, kirjautumisasetuksia ja salasanavihjettä.</value>
+    <comment>Source: Manage your account details, password, sign-in options, and hint.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
+  </data>
+  <data name="Loc_7A7A75DA57E3" xml:space="preserve">
+    <value>Hallitse käyttäjätilin nimeä, salasanaa, automaattista kirjautumista ja salasanavihjettä</value>
+    <comment>Source: Manage account name, password, automatic sign-in and hint
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
   </data>
 </root>

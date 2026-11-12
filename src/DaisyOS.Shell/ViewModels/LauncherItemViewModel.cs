@@ -19,13 +19,8 @@ public class LauncherItemViewModel : INotifyPropertyChanged
     public string Initial => Name is { Length: > 0 } value ? char.ToUpperInvariant(value[0]).ToString() : "•";
     public string Description => string.IsNullOrWhiteSpace(App.Description) ? Loc.Get("Application") : IsDaisyApp ? Loc.Get(App.Description) : App.Description;
     public string IconName => App.Icon;
-    public bool IsCalendarIcon =>
-        string.Equals(App.Id, "calendar", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(App.Id, "org.daisyos.calendar", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(App.Icon, "calendar", StringComparison.OrdinalIgnoreCase) ||
-        string.Equals(App.Icon, "calendaricon", StringComparison.OrdinalIgnoreCase);
-    public bool IsBitmapIconVisible => !IsCalendarIcon && IconBitmap is not null;
-    public bool IsFallbackIconVisible => !IsCalendarIcon && IconBitmap is null;
+    public bool IsBitmapIconVisible => IconBitmap is not null;
+    public bool IsFallbackIconVisible => IconBitmap is null;
     public bool CanRequestUninstall => true;
 
     public string SearchKey { get; private set; } = string.Empty;
@@ -131,7 +126,7 @@ public class LauncherItemViewModel : INotifyPropertyChanged
     {
         App = app;
         CacheSearchKey();
-        foreach (var name in new[] { nameof(Name), nameof(Initial), nameof(Description), nameof(IconName), nameof(IsCalendarIcon), nameof(IsBitmapIconVisible), nameof(IsFallbackIconVisible), nameof(CanRequestUninstall) })
+        foreach (var name in new[] { nameof(Name), nameof(Initial), nameof(Description), nameof(IconName), nameof(IsBitmapIconVisible), nameof(IsFallbackIconVisible), nameof(CanRequestUninstall) })
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
     }
 

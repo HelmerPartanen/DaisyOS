@@ -43,11 +43,6 @@ public sealed class LinuxLockScreenService : ILockScreenService
         }
 #endif
 
-        if (string.IsNullOrEmpty(password))
-        {
-            return false;
-        }
-
         try
         {
             return await Task.Run(() => _authService.Authenticate(password), cancellationToken);

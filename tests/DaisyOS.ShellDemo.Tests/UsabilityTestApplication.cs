@@ -28,6 +28,12 @@ public sealed class UsabilityTestApplication : Application
         };
         Resources.MergedDictionaries.Add(toggleTheme);
         Resources[typeof(Avalonia.Controls.ToggleSwitch)] = toggleTheme.Loaded["DaisyToggleSwitchTheme"];
+        var sliders = new ResourceInclude(new Uri("avares://DaisyOS.Shell/"))
+        {
+            Source = new Uri("avares://DaisyOS.Shell/Themes/SliderTheme.axaml")
+        };
+        Resources.MergedDictionaries.Add(sliders);
+        Resources[typeof(Avalonia.Controls.Slider)] = sliders.Loaded["DaisySliderTheme"];
         var choices = new ResourceInclude(new Uri("avares://DaisyOS.Shell/"))
         {
             Source = new Uri("avares://DaisyOS.Shell/Themes/SelectionControlThemes.axaml")

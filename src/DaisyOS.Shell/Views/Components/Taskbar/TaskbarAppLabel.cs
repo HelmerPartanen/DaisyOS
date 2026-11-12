@@ -15,7 +15,7 @@ public static class TaskbarAppLabel
             "diskmanager" => "Disk Manager",
             "appinstaller" => "App Installer",
             "files" => "Files", "settings" => "Settings", "notes" => "Notes", "mail" => "Mail",
-            "calendar" => "Calendar", "calculator" => "Calculator", _ => null
+            "calculator" => "Calculator", _ => null
         };
         if (native is not null) return native;
         // Uppercase word initials without destroying intentional casing such as LibreOffice.

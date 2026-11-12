@@ -32,7 +32,7 @@ internal sealed class LauncherIconLoader : IDisposable
     }
     public void Register(LauncherItemViewModel item, double scaling)
     {
-        if (item.IsCalendarIcon || string.IsNullOrWhiteSpace(item.IconName)) return;
+        if (string.IsNullOrWhiteSpace(item.IconName)) return;
         if (item.IconBitmap != null) return;
         if (_requests.ContainsKey(item)) return;
         // Capture UI-owned appearance before dispatching decode work. Workers
@@ -65,7 +65,7 @@ internal sealed class LauncherIconLoader : IDisposable
         foreach (var item in _requests.Keys.Where(item => !catalog.Contains(item)).ToArray()) Unregister(item);
         foreach (var item in ordered)
             if (_requests.TryGetValue(item, out var request) && request.IconName != item.IconName) Unregister(item);
-        ordered.RemoveAll(item => item.IsCalendarIcon || string.IsNullOrWhiteSpace(item.IconName) ||
+        ordered.RemoveAll(item => string.IsNullOrWhiteSpace(item.IconName) ||
             item.IconBitmap is not null || _requests.ContainsKey(item));
         var generation = ++_preloadGeneration;
         _preloadCompletion = PreloadBatchesAsync(ordered, scaling, generation);

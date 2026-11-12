@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
 using DaisyOS.Core.Models;
-using DaisyOS.Shell.Apps.Calendar;
 using DaisyOS.Shell.Apps.Files.Services;
 using DaisyOS.Shell.Apps.Files.Picker;
 using DaisyOS.Shell.Services;
@@ -21,8 +20,6 @@ namespace DaisyOS.Shell.Services.Serialization;
 [JsonSerializable(typeof(ShellSessionState.PersistedShellState))]
 [JsonSerializable(typeof(FilesPreferences))]
 [JsonSerializable(typeof(DaisyFilePickerPreferences))]
-[JsonSerializable(typeof(CalendarEventRecord))]
-[JsonSerializable(typeof(List<CalendarEventRecord>))]
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(string[]))]
 [JsonSerializable(typeof(DaisyOS.Shell.Services.Compositor.TaskbarPreviewRequest))]

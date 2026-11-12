@@ -33,6 +33,7 @@ kwin
 breeze-cursors
 plasma-workspace
 polkit
+accountsservice
 xdg-desktop-portal
 qemu-guest-agent
 noto-fonts

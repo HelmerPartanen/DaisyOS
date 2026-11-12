@@ -11,7 +11,7 @@ public sealed class ShellSessionState
 {
     public static readonly IReadOnlyList<string> DefaultDockOrder =
     [
-        "org.daisyos.files", "org.daisyos.mail", "org.daisyos.notes", "org.daisyos.calendar",
+        "org.daisyos.files", "org.daisyos.mail", "org.daisyos.notes",
         "org.daisyos.calculator", "org.daisyos.settings", "org.daisyos.appstore",
         "org.daisyos.taskmanager", "org.daisyos.diskmanager", "org.daisyos.uikit"
     ];
@@ -251,7 +251,11 @@ public sealed class ShellSessionState
         try
         {
             if (!File.Exists(_path)) return new PersistedShellState();
-            return JsonSerializer.Deserialize(File.ReadAllText(_path), DaisyOS.Shell.Services.Serialization.DaisyShellJsonContext.Default.PersistedShellState) ?? new PersistedShellState();
+            var state = JsonSerializer.Deserialize(File.ReadAllText(_path), DaisyOS.Shell.Services.Serialization.DaisyShellJsonContext.Default.PersistedShellState) ?? new PersistedShellState();
+            // Older sessions pinned the retired standalone Calendar app by default.
+            state.DockOrder ??= [];
+            state.DockOrder.RemoveAll(id => id is "calendar" or "org.daisyos.calendar" or "org.daisyos.calendar.desktop");
+            return state;
         }
         catch (JsonException)
         {
