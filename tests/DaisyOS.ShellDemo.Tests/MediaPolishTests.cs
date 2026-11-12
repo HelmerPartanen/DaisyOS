@@ -22,12 +22,10 @@ public sealed class MediaPolishTests
         foreach (var widget in new UserControl[]
         {
             new DaisyOS.Shell.DesktopWidgets.MediaWidget(),
-            new DaisyOS.Shell.Views.Components.Widgets.MediaWidget(),
-            new DaisyOS.Shell.Views.Components.Console.ConsoleMediaWidget()
+            new DaisyOS.Shell.Views.Components.Widgets.MediaWidget()
         })
         {
-            var tint = widget.FindControl<Border>(widget is DaisyOS.Shell.Views.Components.Console.ConsoleMediaWidget
-                ? "MediaFrame" : "ArtworkTint")!;
+            var tint = widget.FindControl<Border>("ArtworkTint")!;
             var field = widget.GetType().GetField("_artworkTint", BindingFlags.NonPublic | BindingFlags.Instance)!;
             var update = widget.GetType().GetMethod("UpdateTintLayer", BindingFlags.NonPublic | BindingFlags.Instance)!;
             field.SetValue(widget, Color.FromRgb(180, 80, 40));
@@ -141,7 +139,7 @@ public sealed class MediaPolishTests
     [AvaloniaFact]
     public void SpectrumBarsShareAStationaryCenter()
     {
-        foreach (var widget in new UserControl[] { new DaisyOS.Shell.DesktopWidgets.MediaWidget(), new DaisyOS.Shell.Views.Components.Widgets.MediaWidget(), new DaisyOS.Shell.Views.Components.Console.ConsoleMediaWidget() })
+        foreach (var widget in new UserControl[] { new DaisyOS.Shell.DesktopWidgets.MediaWidget(), new DaisyOS.Shell.Views.Components.Widgets.MediaWidget() })
         {
             widget.GetType().GetMethod("BuildSpectrum", BindingFlags.NonPublic | BindingFlags.Instance)!.Invoke(widget, null);
             var canvas = widget.FindControl<Canvas>(widget is DaisyOS.Shell.DesktopWidgets.MediaWidget ? "LargeSpectrumCanvas" : "SpectrumCanvas")!;

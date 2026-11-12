@@ -205,7 +205,7 @@ public sealed class QuickSettingsTests
         }
     }
     [AvaloniaFact]
-    public void DetachedQuickSettingsKeepsControlsAndRoutesConsoleRequest()
+    public void DetachedQuickSettingsKeepsControlsAndGamingIsAToggle()
     {
         var bar = new SystemBarView();
         var panel = bar.FindControl<DaisyOS.Shell.Views.Components.QuickSettings.QuickSettings>("QuickSettingsPanel")!;
@@ -216,11 +216,8 @@ public sealed class QuickSettingsTests
         Assert.NotNull(panel.FindControl<Control>("WifiNetworksPage"));
         Assert.NotNull(panel.FindControl<Control>("BluetoothDevicesPage"));
 
-        var consoleRequests = 0;
-        bar.ConsoleModeRequested += (_, _) => consoleRequests++;
         var tile = panel.FindControl<DaisyOS.Shell.Controls.QuickSettingTile>("GamingTile")!;
-        tile.ActivateDetails();
-        Assert.Equal(1, consoleRequests);
+        Assert.False(tile.HasDetails);
         bar.HideQuickSettingsPanel();
         Assert.False(bar.IsQuickSettingsVisible);
     }

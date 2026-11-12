@@ -23,10 +23,13 @@ impl Worker {
     }
 }
 #[derive(Default)]
-pub struct Pool(pub tokio::sync::Mutex<Option<Worker>>);
+pub struct Pool {
+    slot: tokio::sync::Mutex<Option<Worker>>,
+    changed: tokio::sync::Notify,
+}
 impl Pool {
     pub async fn stop(&self) {
-        if let Some(mut worker) = self.0.lock().await.take() {
+        if let Some(mut worker) = self.slot.lock().await.take() {
             let _ = worker.child.kill().await;
         }
     }
@@ -35,7 +38,7 @@ impl Pool {
         backend: &std::path::Path,
         payload: &str,
     ) -> std::io::Result<Value> {
-        let mut cached = self.0.lock().await.take();
+        let mut cached = self.slot.lock().await.take();
         if let Some(worker) = cached.as_mut() {
             if worker.last_used.elapsed() >= IDLE || worker.child.try_wait()?.is_some() {
                 if let Some(mut expired) = cached.take() {
@@ -74,24 +77,45 @@ impl Pool {
         worker.input.write_all(b"\n").await?;
         let value = worker.line().await?;
         worker.last_used = Instant::now();
-        *self.0.lock().await = Some(worker);
+        *self.slot.lock().await = Some(worker);
+        self.changed.notify_one();
         Ok(value)
     }
 }
 pub async fn reap(pool: Arc<Pool>) {
-    let mut ticks = tokio::time::interval(Duration::from_millis(100));
     loop {
-        ticks.tick().await;
-        let expired = {
-            let mut slot = pool.0.lock().await;
-            if slot.as_ref().is_some_and(|w| w.last_used.elapsed() >= IDLE) {
-                slot.take()
-            } else {
-                None
-            }
+        // Stay asleep while the pool is empty. A returned worker schedules its
+        // own lease deadline instead of waking the resident broker at 10 Hz.
+        let changed = pool.changed.notified();
+        let remaining = {
+            let slot = pool.slot.lock().await;
+            slot.as_ref()
+                .map(|worker| IDLE.saturating_sub(worker.last_used.elapsed()))
         };
-        if let Some(mut worker) = expired {
-            let _ = worker.child.kill().await;
+        match remaining {
+            None => changed.await,
+            Some(remaining) if !remaining.is_zero() => {
+                tokio::select! {
+                    _ = changed => {},
+                    _ = tokio::time::sleep(remaining) => {},
+                }
+            }
+            Some(_) => {
+                let expired = {
+                    let mut slot = pool.slot.lock().await;
+                    if slot
+                        .as_ref()
+                        .is_some_and(|worker| worker.last_used.elapsed() >= IDLE)
+                    {
+                        slot.take()
+                    } else {
+                        None
+                    }
+                };
+                if let Some(mut worker) = expired {
+                    let _ = worker.child.kill().await;
+                }
+            }
         }
     }
 }

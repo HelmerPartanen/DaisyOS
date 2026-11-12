@@ -127,11 +127,6 @@ The report includes average FPS, p99 and maximum frame time, and 1% low FPS calc
 
 These changes reduce specific shell work; they do not establish a measured game 1% low improvement. Include an overlay-hidden run to quantify the overlay’s remaining cost.
 
-## Console mode
-
-Console mode is an opt-in, controller-first home for installed games. It never replaces the desktop merely because a controller is connected: open the Gaming tile's detail action in Quick Settings, or press the controller Guide/PlayStation button while DaisyOS is active. Pressing **B** returns through the current console surface, **X** opens Quick Settings, and **LB/RB** move between Home and Library. In console Quick Settings, use the D-pad to move, **A** to change the selected control, and **Y** for its available detail list (Wi-Fi networks or output devices). Select **Desktop mode** to leave the mode.
-
-Console Quick Settings uses the same Wi-Fi, Bluetooth, Focus, Gaming, volume, and output-device controls as the desktop System Bar. It only shows games discovered on the system; placeholder game cards are never presented as launchable.
 
 ## GPU & Vulkan Detection
 

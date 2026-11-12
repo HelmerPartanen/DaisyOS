@@ -52,7 +52,6 @@ public partial class SystemBarView : UserControl
 
     public event EventHandler? QuickSettingsRequested;
     public event EventHandler? QuickSettingsDismissRequested;
-    public event EventHandler? ConsoleModeRequested;
     public event EventHandler<bool>? FlyoutVisibilityChanged;
 
     public SystemBarView()
@@ -64,7 +63,6 @@ public partial class SystemBarView : UserControl
         _appTray = this.FindControl<AppTrayView>("AppTrayPanel")!;
         _trayChevron = this.FindControl<DaisyIcon>("AppTrayChevron")!;
         _quickSettings.DismissRequested += (_, _) => QuickSettingsDismissRequested?.Invoke(this, EventArgs.Empty);
-        _quickSettings.ConsoleModeRequested += (_, _) => ConsoleModeRequested?.Invoke(this, EventArgs.Empty);
         _quickSettings.NetworkStatusChanged += UpdateNetworkPresentation;
         _quickSettings.NetworkStatusUnavailable += ShowOfflineNetworkPresentation;
 

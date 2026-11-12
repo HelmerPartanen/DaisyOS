@@ -3,7 +3,7 @@
                     xmlns:easings="clr-namespace:Avalonia.Animation.Easings;assembly=Avalonia.Base">
   <!--
     DaisyOS semantic theme contract. Components select a role, never a literal
-    paint or a desktop/console-specific palette. Theme-specific values belong
+    paint or a desktop-specific palette. Theme-specific values belong
     only in these dictionaries.
   -->
   <!-- Filled destructive actions need a saturated red with readable white content. -->

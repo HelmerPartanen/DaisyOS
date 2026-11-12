@@ -104,8 +104,11 @@ try:
     assert not Path(f'/proc/{p.pid}/task/{p.pid}/children').read_text().strip(), 'Backend was not reaped'
     warm = launch(); assert api.Await(warm)
     warm_pid = int((root / 'child').read_text().split(':')[-1])
+    time.sleep(1.1)
     again = launch(); assert api.Await(again)
     assert int((root / 'child').read_text().split(':')[-1]) == warm_pid, 'Warm worker was not reused'
+    time.sleep(1.1)
+    assert Path(f'/proc/{warm_pid}').exists(), 'Renewed worker expired at the previous lease deadline'
     gone(warm_pid)
     fresh = launch(); assert api.Await(fresh)
     fresh_pid = int((root / 'child').read_text().split(':')[-1])

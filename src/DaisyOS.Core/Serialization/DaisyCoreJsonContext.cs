@@ -11,7 +11,6 @@ namespace DaisyOS.Core.Serialization;
 [JsonSerializable(typeof(DaisyOS.Core.Continuity.ContinuityActivity))]
 [JsonSerializable(typeof(DaisyOS.Core.Continuity.ContinuityCommand))]
 [JsonSerializable(typeof(DaisyOS.Core.Continuity.ContinuityStatus))]
-[JsonSerializable(typeof(ControllerKeybindingsConfig))]
 [JsonSerializable(typeof(GameArtworkMetadata))]
 [JsonSerializable(typeof(GameArtworkAssets))]
 [JsonSerializable(typeof(GameStoreSource))]

@@ -193,11 +193,9 @@
                 x:Name="GamingTile"
                 Icon="game-controller"
                 Label="Gaming"
-                HasDetails="True"
+                HasDetails="False"
                 ToolTipText="{DynamicResource Loc_9C65D676E7AB}"
-                DetailsToolTipText="{DynamicResource Loc_165AB99C5DA0}"
-                Toggled="OnGamingTileToggled"
-                DetailsClicked="OnGamingDetailsClicked"/>
+                Toggled="OnGamingTileToggled"/>
 
           </Grid>
 

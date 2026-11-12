@@ -7,7 +7,7 @@ namespace DaisyOS.System.Controllers;
 /// <summary>
 /// Detects controllers recognized by the Linux input subsystem. This deliberately reads
 /// /proc rather than Bluetooth pairing state: only a controller that created an input device
-/// can switch the shell into console mode.
+/// can report attached game controllers.
 /// </summary>
 public sealed class LinuxControllerService : IControllerService
 {

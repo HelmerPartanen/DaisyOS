@@ -23,7 +23,6 @@ namespace DaisyOS.Shell.Services.Serialization;
 [JsonSerializable(typeof(DaisyFilePickerPreferences))]
 [JsonSerializable(typeof(CalendarEventRecord))]
 [JsonSerializable(typeof(List<CalendarEventRecord>))]
-[JsonSerializable(typeof(ControllerKeybindingsConfig))]
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(string[]))]
 [JsonSerializable(typeof(DaisyOS.Shell.Services.Compositor.TaskbarPreviewRequest))]

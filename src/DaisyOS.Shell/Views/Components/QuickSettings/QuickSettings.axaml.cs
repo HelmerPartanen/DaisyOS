@@ -60,7 +60,6 @@ public partial class QuickSettings : UserControl
     private bool HasConnectedAirPods => (Application.Current as App)?.AirPods?.Status.IsConnected == true;
 
     public event EventHandler? DismissRequested;
-    public event EventHandler? ConsoleModeRequested;
     public event Action<NetworkStatus, WirelessRadioStatus, BluetoothStatus>? NetworkStatusChanged;
     public event Action? NetworkStatusUnavailable;
     public Border MaterialSurface => this.FindControl<Border>("MaterialFrame")!;
@@ -273,8 +272,6 @@ public partial class QuickSettings : UserControl
         if (sender is QuickSettingTile tile) _sessionState.GamingMode = tile.IsChecked;
     }
 
-    private void OnGamingDetailsClicked(object? sender, Avalonia.Interactivity.RoutedEventArgs e) =>
-        ConsoleModeRequested?.Invoke(this, EventArgs.Empty);
 
     private async void OnNightLightTileToggled(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
     {

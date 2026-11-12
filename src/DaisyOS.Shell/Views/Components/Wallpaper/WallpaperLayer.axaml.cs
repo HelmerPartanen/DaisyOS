@@ -17,7 +17,7 @@ using DaisyOS.Shell.Services.Wallpaper.VideoWallpaper;
 
 namespace DaisyOS.Shell.Views.Components.Wallpaper;
 
-/// <summary>The wallpaper visual shared by the desktop and console shell experiences.</summary>
+/// <summary>The wallpaper visual shared by the desktop.</summary>
 public partial class WallpaperLayer : UserControl
 {
     public enum WallpaperPresentationState { Loading, Presented, Paused, Failed }
@@ -174,31 +174,8 @@ public partial class WallpaperLayer : UserControl
     }
 
     private Window? _attachedWindow;
-    private bool _isConsoleMode;
     private bool _isGameRunning;
     private bool _gamingModeActive;
-
-    public void SetConsoleNavigationParallax(double position)
-    {
-        _targetOffsetX = 0;
-        _targetOffsetY = 0;
-    }
-
-    public void SetConsoleParallaxEnabled(bool enabled)
-    {
-        _targetOffsetX = 0;
-        _targetOffsetY = 0;
-        SetConsoleModeActive(enabled);
-    }
-
-    public void SetConsoleModeActive(bool active)
-    {
-        if (_isConsoleMode != active)
-        {
-            _isConsoleMode = active;
-            UpdateVisibilityAndPauseState();
-        }
-    }
 
     public void SetGameRunningState(bool running)
     {
@@ -372,7 +349,7 @@ public partial class WallpaperLayer : UserControl
                                 (!isOwnedWindowOccludingDesktop
                                  && !isExternalAppOccludingDesktop
                                  && !isLockScreenOccludingDesktop
-                                 && (IgnoreDesktopOcclusion || (!_isConsoleMode && !_isGameRunning))
+                                 && (IgnoreDesktopOcclusion || !_isGameRunning)
                                  && (IgnoreDesktopOcclusion || !_gamingModeActive)
                                  // Battery saver: keep the first frame as a still image.
                                  && (_isMediaVideo || !(_app?.IsLiveWallpaperPausedForBattery ?? false))));

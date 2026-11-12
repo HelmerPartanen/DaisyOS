@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
@@ -11,11 +10,6 @@ using Avalonia.Threading;
 using Avalonia.VisualTree;
 using DaisyOS.Core.Models;
 using DaisyOS.Core.Services;
-using DaisyOS.Core.Models.Gaming;
-using DaisyOS.System.Controllers;
-using DaisyOS.System.Processes;
-using DaisyOS.Shell.ViewModels;
-using DaisyOS.Shell.Views.Components.Console;
 using DaisyOS.Shell.Views.Components.Desktop;
 using DaisyOS.Shell.Views.Components.Launcher;
 using DaisyOS.Shell.Views.Components.Notifications;
@@ -34,23 +28,8 @@ namespace DaisyOS.Shell.Views
     public partial class ShellView : UserControl
     {
         private readonly DispatcherTimer _feedbackTimer = new() { Interval = TimeSpan.FromSeconds(5) };
-        private readonly DispatcherTimer _controllerPollTimer = new() { Interval = TimeSpan.FromSeconds(2) };
         private readonly DispatcherTimer _taskbarAutoHideTimer = new() { Interval = TimeSpan.FromMilliseconds(1100) };
         private readonly DispatcherTimer _systemBarAutoHideTimer = new() { Interval = TimeSpan.FromMilliseconds(1100) };
-        private static readonly TimeSpan BlackFadeDuration = TimeSpan.FromMilliseconds(150);
-        private static readonly TimeSpan ConsoleLoadingDuration = TimeSpan.FromMilliseconds(200);
-        private static readonly TimeSpan DesktopRestoreDuration = TimeSpan.FromMilliseconds(150);
-        private readonly IControllerService _controllerService;
-        private readonly IControllerInputService _controllerInputService;
-        private CancellationTokenSource? _controllerCancellation;
-        private bool _controllerConnected;
-        private bool _physicalControllerConnected;
-        private bool _consoleModeRequested;
-        private bool _checkingController;
-        private bool _consoleMode;
-        private bool _consoleTransitionInProgress;
-        private bool _lastInputWasController;
-        private bool _usesNativeConsoleSurface;
         private bool _taskbarAutoHide;
         private bool _systemBarAutoHide;
         private bool _mediaAutoHide;
@@ -64,19 +43,7 @@ namespace DaisyOS.Shell.Views
         private bool _bottomBarVisibilityInitialized;
 
         public ShellView()
-            : this(new LinuxControllerService(), new LinuxControllerInputService())
         {
-        }
-
-        public ShellView(IControllerService controllerService)
-            : this(controllerService, new LinuxControllerInputService())
-        {
-        }
-
-        public ShellView(IControllerService controllerService, IControllerInputService controllerInputService)
-        {
-            _controllerService = controllerService ?? throw new ArgumentNullException(nameof(controllerService));
-            _controllerInputService = controllerInputService ?? throw new ArgumentNullException(nameof(controllerInputService));
             InitializeComponent();
             DesktopExperience.Children.Add(_bottomTooltips);
             // Taskbar labels use the same passive tooltip surface as the system bar.
@@ -93,7 +60,6 @@ namespace DaisyOS.Shell.Views
                 else ScheduleMediaAutoHide();
             };
             _mediaAutoHideTimer.Tick += (_, _) => HideMediaIfUnhovered();
-            ConsoleSettings.SetInputService(_controllerInputService);
             AddHandler(InputElement.PointerPressedEvent, OnPointerPressed, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             AddHandler(InputElement.PointerMovedEvent, OnPointerMoved, Avalonia.Interactivity.RoutingStrategies.Tunnel);
             TaskbarContent.PointerEntered += (_, _) => _taskbarAutoHideTimer.Stop();
@@ -117,19 +83,7 @@ namespace DaisyOS.Shell.Views
             };
             _taskbarAutoHideTimer.Tick += (_, _) => HideTaskbarIfUnhovered();
             _systemBarAutoHideTimer.Tick += (_, _) => HideSystemBarIfUnhovered();
-            Loaded += OnLoaded;
             Unloaded += OnUnloaded;
-            _controllerInputService.NavigationRequested += OnControllerNavigationRequested;
-            ConsoleHome.SelectionChanged += OnConsoleSelectionChanged;
-            ConsoleHome.SettingsRequested += (_, _) => ConsoleSettings.ShowOverlay("Audio");
-            ConsoleHome.GameLaunchRequested += (_, game) => LaunchConsoleGame(game);
-            ConsoleSettings.Closed += (_, _) => Dispatcher.UIThread.Post(ConsoleHome.FocusInitialDestination, DispatcherPriority.Input);
-            ConsoleSettings.ReturnToDesktopRequested += async (_, _) =>
-            {
-                _consoleModeRequested = false;
-                _controllerConnected = false;
-                await ReconcileConsoleModeAsync();
-            };
 
             if (Application.Current is App feedbackApp)
             {
@@ -140,9 +94,7 @@ namespace DaisyOS.Shell.Views
             {
                 _feedbackTimer.Stop();
                 if (this.FindControl<Control>("FeedbackHost") is { } host) host.IsVisible = false;
-                if (this.FindControl<Control>("ConsoleFeedbackHost") is { } consoleHost) consoleHost.IsVisible = false;
             };
-            _controllerPollTimer.Tick += async (_, _) => await RefreshControllerStateAsync();
             RegisterShellComponents();
             MetricsPanel.InitializeMonitor(_metricsMonitor);
             MetricsPanel.PanelVisibilityChanged += (_, visible) => MetricsSurfaceVisibilityChanged?.Invoke(this, visible);
@@ -417,7 +369,6 @@ namespace DaisyOS.Shell.Views
         public LauncherView Launcher => LauncherContent;
         public bool IsLauncherVisible => LauncherContent.IsOpen;
         public bool IsMetricsPanelVisible => MetricsPanel.IsPanelOpen;
-        public event EventHandler<bool>? ConsoleSurfaceVisibilityChanged;
         public event EventHandler<bool>? MetricsSurfaceVisibilityChanged;
 
         /// <summary>
@@ -478,33 +429,6 @@ namespace DaisyOS.Shell.Views
             }
 
             return NotificationToastOverlay;
-        }
-
-        /// <summary>
-        /// Console mode is a full-output, temporary shell experience. Keep its
-        /// controls together so controller focus and the transition animation
-        /// cross exactly one native overlay boundary.
-        /// </summary>
-        public Control DetachConsoleForNativeOverlay()
-        {
-            _usesNativeConsoleSurface = true;
-            var overlay = new Grid();
-            if (Content is not Grid root)
-                return overlay;
-
-            foreach (var control in new Control[]
-                     {
-                         ConsoleHome,
-                         this.FindControl<Control>("ConsoleFeedbackHost")!,
-                         ConsoleSettings,
-                         ConsoleTransition
-                     })
-            {
-                root.Children.Remove(control);
-                overlay.Children.Add(control);
-            }
-
-            return overlay;
         }
 
         /// <summary>Moves the diagnostics panel into its own temporary overlay.</summary>
@@ -586,8 +510,8 @@ namespace DaisyOS.Shell.Views
             _metricsMonitor.RegisterComponent(
                 "desktop", "Desktop Environment", "desktop_windows", "Desktop",
                 () => DesktopExperience,
-                activeCheck: () => !_consoleMode,
-                customCpuWeightProvider: () => _consoleMode ? 0.2 : 1.3);
+                activeCheck: () => true,
+                customCpuWeightProvider: () => 1.3);
 
             _metricsMonitor.RegisterComponent(
                 "wallpaper", "Wallpaper Engine", "image", "Background",
@@ -607,241 +531,15 @@ namespace DaisyOS.Shell.Views
                 activeCheck: () => true,
                 customCpuWeightProvider: () => 0.5);
 
-            _metricsMonitor.RegisterComponent(
-                "console_home", "Console Mode UI", "sports_esports", "Console Mode",
-                () => ConsoleHome,
-                activeCheck: () => _consoleMode,
-                customCpuWeightProvider: () => _consoleMode ? 1.8 : 0.05);
-
-            _metricsMonitor.RegisterComponent(
-                "console_settings", "Console Settings", "settings_suggest", "Console Mode",
-                () => ConsoleSettings,
-                activeCheck: () => ConsoleSettings.IsVisible,
-                customCpuWeightProvider: () => ConsoleSettings.IsVisible ? 1.4 : 0.05);
-        }
-
-        /// <summary>Enters the controller-first shell only after the user explicitly asks for it.</summary>
-        public void RequestConsoleMode()
-        {
-            if (!_physicalControllerConnected)
-            {
-                (Application.Current as App)?.Feedback.Show(Loc.Get("Connect a controller before opening console mode."));
-                return;
-            }
-
-            _consoleModeRequested = true;
-            _controllerConnected = true;
-            _ = ReconcileConsoleModeAsync();
-        }
-
-        private void OnLoaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
-        {
-            _controllerCancellation = new CancellationTokenSource();
-            _controllerPollTimer.Start();
-            _ = RefreshControllerStateAsync();
         }
 
         private void OnUnloaded(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
         {
-            _controllerPollTimer.Stop();
+            _feedbackTimer.Stop();
             _mediaAutoHideTimer.Stop();
             _taskbarAutoHideTimer.Stop();
             _systemBarAutoHideTimer.Stop();
             _bottomTooltips.Dismiss();
-            _controllerCancellation?.Cancel();
-            _controllerCancellation?.Dispose();
-            _controllerCancellation = null;
-            _controllerInputService.NavigationRequested -= OnControllerNavigationRequested;
-            ConsoleHome.SelectionChanged -= OnConsoleSelectionChanged;
-            _controllerInputService.Stop();
-            _ = _controllerInputService.DisposeAsync();
-        }
-
-        private readonly List<Control> _consoleControls = new();
-        private readonly List<Control> _desktopControls = new();
-        private bool _isFirstLoad = true;
-
-        private void InitializeResourceOptimization()
-        {
-            if (!_isFirstLoad) return;
-            _isFirstLoad = false;
-
-            if (_usesNativeConsoleSurface)
-            {
-                return;
-            }
-
-            // Cache controls so they can be removed/added from the visual tree
-            _desktopControls.Add(DesktopExperience);
-            _consoleControls.Clear();
-            _consoleControls.Add(ConsoleHome);
-            _consoleControls.Add(this.FindControl<Control>("ConsoleFeedbackHost")!);
-            _consoleControls.Add(ConsoleSettings);
-
-            if (this.Content is Grid rootGrid)
-            {
-                foreach (var c in _consoleControls) rootGrid.Children.Remove(c);
-            }
-        }
-
-        private async Task RefreshControllerStateAsync()
-        {
-            if (_checkingController || _controllerCancellation is null)
-            {
-                return;
-            }
-
-            _checkingController = true;
-            try
-            {
-                var status = await _controllerService.GetConnectionStatusAsync(_controllerCancellation.Token);
-                await Dispatcher.UIThread.InvokeAsync(() => ApplyControllerStatusAsync(status));
-            }
-            catch (OperationCanceledException)
-            {
-                // Shell shutdown supersedes a pending probe.
-            }
-            catch (Exception ex)
-            {
-                // Hardware probing is best effort. Preserve the current shell mode if it fails.
-                Console.WriteLine($"Failed to read controller state: {ex.Message}");
-            }
-            finally
-            {
-                _checkingController = false;
-            }
-        }
-
-        private async Task ApplyControllerStatusAsync(ControllerConnectionStatus status)
-        {
-            _physicalControllerConnected = status.IsConnected;
-            if (status.IsConnected)
-            {
-                ConsoleHome.ControllerName = status.Name ?? "Game controller";
-                ConsoleHome.SetControllerLayout(status.Name);
-                ConsoleSettings.SetControllerLayout(status.Name);
-                _controllerInputService.Start(status);
-            }
-            else
-            {
-                _controllerInputService.Stop();
-                _consoleModeRequested = false;
-            }
-
-            _controllerConnected = status.IsConnected && _consoleModeRequested;
-
-            await ReconcileConsoleModeAsync();
-        }
-
-        private async Task ReconcileConsoleModeAsync()
-        {
-            if (_consoleTransitionInProgress)
-            {
-                return;
-            }
-
-            _consoleTransitionInProgress = true;
-            try
-            {
-                InitializeResourceOptimization();
-                var rootGrid = this.Content as Grid;
-
-                if (_consoleMode != _controllerConnected)
-                {
-                    var enteringConsoleMode = _controllerConnected;
-                    ConsoleTransitionTitle.Text = enteringConsoleMode ? Loc.Get("Switching to console mode") : Loc.Get("Returning to desktop");
-                    ConsoleTransitionDetail.Text = enteringConsoleMode
-                        ? Loc.Format("{0} connected", ConsoleHome.ControllerName)
-                        : _physicalControllerConnected ? Loc.Get("Console mode closed") : Loc.Get("Controller disconnected");
-                    ConsoleTransition.IsVisible = true;
-                    ConsoleSurfaceVisibilityChanged?.Invoke(this, true);
-                    await Task.Delay(24);
-                    ConsoleTransition.Opacity = 1;
-                    await Task.Delay(BlackFadeDuration);
-
-                    if (enteringConsoleMode)
-                    {
-                        (Application.Current as App)?.DismissTransientShellSurfaces();
-                        if (rootGrid != null)
-                        {
-                            foreach (var c in _desktopControls) rootGrid.Children.Remove(c);
-                            foreach (var c in _consoleControls) if (!rootGrid.Children.Contains(c)) rootGrid.Children.Add(c);
-                        }
-                        ConsoleHome.IsVisible = true;
-                        ShellWallpaper.SetConsoleParallaxEnabled(true);
-                        Dispatcher.UIThread.Post(ConsoleHome.FocusInitialDestination, DispatcherPriority.Input);
-                        await Task.Delay(ConsoleLoadingDuration);
-                    }
-                    else
-                    {
-                        ConsoleSettings.HideOverlay();
-                        ConsoleHome.IsVisible = false;
-                        ShellWallpaper.SetConsoleParallaxEnabled(false);
-                        if (rootGrid != null)
-                        {
-                            foreach (var c in _consoleControls) rootGrid.Children.Remove(c);
-                            foreach (var c in _desktopControls) if (!rootGrid.Children.Contains(c)) rootGrid.Children.Add(c);
-                        }
-                        await Task.Delay(DesktopRestoreDuration);
-                    }
-
-                    // Do not expose a mode which was superseded while its transition was running.
-                    // Revert the covered surface to the known mode, then the loop can reconcile
-                    // any still-pending change without flashing either experience.
-                    if (enteringConsoleMode != _controllerConnected)
-                    {
-                        ConsoleHome.IsVisible = _consoleMode;
-                        if (rootGrid != null)
-                        {
-                            if (_consoleMode)
-                            {
-                                foreach (var c in _desktopControls) rootGrid.Children.Remove(c);
-                                foreach (var c in _consoleControls) if (!rootGrid.Children.Contains(c)) rootGrid.Children.Add(c);
-                            }
-                            else
-                            {
-                                foreach (var c in _consoleControls) rootGrid.Children.Remove(c);
-                                foreach (var c in _desktopControls) if (!rootGrid.Children.Contains(c)) rootGrid.Children.Add(c);
-                            }
-                        }
-                        ShellWallpaper.SetConsoleParallaxEnabled(_consoleMode);
-                    }
-                    else
-                    {
-                        _consoleMode = enteringConsoleMode;
-                        if (_consoleMode)
-                        {
-                            ShellWallpaper.SetConsoleNavigationParallax(ConsoleHome.ParallaxPosition);
-                            if (_lastInputWasController)
-                            {
-                                Cursor = new Cursor(StandardCursorType.None);
-                            }
-                        }
-                        else
-                        {
-                            Cursor = Cursor.Default;
-                        }
-                    }
-
-                    ConsoleTransition.Opacity = 0;
-                    await Task.Delay(BlackFadeDuration);
-                    ConsoleTransition.IsVisible = false;
-                    if (!_consoleMode)
-                    {
-                        ConsoleSurfaceVisibilityChanged?.Invoke(this, false);
-                    }
-                }
-            }
-            finally
-            {
-                _consoleTransitionInProgress = false;
-
-                // A probe can complete between the final condition and this assignment.
-                if (_consoleMode != _controllerConnected)
-                {
-                    _ = ReconcileConsoleModeAsync();
-                }
-            }
         }
 
         public void ShowLauncher(bool interactive = false)
@@ -873,20 +571,10 @@ namespace DaisyOS.Shell.Views
             var position = e.GetPosition(this);
             if (position.Y >= Bounds.Height - 2)
                 RevealBottomBarAt(position.X, Bounds.Width);
-            if (_lastInputWasController)
-            {
-                _lastInputWasController = false;
-                Cursor = Cursor.Default;
-            }
         }
 
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
         {
-            if (_lastInputWasController)
-            {
-                _lastInputWasController = false;
-                Cursor = Cursor.Default;
-            }
 
             if (e.Source is not Visual source)
             {
@@ -906,109 +594,6 @@ namespace DaisyOS.Shell.Views
             }
         }
 
-        private void OnControllerNavigationRequested(object? sender, ControllerNavigationAction action)
-        {
-            Dispatcher.UIThread.Post(() =>
-            {
-                if (!_lastInputWasController)
-                {
-                    _lastInputWasController = true;
-                    if (_consoleMode)
-                    {
-                        Cursor = new Cursor(StandardCursorType.None);
-                    }
-                }
-
-                if (_consoleMode)
-                {
-                    if (_quickMenuWindow != null && _quickMenuWindow.IsVisible)
-                    {
-                        _quickMenuWindow.Overlay.Navigate(action);
-                    }
-                    else if (ConsoleSettings.IsVisible)
-                    {
-                        ConsoleSettings.Navigate(action);
-                    }
-                    else if (action == ControllerNavigationAction.OpenConsoleHold)
-                    {
-                        ShowQuickMenu();
-                    }
-                    else if (action == ControllerNavigationAction.OpenConsole)
-                    {
-                        if (_quickMenuWindow != null && _quickMenuWindow.IsVisible)
-                        {
-                            _quickMenuWindow.Overlay.HideQuickMenu();
-                        }
-                    }
-                    else
-                    {
-                        ConsoleHome.Navigate(action);
-                    }
-                }
-                else if (action == ControllerNavigationAction.OpenConsole)
-                {
-                    RequestConsoleMode();
-                }
-            }, DispatcherPriority.Input);
-        }
-
-        private void OnConsoleSelectionChanged(object? sender, double position)
-        {
-            if (_consoleMode)
-            {
-                ShellWallpaper.SetConsoleNavigationParallax(position);
-            }
-        }
-
-        private async void LaunchConsoleGame(ConsoleGameItemViewModel vm)
-        {
-            var game = vm.Game;
-            var launcher = new SafeProcessLauncher();
-            var result = game.Source == GameStoreSource.Steam && !string.IsNullOrWhiteSpace(game.SourceId)
-                ? launcher.Launch("xdg-open", [$"steam://rungameid/{game.SourceId}"])
-                : !string.IsNullOrWhiteSpace(game.DesktopFilePath)
-                    ? launcher.Launch("gtk-launch", [Path.GetFileNameWithoutExtension(game.DesktopFilePath)])
-                    : !string.IsNullOrWhiteSpace(game.ExecutablePath)
-                        ? launcher.Launch(game.ExecutablePath)
-                        : new AppLaunchResult(false, $"{game.Title} has no launch target.");
-
-            if (!result.Succeeded)
-            {
-                (Application.Current as App)?.Feedback.Show(Loc.Format("Couldn’t launch {0}.", game.Title));
-                return;
-            }
-
-            vm.IsLaunching = true;
-
-            if (_consoleMode)
-            {
-                var text = this.FindControl<TextBlock>("ConsoleFeedbackText");
-                var host = this.FindControl<Control>("ConsoleFeedbackHost");
-                if (text != null && host != null)
-                {
-                    text.Text = Loc.Format("Launching {0}…", game.Title);
-                    host.IsVisible = true;
-                }
-            }
-            else
-            {
-                (Application.Current as App)?.Feedback.Show(Loc.Format("Launching {0}…", game.Title));
-            }
-
-            await global::System.Threading.Tasks.Task.Delay(50);
-
-            vm.IsLaunching = false;
-            vm.IsRunning = true;
-            ShellWallpaper.SetGameRunningState(true);
-            ConsoleHome.UpdateSelectedGameSpotlight(vm);
-
-            if (_consoleMode)
-            {
-                var host = this.FindControl<Control>("ConsoleFeedbackHost");
-                if (host != null) host.IsVisible = false;
-            }
-        }
-
         private static bool IsWithin(Visual source, Visual container) =>
             ReferenceEquals(source, container) || source.GetVisualAncestors().Any(ancestor => ReferenceEquals(ancestor, container));
 
@@ -1016,84 +601,12 @@ namespace DaisyOS.Shell.Views
         {
             Dispatcher.UIThread.Post(() =>
             {
-                var textName = _consoleMode ? "ConsoleFeedbackText" : "FeedbackText";
-                var hostName = _consoleMode ? "ConsoleFeedbackHost" : "FeedbackHost";
+                const string textName = "FeedbackText";
                 if (this.FindControl<TextBlock>(textName) is { } text) text.Text = message;
-                if (this.FindControl<Control>(hostName) is { } host) host.IsVisible = true;
+                if (this.FindControl<Control>("FeedbackHost") is { } host) host.IsVisible = true;
                 _feedbackTimer.Stop();
                 _feedbackTimer.Start();
             });
-        }
-
-        private ConsoleQuickMenuWindow? _quickMenuWindow;
-
-        private void ShowQuickMenu()
-        {
-            if (_quickMenuWindow != null) return;
-
-            _quickMenuWindow = new ConsoleQuickMenuWindow();
-            
-            _quickMenuWindow.Closed += (_, _) =>
-            {
-                _quickMenuWindow = null;
-            };
-
-            _quickMenuWindow.Overlay.Closed += (_, _) =>
-            {
-                _quickMenuWindow?.Close();
-            };
-
-            _quickMenuWindow.Overlay.GoHomeRequested += (_, _) =>
-            {
-                ConsoleSettings.HideOverlay();
-                var window = TopLevel.GetTopLevel(this) as Window;
-                window?.Activate();
-                ConsoleHome.FocusInitialDestination();
-            };
-            
-            _quickMenuWindow.Overlay.ReturnToDesktopRequested += async (_, _) =>
-            {
-                ConsoleSettings.HideOverlay();
-                _consoleModeRequested = false;
-                _controllerConnected = false;
-                await ReconcileConsoleModeAsync();
-            };
-            
-            _quickMenuWindow.Overlay.RestartRequested += (_, _) =>
-            {
-                var launcher = new SafeProcessLauncher();
-                launcher.Launch("systemctl", ["reboot"]);
-            };
-            
-            _quickMenuWindow.Overlay.ShutdownRequested += (_, _) =>
-            {
-                var launcher = new SafeProcessLauncher();
-                launcher.Launch("systemctl", ["poweroff"]);
-            };
-
-            var runningGame = ConsoleHome.RecentGames.FirstOrDefault(g => g.IsRunning)
-                           ?? ConsoleHome.AllLibraryGames.FirstOrDefault(g => g.IsRunning);
-
-            _quickMenuWindow.Overlay.SetActiveGame(runningGame);
-
-            _quickMenuWindow.Overlay.CloseGameRequested += (_, gameVm) =>
-            {
-                gameVm.IsRunning = false;
-                ShellWallpaper.SetGameRunningState(false);
-                ConsoleHome.UpdateSelectedGameSpotlight(gameVm);
-                (Application.Current as App)?.Feedback.Show(Loc.Format("Closed {0}.", gameVm.Title));
-            };
-
-            _quickMenuWindow.Overlay.RestartGameRequested += (_, gameVm) =>
-            {
-                _quickMenuWindow.Close();
-                LaunchConsoleGame(gameVm);
-            };
-
-            _quickMenuWindow.Show();
-            _quickMenuWindow.Activate();
-            _quickMenuWindow.Focus();
-            _quickMenuWindow.Overlay.ShowQuickMenu();
         }
 
     }

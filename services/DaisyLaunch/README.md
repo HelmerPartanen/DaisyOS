@@ -32,7 +32,8 @@ limited to 8 MiB and receive the existing `RateLimited` error when full.
 
 A semaphore limits the broker to one KDE helper at a time, including catalog
 refreshes. A worker is reused during a launch burst and is killed/reaped after
-approximately two seconds without a request. Refreshes retire it first. D-Bus-activatable applications are resolved by KService, then activated
+approximately two seconds without a request. The idle lease uses a deadline and
+notifications; an empty worker pool does not poll. Refreshes retire it first. D-Bus-activatable applications are resolved by KService, then activated
 asynchronously from Rust after that helper finishes resolving. Pending activation replies
 therefore do not occupy the helper queue or extend the idle lease. Queued requests can
 be cancelled before spawning a helper. Cancellation does not promise to undo a

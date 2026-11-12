@@ -1818,10 +1818,34 @@ namespace DaisyOS.Shell.Apps.System.Settings
             AddSection(Loc.Get("FOCUS"), Loc.Get("Notifications still appear in Notification Centre while focus is on."),
                 Toggle("Do not disturb", "notifications.dnd", false, value => { if (Application.Current is App app) app.SetDoNotDisturb(value); }));
 
-            var service = new InstalledApplicationService();
-            var apps = service.GetInstalledApplications()
-                .Where(app => app.LaunchKind != AppLaunchKind.Internal)
-                .OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+            var skeleton = new SkeletonLoader();
+            CategoryContent.Children.Add(skeleton);
+            _ = LoadNotificationApplicationsAsync(_categoryBuildVersion, skeleton);
+        }
+
+        private async Task LoadNotificationApplicationsAsync(int buildVersion, SkeletonLoader skeleton)
+        {
+            (AppEntry App, string IconPath)[] apps;
+            try
+            {
+                // Catalog discovery can activate the launch service and read the
+                // filesystem. Resolve icons here too, keeping page navigation free
+                // to render and accept input while the rows are prepared.
+                apps = await Task.Run(() => new InstalledApplicationService().GetInstalledApplications()
+                    .Where(app => app.LaunchKind != AppLaunchKind.Internal)
+                    .OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase)
+                    .Select(app => (app, DesktopItemLoader.ResolveApplicationIconPath([app.Icon, app.Id, app.Name])))
+                    .ToArray());
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                if (buildVersion != _categoryBuildVersion) return;
+                CategoryContent.Children.Remove(skeleton);
+                AddUnavailableMessage(Loc.Get("Installed applications could not be read. Try again."));
+                return;
+            }
+            if (buildVersion != _categoryBuildVersion) return;
+            CategoryContent.Children.Remove(skeleton);
             if (apps.Length == 0)
             {
                 AddUnavailableMessage(Loc.Get("No applications are available to configure."));
@@ -1830,12 +1854,11 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
             var rows = new List<Control>();
             var shell = Application.Current as App;
-            foreach (var application in apps)
+            foreach (var (application, iconPath) in apps)
             {
                 var appId = application.Id.Trim();
                 if (appId.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)) appId = appId[..^8];
                 var key = "notifications.app." + appId.ToLowerInvariant();
-                var iconPath = DesktopItemLoader.ResolveApplicationIconPath([application.Icon, application.Id, application.Name]);
                 var icon = new Image { Width = 24, Height = 24, Stretch = Avalonia.Media.Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center };
                 try { if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath)) icon.Source = new Bitmap(iconPath); }
                 catch { }

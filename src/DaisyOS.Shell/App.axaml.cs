@@ -587,7 +587,6 @@ public partial class App : Application
             _volumeIndicator.ShowLevel(volume, muted, input);
         };
         var toastContent = shell.DetachNotificationToastsForNativeOverlay();
-        var consoleContent = shell.DetachConsoleForNativeOverlay();
         var metricsContent = shell.DetachMetricsForNativeOverlay();
         _localSendWindow = new LocalSendWindow();
         var wallpaperSurface = backend.CreateWindow(
@@ -655,12 +654,6 @@ public partial class App : Application
             widgetLibrary.Dismiss);
         var toastSurface = backend.CreateWindow(
             LayerShellSurfaceOptions.NotificationOverlay(), toastContent);
-        var consoleSurface = backend.CreateWindow(
-            LayerShellSurfaceOptions.TopTransient("daisyos.overlay.console") with
-            {
-                InputPassthrough = true,
-                KeyboardInteractivity = LayerShellKeyboardInteractivity.None
-            }, consoleContent);
         var metricsSurface = backend.CreateWindow(
             LayerShellSurfaceOptions.TopTransient("daisyos.overlay.metrics") with
             {
@@ -702,7 +695,6 @@ public partial class App : Application
             LayerShellSurfaceOptions.BottomTooltipOverlay(), shell.DetachBottomTooltipsForNativeOverlay());
         _nativeShellSurfaces.Add(tooltipSurface);
         _nativeShellSurfaces.Add(toastSurface);
-        _nativeShellSurfaces.Add(consoleSurface);
         _nativeShellSurfaces.Add(metricsSurface);
         _nativeShellSurfaces.Add(localSendSurface);
         _nativeShellSurfaces.Add(screenshotBackdropSurface);
@@ -835,7 +827,6 @@ public partial class App : Application
         shell.Taskbar.ContextMenuVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(systemFlyoutSurface, visible, captureKeyboard: true);
         shell.MediaWidget.ContextMenuVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(systemFlyoutSurface, visible, captureKeyboard: true);
         shell.Desktop.WidgetContextMenuVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(systemFlyoutSurface, visible, captureKeyboard: true);
-        shell.ConsoleSurfaceVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(consoleSurface, visible, captureKeyboard: true);
         shell.MetricsSurfaceVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(metricsSurface, visible, captureKeyboard: true);
         _localSendWindow.DismissRequested += (_, _) => SetNativeSurfaceVisible(localSendSurface, false, captureKeyboard: true);
         // A share choice is transient shell UI. Pointer presses outside the
@@ -873,7 +864,6 @@ public partial class App : Application
         // issue an explicit empty input region once every native layer exists.
         SetNativeSurfaceVisible(launcherSurface, shell.IsLauncherVisible, captureKeyboard: true);
         SetNativeSurfaceVisible(systemFlyoutSurface, false, captureKeyboard: true);
-        SetNativeSurfaceVisible(consoleSurface, false, captureKeyboard: true);
         SetNativeSurfaceVisible(metricsSurface, shell.IsMetricsPanelVisible, captureKeyboard: true);
         SetNativeSurfaceVisible(localSendSurface, false, captureKeyboard: true);
         LayerShellWindow.SetInputPassthrough(toastSurface, !toastContent.HasActiveToasts);
@@ -1734,7 +1724,6 @@ public partial class App : Application
         }
         shell.SystemBar.QuickSettingsRequested += (_, _) => ToggleQuickSettings();
         shell.SystemBar.QuickSettingsDismissRequested += (_, _) => HideQuickSettings();
-        shell.SystemBar.ConsoleModeRequested += (_, _) => shell.RequestConsoleMode();
         shell.Launcher.AppLaunchRequested += (_, _) =>
         {
             _launcherLaunchedApp = true;

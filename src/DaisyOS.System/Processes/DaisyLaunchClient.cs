@@ -42,7 +42,7 @@ public sealed class DaisyLaunchClient
         finally { _connect.Release(); }
     }
 
-    private void InvalidateCatalog()
+    internal void InvalidateCatalog()
     {
         Interlocked.Increment(ref _catalogVersion);
         CatalogChanged?.Invoke();
@@ -86,13 +86,44 @@ public sealed class DaisyLaunchClient
         return document.RootElement.EnumerateArray().Select(CatalogEntry).ToArray();
     }
 
-    public async Task<IReadOnlyList<AppEntry>> CatalogAsync(CancellationToken token = default)
+    private readonly Func<CancellationToken, Task<string>> _readCatalog;
+
+    public DaisyLaunchClient() => _readCatalog = ReadCatalogAsync;
+    internal DaisyLaunchClient(Func<CancellationToken, Task<string>> readCatalog) => _readCatalog = readCatalog;
+
+    private async Task<string> ReadCatalogAsync(CancellationToken token)
     {
         var connection = await ConnectionAsync(token).ConfigureAwait(false);
-        var json = await connection.CallMethodAsync(Call(connection, "Catalog"), (reply, _) => reply.GetBodyReader().ReadString())
+        return await connection.CallMethodAsync(Call(connection, "Catalog"), (reply, _) => reply.GetBodyReader().ReadString())
             .WaitAsync(TimeSpan.FromSeconds(5), token).ConfigureAwait(false);
-        using var document = JsonDocument.Parse(json);
-        return document.RootElement.EnumerateArray().Select(CatalogEntry).ToArray();
+    }
+
+    private readonly SemaphoreSlim _catalogRead = new(1, 1);
+    private IReadOnlyList<AppEntry>? _catalog;
+    private long _cachedCatalogVersion = -1;
+    private string? _catalogCulture;
+
+    public async Task<IReadOnlyList<AppEntry>> CatalogAsync(CancellationToken token = default)
+    {
+        // Launcher, Settings and desktop shortcuts share one parsed snapshot.
+        // Serialize misses so opening several surfaces never duplicates the RPC
+        // and JSON allocations. Registry signals invalidate it immediately.
+        await _catalogRead.WaitAsync(token).ConfigureAwait(false);
+        try
+        {
+            var version = CatalogVersion;
+            var culture = global::System.Globalization.CultureInfo.CurrentUICulture.Name;
+            if (_catalog is not null && _cachedCatalogVersion == version && _catalogCulture == culture)
+                return _catalog;
+
+            var json = await _readCatalog(token).ConfigureAwait(false);
+            using var document = JsonDocument.Parse(json);
+            _catalog = Array.AsReadOnly(document.RootElement.EnumerateArray().Select(CatalogEntry).ToArray());
+            _cachedCatalogVersion = version;
+            _catalogCulture = culture;
+            return _catalog;
+        }
+        finally { _catalogRead.Release(); }
     }
 
     private readonly object _dedupeGate = new();

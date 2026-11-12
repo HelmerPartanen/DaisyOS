@@ -1,0 +1,18 @@
+{
+  "scope": "Private session bus, empty catalog, no launches; all broker threads; Debug builds; before worker.rs from HEAD, after working tree",
+  "measurements": {
+    "before": {
+      "sampleSeconds": 3.0001110890002565,
+      "voluntaryContextSwitches": 60,
+      "switchesPerSecond": 19.999259434087865,
+      "binarySha256": "270606f2ce6ca884d86c4a123855d33bdde41b001bfec2b615b21a62ded09443"
+    },
+    "after": {
+      "sampleSeconds": 3.00020627899994,
+      "voluntaryContextSwitches": 0,
+      "switchesPerSecond": 0.0,
+      "binarySha256": "92f5408a9de83c1c68d8c250c6e0129f0f1ff0fe002dc180f535366603218c89"
+    }
+  },
+  "baselineCommit": "cdd6830a306d24ddf0acd8283fd77510145d3280"
+}

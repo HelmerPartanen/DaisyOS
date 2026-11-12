@@ -31,11 +31,6 @@ Used by: src/DaisyOS.Shell/Controls/ShellMetricsPanel.axaml</comment>
     <comment>Source: ({0:F0} MB WS)
 Used by: src/DaisyOS.Shell/Controls/ShellMetricsPanel.axaml.cs</comment>
   </data>
-  <data name="Loc_46A7C293F2C9" xml:space="preserve">
-    <value>0 peliä</value>
-    <comment>Source: 0 Games
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml</comment>
-  </data>
   <data name="Loc_ADC353D548C8" xml:space="preserve">
     <value>0 Mt</value>
     <comment>Source: 0 MB
@@ -80,11 +75,6 @@ Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</com
     <value>1/x</value>
     <comment>Source: 1/x
 Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorView.axaml</comment>
-  </data>
-  <data name="Loc_B885A510FC82" xml:space="preserve">
-    <value>1920x1080</value>
-    <comment>Source: 1920x1080
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_7C3C6701AF6D" xml:space="preserve">
     <value>32-bittinen</value>
@@ -309,7 +299,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   <data name="Loc_BC1B88907D3B" xml:space="preserve">
     <value>Ääni</value>
     <comment>Source: Audio
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+</comment>
   </data>
   <data name="Loc_0622553DAAE5" xml:space="preserve">
     <value>Ääniraita • {0}</value>
@@ -354,7 +344,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   <data name="Loc_76900F1BFD16" xml:space="preserve">
     <value>Takaisin</value>
     <comment>Source: Back
-Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml, src/DaisyOS.Shell/Controls/FlyoutPageHeader.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml, src/DaisyOS.Shell/Controls/FlyoutPageHeader.axaml</comment>
   </data>
   <data name="Loc_4AE57F86C932" xml:space="preserve">
     <value>Takaisin (Alt+Left)</value>
@@ -409,12 +399,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   <data name="Loc_8BB29098B369" xml:space="preserve">
     <value>Bluetooth</value>
     <comment>Source: Bluetooth
-Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_C750568FB9A0" xml:space="preserve">
-    <value>Bluetooth-yhteys</value>
-    <comment>Source: Bluetooth Connection
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
   <data name="Loc_35A539F400B0" xml:space="preserve">
     <value>Bluetooth-muutokset otetaan käyttöön järjestelmän sovittimessa.</value>
@@ -425,21 +410,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <value>Bluetooth-laitteet</value>
     <comment>Source: Bluetooth devices
 Used by: src/DaisyOS.Shell/Views/Components/QuickSettings/QuickSettings.axaml</comment>
-  </data>
-  <data name="Loc_7190FDF5AFBD" xml:space="preserve">
-    <value>Bluetooth on pois päältä</value>
-    <comment>Source: Bluetooth is Off
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
-  </data>
-  <data name="Loc_BC0CD4A7BD49" xml:space="preserve">
-    <value>Bluetooth on päällä</value>
-    <comment>Source: Bluetooth is On
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
-  </data>
-  <data name="Loc_87AF701232B1" xml:space="preserve">
-    <value>Bluetooth ei ole saatavilla</value>
-    <comment>Source: Bluetooth not available
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
   </data>
   <data name="Loc_5A6F254B60E5" xml:space="preserve">
     <value>Leipäteksti luettavaa sovellussisältöä varten.</value>
@@ -459,7 +429,7 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml</comment>
   <data name="Loc_EC811D30A89C" xml:space="preserve">
     <value>Kirkkaus</value>
     <comment>Source: Brightness
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+</comment>
   </data>
   <data name="Loc_546D0F9DD97A" xml:space="preserve">
     <value>Luettelomerkit</value>
@@ -481,11 +451,6 @@ Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
     <comment>Source: CALENDARS
 Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   </data>
-  <data name="Loc_B4F5059032FA" xml:space="preserve">
-    <value>LUOKAT</value>
-    <comment>Source: CATEGORIES
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_DB9A4C7D4C19" xml:space="preserve">
     <value>CPU</value>
     <comment>Source: CPU
@@ -495,16 +460,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Diagnostics/TaskManagerView.axaml, src/Da
     <value>Suorittimen käyttö</value>
     <comment>Source: CPU Utilization
 Used by: src/DaisyOS.Shell/Apps/System/Diagnostics/TaskManagerView.axaml</comment>
-  </data>
-  <data name="Loc_CD142B5CB554" xml:space="preserve">
-    <value>CPU: 0% • RAM: 40%</value>
-    <comment>Source: CPU: 0% • RAM: 40%
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
-  </data>
-  <data name="Loc_DE6DF145260B" xml:space="preserve">
-    <value>CPU: {0:F0}% • RAM: {1:F0}%</value>
-    <comment>Source: CPU: {0:F0}% • RAM: {1:F0}%
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml.cs</comment>
   </data>
   <data name="Loc_8BEBDC4E7A8B" xml:space="preserve">
     <value>CTRL+R</value>
@@ -606,11 +561,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: Checking available keyboard layouts…
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
-  <data name="Loc_7FD87C63D104" xml:space="preserve">
-    <value>Tarkistetaan Bluetoothin tilaa…</value>
-    <comment>Source: Checking bluetooth status…
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_DEEED80B8449" xml:space="preserve">
     <value>Tarkistetaan päivämäärä-, aika- ja aikavyöhykeasetuksia…</value>
     <comment>Source: Checking date, time, and time-zone settings…
@@ -635,11 +585,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <value>Tarkistetaan verkkoyhteyttä…</value>
     <comment>Source: Checking network connectivity…
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
-  </data>
-  <data name="Loc_E91B12B8D780" xml:space="preserve">
-    <value>Tarkistetaan verkon tilaa…</value>
-    <comment>Source: Checking network status…
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_A3C586FF3007" xml:space="preserve">
     <value>Tarkistetaan äänilaitteita…</value>
@@ -811,11 +756,6 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Contr
     <comment>Source: Click 'Open' to view this file in its default app.
 Used by: src/DaisyOS.Shell/Views/Components/QuickLook/QuickLookWindow.axaml</comment>
   </data>
-  <data name="Loc_DFBC965B0779" xml:space="preserve">
-    <value>Valitse toiminnon uudelleenmääritys ja paina ohjaimen painiketta.</value>
-    <comment>Source: Click Remap on any action, then press your controller button to reassign.
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_FB7B2FCDCF55" xml:space="preserve">
     <value>Ota kuva napsauttamalla, peruuta Esc-näppäimellä</value>
     <comment>Source: Click to capture now, Esc to cancel
@@ -844,7 +784,7 @@ Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml</
   <data name="Loc_7D9EB7ACB13E" xml:space="preserve">
     <value>Sulje</value>
     <comment>Source: Close
-Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Calendar/CalendarWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml, src/DaisyOS.Shell/Services/StandaloneApplication.cs, src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml, src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Calendar/CalendarWindowTitleBar.axaml, src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml, src/DaisyOS.Shell/Controls/AppWindowTitleBar.axaml, src/DaisyOS.Shell/Services/StandaloneApplication.cs, src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml</comment>
   </data>
   <data name="Loc_961B2A04403E" xml:space="preserve">
     <value>Sulje (Esc)</value>
@@ -855,11 +795,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml</
     <value>Sulje välilehti</value>
     <comment>Source: Close Tab
 Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml</comment>
-  </data>
-  <data name="Loc_51B0451EE87B" xml:space="preserve">
-    <value>Sulje peli</value>
-    <comment>Source: Close game
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
   </data>
   <data name="Loc_C5DD7BE678EA" xml:space="preserve">
     <value>Sulje paneeli (CTRL+R)</value>
@@ -916,11 +851,6 @@ Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml</commen
     <comment>Source: Connect
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Views/Dialogs/WifiPasswordDialog.axaml, src/DaisyOS.Shell/Views/Dialogs/WifiPasswordDialog.axaml.cs</comment>
   </data>
-  <data name="Loc_0782000E76C5" xml:space="preserve">
-    <value>Yhdistä ohjain ennen konsolitilan avaamista.</value>
-    <comment>Source: Connect a controller before opening console mode.
-Used by: src/DaisyOS.Shell/Views/ShellView.axaml.cs</comment>
-  </data>
   <data name="Loc_63CD11F68C25" xml:space="preserve">
     <value>Yhdistä ja hallitse lähellä olevia lisälaitteita.</value>
     <comment>Source: Connect and manage nearby accessories.
@@ -941,30 +871,10 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: Connected
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Views/Components/QuickSettings/QuickSettings.axaml.cs</comment>
   </data>
-  <data name="Loc_4B31087ABBCA" xml:space="preserve">
-    <value>Yhdistetty verkkoon {0} ({1})</value>
-    <comment>Source: Connected to {0} ({1})
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
-  </data>
   <data name="Loc_72021EB70E91" xml:space="preserve">
     <value>Yhdistetään…</value>
     <comment>Source: Connecting…
 Used by: src/DaisyOS.Shell/Views/Dialogs/WifiPasswordDialog.axaml.cs</comment>
-  </data>
-  <data name="Loc_5B3368ED7258" xml:space="preserve">
-    <value>Konsolin pikavalikko</value>
-    <comment>Source: Console Quick Menu
-Used by: src/DaisyOS.Shell/Views/Windows/ConsoleQuickMenuWindow.axaml</comment>
-  </data>
-  <data name="Loc_414E6C74F3C1" xml:space="preserve">
-    <value>Konsolitila suljettu</value>
-    <comment>Source: Console mode closed
-Used by: src/DaisyOS.Shell/Views/ShellView.axaml.cs</comment>
-  </data>
-  <data name="Loc_9A0EC0B5DF3A" xml:space="preserve">
-    <value>ConsoleFeedbackText</value>
-    <comment>Source: ConsoleFeedbackText
-Used by: src/DaisyOS.Shell/Views/ShellView.axaml.cs</comment>
   </data>
   <data name="Loc_7A1F22A02BBF" xml:space="preserve">
     <value>Säädä kunkin käynnissä olevan sovelluksen äänenvoimakkuutta erikseen.</value>
@@ -979,12 +889,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   <data name="Loc_31DF66DC9F06" xml:space="preserve">
     <value>Ohjain</value>
     <comment>Source: Controller
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
-  </data>
-  <data name="Loc_D67FEAC83ECB" xml:space="preserve">
-    <value>Ohjaimen painikkeiden määritys</value>
-    <comment>Source: Controller Button Remapping
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+</comment>
   </data>
   <data name="Loc_045894989ADB" xml:space="preserve">
     <value>Ohjaimen yhteys katkaistu</value>
@@ -1241,11 +1146,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Desktop/DesktopItemPropertiesDialog.
     <comment>Source: Creating archive…
 Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml.cs</comment>
   </data>
-  <data name="Loc_9FDD72191076" xml:space="preserve">
-    <value>Nykyinen peli</value>
-    <comment>Source: Current Game
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
-  </data>
   <data name="Loc_46D2F61048A3" xml:space="preserve">
     <value>Nykyinen yhteys</value>
     <comment>Source: Current connection
@@ -1344,7 +1244,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   <data name="Loc_21B111CBFE6E" xml:space="preserve">
     <value>Oletus</value>
     <comment>Source: Default
-Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   </data>
   <data name="Loc_12235F20DCCE" xml:space="preserve">
     <value>Oletussovellus</value>
@@ -1384,7 +1284,7 @@ Used by: src/DaisyOS.Shell/Apps/Notes/NotesView.axaml.cs</comment>
   <data name="Loc_9BD88F2485AC" xml:space="preserve">
     <value>Työpöytä</value>
     <comment>Source: Desktop
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
+</comment>
   </data>
   <data name="Loc_655928853B87" xml:space="preserve">
     <value>Työpöytäwidget</value>
@@ -1399,7 +1299,7 @@ Used by: src/DaisyOS.Shell/Services/StandaloneApplication.cs</comment>
   <data name="Loc_45989DE49FB7" xml:space="preserve">
     <value>Tiedot</value>
     <comment>Source: Details
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+</comment>
   </data>
   <data name="Loc_68B82C427301" xml:space="preserve">
     <value>Digitaalinen kello</value>
@@ -1429,7 +1329,7 @@ Used by: src/DaisyOS.Shell/Views/Components/Notifications/NotificationCard.axaml
   <data name="Loc_34E108C0896D" xml:space="preserve">
     <value>Näyttö</value>
     <comment>Source: Display
-Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
   </data>
   <data name="Loc_A65767258223" xml:space="preserve">
     <value>Näyttöasetuksia ei ole saatavilla, koska KScreen ja XRandR eivät löytäneet aktiivista näyttöä.</value>
@@ -1535,16 +1435,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <value>Esimerkkikäyttäjä</value>
     <comment>Source: Example username
 Used by: src/DaisyOS.Shell/Views/Windows/LockScreenWindow.axaml</comment>
-  </data>
-  <data name="Loc_F59003F9CC6D" xml:space="preserve">
-    <value>Poistu konsolitilasta työpöydälle</value>
-    <comment>Source: Exit console mode to desktop
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_9E79E595C1EB" xml:space="preserve">
-    <value>Poistu työpöydälle</value>
-    <comment>Source: Exit to Desktop
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_9DCAB8844FBE" xml:space="preserve">
     <value>Selitä tapahtunut ja tarjoa suora korjaustoiminto.</value>
@@ -1701,16 +1591,6 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichImageBlockView.axaml</comm
     <comment>Source: GC Memory
 Used by: src/DaisyOS.Shell/Controls/ShellMetricsPanel.axaml</comment>
   </data>
-  <data name="Loc_85E8B8F86FE1" xml:space="preserve">
-    <value>Pelikirjasto</value>
-    <comment>Source: Game Library
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml</comment>
-  </data>
-  <data name="Loc_3701DA6F5296" xml:space="preserve">
-    <value>Pelin nimi</value>
-    <comment>Source: Game Title
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml</comment>
-  </data>
   <data name="Loc_0FADFA228814" xml:space="preserve">
     <value>Pelaaminen</value>
     <comment>Source: Gaming
@@ -1725,11 +1605,6 @@ Used by: src/DaisyOS.Shell/Services/Tray/StatusNotifierService.cs</comment>
     <value>Huomaamaton</value>
     <comment>Source: Ghost
 Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
-  </data>
-  <data name="Loc_82BC39F68192" xml:space="preserve">
-    <value>Kotihakemistoon</value>
-    <comment>Source: Go Home
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
   </data>
   <data name="Loc_1D261A8554D2" xml:space="preserve">
     <value>Grafiitti</value>
@@ -1830,11 +1705,6 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml</comment>
     <value>Lisää tekstin ja pintojen välistä kontrastia.</value>
     <comment>Source: Increase contrast between text and surfaces.
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
-  </data>
-  <data name="Loc_42B6A9E8964A" xml:space="preserve">
-    <value>Syöttölaite</value>
-    <comment>Source: Input device
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_7ABC49DFA87B" xml:space="preserve">
     <value>Syötteet</value>
@@ -1951,20 +1821,10 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: LANGUAGE
 Used by: language settings, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
-  <data name="Loc_6F9A285614EF" xml:space="preserve">
-    <value>LB/RB</value>
-    <comment>Source: LB/RB
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_53A36375DCFB" xml:space="preserve">
     <value>LF</value>
     <comment>Source: LF
 Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Code/CodeEditorControl.axaml</comment>
-  </data>
-  <data name="Loc_5B8F8A5AA9EA" xml:space="preserve">
-    <value>OHJAIMEN REAALIAIKAINEN TESTI</value>
-    <comment>Source: LIVE CONTROLLER TEST FEED
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_6D42B8A54F63" xml:space="preserve">
     <value>SIJAINNIT</value>
@@ -2001,11 +1861,6 @@ Used by: src/DaisyOS.Shell/Views/ShellView.axaml.cs</comment>
     <comment>Source: Leave this empty to use the first line of your note.
 Used by: src/DaisyOS.Shell/Apps/Notes/NoteTitleDialog.cs</comment>
   </data>
-  <data name="Loc_DC20B3D5D2CD" xml:space="preserve">
-    <value>Kirjasto</value>
-    <comment>Source: Library
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHeaderBar.axaml</comment>
-  </data>
   <data name="Loc_DBCD5E7BB7A0" xml:space="preserve">
     <value>Vaalea</value>
     <comment>Source: Light
@@ -2020,11 +1875,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <value>Linux-versio</value>
     <comment>Source: Linux version
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
-  </data>
-  <data name="Loc_20DEB40690F0" xml:space="preserve">
-    <value>Odotetaan... Määritä toiminto ”{0}” painamalla ohjaimen painiketta.</value>
-    <comment>Source: Listening... Press any button on your controller to bind to '{0}'.
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
   </data>
   <data name="Loc_FB78032DFE34" xml:space="preserve">
     <value>Järjestelmän virtalähteen ilmoittama nykyinen tila.</value>
@@ -2216,11 +2066,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Diagnostics/TaskManagerView.axaml, src/Da
     <comment>Source: Menus, labels, and supporting information remain balanced.
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   </data>
-  <data name="Loc_085F1DDC797C" xml:space="preserve">
-    <value>Mikrofonin taso</value>
-    <comment>Source: Mic level
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_186352A881D0" xml:space="preserve">
     <value>Mikrofoni</value>
     <comment>Source: Microphone
@@ -2276,11 +2121,6 @@ Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
     <comment>Source: Name
 Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml</comment>
   </data>
-  <data name="Loc_5EA5FBE811DB" xml:space="preserve">
-    <value>Siirry</value>
-    <comment>Source: Navigate
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_3DB65F8C2A7D" xml:space="preserve">
     <value>Navigointi</value>
     <comment>Source: Navigation
@@ -2299,7 +2139,7 @@ Used by: src/DaisyOS.Shell/Apps/LocalSend/LocalSendWindow.axaml</comment>
   <data name="Loc_1744B96470B5" xml:space="preserve">
     <value>Verkko</value>
     <comment>Source: Network
-Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
   <data name="Loc_0DC8F7AF9000" xml:space="preserve">
     <value>Verkkoluettelo</value>
@@ -2344,7 +2184,7 @@ Used by: src/DaisyOS.Shell/DesktopWidgets/ImageWidget.axaml</comment>
   <data name="Loc_F930A5DF6B51" xml:space="preserve">
     <value>Seuraava kappale</value>
     <comment>Source: Next track
-Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
+Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
   </data>
   <data name="Loc_21FBDE19CFB0" xml:space="preserve">
     <value>Seuraava viikko</value>
@@ -2355,16 +2195,6 @@ Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
     <value>Seuraava vuosi</value>
     <comment>Source: Next year
 Used by: src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml.cs</comment>
-  </data>
-  <data name="Loc_7BB3E275FE1B" xml:space="preserve">
-    <value>Bluetooth-laitteita ei löytynyt</value>
-    <comment>Source: No Bluetooth devices found
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
-  </data>
-  <data name="Loc_1D32B5756E7B" xml:space="preserve">
-    <value>Wi-Fi-verkkoja ei löytynyt</value>
-    <comment>Source: No Wi-Fi networks found
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
   </data>
   <data name="Loc_68940BCF6E81" xml:space="preserve">
     <value>Sovelluksia ei löytynyt</value>
@@ -2405,11 +2235,6 @@ Used by: src/DaisyOS.Shell/Apps/LocalSend/LocalSendWindow.axaml.cs</comment>
     <value>Tiedostoja ei ole valittu</value>
     <comment>Source: No files selected
 Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml</comment>
-  </data>
-  <data name="Loc_7ED271AD68A4" xml:space="preserve">
-    <value>Peliä ei ole käynnissä</value>
-    <comment>Source: No game running
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
   </data>
   <data name="Loc_F8A5D30F1603" xml:space="preserve">
     <value>Asennettuja selaimia ei löytynyt</value>
@@ -2479,12 +2304,12 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml</comment>
   <data name="Loc_0303E1824670" xml:space="preserve">
     <value>Ei yhteyttä</value>
     <comment>Source: Not connected
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
+</comment>
   </data>
   <data name="Loc_A92C2C9ABECA" xml:space="preserve">
     <value>Ei toistoa</value>
     <comment>Source: Not playing
-Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
+Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
   </data>
   <data name="Loc_4F4D167B3E5D" xml:space="preserve">
     <value>Muistiinpanon otsikko</value>
@@ -2510,11 +2335,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.
     <value>Ilmoitukset näkyvät yhä ilmoituskeskuksessa keskittymistilan aikana.</value>
     <comment>Source: Notifications still appear in Notification Centre while focus is on.
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
-  </data>
-  <data name="Loc_8B2AE991573C" xml:space="preserve">
-    <value>Nyt toistetaan</value>
-    <comment>Source: Now Playing
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
   </data>
   <data name="Loc_2916C317BF4A" xml:space="preserve">
     <value>Numeroitu luettelo</value>
@@ -2571,11 +2391,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: Orange
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   </data>
-  <data name="Loc_B2FAD20F557E" xml:space="preserve">
-    <value>Ulostulolaite</value>
-    <comment>Source: Output device
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_3D1E662940E7" xml:space="preserve">
     <value>Ulostulolaitteet</value>
     <comment>Source: Output devices
@@ -2620,11 +2435,6 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml</comment>
     <value>VIRTA</value>
     <comment>Source: POWER
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
-  </data>
-  <data name="Loc_F95A4BABF798" xml:space="preserve">
-    <value>PAINA PAINIKETTA...</value>
-    <comment>Source: PRESS BUTTON...
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
   </data>
   <data name="Loc_59E1F415BF9D" xml:space="preserve">
     <value>ESIKATSELU</value>
@@ -2674,7 +2484,7 @@ Used by: src/DaisyOS.Shell/Views/Windows/LockScreenWindow.axaml</comment>
   <data name="Loc_858E4BA7A29F" xml:space="preserve">
     <value>Keskeytä</value>
     <comment>Source: Pause
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml.cs, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml.cs</comment>
+Used by: src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml.cs</comment>
   </data>
   <data name="Loc_79E3C0331286" xml:space="preserve">
     <value>Käyttöoikeudet:</value>
@@ -2734,7 +2544,7 @@ Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
   <data name="Loc_436E61016E26" xml:space="preserve">
     <value>Toista</value>
     <comment>Source: Play
-Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml.cs, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml.cs</comment>
+Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml.cs</comment>
   </data>
   <data name="Loc_165419EFAD5E" xml:space="preserve">
     <value>Toista testiääni aktiivisista kaiuttimista.</value>
@@ -2776,11 +2586,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: Power &amp; Battery
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
   </data>
-  <data name="Loc_2C8D5531091C" xml:space="preserve">
-    <value>Sammuta</value>
-    <comment>Source: Power Off
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_38497357319E" xml:space="preserve">
     <value>Virtatiloja ei ole saatavilla, koska virtaprofiilipalvelu puuttuu tai ei ole käynnissä.</value>
     <comment>Source: Power modes aren’t available because the system power-profile service is missing or stopped.
@@ -2821,11 +2626,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Screenshot/ScreenshotOverlay.axaml</
     <comment>Source: Press Space or Esc to dismiss
 Used by: src/DaisyOS.Shell/Views/Components/QuickLook/QuickLookWindow.axaml</comment>
   </data>
-  <data name="Loc_6398612A422C" xml:space="preserve">
-    <value>Testaa ohjainta painamalla sen painikkeita...</value>
-    <comment>Source: Press any controller button to test input live...
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
   <data name="Loc_324B134F57C7" xml:space="preserve">
     <value>Esikatselu</value>
     <comment>Source: Preview
@@ -2849,7 +2649,7 @@ Used by: src/DaisyOS.Shell/DesktopWidgets/ImageWidget.axaml</comment>
   <data name="Loc_C50A886D0DC5" xml:space="preserve">
     <value>Edellinen kappale</value>
     <comment>Source: Previous track
-Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
+Used by: src/DaisyOS.Shell/DesktopWidgets/MediaWidget.axaml, src/DaisyOS.Shell/Views/Components/Widgets/MediaWidget.axaml</comment>
   </data>
   <data name="Loc_C0F8BBCD4176" xml:space="preserve">
     <value>Edellinen viikko</value>
@@ -2916,11 +2716,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: Quick Look
 Used by: src/DaisyOS.Shell/Views/Components/QuickLook/QuickLookWindow.axaml</comment>
   </data>
-  <data name="Loc_D4BEA702B12B" xml:space="preserve">
-    <value>Pika-asetukset</value>
-    <comment>Source: Quick Settings
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleActionBar.axaml</comment>
-  </data>
   <data name="Loc_6BED1F88D239" xml:space="preserve">
     <value>Pika-asetukset</value>
     <comment>Source: Quick settings
@@ -2965,16 +2760,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <value>Valmis jaettavaksi</value>
     <comment>Source: Ready to share
 Used by: src/DaisyOS.Shell/Apps/LocalSend/LocalSendWindow.axaml.cs</comment>
-  </data>
-  <data name="Loc_C42CAE2EF519" xml:space="preserve">
-    <value>Viimeksi pelattu • Valmis pelattavaksi</value>
-    <comment>Source: Recently Played • Ready to play
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml</comment>
-  </data>
-  <data name="Loc_41A86988751A" xml:space="preserve">
-    <value>Viimeisimmät</value>
-    <comment>Source: Recents
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHeaderBar.axaml</comment>
   </data>
   <data name="Loc_46790783C9CD" xml:space="preserve">
     <value>Palautus ja ylläpito</value>
@@ -3026,20 +2811,10 @@ Used by: src/DaisyOS.Shell/Apps/Files/Picker/DaisyFilePickerWindow.axaml.cs</com
     <comment>Source: Remove widget
 Used by: src/DaisyOS.Shell/Controls/DesktopItemView.axaml</comment>
   </data>
-  <data name="Loc_91B15CD6C53C" xml:space="preserve">
-    <value>Palauta näppäinmääritysten oletukset</value>
-    <comment>Source: Reset Keybindings to Defaults
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_B3420D8BAB36" xml:space="preserve">
-    <value>Palauta näppäinmääritykset tehdasasetuksiin!</value>
-    <comment>Source: Reset keybindings to factory defaults!
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
-  </data>
   <data name="Loc_D4055FAFA379" xml:space="preserve">
     <value>Tarkkuus</value>
     <comment>Source: Resolution
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+</comment>
   </data>
   <data name="Loc_161F0F78139F" xml:space="preserve">
     <value>Aktiivisten näyttöjen tarkkuus, skaalaus ja virkistystaajuus.</value>
@@ -3049,22 +2824,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   <data name="Loc_6B983A81E5E8" xml:space="preserve">
     <value>Käynnistä uudelleen</value>
     <comment>Source: Restart
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml, src/DaisyOS.Shell/Views/Windows/LockScreenWindow.axaml</comment>
-  </data>
-  <data name="Loc_F9D3416A6E4F" xml:space="preserve">
-    <value>Käynnistä konsoli uudelleen</value>
-    <comment>Source: Restart Console
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_F6C15276AD14" xml:space="preserve">
-    <value>Käynnistä tietokone uudelleen</value>
-    <comment>Source: Restart computer
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_0E0665255667" xml:space="preserve">
-    <value>Käynnistä peli uudelleen</value>
-    <comment>Source: Restart game
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Views/Windows/LockScreenWindow.axaml</comment>
   </data>
   <data name="Loc_B46871152667" xml:space="preserve">
     <value>Uudelleenkäynnistys tarvitaan</value>
@@ -3090,11 +2850,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
     <value>Yritä tallentaa uudelleen</value>
     <comment>Source: Retry save
 Used by: src/DaisyOS.Shell/Apps/Notes/NotesView.axaml</comment>
-  </data>
-  <data name="Loc_EAAC2B1A8F5F" xml:space="preserve">
-    <value>Palaa työpöydälle</value>
-    <comment>Source: Return to Desktop
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_7BD2C90ACEBE" xml:space="preserve">
     <value>Palaa tähän päivään</value>
@@ -3131,11 +2886,6 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml</comment>
     <comment>Source: Rounded (8px)
 Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichImageBlockView.axaml</comment>
   </data>
-  <data name="Loc_F4CCAE29E1BB" xml:space="preserve">
-    <value>Käynnissä</value>
-    <comment>Source: Running
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
-  </data>
   <data name="Loc_F5BEE024BA38" xml:space="preserve">
     <value>HAKUTULOKSET</value>
     <comment>Source: SEARCH RESULTS
@@ -3145,11 +2895,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
     <value>SYYSKUU</value>
     <comment>Source: SEPTEMBER
 Used by: src/DaisyOS.Shell/DesktopWidgets/CalendarWidget.axaml</comment>
-  </data>
-  <data name="Loc_ACC9609525B3" xml:space="preserve">
-    <value>STEAM</value>
-    <comment>Source: STEAM
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml</comment>
   </data>
   <data name="Loc_B845B190E617" xml:space="preserve">
     <value>JÄRJESTELMÄPÄIVITYKSET</value>
@@ -3170,16 +2915,6 @@ Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
     <value>Tallenna otsikko</value>
     <comment>Source: Save title
 Used by: src/DaisyOS.Shell/Apps/Notes/NoteTitleDialog.cs</comment>
-  </data>
-  <data name="Loc_ABECE0D35B17" xml:space="preserve">
-    <value>Etsi laitteita</value>
-    <comment>Source: Scan Devices
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_6ABBE217D4D2" xml:space="preserve">
-    <value>Etsi verkkoja</value>
-    <comment>Source: Scan Networks
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_6E56137E21D3" xml:space="preserve">
     <value>Näyttö</value>
@@ -3286,16 +3021,6 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: Segoe UI
 Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Rich/RichEditorView.axaml</comment>
   </data>
-  <data name="Loc_2A78025DE6AA" xml:space="preserve">
-    <value>Valitse</value>
-    <comment>Source: Select
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_3B64B1C4099D" xml:space="preserve">
-    <value>Valitse / Käynnistä</value>
-    <comment>Source: Select / Launch
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleActionBar.axaml</comment>
-  </data>
   <data name="Loc_9C6A74BE1D0F" xml:space="preserve">
     <value>Jatka valitsemalla tiedosto.</value>
     <comment>Source: Select a file to continue.
@@ -3384,7 +3109,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   <data name="Loc_74A883A037BC" xml:space="preserve">
     <value>Asetukset</value>
     <comment>Source: Settings
-Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsWindow.axaml, src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleHeaderBar.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml, src/DaisyOS.Shell/Views/Components/Taskbar/TaskbarView.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsWindow.axaml, src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml, src/DaisyOS.Shell/Views/Components/Taskbar/TaskbarView.axaml</comment>
   </data>
   <data name="Loc_E37BB000D620" xml:space="preserve">
     <value>Jaa LocalSendillä</value>
@@ -3450,11 +3175,6 @@ Used by: src/DaisyOS.Shell/Views/Dialogs/WifiPasswordDialog.axaml</comment>
     <value>Sammuta</value>
     <comment>Source: Shut Down
 Used by: src/DaisyOS.Shell/Views/Windows/LockScreenWindow.axaml</comment>
-  </data>
-  <data name="Loc_D67E0C9113FA" xml:space="preserve">
-    <value>Sammuta tietokone</value>
-    <comment>Source: Shut down computer
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_48880525A9D6" xml:space="preserve">
     <value>Kirjaudu tähän verkkoon</value>
@@ -3529,7 +3249,7 @@ Used by: src/DaisyOS.Shell/Apps/Files/FilesWindow.axaml</comment>
   <data name="Loc_46124E023603" xml:space="preserve">
     <value>Ääni</value>
     <comment>Source: Sound
-Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
   </data>
   <data name="Loc_FEF5D0891C67" xml:space="preserve">
     <value>Äänen testaus</value>
@@ -3601,11 +3321,6 @@ Used by: src/DaisyOS.Shell/Views/Components/SystemBar/CustomCalendarView.axaml</
     <comment>Source: Subtle
 Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
   </data>
-  <data name="Loc_A3006A914069" xml:space="preserve">
-    <value>{0} määritettiin toimintoon ”{1}”!</value>
-    <comment>Source: Successfully bound {0} to '{1}'!
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
-  </data>
   <data name="Loc_98781F451D9B" xml:space="preserve">
     <value>Super + V • Kopioi napsauttamalla</value>
     <comment>Source: Super + V • Click to copy
@@ -3621,16 +3336,6 @@ Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
     <comment>Source: Sweep Clock
 Used by: src/DaisyOS.Shell/ViewModels/DesktopViewModel.cs, src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml</comment>
   </data>
-  <data name="Loc_4161C11E08DE" xml:space="preserve">
-    <value>Vaihda välilehteä</value>
-    <comment>Source: Switch Tab
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleActionBar.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_72438D7B288C" xml:space="preserve">
-    <value>Siirrytään konsolitilaan</value>
-    <comment>Source: Switching to console mode
-Used by: src/DaisyOS.Shell/Views/ShellView.axaml, src/DaisyOS.Shell/Views/ShellView.axaml.cs</comment>
-  </data>
   <data name="Loc_82BC54DED4BC" xml:space="preserve">
     <value>Synkronoinnin edistyminen</value>
     <comment>Source: Sync progress
@@ -3639,7 +3344,7 @@ Used by: src/DaisyOS.Shell/Apps/UIKit/UIKitWindow.axaml</comment>
   <data name="Loc_6725E7BBCD28" xml:space="preserve">
     <value>Järjestelmä</value>
     <comment>Source: System
-Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml, src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
   <data name="Loc_F529922E0394" xml:space="preserve">
     <value>Järjestelmän suorituskyky</value>
@@ -3974,7 +3679,7 @@ Used by: src/DaisyOS.Shell/Apps/AppStore/AppStoreView.axaml, src/DaisyOS.Shell/A
   <data name="Loc_B764CDC0EAB7" xml:space="preserve">
     <value>Tuntematon</value>
     <comment>Source: Unknown
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
+</comment>
   </data>
   <data name="Loc_E462F73BB646" xml:space="preserve">
     <value>Irrota sivupalkista</value>
@@ -4074,12 +3779,7 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   <data name="Loc_B10FB966D720" xml:space="preserve">
     <value>Äänenvoimakkuus</value>
     <comment>Source: Volume
-Used by: src/DaisyOS.Shell/Controls/QuickSettingsSlider.axaml, src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
-  </data>
-  <data name="Loc_E19D580C11BA" xml:space="preserve">
-    <value>Äänenvoimakkuus ja ääni</value>
-    <comment>Source: Volume &amp; Audio
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleQuickMenuOverlay.axaml</comment>
+Used by: src/DaisyOS.Shell/Controls/QuickSettingsSlider.axaml</comment>
   </data>
   <data name="Loc_A11840FCDEB8" xml:space="preserve">
     <value>WI-FI</value>
@@ -4125,11 +3825,6 @@ Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
     <value>Valkoinen</value>
     <comment>Source: White
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml</comment>
-  </data>
-  <data name="Loc_4B3685200606" xml:space="preserve">
-    <value>Wi-Fi-yhteys</value>
-    <comment>Source: Wi-Fi Connection
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml</comment>
   </data>
   <data name="Loc_07367EE22582" xml:space="preserve">
     <value>Wi-Fi-verkko</value>
@@ -4197,11 +3892,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Widgets/WidgetLibraryOverlay.axaml</
     <value>Aikataulusi</value>
     <comment>Source: Your schedule
 Used by: src/DaisyOS.Shell/Apps/Calendar/CalendarView.axaml</comment>
-  </data>
-  <data name="Loc_E5851582D67B" xml:space="preserve">
-    <value>check_circle</value>
-    <comment>Source: check_circle
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleSettingsOverlay.axaml.cs</comment>
   </data>
   <data name="Loc_9BE28BBE03FA" xml:space="preserve">
     <value>cos</value>
@@ -4297,11 +3987,6 @@ Used by: src/DaisyOS.Shell/Apps/Notes/Editor/Code/CodeEditorControl.axaml.cs</co
     <value>{0:hh\:mm\:ss}</value>
     <comment>Source: {0:hh\\:mm\\:ss}
 Used by: src/DaisyOS.Shell/Controls/ShellMetricsPanel.axaml.cs</comment>
-  </data>
-  <data name="Loc_66857759093B" xml:space="preserve">
-    <value>{0} peliä</value>
-    <comment>Source: {0} Games
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml.cs</comment>
   </data>
   <data name="Loc_5C85CA9DC109" xml:space="preserve">
     <value>{0} yhdistetty</value>
@@ -5417,25 +5102,10 @@ Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorViewModel.cs</comment>
     <comment>Source: Force quit
 Used by: src/DaisyOS.Shell/Views/Components/Taskbar/TaskbarView.axaml.cs</comment>
   </data>
-  <data name="Loc_E2784E94894A" xml:space="preserve">
-    <value>Kirjasto • </value>
-    <comment>Source: Library •
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml.cs</comment>
-  </data>
   <data name="Loc_D94EAF694388" xml:space="preserve">
     <value>Muokkaa</value>
     <comment>Source: Modify
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
-  </data>
-  <data name="Loc_6DBC080DB4AB" xml:space="preserve">
-    <value>Valmis pelattavaksi</value>
-    <comment>Source: Ready to play
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml.cs</comment>
-  </data>
-  <data name="Loc_5CD18657E89F" xml:space="preserve">
-    <value>Viimeksi pelattu • </value>
-    <comment>Source: Recently Played •
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleHomeView.axaml.cs</comment>
   </data>
   <data name="Loc_1196B6C538EC" xml:space="preserve">
     <value>Korjaa</value>
@@ -5587,10 +5257,6 @@ Used by: src/DaisyOS.Shell/Apps/Calculator/CalculatorViewModel.cs</comment>
     <value>Avaa pääte</value>
     <comment>Source: Open Terminal</comment>
   </data>
-  <data name="Loc_165AB99C5DA0" xml:space="preserve">
-    <value>Avaa konsolitila</value>
-    <comment>Source: Open console mode</comment>
-  </data>
   <data name="Loc_E1D250D03DF0" xml:space="preserve">
     <value>Avaa Tiedostoissa</value>
     <comment>Source: Open in Files</comment>
@@ -5703,7 +5369,7 @@ Used by: src/DaisyOS.Shell/ViewModels/LauncherItemViewModel.cs</comment>
   <data name="Loc_2664A5C844AD" xml:space="preserve">
     <value>Mediasoitin</value>
     <comment>Source: Media player
-Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml.cs</comment>
+</comment>
   </data>
   <data name="Loc_5ACCF22D0E9A" xml:space="preserve">
     <value>Poista Wi-Fi käytöstä</value>
@@ -5737,18 +5403,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml.cs<
     <value> — {0} ikkunaa</value>
     <comment>Source:  — {0} windows</comment>
   </data>
-  <data name="Loc_6C8E7A69C73B" xml:space="preserve">
-    <value>Signaali: {0}%</value>
-    <comment>Source: Signal: {0}%</comment>
-  </data>
-  <data name="Loc_4BFC9BAC5332" xml:space="preserve">
-    <value>Määritä uudelleen ({0})</value>
-    <comment>Source: Remap ({0})</comment>
-  </data>
-  <data name="Loc_23CDE2595760" xml:space="preserve">
-    <value>[SUORA SYÖTE] {0} painettu → toiminto: {1}</value>
-    <comment>Source: [LIVE FEED] {0} Pressed! -&gt; Mapped Action: {1}</comment>
-  </data>
   <data name="Loc_79E1ACF42732" xml:space="preserve">
     <value>Valitse / käynnistä peli</value>
     <comment>Source: Select / Launch Game</comment>
@@ -5773,10 +5427,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml.cs<
     <value>Vaihda seuraavaan välilehteen</value>
     <comment>Source: Switch Tab Right</comment>
   </data>
-  <data name="Loc_F7E4FE7CE0E5" xml:space="preserve">
-    <value>Vaihda konsolitilaa</value>
-    <comment>Source: Toggle Console Mode</comment>
-  </data>
   <data name="Loc_67D076CAE9B8" xml:space="preserve">
     <value>Edellinen osio</value>
     <comment>Source: Previous section</comment>
@@ -5784,10 +5434,6 @@ Used by: src/DaisyOS.Shell/Views/Components/Console/ConsoleMediaWidget.axaml.cs<
   <data name="Loc_832F90363E60" xml:space="preserve">
     <value>Seuraava osio</value>
     <comment>Source: Next section</comment>
-  </data>
-  <data name="Loc_C5EEDAED8402" xml:space="preserve">
-    <value>Konsolitila</value>
-    <comment>Source: Console mode</comment>
   </data>
   <data name="Loc_944C27E5B97A" xml:space="preserve">
     <value>päivä</value>
