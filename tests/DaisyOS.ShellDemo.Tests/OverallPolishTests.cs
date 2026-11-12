@@ -48,7 +48,8 @@ public sealed class OverallPolishTests
         picker.Show();
         try
         {
-            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
+            var entries = picker.FindControl<ListBox>("EntriesGridView")!;
+            if (!entries.IsVisible) entries = picker.FindControl<ListBox>("EntriesListView")!;
             for (var attempt = 0; attempt < 200 && entries.ItemCount != 5; attempt++) await Task.Delay(10);
             Assert.Equal(5, entries.ItemCount);
             var search = picker.FindControl<SearchBar>("SearchBox")!;
@@ -60,7 +61,7 @@ public sealed class OverallPolishTests
             Assert.Equal("b.bin", entry.Name);
             Assert.False(entry.IsDirectory);
             Assert.False(entry.HasThumbnail);
-            button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            ((ListBox)entries).SelectedItem = entry;
             Assert.Equal(Path.Combine(folder, "b.bin"), Assert.Single(picker.SelectedPaths));
             var sidebar = picker.FindControl<Border>("NavigationSidebar")!;
             Assert.Equal(picker.ClientSize.Height, sidebar.Bounds.Height);
@@ -85,7 +86,8 @@ public sealed class OverallPolishTests
         picker.Show();
         try
         {
-            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
+            var entries = picker.FindControl<ListBox>("EntriesGridView")!;
+            if (!entries.IsVisible) entries = picker.FindControl<ListBox>("EntriesListView")!;
             for (var attempt = 0; attempt < 200 && entries.ItemCount != 2; attempt++) await Task.Delay(10);
             var items = entries.ItemsSource!.Cast<PickerEntry>().ToArray();
             Assert.Equal(2, items.Length);
@@ -107,7 +109,8 @@ public sealed class OverallPolishTests
         picker.Show();
         try
         {
-            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
+            var entries = picker.FindControl<ListBox>("EntriesGridView")!;
+            if (!entries.IsVisible) entries = picker.FindControl<ListBox>("EntriesListView")!;
             for (var attempt = 0; attempt < 200 && entries.ItemCount != 1; attempt++) await Task.Delay(10);
             picker.UpdateLayout();
             var button = entries.GetVisualDescendants().OfType<Button>().Single(control => control.DataContext is PickerEntry);

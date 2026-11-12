@@ -357,7 +357,8 @@ public sealed class UsabilityTests
         picker.Show();
         try
         {
-            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
+            var entries = picker.FindControl<ListBox>("EntriesGridView")!;
+            if (!entries.IsVisible) entries = picker.FindControl<ListBox>("EntriesListView")!;
             for (var attempt = 0; attempt < 100 && entries.ItemCount < 2; attempt++) await Task.Delay(10);
             Assert.Equal(2, entries.ItemCount);
             picker.UpdateLayout();
@@ -365,7 +366,8 @@ public sealed class UsabilityTests
                 Assert.True(Avalonia.Platform.AssetLoader.Exists(new Uri(icon.Path!)), $"Missing picker icon: {icon.Icon}");
             var folderButton = Avalonia.VisualTree.VisualExtensions.GetVisualDescendants(entries)
                 .OfType<Button>().First(button => button.DataContext is PickerEntry { IsDirectory: true });
-            folderButton.Focus();
+            ((ListBox)entries).SelectedItem = folderButton.DataContext;
+            entries.Focus();
             picker.KeyPressQwerty(PhysicalKey.Enter, RawInputModifiers.None);
             picker.KeyReleaseQwerty(PhysicalKey.Enter, RawInputModifiers.None);
             Assert.Equal("Documents", picker.FindControl<TextBlock>("FolderTitle")!.Text);

@@ -32,7 +32,7 @@
                  VerticalAlignment="Top"
                  Margin="4,0,0,0" />
 
-      <!-- Left Column Content: Day Number and Events Summary -->
+      <!-- Left Column Content: Day Number -->
       <Grid x:Name="LeftColumnContent" Grid.Row="1" Grid.Column="0" RowDefinitions="Auto,*" Margin="0,0,8,0" VerticalAlignment="Stretch">
         <TextBlock x:Name="DayNumberText"
                    Grid.Row="0"
@@ -41,15 +41,6 @@
                    FontWeight="Normal"
                    Foreground="{DynamicResource ContentPrimaryBrush}"
                    Margin="0,-4,0,0" />
-
-        <TextBlock x:Name="EventsSummaryText"
-                   Grid.Row="1"
-                   Text="{DynamicResource Loc_4797023B76BE}"
-                   FontSize="{DynamicResource TypeSizeCaption}"
-                   Foreground="{DynamicResource ContentDisabledBrush}"
-                   TextWrapping="Wrap"
-                   VerticalAlignment="Center"
-                   Margin="0,2,0,0" />
       </Grid>
 
       <!-- Right Column Content: Weekday Headers + Days Grid filling all available space -->

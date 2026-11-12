@@ -6,8 +6,10 @@ using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Avalonia.Media.Imaging;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
+using DaisyOS.Shell.Apps.Files.Services;
+using DaisyOS.Shell.Apps.Files.Collections;
 using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Apps.Files;
 using DaisyOS.Shell.Apps.Files.Models;
@@ -18,13 +20,17 @@ public partial class DaisyFilePickerWindow : Window
 {
     private readonly DaisyFilePickerOptions _options;
     private readonly ObservableCollection<PickerEntry> _entries = [];
-    private readonly ObservableCollection<PickerEntry> _visibleEntries = [];
+    private readonly FastObservableCollection<PickerEntry> _visibleEntries = [];
+    private DirectorySession? _session;
+    private bool _visualUpdatePending;
+    private bool _syncingSelection;
+    private readonly DirectorySnapshotService _snapshots = new();
     private readonly ObservableCollection<PickerSelection> _selection = [];
     private readonly Stack<string> _history = new();
     private readonly List<Button> _locationButtons = [];
     private readonly bool _hadInitialSelection;
-    private readonly HashSet<string> _allowedExtensions;
-    private readonly bool _filterByExtensions;
+    private HashSet<string> _allowedExtensions;
+    private bool _filterByExtensions;
     private static readonly HashSet<string> ThumbnailExtensions = new(StringComparer.OrdinalIgnoreCase)
         { ".jpg", ".jpeg", ".png", ".webp", ".bmp", ".gif", ".ico" };
     private string _currentFolder;
@@ -32,9 +38,9 @@ public partial class DaisyFilePickerWindow : Window
     private bool _sortAscending;
     private bool _isGridView;
     private int _navigationVersion;
+    private int _filterVersion;
     private bool _isLoading;
     private string? _loadError;
-    private readonly HashSet<IDisposable> _ownedThumbnails = new(ReferenceEqualityComparer.Instance);
     private static StringComparer PathComparer => OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
     private static StringComparison PathComparison => OperatingSystem.IsWindows() ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
 
@@ -51,7 +57,9 @@ public partial class DaisyFilePickerWindow : Window
             : "Name";
         _sortAscending = preferences.SortAscending;
         _isGridView = preferences.IsGridView;
-        var requestedTypes = options.AllowedExtensions.Select(extension => extension.Trim())
+        var initialFilter = options.Filters is { Count: > 0 } filters
+            ? filters[Math.Clamp(options.SelectedFilterIndex, 0, filters.Count - 1)] : null;
+        var requestedTypes = (initialFilter?.Extensions ?? options.AllowedExtensions).Select(extension => extension.Trim())
             .Where(extension => extension.Length > 0).ToArray();
         _filterByExtensions = requestedTypes.Length > 0 && !requestedTypes.Any(IsAllFilesPattern);
         _allowedExtensions = requestedTypes.Where(extension => !IsAllFilesPattern(extension))
@@ -67,6 +75,10 @@ public partial class DaisyFilePickerWindow : Window
         Loc.RefreshOnChange(this, () => { ApplyViewMode(); ApplyFilter(); UpdateSelectionUi(); });
         EntriesGridView.ItemsSource = _visibleEntries;
         EntriesListView.ItemsSource = _visibleEntries;
+        EntriesGridView.LayoutUpdated += (_, _) => ScheduleVisuals();
+        EntriesListView.LayoutUpdated += (_, _) => ScheduleVisuals();
+        EntriesGridView.SelectionMode = EntriesListView.SelectionMode = options.AllowMultiple && !options.SaveFile
+            ? SelectionMode.Multiple : SelectionMode.Single;
         ApplyViewMode();
         SelectionTray.ItemsSource = _selection;
         AddFolderButton.IsVisible = options.AllowFolderContents || (options.SelectDirectory && options.AllowMultiple);
@@ -82,6 +94,22 @@ public partial class DaisyFilePickerWindow : Window
         {
             if (e.Property == SearchBar.TextProperty) ApplyFilter();
         };
+        if (options.Filters is { Count: > 0 } availableFilters && !options.SelectDirectory)
+        {
+            var filterBox = FileTypeFilter;
+            filterBox.IsVisible = true;
+            filterBox.ItemsSource = availableFilters.Select(filter => filter.Name).ToArray();
+            filterBox.SelectedIndex = Math.Clamp(options.SelectedFilterIndex, 0, availableFilters.Count - 1);
+            filterBox.SelectionChanged += (_, _) =>
+            {
+                if (filterBox.SelectedIndex < 0) return;
+                var patterns = availableFilters[filterBox.SelectedIndex].Extensions;
+                _filterByExtensions = patterns.Count > 0 && !patterns.Any(IsAllFilesPattern);
+                _allowedExtensions = patterns.Select(NormalizeExtension).OfType<string>().ToHashSet(StringComparer.OrdinalIgnoreCase);
+                foreach (var item in _selection.Where(item => !IsAllowedFile(item.Path)).ToArray()) _selection.Remove(item);
+                OpenFolder(_currentFolder, rememberCurrent: false);
+            };
+        }
         LoadLocations();
         SeedSelection(options.InitialSelection ?? []);
         OpenFolder(_currentFolder, rememberCurrent: false);
@@ -96,6 +124,8 @@ public partial class DaisyFilePickerWindow : Window
     {
         if (!string.IsNullOrWhiteSpace(options.InitialFolder) && Directory.Exists(options.InitialFolder))
             return Path.GetFullPath(options.InitialFolder);
+        var selectedFolder = options.SelectDirectory ? options.InitialSelection?.FirstOrDefault(Directory.Exists) : null;
+        if (selectedFolder is not null) return Path.GetFullPath(selectedFolder);
         var first = options.InitialSelection?.FirstOrDefault(File.Exists);
         var parent = first is null ? null : Path.GetDirectoryName(first);
         if (!string.IsNullOrWhiteSpace(parent) && Directory.Exists(parent)) return parent;
@@ -107,18 +137,25 @@ public partial class DaisyFilePickerWindow : Window
 
     private void SeedSelection(IEnumerable<string> paths)
     {
-        foreach (var path in paths.Where(IsAllowedFile).Distinct(PathComparer).Take(_options.AllowMultiple ? int.MaxValue : 1))
-            _selection.Add(new PickerSelection(path, OwnThumbnail(LoadThumbnail(path, 80))));
+        foreach (var path in paths.Where(path => _options.SelectDirectory ? Directory.Exists(path) : IsAllowedFile(path)).Distinct(PathComparer).Take(_options.AllowMultiple ? int.MaxValue : 1))
+            _selection.Add(new PickerSelection(path, null));
         UpdateSelectionUi();
     }
 
     private void LoadLocations()
     {
-        AddLocation("Home", UserDirectoryPaths.Current["Home"], "house");
-        AddLocation("Documents", UserDirectoryPaths.Current["Documents"], "file-text");
-        AddLocation("Pictures", UserDirectoryPaths.Current["Pictures"], "image");
-        AddLocation("Desktop", UserDirectoryPaths.Current["Desktop"], "desktop");
-        AddLocation("Downloads", UserDirectoryPaths.Current["Downloads"], "download-simple");
+        foreach (var path in FilesPreferencesService.Load().StarredPaths ?? [])
+        {
+            var presentation = FileLocationPresentation.Resolve(path);
+            AddLocation(DisplayFolderName(path), path, presentation.Icon, localize: false,
+                target: PinnedLocationsPanel, colorKey: presentation.Kind == FileLocationKind.Generic ? "OrangeSwatchBrush" : presentation.ColorResourceKey);
+        }
+        PinnedLocationsSection.IsVisible = PinnedLocationsPanel.Children.Count > 0;
+        foreach (var name in new[] { "Home", "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music" })
+        {
+            var path = UserDirectoryPaths.Current[name];
+            AddLocation(name, path, FileLocationPresentation.Resolve(path).Icon);
+        }
         foreach (var drive in DriveInfo.GetDrives().Where(IsUserFacingDrive))
             AddLocation(drive.VolumeLabel.Length > 0 ? drive.VolumeLabel : drive.Name, drive.RootDirectory.FullName, "hard-drives", localize: false);
     }
@@ -127,26 +164,28 @@ public partial class DaisyFilePickerWindow : Window
     {
         if (!drive.IsReady) return false;
         var path = drive.RootDirectory.FullName;
-        if (path == Path.GetPathRoot(path)) return path == "/";
+        if (path == Path.GetPathRoot(path)) return OperatingSystem.IsWindows() || path == "/";
         return path.StartsWith("/run/media/", StringComparison.Ordinal)
             || path.StartsWith("/media/", StringComparison.Ordinal)
             || path.StartsWith("/mnt/", StringComparison.Ordinal);
     }
 
-    private void AddLocation(string name, string path, string icon, bool localize = true)
+    private void AddLocation(string name, string path, string icon, bool localize = true, StackPanel? target = null, string? colorKey = null)
     {
-        if (!Directory.Exists(path)) return;
-        var button = new Button { Classes = { "PickerSidebarItem" }, Tag = path };
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("Auto,*"), ColumnSpacing = 9 };
-        grid.Children.Add(new DaisyIcon { Icon = icon, Size = 17, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center });
-        var label = new TextBlock { Text = name, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+        if (!localize && !Directory.Exists(path)) return;
+        var button = new Button { Classes = { "Large", "SettingsNavItem" }, Tag = path };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("24,*") };
+        var locationIcon = new DaisyIcon { Icon = icon, Size = 20, Width = 24, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
+        DaisyOS.Shell.Services.Theming.ThemeResourceBrush.SetForegroundKey(locationIcon, colorKey ?? FileLocationPresentation.Resolve(path).ColorResourceKey);
+        grid.Children.Add(locationIcon);
+        var label = new TextBlock { Text = name, Margin = new Thickness(10, 0, 0, 0), TextTrimming = TextTrimming.CharacterEllipsis, VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center };
         if (localize) Loc.Bind(label, TextBlock.TextProperty, name);
         Grid.SetColumn(label, 1);
         grid.Children.Add(label);
         button.Content = grid;
         button.Click += (_, _) => OpenFolder(path);
         _locationButtons.Add(button);
-        LocationsPanel.Children.Add(button);
+        (target ?? (localize ? LocationsPanel : VolumesPanel)).Children.Add(button);
     }
 
     private void OpenFolder(string path, bool rememberCurrent = true)
@@ -158,24 +197,32 @@ public partial class DaisyFilePickerWindow : Window
         }
         path = Path.GetFullPath(path);
         if (rememberCurrent && !string.Equals(_currentFolder, path, PathComparison)) _history.Push(_currentFolder);
+        if (!_options.AllowMultiple && !PathComparer.Equals(_currentFolder, path)) ClearSelection();
         _currentFolder = path;
         (_isGridView ? (Control)EntriesGridView : EntriesListView).Focus();
         foreach (var location in _locationButtons)
             location.Classes.Set("Active", string.Equals(location.Tag as string, _currentFolder, PathComparison));
+        _filterVersion++;
         _isLoading = true;
         _loadError = null;
         foreach (var entry in _entries) entry.ClearVisual();
         _entries.Clear();
+        _syncingSelection = true;
         _visibleEntries.Clear();
-        ReleaseUnusedThumbnails();
+        _syncingSelection = false;
         SearchBox.Text = string.Empty;
         EmptyState.IsVisible = false;
         AddFolderButton.IsEnabled = false;
         BackButton.IsEnabled = _history.Count > 0;
         UpButton.IsEnabled = Directory.GetParent(_currentFolder) is not null;
+        LocationBox.IsVisible = false;
+        BreadcrumbScroller.IsVisible = true;
         RebuildBreadcrumbs();
         UpdateSelectionUi();
-        _ = LoadFolderAsync(++_navigationVersion);
+        _session?.Dispose();
+        var version = ++_navigationVersion;
+        _session = new DirectorySession(path, version, () => version == _navigationVersion, _ => { }, watchFiles: false);
+        _ = LoadFolderAsync(version);
     }
 
     private async Task LoadFolderAsync(int version)
@@ -184,28 +231,27 @@ public partial class DaisyFilePickerWindow : Window
         FolderSummary.Text = Loc.Get("Loading…");
         var folder = _currentFolder;
         string? error = null;
-        var items = await Task.Run(() =>
+        PickerEntry[] items;
+        try
         {
-            try
-            {
-                var directories = Directory.EnumerateDirectories(folder)
-                    .Where(path => !IsHidden(path)).Select(path => new PickerEntry(path, true));
-                var files = Directory.EnumerateFiles(folder)
-                    .Where(IsAllowedFile).Where(path => !IsHidden(path))
-                    .Select(path => new PickerEntry(path, false));
-                return directories.Concat(files).ToArray();
-            }
-            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
-            {
-                error = "This folder could not be opened. Check that it is available and that you have permission to read it.";
-                return [];
-            }
-        });
+            var snapshot = await _snapshots.EnumerateAsync(folder, _session!.Token);
+            items = await Task.Run(() => snapshot
+                .Where(item => !item.Name.StartsWith('.') && (item.Attributes & FileAttributes.Hidden) == 0)
+                .Where(item => item.IsDirectory || (!_options.SelectDirectory &&
+                    (!_filterByExtensions || _allowedExtensions.Contains(item.Extension))))
+                .Select(item => new PickerEntry(item)).ToArray());
+        }
+        catch (OperationCanceledException) { return; }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            error = "This folder could not be opened. Check that it is available and that you have permission to read it.";
+            items = [];
+        }
         if (version != _navigationVersion) return;
         _isLoading = false;
         _loadError = error;
         _entries.Clear();
-        foreach (var item in SortEntries(items))
+        foreach (var item in items)
         {
             item.IsSelected = _selection.Any(selected => string.Equals(selected.Path, item.Path, PathComparison));
             _entries.Add(item);
@@ -214,43 +260,31 @@ public partial class DaisyFilePickerWindow : Window
         var folderCount = items.Count(item => item.IsDirectory);
         var fileCount = items.Length - folderCount;
         FolderSummary.Text = error ?? $"{folderCount} {(folderCount == 1 ? "folder" : "folders")} · {fileCount} {Pluralize(fileCount)}";
-        // Decode one image at a time and abandon the old folder between images.
-        // A large folder must not queue thousands of thread-pool jobs.
-        foreach (var item in items)
-        {
-            if (version != _navigationVersion) return;
-            await item.LoadVisualAsync();
-        }
+        ScheduleVisuals();
     }
 
-    private IImage? OwnThumbnail(IImage? image)
+    private void ScheduleVisuals()
     {
-        if (image is IDisposable disposable) _ownedThumbnails.Add(disposable);
-        return image;
-    }
-
-    private void ReleaseUnusedThumbnails()
-    {
-        var retained = _entries.Select(item => item.Thumbnail).Concat(_selection.Select(item => item.Thumbnail))
-            .OfType<IDisposable>().ToHashSet(ReferenceEqualityComparer.Instance);
-        foreach (var image in _ownedThumbnails.Where(image => !retained.Contains(image)).ToArray())
+        if (_visualUpdatePending) return;
+        _visualUpdatePending = true;
+        Dispatcher.UIThread.Post(() =>
         {
-            _ownedThumbnails.Remove(image);
-            image.Dispose();
-        }
-    }
-
-    private static IImage? LoadThumbnail(string path, int width)
-    {
-        if (!ThumbnailExtensions.Contains(Path.GetExtension(path))) return null;
-        try
-        {
-            var info = new FileInfo(path);
-            if (!info.Exists || info.Length > 64L * 1024 * 1024) return null;
-            using var stream = File.OpenRead(path);
-            return Bitmap.DecodeToWidth(stream, width);
-        }
-        catch { return null; }
+            _visualUpdatePending = false;
+            if (_isLoading || _session is null || _session.IsDisposed) return;
+            var list = _isGridView ? EntriesGridView : EntriesListView;
+            var scroll = list.GetVisualDescendants().OfType<ScrollViewer>().FirstOrDefault();
+            if (scroll is null) return;
+            var viewport = new Rect(scroll.Bounds.Size);
+            var visible = new List<FileEntryViewModel>();
+            foreach (var container in list.GetRealizedContainers())
+            {
+                if (container.DataContext is not PickerEntry entry) continue;
+                var point = container.TranslatePoint(default, scroll);
+                if (point is not null && new Rect(point.Value, container.Bounds.Size).Intersects(viewport))
+                    visible.Add(entry.File);
+            }
+            _session.Visuals.SetViewport(visible);
+        }, DispatcherPriority.Loaded);
     }
 
     private bool IsAllowedFile(string path) => File.Exists(path) &&
@@ -273,12 +307,6 @@ public partial class DaisyFilePickerWindow : Window
         return extension.Length > 1 && extension[1..].IndexOfAny(['*', '/', '\\']) < 0
             ? extension
             : null;
-    }
-
-    private static bool IsHidden(string path)
-    {
-        try { return Path.GetFileName(path).StartsWith('.') || File.GetAttributes(path).HasFlag(FileAttributes.Hidden); }
-        catch { return true; }
     }
 
     private void RebuildBreadcrumbs()
@@ -311,51 +339,80 @@ public partial class DaisyFilePickerWindow : Window
         return string.IsNullOrWhiteSpace(name) ? path : name;
     }
 
-    private void OnEntryClicked(object? sender, RoutedEventArgs e)
+    private void OnEntriesSelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
-        if (sender is not Button { DataContext: PickerEntry entry }) return;
-        if (entry.IsDirectory) OpenFolder(entry.Path);
-        else if (_options.SaveFile) _saveName.Text = entry.Name;
-        else if (!_options.SelectDirectory) ToggleSelection(entry);
+        if (_syncingSelection || sender is not ListBox list || !list.IsVisible) return;
+        if (_options.SaveFile)
+        {
+            foreach (var item in _entries) item.IsSelected = ReferenceEquals(item, list.SelectedItem);
+            if (list.SelectedItem is PickerEntry { IsDirectory: false } file) _saveName.Text = file.Name;
+            return;
+        }
+        foreach (var entry in e.RemovedItems.OfType<PickerEntry>())
+        {
+            var selected = _selection.FirstOrDefault(item => PathComparer.Equals(item.Path, entry.Path));
+            if (selected is not null) _selection.Remove(selected);
+            entry.IsSelected = false;
+        }
+        foreach (var entry in e.AddedItems.OfType<PickerEntry>())
+        {
+            entry.IsSelected = true;
+            if (entry.IsDirectory != _options.SelectDirectory) continue;
+            if (!_options.AllowMultiple) ClearSelection();
+            if (!_selection.Any(item => PathComparer.Equals(item.Path, entry.Path)))
+                _selection.Add(new PickerSelection(entry.Path, null));
+            entry.IsSelected = true;
+        }
+        UpdateSelectionUi();
     }
 
-    private void OnEntryDoubleTapped(object? sender, RoutedEventArgs e)
+    private void OnEntriesDoubleTapped(object? sender, RoutedEventArgs e)
     {
-        if (sender is not Button { DataContext: PickerEntry entry }) return;
+        if (e.Source is not Control source) return;
+        var container = source as ListBoxItem ?? source.FindAncestorOfType<ListBoxItem>();
+        if (container?.DataContext is not PickerEntry entry) return;
         e.Handled = true;
+        ActivateEntry(entry);
+    }
+
+    private void SyncSelection()
+    {
+        _syncingSelection = true;
+        try
+        {
+            foreach (var list in new[] { EntriesGridView, EntriesListView })
+            {
+                var selected = _visibleEntries.Where(entry => entry.IsSelected).ToArray();
+                if (list.SelectedItems is not { } items || items.Cast<PickerEntry>().ToHashSet().SetEquals(selected)) continue;
+                items.Clear();
+                foreach (var entry in selected) items.Add(entry);
+            }
+        }
+        finally { _syncingSelection = false; }
+    }
+
+    private void ActivateEntry(PickerEntry entry)
+    {
         if (entry.IsDirectory)
         {
             OpenFolder(entry.Path);
             return;
         }
-        if (_options.AllowMultiple || _options.SaveFile || _options.SelectDirectory || !IsAllowedFile(entry.Path))
+        if (_options.SaveFile)
+        {
+            _saveName.Text = entry.Name;
+            OnConfirmClicked(ConfirmButton, new RoutedEventArgs());
+            return;
+        }
+        if (_options.AllowMultiple || _options.SelectDirectory || !IsAllowedFile(entry.Path))
             return;
 
-        // Two Click events may have toggled the row before DoubleTapped fires.
-        // Establish the intended single selection deterministically, then use
-        // the normal confirmation path so validation and portal results match.
+        // Establish the selection before using the shared confirmation validation.
         ClearSelection();
-        _selection.Add(new PickerSelection(entry.Path, OwnThumbnail(LoadThumbnail(entry.Path, 80))));
+        _selection.Add(new PickerSelection(entry.Path, null));
         entry.IsSelected = true;
         UpdateSelectionUi();
         OnConfirmClicked(ConfirmButton, new RoutedEventArgs(Button.ClickEvent));
-    }
-
-    private void ToggleSelection(PickerEntry entry)
-    {
-        var existing = _selection.FirstOrDefault(item => string.Equals(item.Path, entry.Path, PathComparison));
-        if (existing is not null)
-        {
-            _selection.Remove(existing);
-            entry.IsSelected = false;
-        }
-        else
-        {
-            if (!_options.AllowMultiple) ClearSelection();
-            _selection.Add(new PickerSelection(entry.Path, OwnThumbnail(LoadThumbnail(entry.Path, 80))));
-            entry.IsSelected = true;
-        }
-        UpdateSelectionUi();
     }
 
     private void ClearSelection()
@@ -379,6 +436,7 @@ public partial class DaisyFilePickerWindow : Window
         {
             if (!_selection.Any(item => PathComparer.Equals(item.Path, _currentFolder)))
                 _selection.Add(new PickerSelection(_currentFolder, null));
+            foreach (var entry in _entries) entry.IsSelected = _selection.Any(item => PathComparer.Equals(item.Path, entry.Path));
             UpdateSelectionUi();
             return;
         }
@@ -388,7 +446,7 @@ public partial class DaisyFilePickerWindow : Window
         foreach (var entry in candidates)
         {
             if (_selection.Any(item => string.Equals(item.Path, entry.Path, PathComparison))) continue;
-            _selection.Add(new PickerSelection(entry.Path, OwnThumbnail(LoadThumbnail(entry.Path, 80))));
+            _selection.Add(new PickerSelection(entry.Path, null));
             entry.IsSelected = true;
         }
         UpdateSelectionUi();
@@ -396,12 +454,12 @@ public partial class DaisyFilePickerWindow : Window
 
     private void UpdateSelectionUi()
     {
-        ReleaseUnusedThumbnails();
+        SyncSelection();
         if (_options.SaveFile || _options.SelectDirectory)
         {
             SelectionTitle.Text = _options.SelectDirectory && _selection.Count > 0 ? Loc.Format("{0} folders selected", _selection.Count) : _currentFolder;
             SelectionHint.Text = _options.SaveFile ? Loc.Get("Choose a name and location.") : Loc.Get("Choose this folder.");
-            ConfirmButton.Content = _options.SaveFile ? Loc.Get("Save") : Loc.Get("Choose folder");
+            ConfirmButton.Content = _options.AcceptLabel ?? (_options.SaveFile ? Loc.Get("Save") : Loc.Get("Choose folder"));
             var name = _saveName.Text;
             ConfirmButton.IsEnabled = Directory.Exists(_currentFolder) && (!_options.SaveFile ||
                 (!string.IsNullOrWhiteSpace(name) && name == Path.GetFileName(name) && name is not "." and not ".." && name.IndexOfAny(Path.GetInvalidFileNameChars()) < 0));
@@ -419,29 +477,37 @@ public partial class DaisyFilePickerWindow : Window
             : Loc.Get("Select an item again, or use ×, to remove it.");
         SelectionTrayScroller.IsVisible = _selection.Count > 0;
         ConfirmButton.IsEnabled = _selection.Count > 0 || _hadInitialSelection;
-        ConfirmButton.Content = _selection.Count switch
+        ConfirmButton.Content = _options.AcceptLabel ?? (_selection.Count switch
         {
             0 when _hadInitialSelection => Loc.Format("Remove all {0}", _options.ItemNamePlural),
             0 => Loc.Get("Choose"),
             1 => Loc.Format("Choose {0}", _options.ItemNameSingular),
             _ => Loc.Format("Choose {0} {1}", _selection.Count, _options.ItemNamePlural)
-        };
+        });
     }
 
     private string Pluralize(int count) => count == 1 ? _options.ItemNameSingular : _options.ItemNamePlural;
 
-    private void ApplyFilter()
+    private async void ApplyFilter()
     {
+        UpdateSortHeaders();
         var query = SearchBox.Text?.Trim() ?? string.Empty;
         var visible = 0;
-        _visibleEntries.Clear();
-        foreach (var entry in SortEntries(_entries.Where(entry => query.Length == 0 || entry.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase))))
-        {
-            entry.IsVisible = true;
-            _visibleEntries.Add(entry);
-            visible++;
-        }
-        foreach (var entry in _entries.Except(_visibleEntries)) entry.IsVisible = false;
+        var version = ++_filterVersion;
+        var source = _entries.ToArray();
+        var column = _sortColumn;
+        var ascending = _sortAscending;
+        PickerEntry[] Project() => SortEntries(source.Where(entry => query.Length == 0 || entry.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)), column, ascending).ToArray();
+        var matches = source.Length > 512 ? await Task.Run(Project) : Project();
+        if (version != _filterVersion) return;
+        var matching = matches.ToHashSet();
+        foreach (var entry in _entries) entry.IsVisible = matching.Contains(entry);
+        _syncingSelection = true;
+        _visibleEntries.ReplaceAll(matches);
+        _syncingSelection = false;
+        SyncSelection();
+        visible = matches.Length;
+        ScheduleVisuals();
         AddFolderButton.IsEnabled = !_isLoading && (_options.SelectDirectory || _entries.Any(entry => !entry.IsDirectory && entry.IsVisible));
         EmptyState.IsVisible = !_isLoading && visible == 0;
         EmptyStateTitle.Text = _loadError is not null ? Loc.Get("Folder unavailable") : query.Length == 0
@@ -464,6 +530,20 @@ public partial class DaisyFilePickerWindow : Window
     }
 
     private IOrderedEnumerable<PickerEntry> SortEntries(IEnumerable<PickerEntry> entries) => SortEntries(entries, _sortColumn, _sortAscending);
+
+    private void UpdateSortHeaders()
+    {
+        foreach (var (column, button, arrow) in new[]
+        {
+            ("Name", NameColumnHeader, NameSortArrow), ("Date", DateColumnHeader, DateSortArrow),
+            ("Type", TypeColumnHeader, TypeSortArrow), ("Size", SizeColumnHeader, SizeSortArrow)
+        })
+        {
+            button.Classes.Set("SortActive", _sortColumn == column);
+            arrow.IsVisible = _sortColumn == column;
+            arrow.Icon = _sortAscending ? "arrow-up" : "arrow-down";
+        }
+    }
 
     private void SetSort(string column)
     {
@@ -491,6 +571,9 @@ public partial class DaisyFilePickerWindow : Window
     {
         EntriesGridView.IsVisible = _isGridView;
         EntriesListView.IsVisible = !_isGridView;
+        ListColumnHeaders.IsVisible = !_isGridView;
+        SyncSelection();
+        ScheduleVisuals();
         ViewModeIcon.Icon = _isGridView ? "list-view" : "squares-four";
         ToolTip.SetTip(ViewModeIcon, Loc.Get(_isGridView ? "Switch to list view" : "Switch to grid view"));
     }
@@ -535,13 +618,67 @@ public partial class DaisyFilePickerWindow : Window
     }
     private void OnCancelClicked(object? sender, RoutedEventArgs e) => Close(null);
 
+    private void OnLocationKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+        e.Handled = true;
+        try
+        {
+            var input = LocationBox.Text?.Trim() ?? "";
+            if (input == "~") input = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            else if (input.StartsWith("~/", StringComparison.Ordinal))
+                input = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), input[2..]);
+            var path = Path.GetFullPath(input, _currentFolder);
+            if (Directory.Exists(path)) OpenFolder(path);
+            else FolderSummary.Text = Loc.Get("This folder is no longer available. Choose another location.");
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or NotSupportedException)
+        {
+            FolderSummary.Text = Loc.Get("This folder is no longer available. Choose another location.");
+        }
+    }
+
     private void OnWindowKeyDown(object? sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
         {
             e.Handled = true;
-            if (!string.IsNullOrEmpty(SearchBox.Text)) SearchBox.Text = string.Empty;
+            if (LocationBox.IsVisible)
+            {
+                LocationBox.IsVisible = false;
+                BreadcrumbScroller.IsVisible = true;
+                (_isGridView ? EntriesGridView : EntriesListView).Focus();
+            }
+            else if (!string.IsNullOrEmpty(SearchBox.Text)) SearchBox.Text = string.Empty;
             else Close(null);
+        }
+        else if (e.Key == Key.L && e.KeyModifiers == KeyModifiers.Control)
+        {
+            BreadcrumbScroller.IsVisible = false;
+            LocationBox.IsVisible = true;
+            LocationBox.Text = _currentFolder;
+            LocationBox.Focus();
+            LocationBox.SelectAll();
+            e.Handled = true;
+        }
+        else if (e.Key == Key.F5)
+        {
+            OpenFolder(_currentFolder, rememberCurrent: false);
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Enter && e.KeyModifiers == KeyModifiers.None &&
+                 (EntriesGridView.IsKeyboardFocusWithin || EntriesListView.IsKeyboardFocusWithin))
+        {
+            var list = _isGridView ? EntriesGridView : EntriesListView;
+            if (list.SelectedItem is PickerEntry { IsDirectory: true } directory) OpenFolder(directory.Path);
+            else OnConfirmClicked(this, new RoutedEventArgs());
+            e.Handled = true;
+        }
+        else if (e.Key == Key.A && e.KeyModifiers == KeyModifiers.Control && _options.AllowMultiple &&
+                 (EntriesGridView.IsKeyboardFocusWithin || EntriesListView.IsKeyboardFocusWithin))
+        {
+            OnAddFolderClicked(this, new RoutedEventArgs());
+            e.Handled = true;
         }
         else if (e.Key == Key.F && e.KeyModifiers == KeyModifiers.Control)
         {
@@ -568,9 +705,9 @@ public partial class DaisyFilePickerWindow : Window
     protected override void OnClosed(EventArgs e)
     {
         Interlocked.Increment(ref _navigationVersion);
+        _filterVersion++;
+        _session?.Dispose();
         foreach (var entry in _entries) entry.ClearVisual();
-        foreach (var image in _ownedThumbnails) image.Dispose();
-        _ownedThumbnails.Clear();
         base.OnClosed(e);
     }
 }
@@ -594,6 +731,12 @@ public sealed class PickerEntry : INotifyPropertyChanged
         {
             snapshot = new FileEntrySnapshot(global::System.IO.Path.GetFullPath(path), global::System.IO.Path.GetFileName(path.TrimEnd(global::System.IO.Path.DirectorySeparatorChar)), isDirectory ? string.Empty : global::System.IO.Path.GetExtension(path).ToLowerInvariant(), isDirectory, isDirectory ? FileAttributes.Directory : FileAttributes.Normal, 0, 0);
         }
+        _file = new FileEntryViewModel(snapshot);
+        _file.PropertyChanged += (_, e) => Changed(e.PropertyName);
+    }
+    internal FileEntryViewModel File => _file;
+    public PickerEntry(FileEntrySnapshot snapshot)
+    {
         _file = new FileEntryViewModel(snapshot);
         _file.PropertyChanged += (_, e) => Changed(e.PropertyName);
     }

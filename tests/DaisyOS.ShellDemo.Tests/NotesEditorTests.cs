@@ -535,12 +535,12 @@ public sealed class NotesEditorTests
             view.OnInsertImageClicked(null, new RoutedEventArgs());
             Dispatcher.UIThread.RunJobs();
             var picker = Assert.IsType<DaisyOS.Shell.Apps.Files.Picker.DaisyFilePickerWindow>(Assert.Single(window.OwnedWindows));
-            var entries = picker.FindControl<ItemsControl>("EntriesGridView")!;
+            var entries = picker.FindControl<ListBox>("EntriesGridView")!;
+            if (!entries.IsVisible) entries = picker.FindControl<ListBox>("EntriesListView")!;
             // Give the real picker a fixture file without changing the user's Pictures folder.
             entries.ItemsSource = new[] { new DaisyOS.Shell.Apps.Files.Picker.PickerEntry(path, false) };
             picker.UpdateLayout();
-            var tile = entries.GetVisualDescendants().OfType<Button>().First(button => button.DataContext is DaisyOS.Shell.Apps.Files.Picker.PickerEntry entry && entry.Path == path);
-            tile.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            entries.SelectedItem = entries.Items[0];
             var confirm = picker.FindControl<Button>("ConfirmButton")!;
             Assert.True(confirm.IsEnabled);
             confirm.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));

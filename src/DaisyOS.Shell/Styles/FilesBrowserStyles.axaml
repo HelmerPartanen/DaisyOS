@@ -1,0 +1,75 @@
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Flat Column Header Buttons -->
+    <Style Selector="Button.ColumnHeader">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="4,0" />
+      <Setter Property="Height" Value="{DynamicResource ControlHeightStandard}" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}" />
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="HorizontalContentAlignment" Value="Left" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="Button.ColumnHeader TextBlock">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Foreground" Duration="{DynamicResource MotionDurationBase}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="Button.ColumnHeader:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="Button.ColumnHeader:pointerover TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <Style Selector="Button.ColumnHeader.SortActive TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector="Button.ColumnHeader:not(.SortActive) TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
+      <Setter Property="FontWeight" Value="Regular" />
+    </Style>
+
+    <!-- Clean ListBox Item Style -->
+    <Style Selector="ListBoxItem">
+      <Setter Property="Padding" Value="0" />
+      <Setter Property="Margin" Value="0,1" />
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+    </Style>
+    <!-- The presenter owns row feedback. Avoid a second animated fill on its parent. -->
+    <Style Selector="ListBoxItem:pointerover, ListBoxItem:selected, ListBoxItem:selected:pointerover">
+      <Setter Property="Background" Value="Transparent" />
+    </Style>
+    <Style Selector="ListBoxItem /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Transitions">
+        <Transitions>
+          <BrushTransition Property="Background" Duration="{DynamicResource MotionDurationHover}" />
+        </Transitions>
+      </Setter>
+    </Style>
+    <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:not(:selected):pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateHoverBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StatePressedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected:focus /template/ ContentPresenter#PART_ContentPresenter">
+      <Setter Property="Background" Value="{DynamicResource StateSelectedBrush}" />
+    </Style>
+    <Style Selector="ListBoxItem:selected TextBlock">
+      <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}" />
+    </Style>
+    <!-- Note: DaisyIcon foreground for selected items is inherited via the icon's Foreground binding on IconColor,
+         so we only force text here. Icon colors are per-item bindings and won't be overridden here. -->
+
+</Styles>
