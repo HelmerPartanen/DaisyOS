@@ -59,7 +59,13 @@ mkdir -p "$cache_root"
 exec 9>"$cache_root/install.lock"
 flock 9
 cmake_generator=()
-if command -v ninja >/dev/null 2>&1; then
+# Retain a working cached generator when build tools change between logins.
+# Passing -G Ninja to an existing Makefiles tree aborts session startup.
+if [[ -f "$cache_root/ecm-build/CMakeCache.txt" ]] &&
+   grep -Fqx 'CMAKE_GENERATOR:INTERNAL=Unix Makefiles' "$cache_root/ecm-build/CMakeCache.txt" &&
+   command -v make >/dev/null 2>&1; then
+  cmake_generator=(-G 'Unix Makefiles')
+elif command -v ninja >/dev/null 2>&1; then
   cmake_generator=(-G Ninja)
 fi
 ecm_fresh=()

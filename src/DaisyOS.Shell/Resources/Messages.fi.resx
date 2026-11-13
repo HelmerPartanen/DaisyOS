@@ -7401,4 +7401,14 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</commen
     <comment>Source: Manage account name, password, automatic sign-in and hint
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.Accounts.cs</comment>
   </data>
+  <data name="Loc_723FBD6C9A5E" xml:space="preserve">
+    <value>Vapauta muistia työpöydän ollessa piilossa</value>
+    <comment>Source: Free memory while the desktop is hidden
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_C29D7BEB8922" xml:space="preserve">
+    <value>Vapauta käyttämätöntä työpöytämuistia sen ollessa piilossa. Muistin siivous keskeytetään pelitilan ajaksi.</value>
+    <comment>Source: Return unused desktop memory while hidden. Memory cleanup pauses during Gaming Mode.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
 </root>

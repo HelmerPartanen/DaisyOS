@@ -188,3 +188,41 @@ The comparator reports median, MAD, and range for settled memory, CPU, and
 system-pressure context. It exits unsuccessfully when fewer than three runs are
 provided, the environment/annotations differ, the five-minute samples are
 missing, PSS coverage is incomplete, or the 700 MiB median budget is exceeded.
+
+## Profile startup stages and application resources
+
+Set `DAISYOS_STARTUP_TRACE=1` for opt-in diagnostic stage logs in each child
+process. Stages include application construction, shared XAML resources,
+language/appearance, window construction/opening and content render completion.
+Logs include elapsed time, total managed allocation and Gen2 collection count.
+Logging adds overhead: keep it disabled for acceptance timing and use the same
+setting for both comparison runs. Reports record the setting and reject a
+traced/untraced comparison. Older pre-tracing reports default to disabled.
+
+For an alternating app startup/PSS comparison between two saved Shell assemblies:
+
+```sh
+python3 scripts/benchmark-app-startup-resources.py --app notes \
+  --baseline-shell /path/to/baseline/DaisyOS.Shell.dll \
+  --candidate-shell src/DaisyOS.Shell/bin/Release/net10.0/DaisyOS.Shell.dll \
+  --output /tmp/notes-startup-resources.json
+```
+
+Build the Release app first. Both variants use the same app entry and runtime
+dependencies, with isolated fixture/configuration data. The runner copies entry
+files and substitutes only the Shell assembly, alternates order, discards two
+warmups per variant and retains seven measured launches. It validates the exact
+child/token readiness signal and reads PSS/RSS/private bytes at readiness.
+This is a `dotnet`-hosted diagnostic, separate from the apphost-based OS score;
+it does not measure settled or peak memory. Shared-memory attribution can change
+with other running programs, so compare paired variants within a capture.
+
+Protocol checks: `python3 scripts/test-app-startup-resources.py`.
+
+Use `--appearance-file /path/to/baseline-appearance.json` to hold app appearance
+constant when the live desktop preferences have changed. Supply the full
+`environment.comparable.appearance` object from the baseline report. The runner
+copies that exact JSON snapshot into its temporary config and records the parsed
+values; it never rewrites the user's preferences. Explicit missing or invalid
+snapshots fail the run. Display, driver, compositor and other environment checks
+still apply.

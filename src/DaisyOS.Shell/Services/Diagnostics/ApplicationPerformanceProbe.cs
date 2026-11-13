@@ -63,6 +63,7 @@ public static class ApplicationPerformanceProbe
 
     private static void Publish(string id, string? error)
     {
+        ApplicationStartupTrace.Mark(error is null ? "content-rendered" : "content-failed");
         var result = new PerformanceReadySignal(1, Token!, id, Environment.ProcessId, error is null ? "initial-content-rendered" : "failed", error);
         var path = ResultPath!;
         File.WriteAllText(path + ".tmp", global::System.Text.Json.JsonSerializer.Serialize(result, PerformanceProbeJsonContext.Default.PerformanceReadySignal));

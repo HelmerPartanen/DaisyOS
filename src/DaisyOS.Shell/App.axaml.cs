@@ -252,6 +252,7 @@ public partial class App : Application
 
     public App(Action<App, IClassicDesktopStyleApplicationLifetime>? applicationStartup)
     {
+        ApplicationStartupTrace.Mark("app-constructor-start");
         _recentPrefetch = new(enabled: applicationStartup is null &&
             Environment.GetEnvironmentVariable("DAISYOS_PREFETCH") == "1");
         _applicationStartup = applicationStartup;
@@ -273,19 +274,25 @@ public partial class App : Application
         Dispatcher.UIThread.UnhandledException += OnDispatcherUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
         AppDomain.CurrentDomain.UnhandledException += OnProcessUnhandledException;
+        ApplicationStartupTrace.Mark("app-constructor-end");
     }
 
     public override void Initialize()
     {
+        ApplicationStartupTrace.Mark("app-resources-start");
         AvaloniaXamlLoader.Load(this);
+        ApplicationStartupTrace.Mark("app-resources-loaded");
         ApplyLanguageResources();
+        ApplicationStartupTrace.Mark("language-ready");
     }
 
     public override void OnFrameworkInitializationCompleted()
     {
         if (_applicationStartup is not null && ApplicationLifetime is IClassicDesktopStyleApplicationLifetime application)
         {
+            ApplicationStartupTrace.Mark("appearance-start");
             ApplyInitialApplicationAppearance();
+            ApplicationStartupTrace.Mark("appearance-ready");
             _applicationStartup(this, application);
             base.OnFrameworkInitializationCompleted();
             return;
@@ -2143,7 +2150,8 @@ public partial class App : Application
         _memoryTrimmer = new ShellMemoryTrimmer(
             // Read from a timer thread; these are simple flag reads.
             () => IsShellHiddenFromUser() && ReleaseMemoryWhenHiddenEnabled(),
-            () => Dispatcher.UIThread.Invoke(ReclaimHiddenShellCaches));
+            () => Dispatcher.UIThread.Invoke(ReclaimHiddenShellCaches),
+            () => SessionState.GamingMode);
     }
 
     private bool ReleaseMemoryWhenHiddenEnabled() => Volatile.Read(ref _releaseMemoryWhenHidden);

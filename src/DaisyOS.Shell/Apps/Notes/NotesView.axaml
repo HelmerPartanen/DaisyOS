@@ -195,8 +195,9 @@
       </StackPanel>
       
       <!-- Rich Editor Area (Visible when a rich note is selected) -->
-      <rich:RichEditorView x:Name="RichEditor"
-                           IsVisible="{Binding SelectedNote.IsRichNote, FallbackValue=False}" />
+      <ContentControl x:Name="RichEditorHost"
+                      HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                      IsVisible="{Binding SelectedNote.IsRichNote, FallbackValue=False}" />
 
       <!-- Code / Plain Text Editor Area (Visible when code or plain text note is selected) -->
       <Grid IsVisible="{Binding !SelectedNote.IsRichNote, FallbackValue=False}"
@@ -231,9 +232,9 @@
         </Border>
 
         <!-- Code Editor -->
-        <code:CodeEditorControl Grid.Row="1"
-                                x:Name="CodeEditor"
-                                IsVisible="{Binding !SelectedNote.IsRichNote, FallbackValue=False}" />
+        <ContentControl Grid.Row="1" x:Name="CodeEditorHost"
+                        HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                        IsVisible="{Binding !SelectedNote.IsRichNote, FallbackValue=False}" />
       </Grid>
       </Grid>
       </Grid>

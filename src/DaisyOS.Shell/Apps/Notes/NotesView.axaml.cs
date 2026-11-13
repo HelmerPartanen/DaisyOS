@@ -5,6 +5,8 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using DaisyOS.Shell.Services.Motion;
+using DaisyOS.Shell.Apps.Notes.Editor.Code;
+using DaisyOS.Shell.Apps.Notes.Editor.Rich;
 
 namespace DaisyOS.Shell.Apps.Notes;
 
@@ -14,13 +16,40 @@ public partial class NotesView : UserControl
     private NotesViewModel? _subscribedViewModel;
     private NoteItem? _currentNote;
     private Documents.NotePackage? _loadedPackage;
+    private RichEditorView? _richEditor;
+    private CodeEditorControl? _codeEditor;
+
+    private RichEditorView RichEditor
+    {
+        get
+        {
+            if (_richEditor is not null) return _richEditor;
+            _richEditor = new RichEditorView { Name = "RichEditor" };
+            _richEditor.DocumentChanged += OnRichDocumentChanged;
+            RichEditorHost.Content = _richEditor;
+            return _richEditor;
+        }
+    }
+
+    private CodeEditorControl CodeEditor
+    {
+        get
+        {
+            if (_codeEditor is not null) return _codeEditor;
+            _codeEditor = new CodeEditorControl { Name = "CodeEditor" };
+            _codeEditor.TextContentChanged += OnCodeEditorTextChanged;
+            CodeEditorHost.Content = _codeEditor;
+            return _codeEditor;
+        }
+    }
 
     public NotesView()
     {
         InitializeComponent();
 
-        RichEditor.DocumentChanged += OnRichDocumentChanged;
-        CodeEditor.TextContentChanged += OnCodeEditorTextChanged;
+        // Editors are retained only after their document type is first opened.
+        // Empty/plain-text windows do not construct the rich formatting UI, and
+        // rich-note windows do not construct the code editor/highlighting stack.
     }
 
     protected override void OnDataContextChanged(EventArgs e)

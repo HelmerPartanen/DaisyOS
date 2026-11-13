@@ -11,7 +11,9 @@ public static class StandaloneApplication
 {
     public static int Run(string id, string[] args, Func<App, Window> create, Action<Window, string[]> activate)
     {
+        Diagnostics.ApplicationStartupTrace.Mark("entry");
         Theming.LinuxTextLibraryIsolation.EnsureLoaded();
+        Diagnostics.ApplicationStartupTrace.Mark("text-library-ready");
         Environment.SetEnvironmentVariable("DAISYOS_SHELL_SESSION", null);
         var name = ApplicationPipe.Name(id);
         using var ownership = new Mutex(false, "Global\\" + name);
@@ -33,14 +35,20 @@ public static class StandaloneApplication
         {
             Program.BuildAvaloniaApp(() => new App((app, desktop) =>
             {
+                Diagnostics.ApplicationStartupTrace.Mark("window-create-start");
                 var window = ClientSideDecorationsWindow.Create(() => create(app));
+                Diagnostics.ApplicationStartupTrace.Mark("window-created");
                 NativeAppWindowSizing.Apply(window);
                 if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
                     WaylandWindow.SetAppId(window, Diagnostics.ApplicationPerformanceProbe.AppId(id));
                 Diagnostics.ApplicationPerformanceProbe.Attach(window, id);
                 desktop.MainWindow = window;
                 desktop.ShutdownMode = ShutdownMode.OnMainWindowClose;
-                window.Opened += (_, _) => activate(window, args);
+                window.Opened += (_, _) =>
+                {
+                    Diagnostics.ApplicationStartupTrace.Mark("window-opened");
+                    activate(window, args);
+                };
                 var stop = new CancellationTokenSource();
                 _ = ApplicationPipe.ServeAsync(name, async request =>
                 {

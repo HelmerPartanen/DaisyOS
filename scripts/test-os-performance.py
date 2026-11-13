@@ -15,6 +15,21 @@ spec.loader.exec_module(performance)
 
 
 class PerformanceProtocolTests(unittest.TestCase):
+    def test_appearance_snapshot_is_exact_and_explicit_missing_or_invalid_input_fails(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            source, target = root / 'source.json', root / 'isolated.json'
+            self.assertEqual({}, performance.snapshot_appearance(source, target))
+            self.assertFalse(target.exists())
+            with self.assertRaisesRegex(ValueError, 'does not exist'):
+                performance.snapshot_appearance(source, target, required=True)
+            source.write_text('{"taskbarSize": 2}\n')
+            self.assertEqual({'taskbarSize': 2}, performance.snapshot_appearance(source, target, required=True))
+            self.assertEqual(source.read_bytes(), target.read_bytes())
+            source.write_text('[]')
+            with self.assertRaisesRegex(ValueError, 'JSON object'):
+                performance.snapshot_appearance(source, target, required=True)
+
     def metrics(self, multiplier=1):
         return {name: performance.summarize([reference * multiplier] * 7)
                 for name, (reference, _, _) in performance.METRICS.items()}
@@ -89,6 +104,15 @@ class PerformanceProtocolTests(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()) as console:
             performance.compare_reports(before, after, True)
         self.assertIn("QUALIFIED COMPARISON", console.getvalue())
+
+    def test_startup_tracing_must_match_and_legacy_reports_default_to_disabled(self):
+        before, after = self.report(), self.report()
+        after["startupTraceEnabled"] = False
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(1, performance.compare_reports(before, after))
+        after["startupTraceEnabled"] = True
+        with self.assertRaisesRegex(ValueError, "startup tracing"):
+            performance.compare_reports(before, after, True)
 
     def test_incomplete_or_incompatible_reports_are_rejected(self):
         for field, value in (("status", "failed"), ("protocol", "v2"), ("fixtureHash", "different"), ("samples", 30), ("warmups", 0)):

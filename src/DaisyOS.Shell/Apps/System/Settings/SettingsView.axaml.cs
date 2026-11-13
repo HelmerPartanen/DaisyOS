@@ -782,11 +782,11 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 }, "Balanced", "Power saver", "Performance"));
 
             var energyRows = new List<Control>();
-            energyRows.Add(Toggle("Free desktop memory while gaming or locked", PowerPreferences.ReleaseMemoryWhenGamingKey,
+            energyRows.Add(Toggle("Free memory while the desktop is hidden", PowerPreferences.ReleaseMemoryWhenGamingKey,
                 PowerPreferences.ParseBool(Current(PowerPreferences.ReleaseMemoryWhenGamingKey, "true"), true),
                 SaveBool(PowerPreferences.ReleaseMemoryWhenGamingKey)));
             AddSection(Loc.Get("ENERGY AND MEMORY"),
-                Loc.Get("Reduce background work and return unused desktop memory to games and apps."),
+                Loc.Get("Return unused desktop memory while hidden. Memory cleanup pauses during Gaming Mode."),
                 energyRows.ToArray());
         }
 

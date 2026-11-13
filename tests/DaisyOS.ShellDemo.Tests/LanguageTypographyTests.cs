@@ -19,6 +19,38 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class LanguageTypographyTests
 {
     [AvaloniaTheory]
+    [InlineData("Inter")]
+    [InlineData("Atkinson Hyperlegible")]
+    [InlineData("Noto Sans")]
+    [InlineData("DejaVu Sans")]
+    [InlineData("DejaVu Serif")]
+    [InlineData("Liberation Sans")]
+    [InlineData("Noto Fangsong KSS Rotated")]
+    [InlineData("Noto Fangsong KSS Vertical")]
+    [InlineData("Noto Serif Khitan Small Script")]
+    public void SharedFontMeasurementPreservesEveryRoleAndSupportedScale(string family)
+    {
+        var roles = new (string Role, double Size, double Line)[] {
+            ("Caption", 12, 16), ("BodySmall", 13, 18), ("Body", 14, 20), ("BodyLarge", 16, 24),
+            ("Title", 20, 28), ("Heading", 24, 32), ("Display", 32, 40),
+            ("DisplayLarge", 44, 52), ("DisplayHero", 104, 112) };
+        var typeface = new Typeface(TypographyPolicy.ResolveFontFamily(family));
+        for (var percent = 90; percent <= 150; percent++)
+        {
+            var resources = new ResourceDictionary();
+            TypographyPolicy.Apply(resources, family, percent);
+            foreach (var (role, baseSize, baseLine) in roles)
+            {
+                var scale = percent / 100d;
+                var size = Math.Round(baseSize * scale, MidpointRounding.AwayFromZero);
+                using var previousMeasurement = new TextLayout("ÅÉgjpq 日本語 العربية हिन्दी", typeface, size);
+                Assert.Equal(size, resources["TypeSize" + role]);
+                Assert.Equal(Math.Ceiling(Math.Max(baseLine * scale, previousMeasurement.Height)), resources["TypeLine" + role]);
+            }
+        }
+    }
+
+    [AvaloniaTheory]
     [InlineData(FontWeight.Normal, FontStyle.Normal)]
     [InlineData(FontWeight.Bold, FontStyle.Normal)]
     [InlineData(FontWeight.Normal, FontStyle.Italic)]

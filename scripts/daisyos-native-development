@@ -190,17 +190,19 @@ show_status() {
     exit 1
   fi
 
-  local supervisor_pid kwin_pid shell_pid socket outcome
+  local supervisor_pid kwin_pid shell_pid socket outcome configuration
   supervisor_pid="$(read_runtime_value supervisor.pid || true)"
   kwin_pid="$(read_runtime_value kwin.pid || true)"
   shell_pid="$(read_runtime_value shell.pid || true)"
   socket="$(read_runtime_value wayland-display || true)"
   outcome="$(read_runtime_value last-status || true)"
+  configuration="$(read_runtime_value shell.configuration || true)"
 
   printf 'DaisyOS native development session\n'
   printf '  Supervisor: %s\n' "${supervisor_pid:-unavailable}"
   printf '  KWin: %s\n' "${kwin_pid:-unavailable}"
   printf '  Shell: %s\n' "${shell_pid:-not running}"
+  printf '  Build configuration: %s\n' "${configuration:-unavailable}"
   printf '  Wayland socket: %s\n' "${socket:-unavailable}"
   printf '  Last outcome: %s\n' "${outcome:-unavailable}"
 

@@ -9,7 +9,13 @@ cache_root="${XDG_CACHE_HOME:-$HOME/.cache}/daisyos/kwin-frame-effect"
 [[ ! -d "$cache_root/ecm-prefix" ]] || cmake_args+=(-DCMAKE_PREFIX_PATH="$cache_root/ecm-prefix")
 [[ ! -d "$cache_root/vulkan-headers/include" ]] || cmake_args+=(-DVulkan_INCLUDE_DIR="$cache_root/vulkan-headers/include")
 cmake_generator=()
-if command -v ninja >/dev/null 2>&1; then
+# Retain a working cached generator when build tools change between logins.
+# Passing -G Ninja to an existing Makefiles tree aborts session startup.
+if [[ -f "$build_dir/CMakeCache.txt" ]] &&
+   grep -Fqx 'CMAKE_GENERATOR:INTERNAL=Unix Makefiles' "$build_dir/CMakeCache.txt" &&
+   command -v make >/dev/null 2>&1; then
+  cmake_generator=(-G 'Unix Makefiles')
+elif command -v ninja >/dev/null 2>&1; then
   cmake_generator=(-G Ninja)
 fi
 cmake_fresh=()

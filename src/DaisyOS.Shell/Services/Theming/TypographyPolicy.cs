@@ -61,12 +61,24 @@ public static class TypographyPolicy
         var scale = Math.Clamp(scalePercent, 90, 150) / 100d;
         resources["ShellFontFamily"] = font;
         resources["SystemFontFamilyName"] = family;
+        // Shape once to resolve the multilingual fallback faces. Scale their
+        // individual design metrics in the same order as TextLine, rather than
+        // scaling a combined height: floating-point reassociation can otherwise
+        // change Math.Ceiling by a pixel at integer boundaries.
+        using var measured = new TextLayout(MetricSample, typeface, 64);
+        var metrics = new List<FontMetrics> { typeface.GlyphTypeface.Metrics };
+        foreach (var formattedLine in measured.TextLines)
+        foreach (var run in formattedLine.TextRuns)
+        {
+            if (run is not ShapedTextRun shaped) continue;
+            var fallback = shaped.GlyphRun.GlyphTypeface.Metrics;
+            if (!metrics.Contains(fallback)) metrics.Add(fallback);
+        }
         foreach (var (role, baseSize, baseLine) in Roles)
         {
             var size = Math.Round(baseSize * scale, MidpointRounding.AwayFromZero);
-            using var measured = new TextLayout(MetricSample, typeface, size);
             resources["TypeSize" + role] = size;
-            resources["TypeLine" + role] = Math.Ceiling(Math.Max(baseLine * scale, measured.Height));
+            resources["TypeLine" + role] = Math.Ceiling(Math.Max(baseLine * scale, ScaleLineHeight(metrics, size)));
         }
         // Inputs use Body; buttons use BodySmall. Leave an equal vertical inset
         // around the taller line, and round once to the shared 4px geometry grid.
@@ -88,5 +100,23 @@ public static class TypographyPolicy
         foreach (var (legacy, role) in new[] { ("Caption", "Caption"), ("Body", "BodySmall"),
             ("Subtitle", "BodyLarge"), ("Title", "Title"), ("Display", "Display") })
             resources["Typography" + legacy + "Size"] = resources["TypeSize" + role];
+    }
+
+    private static double ScaleLineHeight(IReadOnlyList<FontMetrics> metrics, double size)
+    {
+        var first = metrics[0];
+        var scale = size / first.DesignEmHeight;
+        var ascent = first.Ascent * scale;
+        var descent = first.Descent * scale;
+        var lineGap = first.LineGap * scale;
+        for (var index = 1; index < metrics.Count; index++)
+        {
+            var font = metrics[index];
+            scale = size / font.DesignEmHeight;
+            ascent = Math.Min(ascent, font.Ascent * scale);
+            descent = Math.Max(descent, font.Descent * scale);
+            lineGap = Math.Max(lineGap, font.LineGap * scale);
+        }
+        return descent - ascent + lineGap;
     }
 }

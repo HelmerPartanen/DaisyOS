@@ -10,10 +10,10 @@ namespace DaisyOS.Shell.Services.Diagnostics;
 ///
 /// The shell keeps managed heap and native (Skia/HarfBuzz/glibc) allocations
 /// around after windows, menus and wallpapers close because neither the .NET
-/// GC nor glibc's allocator give pages back eagerly. When nobody can see the
-/// shell — a game or fullscreen app covers the desktop, the screen is locked
-/// or turned off — that retained memory is pure waste, so this service
-/// compacts the managed heap and asks glibc to release free arenas.
+/// GC nor glibc's allocator give pages back eagerly. While the shell is
+/// hidden, this service can compact the managed heap and ask glibc
+/// to release free arenas. Gaming suspends explicit maintenance: compacting,
+/// finalizer waits and allocator walks compete with game loading and frames.
 /// </summary>
 internal sealed partial class ShellMemoryTrimmer : IDisposable
 {
@@ -28,6 +28,7 @@ internal sealed partial class ShellMemoryTrimmer : IDisposable
     private readonly Timer _debounce;
     private readonly Timer _periodic;
     private readonly Func<bool> _isShellHidden;
+    private readonly Func<bool> _isGamingActive;
     private DateTime _lastAggressiveUtc = DateTime.MinValue;
     private int _running;
     private bool _mallocTrimUnavailable;
@@ -37,9 +38,12 @@ internal sealed partial class ShellMemoryTrimmer : IDisposable
 
     /// <param name="isShellHidden">True while no shell surface is visible to the user.</param>
     /// <param name="reclaimHiddenViews">Synchronously releases caches of hidden views; called off the UI thread.</param>
-    public ShellMemoryTrimmer(Func<bool> isShellHidden, Action? reclaimHiddenViews = null)
+    /// <param name="isGamingActive">Suppresses explicit maintenance during gameplay; normal runtime GC still operates.</param>
+    public ShellMemoryTrimmer(Func<bool> isShellHidden, Action? reclaimHiddenViews = null,
+        Func<bool>? isGamingActive = null)
     {
         _isShellHidden = isShellHidden;
+        _isGamingActive = isGamingActive ?? (() => false);
         _reclaimHiddenViews = reclaimHiddenViews;
         _debounce = new Timer(_ => Run(aggressive: true), null, Timeout.Infinite, Timeout.Infinite);
         _periodic = new Timer(_ => OnPeriodic(), null, PeriodicInterval, PeriodicInterval);
@@ -57,7 +61,7 @@ internal sealed partial class ShellMemoryTrimmer : IDisposable
 
     private void OnPeriodic()
     {
-        // While hidden (gaming, locked, screen off) keep the footprint small;
+        // While hidden (locked, screen off) keep the footprint small;
         // when visible, only intervene if the whole system is short of memory.
         if (_isShellHidden()) Run(aggressive: true);
         else if (IsUnderPressure()) Run(aggressive: false);
@@ -65,6 +69,10 @@ internal sealed partial class ShellMemoryTrimmer : IDisposable
 
     private void Run(bool aggressive)
     {
+        // Recheck at execution time: a debounced hide request can outlive the
+        // hidden state, or a game can start before the timer fires. Do not queue
+        // catch-up work on game exit. Runtime GC and OS pressure policy remain active.
+        if (_isGamingActive() || (aggressive && !_isShellHidden())) return;
         if (Interlocked.Exchange(ref _running, 1) == 1) return;
         try
         {

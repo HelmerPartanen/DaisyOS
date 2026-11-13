@@ -166,7 +166,7 @@ public sealed class NotesEditorTests
             Dispatcher.UIThread.RunJobs();
             using var frame = window.CaptureRenderedFrame();
             Assert.NotNull(frame);
-            var rich = view.FindControl<RichEditorView>("RichEditor")!;
+            var rich = Assert.IsType<RichEditorView>(view.FindControl<ContentControl>("RichEditorHost")!.Content);
             var newButton = view.FindControl<Button>("NewNoteButton")!;
             var openButton = view.FindControl<Button>("OpenNoteButton")!;
             Assert.Contains("Primary", newButton.Classes);
@@ -224,6 +224,89 @@ public sealed class NotesEditorTests
             Assert.InRange(Math.Abs(toolbar.Bounds.Center.X - rich.Bounds.Width / 2), 0, 1);
         }
         finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void OnlyDocumentTypesOpenedByTheUserCreateAnEditor()
+    {
+        using var folder = new TemporaryFolder();
+        using var model = new NotesViewModel(folder.Path);
+        var view = new NotesView { DataContext = model };
+        var window = Show(view);
+        try
+        {
+            var richHost = view.FindControl<ContentControl>("RichEditorHost")!;
+            var codeHost = view.FindControl<ContentControl>("CodeEditorHost")!;
+            Assert.Null(richHost.Content);
+            Assert.Null(codeHost.Content);
+
+            model.AddNote();
+            var richNote = model.SelectedNote!;
+            var rich = Assert.IsType<RichEditorView>(richHost.Content);
+            Assert.Null(codeHost.Content);
+            Dispatcher.UIThread.RunJobs();
+            Assert.True(rich.IsEffectivelyVisible);
+
+            var path = Path.Combine(folder.Path, "plain.txt");
+            File.WriteAllText(path, "Plain note text");
+            model.InsertExternalNote(path);
+            var code = Assert.IsType<CodeEditorControl>(codeHost.Content);
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            Assert.False(code.HasSyntaxHighlighting);
+            Assert.Equal("Plain note text", code.GetText());
+            Assert.True(code.IsEffectivelyVisible);
+            Assert.Same(rich, richHost.Content);
+
+            model.SelectedNote = richNote;
+            Dispatcher.UIThread.RunJobs();
+            window.UpdateLayout();
+            Assert.Same(rich, richHost.Content);
+            Assert.Same(code, codeHost.Content);
+            Assert.True(rich.IsEffectivelyVisible);
+            Assert.False(code.IsEffectivelyVisible);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
+    public void SyntaxHighlightingIsLazyAndReleasedAcrossDocumentAndAttachmentChanges()
+    {
+        var view = new CodeEditorControl();
+        Assert.False(view.HasSyntaxHighlighting);
+        var window = Show(view, 600);
+        try
+        {
+            var editor = view.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+            view.LoadText("Plain text", FormatDetector.PlainText);
+            Assert.False(view.HasSyntaxHighlighting);
+            Assert.Equal("Plain text", view.GetText());
+            Assert.True(editor.WordWrap);
+
+            view.LoadText("class Example {}", new DocumentFormat(DocumentKind.Code, "csharp", "C#"));
+            Assert.True(view.HasSyntaxHighlighting);
+            Assert.False(editor.WordWrap);
+            Assert.Equal("class Example {}", view.GetText());
+
+            view.LoadText("Plain again", FormatDetector.PlainText);
+            Assert.False(view.HasSyntaxHighlighting);
+            Assert.Equal("Plain again", view.GetText());
+
+            view.LoadText("# Heading", FormatDetector.Markdown);
+            Assert.True(view.HasSyntaxHighlighting);
+            Assert.True(editor.WordWrap);
+            window.Content = null;
+            Assert.False(view.HasSyntaxHighlighting);
+            window.Content = view;
+            Assert.True(view.HasSyntaxHighlighting);
+            Assert.Equal("# Heading", view.GetText());
+
+            view.LoadText("", FormatDetector.Binary);
+            Assert.False(view.HasSyntaxHighlighting);
+            Assert.True(view.IsBinary);
+        }
+        finally { window.Close(); }
+        Assert.False(view.HasSyntaxHighlighting);
     }
 
     [AvaloniaFact]
@@ -387,11 +470,11 @@ public sealed class NotesEditorTests
         var window = Show(view);
         try
         {
-            var rich = view.FindControl<RichEditorView>("RichEditor")!;
+            var rich = Assert.IsType<RichEditorView>(view.FindControl<ContentControl>("RichEditorHost")!.Content);
             Editors(rich).Single().InsertText("Rich content");
             model.InsertExternalNote(path);
             var textNote = model.SelectedNote!;
-            var editor = view.FindControl<CodeEditorControl>("CodeEditor")!.FindControl<AvaloniaEdit.TextEditor>("Editor")!;
+            var editor = Assert.IsType<CodeEditorControl>(view.FindControl<ContentControl>("CodeEditorHost")!.Content).FindControl<AvaloniaEdit.TextEditor>("Editor")!;
             editor.Text = "print('changed')\n";
             Assert.Equal("Rich content", richNote.Content);
             Assert.Equal(editor.Text, textNote.Content);

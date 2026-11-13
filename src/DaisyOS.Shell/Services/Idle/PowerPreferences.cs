@@ -16,6 +16,8 @@ public static class PowerPreferences
     public const string SuspendOnBatteryTimeoutKey = "power.suspend-timeout-battery";
     public const string LockOnSuspendKey = "power.lock-on-sleep";
     public const string PauseLiveWallpaperOnBatteryKey = "power.pause-live-wallpaper-on-battery";
+    // Retain the persisted key for compatibility; gaming now suspends explicit
+    // maintenance even when hidden-desktop reclamation is enabled.
     public const string ReleaseMemoryWhenGamingKey = "power.release-memory-when-gaming";
 
     /// <summary>Legacy key used before the Power page existed (lock timeout).</summary>

@@ -111,6 +111,21 @@ def environment(configuration):
             "backend": "Wayland" if os.environ.get("WAYLAND_DISPLAY") else "X11"}
 
 
+def snapshot_appearance(source, target, required=False):
+    if not source.exists():
+        if required:
+            raise ValueError(f"Appearance fixture does not exist: {source}")
+        return {}
+    content = source.read_bytes()
+    settings = json.loads(content)
+    if not isinstance(settings, dict):
+        raise ValueError("Appearance fixture must be a JSON object")
+    # Read once: the recorded settings must match the isolated child's bytes,
+    # even if the user edits the original preferences during the benchmark.
+    target.write_bytes(content)
+    return settings
+
+
 def fixture_filesystem(path):
     target = str(Path(path).resolve())
     candidates = []
@@ -293,6 +308,7 @@ def make_report(args):
         if file_hash(directory / "DaisyOS.Shell.dll") != shared_hash:
             raise RuntimeError("App/harness shared assemblies are out of sync; rebuild with --build")
     report = {"protocol": PROTOCOL, "createdUtc": datetime.now(timezone.utc).isoformat(), "status": "running", "score": None,
+              "startupTraceEnabled": os.environ.get("DAISYOS_STARTUP_TRACE") == "1",
               "samples": args.samples, "warmups": args.warmups, "fixture": FIXTURE, "environment": environment(args.configuration),
               "timingBoundary": "Parent process launch to authenticated initial-content-rendered signal; includes <=2 ms polling plus signal IO. Render completion is not compositor presentation.",
               "cachePolicy": "Fresh processes, warmed filesystem caches; no system cache flush", "metrics": {}, "failures": [],
@@ -307,11 +323,8 @@ def make_report(args):
         source_config = Path(os.environ.get("XDG_CONFIG_HOME", str(Path.home() / ".config"))) / "DaisyOS"
         config = scratch / "config" / "DaisyOS"
         config.mkdir(parents=True)
-        appearance = source_config / "appearance.json"
-        appearance_settings = {}
-        if appearance.exists():
-            shutil.copy2(appearance, config / "appearance.json")
-            appearance_settings = json.loads(appearance.read_text())
+        appearance = args.appearance_file or source_config / "appearance.json"
+        appearance_settings = snapshot_appearance(appearance, config / "appearance.json", required=args.appearance_file is not None)
         report["environment"]["comparable"]["appearance"] = appearance_settings
         report["thirdPartyMetrics"] = {}
         if not args.skip_chrome:
@@ -390,6 +403,8 @@ def print_report(report):
 def compare_reports(before, after, allow_environment=False):
     if before.get("status") != "passed" or after.get("status") != "passed":
         raise ValueError("Only successful, complete reports can be compared")
+    if before.get("startupTraceEnabled", False) != after.get("startupTraceEnabled", False):
+        raise ValueError("Incompatible startup tracing; use the same diagnostic setting for both runs")
     for field in ("protocol", "fixtureHash", "fixture", "samples", "warmups", "cachePolicy"):
         if before.get(field) != after.get(field):
             raise ValueError(f"Incompatible benchmark {field}")
@@ -446,6 +461,7 @@ def main():
     run.add_argument("--chrome-binary", help="Path to Google Chrome executable")
     run.add_argument("--skip-chrome", action="store_true", help="Explicitly omit third-party startup timing")
     run.add_argument("--build", action="store_true", help="Build apps and harness before timing begins")
+    run.add_argument("--appearance-file", type=Path, help="Use this JSON appearance snapshot in isolated app config without changing desktop preferences")
     run.add_argument("--output", type=Path, required=True)
     compare = commands.add_parser("compare")
     compare.add_argument("before", type=Path)

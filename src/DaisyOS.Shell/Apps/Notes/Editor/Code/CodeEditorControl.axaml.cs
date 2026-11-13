@@ -42,6 +42,7 @@ public partial class CodeEditorControl : UserControl
 
     public TextFileContent? FileContent => _fileContent;
     public DocumentFormat Format => _format;
+    internal bool HasSyntaxHighlighting => _textMateInstallation is not null;
 
     public event EventHandler? TextContentChanged;
 
@@ -57,7 +58,9 @@ public partial class CodeEditorControl : UserControl
         Editor.TextArea.Caret.PositionChanged += OnCaretPositionChanged;
         Editor.TextChanged += OnTextChanged;
 
-        InitializeTextMate();
+        // Plain text and the unused editor behind rich notes need no syntax
+        // registry, grammar worker or theme. Create those only for code/Markdown.
+        ApplyEditorSurface();
         ActualThemeVariantChanged += (_, _) => UpdateEditorTheme();
     }
 
@@ -92,17 +95,22 @@ public partial class CodeEditorControl : UserControl
 
     protected override void OnDetachedFromVisualTree(VisualTreeAttachmentEventArgs e)
     {
-        _textMateInstallation?.Dispose();
-        _textMateInstallation = null;
+        ReleaseTextMate();
         base.OnDetachedFromVisualTree(e);
     }
 
     protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
     {
         base.OnAttachedToVisualTree(e);
-        if (_textMateInstallation == null) InitializeTextMate();
-        UpdateEditorTheme();
         ConfigureForFormat(_format);
+        UpdateEditorTheme();
+    }
+
+    private void ReleaseTextMate()
+    {
+        _textMateInstallation?.Dispose();
+        _textMateInstallation = null;
+        _registryOptions = null;
     }
 
     public void OpenFile(string filePath)
@@ -116,6 +124,7 @@ public partial class CodeEditorControl : UserControl
 
             if (format.Kind == DocumentKind.Binary)
             {
+                ReleaseTextMate();
                 IsBinary = true;
                 _fileContent = null;
                 _format = format;
@@ -171,6 +180,12 @@ public partial class CodeEditorControl : UserControl
         {
             Editor.Bind(FontFamilyProperty, this.GetResourceObservable("ShellFontFamily"));
         }
+
+        if (format.Kind is DocumentKind.Code or DocumentKind.Markdown)
+        {
+            if (_textMateInstallation is null) InitializeTextMate();
+        }
+        else ReleaseTextMate();
 
         if (_textMateInstallation != null && _registryOptions != null)
         {
