@@ -132,6 +132,11 @@ public class DesktopItemViewModel : INotifyPropertyChanged
         RowSpan = Math.Max(1, rowSpan);
     }
 
+    private bool _isDesktopVisible = true;
+    public bool IsDesktopVisible { get => _isDesktopVisible; set => SetField(ref _isDesktopVisible, value); }
+    private int _desktopIconSize = 48;
+    public int DesktopIconSize { get => _desktopIconSize; set => SetField(ref _desktopIconSize, value); }
+
     private string _label = string.Empty;
     public string Label
     {
@@ -337,6 +342,49 @@ public class DesktopViewModel : INotifyPropertyChanged
         }
     }
 
+    public DesktopPreferences Preferences { get; private set; } = new();
+    private DesktopGridMetrics? _lastMetrics;
+    private bool _compactRequested;
+
+    public void ApplyPreferences(DesktopPreferences preferences, DesktopGridMetrics? metrics = null, bool arrange = true)
+    {
+        var alignmentChanged = preferences.Alignment != Preferences.Alignment;
+        var rearrange = alignmentChanged || (!Preferences.AutoArrange && preferences.AutoArrange);
+        Preferences = preferences;
+        foreach (var item in Items)
+        {
+            ApplyItemPreferences(item);
+            if (!item.IsDesktopVisible) item.IsSelected = false;
+        }
+        metrics ??= _lastMetrics;
+        if (metrics != null && rearrange && arrange)
+        {
+            if (alignmentChanged && Items.FirstOrDefault(item => item.IsTrash) is { } trash)
+            {
+                var cell = DesktopOccupancyMap.GetFillCells(metrics, Preferences.Alignment).FirstOrDefault(candidate =>
+                    !Items.Any(item => item.IsWidgetCard && DesktopOccupancyMap.ItemsOverlap(candidate, 1, 1,
+                        new GridCell(item.State.Column, item.State.Row), item.ColumnSpan, item.RowSpan)), new GridCell(-1, -1));
+                if (cell.Column >= 0) CommitCell(trash, cell, metrics);
+            }
+            CalculateLayout(metrics, forceAutoArrange: true);
+            SaveLayout();
+        }
+    }
+
+    private void ApplyItemPreferences(DesktopItemViewModel item)
+    {
+        item.IsDesktopVisible = item.IsWidgetCard ? Preferences.ShowWidgets : item.IsTrash ? Preferences.ShowItems && Preferences.ShowTrash : Preferences.ShowItems;
+        item.DesktopIconSize = Preferences.IconSize;
+    }
+
+    private void CompactAfterRemoval(DesktopGridMetrics? metrics)
+    {
+        _compactRequested = Preferences.FillGaps || Preferences.AutoArrange;
+        metrics ??= _lastMetrics;
+        if (metrics != null) CalculateLayout(metrics);
+        SaveLayout();
+    }
+
     private readonly DesktopLayoutStore _layoutStore;
     private readonly HashSet<string> _removedWidgetIds = new();
     private FileSystemWatcher? _desktopWatcher;
@@ -346,6 +394,7 @@ public class DesktopViewModel : INotifyPropertyChanged
     public DesktopViewModel(DesktopLayoutStore? layoutStore = null)
     {
         _layoutStore = layoutStore ?? new DesktopLayoutStore();
+        if (Application.Current is App app) Preferences = DesktopPreferences.Read(app.GetPreference);
         LoadDesktopItems();
         InitializeDesktopWatcher();
         RefreshTrashIcon();
@@ -452,10 +501,7 @@ public class DesktopViewModel : INotifyPropertyChanged
             _itemMap.Remove(id);
             _committedCells.Remove(id);
             Items.Remove(item);
-            if (metrics != null)
-            {
-                CalculateLayout(metrics);
-            }
+            CompactAfterRemoval(metrics);
         }
     }
 
@@ -785,6 +831,8 @@ public class DesktopViewModel : INotifyPropertyChanged
     {
         if (_itemMap.ContainsKey(item.Id)) return;
         item.IsEditMode = IsEditMode;
+        _compactRequested |= Preferences.AutoArrange;
+        ApplyItemPreferences(item);
         _itemMap[item.Id] = item;
         Items.Add(item);
         var cell = new GridCell(item.State.Column, item.State.Row);
@@ -1055,7 +1103,7 @@ public class DesktopViewModel : INotifyPropertyChanged
         _itemMap.Remove(item.Id);
         _committedCells.Remove(item.Id);
         RefreshTrashIcon();
-        SaveLayout();
+        CompactAfterRemoval(metrics);
         LayoutRequested?.Invoke();
         return true;
     }
@@ -1114,13 +1162,12 @@ public class DesktopViewModel : INotifyPropertyChanged
         _itemMap.Remove(item.Id);
         _committedCells.Remove(item.Id);
 
-        if (metrics != null) CalculateLayout(metrics);
-        SaveLayout();
+        CompactAfterRemoval(metrics);
     }
 
     public void ResizeWidget(DesktopItemViewModel item, int columnSpan, int rowSpan, DesktopGridMetrics? metrics = null)
     {
-        if (!item.IsWidgetCard) return;
+        if (!item.IsWidgetCard || Preferences.LockLayout) return;
 
         columnSpan = Math.Max(1, columnSpan);
         rowSpan = Math.Max(1, rowSpan);
@@ -1412,7 +1459,7 @@ public class DesktopViewModel : INotifyPropertyChanged
 
     public bool ReorderItem(DesktopItemId sourceId, GridCell targetCell, GridCell centerCell, DesktopGridMetrics? metrics)
     {
-        if (metrics == null || !_itemMap.TryGetValue(sourceId, out var sourceItem))
+        if (Preferences.LockLayout || metrics == null || !_itemMap.TryGetValue(sourceId, out var sourceItem))
             return false;
 
         int maxCol = Math.Max(0, metrics.ColumnCount - sourceItem.ColumnSpan);
@@ -1429,6 +1476,7 @@ public class DesktopViewModel : INotifyPropertyChanged
             return false;
 
         var currentCell = GetCommittedCell(sourceId);
+        if (currentCell.Equals(targetCell)) return false;
 
         if (sourceItem.IsWidgetCard)
         {
@@ -1533,39 +1581,21 @@ public class DesktopViewModel : INotifyPropertyChanged
                 }
             }
 
-            // Flow standard items into free cells in order
-            var normalItems = Items
-                .Where(i => !i.IsWidgetCard && !i.IsTrash)
-                .OrderBy(i => i.State.SortOrder)
-                .ToList();
-
-            int currentCol = 0;
-            int currentRow = 0;
-            for (int i = 0; i < normalItems.Count; i++)
+            // Preserve every unaffected icon before relocating only those covered by a widget.
+            var normalItems = Items.Where(i => !i.IsWidgetCard && !i.IsTrash).OrderBy(i => i.State.SortOrder).ToList();
+            var displaced = new List<DesktopItemViewModel>();
+            foreach (var item in normalItems)
             {
-                while (currentCol < metrics.ColumnCount && map.IsOccupied(new GridCell(currentCol, currentRow)))
-                {
-                    currentRow++;
-                    if (currentRow >= metrics.RowCount)
-                    {
-                        currentRow = 0;
-                        currentCol++;
-                    }
-                }
-
-                if (currentCol < metrics.ColumnCount)
-                {
-                    var cell = new GridCell(currentCol, currentRow);
-                    map.Occupy(normalItems[i].Id.Value, cell);
-                    CommitCell(normalItems[i], cell, metrics, i);
-
-                    currentRow++;
-                    if (currentRow >= metrics.RowCount)
-                    {
-                        currentRow = 0;
-                        currentCol++;
-                    }
-                }
+                var cell = GetCommittedCell(item.Id);
+                if (!map.IsOccupied(cell)) map.Occupy(item.Id.Value, cell);
+                else displaced.Add(item);
+            }
+            foreach (var item in displaced)
+            {
+                var cell = DesktopOccupancyMap.GetFillCells(metrics, Preferences.Alignment).FirstOrDefault(c => !map.IsOccupied(c), new GridCell(-1, -1));
+                if (cell.Column < 0) continue;
+                map.Occupy(item.Id.Value, cell);
+                CommitCell(item, cell, metrics);
             }
 
             return true;
@@ -1764,6 +1794,13 @@ public class DesktopViewModel : INotifyPropertyChanged
 
     public void CalculateLayout(DesktopGridMetrics metrics, bool forceAutoArrange = false)
     {
+        _lastMetrics = metrics;
+        foreach (var item in Items)
+        {
+            ApplyItemPreferences(item);
+            item.State.ColumnSpan = item.ColumnSpan;
+            item.State.RowSpan = item.RowSpan;
+        }
         var map = new DesktopOccupancyMap(metrics);
         var trash = Items.FirstOrDefault(item => item.IsTrash);
         var states = Items.Where(item => !item.IsTrash).Select(item => item.State).ToList();
@@ -1775,9 +1812,18 @@ public class DesktopViewModel : INotifyPropertyChanged
             map.Occupy(trash.Id.Value, cell);
             trashState = new DesktopItemState(trash.Id.Value, metrics.MonitorId, cell.Column, cell.Row, trash.State.SortOrder);
         }
-        var newStates = map.AutoArrange(states, forceAutoArrange).ToList();
+        if (_compactRequested && !forceAutoArrange)
+        {
+            var rank = DesktopOccupancyMap.GetFillCells(metrics, Preferences.Alignment).Select((cell, index) => (cell, index)).ToDictionary(x => x.cell, x => x.index);
+            var order = 0;
+            foreach (var state in states.Where(x => x.ColumnSpan == 1 && x.RowSpan == 1).OrderBy(x => rank.GetValueOrDefault(new GridCell(x.Column, x.Row), int.MaxValue)))
+                state.SortOrder = order++;
+        }
+        var newStates = map.AutoArrange(states, forceAutoArrange || _compactRequested, Preferences.Alignment).ToList();
         if (trashState != null) newStates.Insert(0, trashState);
 
+        _compactRequested = false;
+        var layoutChanged = false;
         _committedCells.Clear();
 
         foreach (var state in newStates)
@@ -1785,6 +1831,7 @@ public class DesktopViewModel : INotifyPropertyChanged
             var item = Items.FirstOrDefault(i => i.State.Id == state.Id);
             if (item != null)
             {
+                layoutChanged |= item.State.Column != state.Column || item.State.Row != state.Row || item.State.MonitorId != state.MonitorId;
                 item.State.Column = state.Column;
                 item.State.Row = state.Row;
                 item.State.MonitorId = state.MonitorId;
@@ -1797,6 +1844,7 @@ public class DesktopViewModel : INotifyPropertyChanged
                 item.Y = cellOrigin.Y;
             }
         }
+        if (layoutChanged) SaveLayout();
     }
 
     public static void MoveItem<T>(IList<T> list, int fromIndex, int toIndex)

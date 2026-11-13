@@ -153,7 +153,7 @@ public class DesktopReorderPanel : Panel
                 item.X = origin.X;
                 item.Y = origin.Y;
 
-                if (!item.IsTrash && !_suppressFlipOnce && _previousGeometry.TryGetValue(item.Id, out var prev))
+                if (!item.IsTrash && Application.Current is not App { ReduceMotionEnabled: true } && !_suppressFlipOnce && _previousGeometry.TryGetValue(item.Id, out var prev))
                 {
                     double dX = prev.Origin.X - newOrigin.X;
                     double dY = prev.Origin.Y - newOrigin.Y;
@@ -165,6 +165,13 @@ public class DesktopReorderPanel : Panel
 
                     if (hasMove || hasResize)
                     {
+                        // Retarget from the visible animated position, not the old destination.
+                        // Only retarget when layout changes; idle arrange passes must not restart motion.
+                        var live = control.RenderTransform?.Value ?? Matrix.Identity;
+                        dX += live.M31;
+                        dY += live.M32;
+                        scaleX *= live.M11;
+                        scaleY *= live.M22;
                         double transX = Math.Abs(dX) < 0.001 ? 0 : dX;
                         double transY = Math.Abs(dY) < 0.001 ? 0 : dY;
                         string transformStr = FormattableString.Invariant(

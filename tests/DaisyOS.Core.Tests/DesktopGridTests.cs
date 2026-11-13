@@ -56,4 +56,18 @@ public class DesktopGridTests
         Assert.Equal(5, resolved2.Column);
         Assert.Equal(4, resolved2.Row);
     }
+    [Theory]
+    [InlineData(DesktopAlignment.Left, 0, 0, 0, 1)]
+    [InlineData(DesktopAlignment.Right, 3, 0, 3, 1)]
+    [InlineData(DesktopAlignment.Top, 0, 0, 1, 0)]
+    [InlineData(DesktopAlignment.Bottom, 0, 2, 1, 2)]
+    public void AlignmentFillsFromTheSelectedEdge(DesktopAlignment alignment, int c1, int r1, int c2, int r2)
+    {
+        var metrics = new DesktopGridMetrics("test", new Rect(0, 0, 400, 300), 96, 100, 100);
+        var map = new DesktopOccupancyMap(metrics);
+        var result = map.AutoArrange(new[] { new DesktopItemState("A", "test", -1, -1), new DesktopItemState("B", "test", -1, -1, 1) }, true, alignment).ToArray();
+        Assert.Equal(new GridCell(c1, r1), new GridCell(result[0].Column, result[0].Row));
+        Assert.Equal(new GridCell(c2, r2), new GridCell(result[1].Column, result[1].Row));
+    }
+
 }

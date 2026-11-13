@@ -14,7 +14,7 @@
                     HorizontalAlignment="Stretch"
                     VerticalAlignment="Stretch"
                     Padding="0"
-                    Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                    Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                     CornerRadius="{DynamicResource RoundedXXL}">
               <Border.Transitions>
                 <Transitions>
@@ -24,7 +24,7 @@
               </Border.Transitions>
               <Panel>
                 <Border Name="InnerSurface"
-                        Margin="1"
+                        Margin="{DynamicResource ShellFrameSurfaceInset}"
                         Background="{TemplateBinding Background}"
                         CornerRadius="{DynamicResource RoundedXXLDoubleInset}"
                         ClipToBounds="True">
@@ -37,7 +37,7 @@
                 </Border>
                 <Border Background="Transparent"
                         BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                        BorderThickness="1"
+                        BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                         CornerRadius="{DynamicResource RoundedXXLInset}"
                         IsHitTestVisible="False" />
               </Panel>

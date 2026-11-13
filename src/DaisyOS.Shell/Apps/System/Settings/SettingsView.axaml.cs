@@ -92,13 +92,14 @@ namespace DaisyOS.Shell.Apps.System.Settings
             ("SYSTEM", ["System", "Displays", "Sound"]),
             ("HARDWARE", ["Battery"]),
             ("CONNECTIONS", ["Network", "Ethernet", "Bluetooth", "Continuity"]),
-            ("PERSONALIZATION", ["Appearance", "LockScreen", "Notifications", "Apps", "Password"]),
+            ("PERSONALIZATION", ["Appearance", "Desktop", "LockScreen", "Notifications", "Apps", "Password"]),
             ("GAMING", ["Gaming"]),
             ("MANAGEMENT", ["Storage", "Accessibility", "Input", "DateTime", "About"])
         ];
 
         private static readonly SettingsSearchEntry[] SearchIndex =
         [
+            new("Desktop", "LAYOUT", "Desktop layout", "Arrange icons, widgets and desktop items", "desktop auto arrange alignment left right top bottom fill gaps lock icons widgets trash single click size"),
             new("Continuity", "CONTINUITY", "Device pairing", "Pair trusted DaisyOS devices on the local network", "continuity pair device laptop desktop lan"),
             new("Continuity", "CONTINUITY", "Text clipboard", "Share copied text with a trusted device", "continuity clipboard copy paste"),
             new("Continuity", "CONTINUITY", "File sharing", "Send files to a paired DaisyOS device", "continuity file transfer send receive"),
@@ -121,7 +122,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("LockScreen", "", "Date & time", "Date, time format, dimming, battery and media", "lock screen date battery media privacy dim wallpaper format"),
             new("Appearance", "", "Theme", "Light, dark, and automatic appearance", "dark light theme mode appearance"),
             new("Appearance", "", "Taskbar size", "Minimum, default or maximum", "taskbar dock size height scale"),
-            new("Appearance", "", "Taskbar and systembar", "Always visible or auto-hide", "taskbar systembar system bar dock auto-hide maximize fullscreen"),
+            new("Appearance", "", "Auto-hide bottom components", "Hide the taskbar, system bar and media controls together", "taskbar systembar system bar media dock auto-hide maximize fullscreen"),
             new("Appearance", "", "Profile picture", "Shown in the launcher and on the lock screen.", "profile avatar account user photo picture"),
             new("Appearance", "", "Wallpaper", "Desktop picture or video wallpaper", "wallpaper background picture video live"),
             new("Appearance", "", "Accent color", "Control and focus colors", "accent colour color focus"),
@@ -472,6 +473,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
 
         public void SelectCategory(string category, string? section = null)
         {
+            if (string.Equals(category, "desktop", StringComparison.OrdinalIgnoreCase)) category = "Desktop";
             Services.Diagnostics.ResponsivenessTrace.Feedback(this, "settings-navigation");
             var navigationCategory = category == "InstalledApps" ? "Apps" : category;
             foreach (var button in GetNavigationButtons())
@@ -529,6 +531,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 "LockScreen" => Loc.Get("Lock Screen"),
                 "Displays" => Loc.Get("Displays"),
+                "Desktop" => Loc.Get("Desktop"),
                 "Battery" => Loc.Get("Battery"),
                 "Password" => Loc.Get("Account"),
                 "Sound" => Loc.Get("Sound"),
@@ -596,6 +599,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             var description = category switch
             {
                 "Displays" => Loc.Get("Arrange screens and tune how content is presented."),
+                "Desktop" => Loc.Get("Choose how desktop icons and widgets look, move and open."),
                 "Battery" => Loc.Get("Review battery status and choose how your device uses power."),
                 "Password" => Loc.Get("Manage your account details, password, sign-in options, and hint."),
                 "Sound" => Loc.Get("Choose devices and control every active audio stream."),
@@ -620,6 +624,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             switch (category)
             {
                 case "Displays": BuildDisplays(buildVersion); break;
+                case "Desktop": BuildDesktop(); break;
                 case "Battery": BuildBattery(buildVersion); break;
                 case "Password": BuildPassword(buildVersion); break;
                 case "Sound": BuildSound(buildVersion); break;
@@ -3221,7 +3226,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 "Profile picture" => ChooseProfilePictureButton,
                 "Theme" => ThemeModePicker,
                 "Taskbar size" => TaskbarSizeSlider,
-                "Taskbar and systembar" => TaskbarVisibilityPicker,
+                "Auto-hide bottom components" => BottomComponentsAutoHideToggle,
                 "Wallpaper" => WallpaperTypePicker,
                 "Accent color" => AccentDefaultButton,
                 "System font" => SystemFontPicker,
@@ -3303,7 +3308,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             picker.Classes.Add("ThemeModePicker");
             foreach (var option in options)
             {
-                var item = new ComboBoxItem { Content = key.StartsWith("power.", StringComparison.Ordinal) || key == "input.pointer-speed" || key == "time.clock-format" ? Loc.Get(option) : option, Tag = option };
+                var item = new ComboBoxItem { Content = key.StartsWith("power.", StringComparison.Ordinal) || key == "input.pointer-speed" || key == "time.clock-format" || key.StartsWith("desktop.", StringComparison.Ordinal) ? Loc.Get(option) : option, Tag = option };
                 item.Classes.Add("ThemeModeOption");
                 picker.Items.Add(item);
             }
@@ -3883,25 +3888,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
             await app.SetTaskbarSizeAsync(size);
         }
 
-        private async void OnTaskbarVisibilitySelectionChanged(object? sender, SelectionChangedEventArgs e)
+        private async void OnBottomComponentsAutoHideToggled(object? sender, RoutedEventArgs e)
         {
-            if (_isRefreshingAppearanceControls || TaskbarVisibilityPicker.SelectedItem is not ComboBoxItem { Tag: string value } || Application.Current is not App app)
-                return;
-            await app.SetTaskbarAutoHideAsync(value == "AutoHide");
-        }
-
-        private async void OnMediaWidgetVisibilitySelectionChanged(object? sender, SelectionChangedEventArgs e)
-        {
-            if (_isRefreshingAppearanceControls || MediaWidgetVisibilityPicker.SelectedItem is not ComboBoxItem { Tag: string value } || Application.Current is not App app)
-                return;
-            await app.SetMediaWidgetAutoHideAsync(value == "AutoHide");
-        }
-
-        private async void OnSystemBarVisibilitySelectionChanged(object? sender, SelectionChangedEventArgs e)
-        {
-            if (_isRefreshingAppearanceControls || SystemBarVisibilityPicker.SelectedItem is not ComboBoxItem { Tag: string value } || Application.Current is not App app)
-                return;
-            await app.SetSystemBarAutoHideAsync(value == "AutoHide");
+            if (!_isRefreshingAppearanceControls && Application.Current is App app)
+                await app.SetBottomComponentsAutoHideAsync(BottomComponentsAutoHideToggle.IsChecked == true);
         }
 
         private async Task LoadPersonalizationOptionsAsync(bool force = false)
@@ -4029,9 +4019,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 TaskbarSizeSlider.Value = app.CurrentTaskbarSize;
             }
-            SelectComboByTag(TaskbarVisibilityPicker, app.TaskbarAutoHideEnabled ? "AutoHide" : "Always");
-            SelectComboByTag(SystemBarVisibilityPicker, app.SystemBarAutoHideEnabled ? "AutoHide" : "Always");
-            SelectComboByTag(MediaWidgetVisibilityPicker, app.MediaWidgetAutoHideEnabled ? "AutoHide" : "Always");
+            BottomComponentsAutoHideToggle.IsChecked = app.TaskbarAutoHideEnabled && app.SystemBarAutoHideEnabled && app.MediaWidgetAutoHideEnabled;
             SelectComboByTag(SystemFontPicker, app.CurrentSystemFontFamily);
             RestoreDefaultFontButton.IsEnabled = !string.Equals(app.CurrentSystemFontFamily, DaisyOS.Shell.Services.Theming.TypographyPolicy.DefaultFamilyName, StringComparison.OrdinalIgnoreCase);
             RemoveProfilePictureButton.IsVisible = app.HasProfilePicture;

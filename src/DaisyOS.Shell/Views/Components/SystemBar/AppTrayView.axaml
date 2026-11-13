@@ -4,10 +4,10 @@
              x:Class="DaisyOS.Shell.Views.Components.SystemBar.AppTrayView"
              ClipToBounds="False">
   <controls:ShellFrameBorder x:Name="TrayMaterialFrame"
-      Width="280" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+      Width="280" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
       CornerRadius="{DynamicResource RoundedXXL}" BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}">
     <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-        BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+        BorderThickness="{DynamicResource ShellFrameBorderThickness}" CornerRadius="{DynamicResource RoundedXXLInset}">
       <Border Background="{DynamicResource SurfaceBaseBrush}" Padding="16" CornerRadius="{DynamicResource RoundedXXLDoubleInset}">
         <StackPanel x:Name="MotionContent" Spacing="12">
           <TextBlock Text="{DynamicResource Loc_D15070AD05F6}" FontSize="{DynamicResource TypeSizeBody}" Foreground="{DynamicResource ContentPrimaryBrush}"/>

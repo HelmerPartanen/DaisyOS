@@ -1273,47 +1273,26 @@ public partial class App : Application
         Resources["TaskbarMenuInset"] = new Thickness(0, 0, 0, height + 3);
     }
 
-    public async Task SetTaskbarAutoHideAsync(bool enabled)
+    public async Task SetBottomComponentsAutoHideAsync(bool enabled)
     {
-        if (_useDesktopSettings)
-        {
-            _appearanceSettings.TaskbarAutoHide = enabled;
-            await ApplyDesktopSettingAsync("taskbar-auto-hide", enabled.ToString());
-            return;
-        }
+        _appearanceSettings.BottomComponentsAutoHide = enabled;
         _appearanceSettings.TaskbarAutoHide = enabled;
-        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
-        await PersistAppearanceAsync();
-        AppearanceChanged?.Invoke(this, EventArgs.Empty);
-    }
-
-    public async Task SetSystemBarAutoHideAsync(bool enabled)
-    {
-        if (_useDesktopSettings)
-        {
-            _appearanceSettings.SystemBarAutoHide = enabled;
-            await ApplyDesktopSettingAsync("systembar-auto-hide", enabled.ToString());
-            return;
-        }
         _appearanceSettings.SystemBarAutoHide = enabled;
-        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
-        await PersistAppearanceAsync();
+        _appearanceSettings.MediaWidgetAutoHide = enabled;
+        if (_useDesktopSettings) await ApplyDesktopSettingAsync("bottom-auto-hide", enabled.ToString());
+        else
+        {
+            _shellView?.SetBottomBarAutoHide(enabled, enabled, enabled);
+            await PersistAppearanceAsync();
+        }
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }
 
-    public async Task SetMediaWidgetAutoHideAsync(bool enabled)
-    {
-        if (_useDesktopSettings)
-        {
-            _appearanceSettings.MediaWidgetAutoHide = enabled;
-            await ApplyDesktopSettingAsync("media-widget-auto-hide", enabled.ToString());
-            return;
-        }
-        _appearanceSettings.MediaWidgetAutoHide = enabled;
-        _shellView?.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, enabled);
-        await PersistAppearanceAsync();
-        AppearanceChanged?.Invoke(this, EventArgs.Empty);
-    }
+    public Task SetTaskbarAutoHideAsync(bool enabled) => SetBottomComponentsAutoHideAsync(enabled);
+
+    public Task SetSystemBarAutoHideAsync(bool enabled) => SetBottomComponentsAutoHideAsync(enabled);
+
+    public Task SetMediaWidgetAutoHideAsync(bool enabled) => SetBottomComponentsAutoHideAsync(enabled);
 
     public async Task<bool> SetCursorAsync(string themeId, int size)
     {

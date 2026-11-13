@@ -7,6 +7,8 @@ namespace DaisyOS.Core.Desktop;
 /// <summary>
 /// Maintains an occupancy map for a specific monitor's grid and provides collision resolution and auto-arrange logic.
 /// </summary>
+public enum DesktopAlignment { Left, Right, Top, Bottom }
+
 public class DesktopOccupancyMap
 {
     private readonly DesktopGridMetrics _metrics;
@@ -137,7 +139,7 @@ public class DesktopOccupancyMap
     /// </summary>
     /// <param name="items">The list of items to arrange, sorted in the desired order.</param>
     /// <returns>A list of new states for the items.</returns>
-    public IEnumerable<DesktopItemState> AutoArrange(IEnumerable<DesktopItemState> items, bool forceAutoArrange = false)
+    public IEnumerable<DesktopItemState> AutoArrange(IEnumerable<DesktopItemState> items, bool forceAutoArrange = false, DesktopAlignment alignment = DesktopAlignment.Left)
     {
         var result = new List<DesktopItemState>();
         var itemsList = items.ToList();
@@ -189,92 +191,44 @@ public class DesktopOccupancyMap
         // 2. Position standard 1x1 items
         var standardItems = itemsList.Where(x => !widgetItems.Contains(x)).OrderBy(x => x.SortOrder).ToList();
 
-        if (forceAutoArrange)
+        var unplaced = new List<DesktopItemState>();
+        foreach (var item in standardItems)
         {
-            int currentColumn = 0;
-            int currentRow = 0;
-
-            foreach (var item in standardItems)
+            var cell = new GridCell(item.Column, item.Row);
+            if (!forceAutoArrange && _metrics.IsValid(cell) && !IsOccupied(cell))
             {
-                while (currentColumn < _metrics.ColumnCount && IsOccupied(new GridCell(currentColumn, currentRow)))
-                {
-                    currentRow++;
-                    if (currentRow >= _metrics.RowCount)
-                    {
-                        currentRow = 0;
-                        currentColumn++;
-                    }
-                }
-
-                if (currentColumn >= _metrics.ColumnCount)
-                {
-                    break;
-                }
-
-                _occupied[currentColumn, currentRow] = item.Id;
-                result.Add(new DesktopItemState(item.Id, _metrics.MonitorId, currentColumn, currentRow, item.SortOrder, 1, 1));
-
-                currentRow++;
-                if (currentRow >= _metrics.RowCount)
-                {
-                    currentRow = 0;
-                    currentColumn++;
-                }
+                Occupy(item.Id, cell);
+                result.Add(new DesktopItemState(item.Id, _metrics.MonitorId, cell.Column, cell.Row, item.SortOrder));
             }
+            else unplaced.Add(item);
         }
-        else
+        using var free = GetFillCells(_metrics, alignment).Where(cell => !IsOccupied(cell)).GetEnumerator();
+        foreach (var item in unplaced)
         {
-            var unplaced = new List<DesktopItemState>();
-
-            // First pass: preserve valid assigned positions
-            foreach (var item in standardItems)
-            {
-                var cell = new GridCell(item.Column, item.Row);
-                if (item.Column >= 0 && item.Row >= 0 && _metrics.IsValid(cell) && !IsOccupied(cell))
-                {
-                    _occupied[item.Column, item.Row] = item.Id;
-                    result.Add(new DesktopItemState(item.Id, _metrics.MonitorId, item.Column, item.Row, item.SortOrder, 1, 1));
-                }
-                else
-                {
-                    unplaced.Add(item);
-                }
-            }
-
-            // Second pass: position unplaced items into free cells column-major starting from column 0
-            int currentColumn = 0;
-            int currentRow = 0;
-
-            foreach (var item in unplaced)
-            {
-                while (currentColumn < _metrics.ColumnCount && IsOccupied(new GridCell(currentColumn, currentRow)))
-                {
-                    currentRow++;
-                    if (currentRow >= _metrics.RowCount)
-                    {
-                        currentRow = 0;
-                        currentColumn++;
-                    }
-                }
-
-                if (currentColumn >= _metrics.ColumnCount)
-                {
-                    break;
-                }
-
-                _occupied[currentColumn, currentRow] = item.Id;
-                result.Add(new DesktopItemState(item.Id, _metrics.MonitorId, currentColumn, currentRow, item.SortOrder, 1, 1));
-
-                currentRow++;
-                if (currentRow >= _metrics.RowCount)
-                {
-                    currentRow = 0;
-                    currentColumn++;
-                }
-            }
+            if (!free.MoveNext()) break;
+            var cell = free.Current;
+            Occupy(item.Id, cell);
+            result.Add(new DesktopItemState(item.Id, _metrics.MonitorId, cell.Column, cell.Row, item.SortOrder));
         }
 
         return result;
+    }
+
+    /// <summary>Stable traversal from the selected desktop edge.</summary>
+    public static IEnumerable<GridCell> GetFillCells(DesktopGridMetrics metrics, DesktopAlignment alignment)
+    {
+        if (alignment is DesktopAlignment.Top or DesktopAlignment.Bottom)
+        {
+            for (var row = 0; row < metrics.RowCount; row++)
+                for (var column = 0; column < metrics.ColumnCount; column++)
+                    yield return new GridCell(column, alignment == DesktopAlignment.Bottom ? metrics.RowCount - 1 - row : row);
+        }
+        else
+        {
+            for (var column = 0; column < metrics.ColumnCount; column++)
+                for (var row = 0; row < metrics.RowCount; row++)
+                    yield return new GridCell(alignment == DesktopAlignment.Right ? metrics.ColumnCount - 1 - column : column, row);
+        }
     }
 
 }

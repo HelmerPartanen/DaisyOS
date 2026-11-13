@@ -91,6 +91,13 @@ public class CartoucheBorder : Decorator
     }
 
 
+    public CartoucheBorder()
+    {
+        // Resource changes must invalidate custom-drawn chrome as well as XAML borders.
+        this.Bind(BorderBrushProperty, this.GetResourceObservable("ShellFrameOuterEdgeBrush"));
+        this.Bind(InnerHighlightBrushProperty, this.GetResourceObservable("ShellFrameInnerHighlightBrush"));
+    }
+
     static CartoucheBorder()
     {
         AffectsRender<CartoucheBorder>(
@@ -150,7 +157,9 @@ public class CartoucheBorder : Decorator
         double cr = CornerRadius;
         bool tailOnTop = TailOnTop;
 
-        var geometry = GetGeometry(w, h, tx, tw, th, cr, tailOnTop);
+        var borderless = this.TryFindResource("ShellFrameBorderThickness", out var thickness)
+            && thickness is Thickness { Left: 0, Top: 0, Right: 0, Bottom: 0 };
+        var geometry = GetGeometry(w, h, tx, tw, th, cr, tailOnTop, borderless);
 
         // 1. Multi-layered soft drop shadow
         using (context.PushTransform(Matrix.CreateTranslation(0, 4)))
@@ -201,7 +210,7 @@ public class CartoucheBorder : Decorator
     private GeometryBundle? _geometry;
     private double _geometryWidth, _geometryHeight, _geometryTailX, _geometryTailWidth;
     private double _geometryTailHeight, _geometryCornerRadius;
-    private bool _geometryTailOnTop;
+    private bool _geometryTailOnTop, _geometryBorderless;
     private Pen? _innerPen, _outerPen;
     private IBrush? _innerPenBrush, _outerPenBrush;
 
@@ -212,13 +221,13 @@ public class CartoucheBorder : Decorator
         double tailWidth,
         double tailHeight,
         double cornerRadius,
-        bool tailOnTop)
+        bool tailOnTop, bool borderless)
     {
         if (_geometry is { } cached &&
             _geometryWidth.Equals(width) && _geometryHeight.Equals(height) &&
             _geometryTailX.Equals(tailX) && _geometryTailWidth.Equals(tailWidth) &&
             _geometryTailHeight.Equals(tailHeight) && _geometryCornerRadius.Equals(cornerRadius) &&
-            _geometryTailOnTop == tailOnTop)
+            _geometryTailOnTop == tailOnTop && _geometryBorderless == borderless)
         {
             return cached;
         }
@@ -230,9 +239,10 @@ public class CartoucheBorder : Decorator
         _geometryTailHeight = tailHeight;
         _geometryCornerRadius = cornerRadius;
         _geometryTailOnTop = tailOnTop;
+        _geometryBorderless = borderless;
         _geometry = new GeometryBundle(
             BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0, tailOnTop),
-            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 2.0, tailOnTop),
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, borderless ? 0 : 2.0, tailOnTop),
             BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 1.5, tailOnTop),
             BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0.5, tailOnTop));
         return _geometry;

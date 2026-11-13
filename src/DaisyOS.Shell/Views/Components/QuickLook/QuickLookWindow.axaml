@@ -14,13 +14,13 @@
         Topmost="True">
 
   <controls:ShellFrameBorder Margin="16"
-          Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+          Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
           CornerRadius="{DynamicResource RoundedLG}"
           Padding="0"
           BoxShadow="{DynamicResource ElevationDialogShadow}">
     <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
             CornerRadius="{DynamicResource RoundedLGInset}"
-            Padding="1">
+            Padding="{DynamicResource ShellFrameSurfaceInset}">
       <Border Background="{DynamicResource SurfaceBaseBrush}"
               CornerRadius="{DynamicResource RoundedMD}"
               Padding="18">

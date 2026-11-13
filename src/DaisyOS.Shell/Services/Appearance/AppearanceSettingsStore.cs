@@ -26,6 +26,12 @@ public sealed class AppearanceSettingsStore
             var settings = JsonSerializer.Deserialize(File.ReadAllText(_path), DaisyOS.Shell.Services.Serialization.DaisyShellJsonContext.Default.AppearanceSettings)
                            ?? new AppearanceSettings();
 
+            // Migrate independent bar preferences to a single consistent setting.
+            var autoHide = settings.BottomComponentsAutoHide
+                ?? (settings.TaskbarAutoHide || settings.SystemBarAutoHide || settings.MediaWidgetAutoHide);
+            settings.BottomComponentsAutoHide = autoHide;
+            settings.TaskbarAutoHide = settings.SystemBarAutoHide = settings.MediaWidgetAutoHide = autoHide;
+
             if ((string.IsNullOrWhiteSpace(settings.ProfilePictureUri) || !File.Exists(settings.ProfilePictureUri)) &&
                 ProfilePictureStore.FindSingleRecoverablePicture(_path) is { } recoveredPicture)
             {

@@ -11,12 +11,12 @@
 
   <controls:ShellFrameBorder Margin="24,24,24,28"
                             HorizontalAlignment="Center" VerticalAlignment="Bottom"
-                            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                             CornerRadius="{DynamicResource RoundedXL}" Padding="0"
                             BoxShadow="{DynamicResource ElevationFlyoutShadow}">
     <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
                                BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                               BorderThickness="1" BackgroundSizing="InnerBorderEdge"
+                               BorderThickness="{DynamicResource ShellFrameBorderThickness}" BackgroundSizing="InnerBorderEdge"
                                CornerRadius="{DynamicResource RoundedXLInset}">
       <Border Background="{DynamicResource SurfaceBaseSolidBrush}"
               CornerRadius="{DynamicResource RoundedXLDoubleInset}" Padding="16,10">

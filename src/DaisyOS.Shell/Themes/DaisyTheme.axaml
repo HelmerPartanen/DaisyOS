@@ -515,6 +515,8 @@
 <CornerRadius x:Key="RoundedSM">10</CornerRadius>
 <CornerRadius x:Key="RoundedMD">12</CornerRadius>
 <CornerRadius x:Key="RoundedLG">14</CornerRadius>
+<Thickness x:Key="ShellFrameBorderThickness">1</Thickness>
+<Thickness x:Key="ShellFrameSurfaceInset">1</Thickness>
 <CornerRadius x:Key="RoundedXL">18</CornerRadius>
 
 <CornerRadius x:Key="RoundedXXL">32</CornerRadius>

@@ -1,4 +1,4 @@
-<UserControl xmlns="https://github.com/avaloniaui"
+<UserControl IsVisible="{Binding IsDesktopVisible}" xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:DaisyOS.Shell.ViewModels"
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
@@ -262,7 +262,7 @@
     <!-- Standard 1x1 Desktop App Item -->
     <Border Name="CellCard" IsVisible="{Binding !IsWidgetCard}" Padding="0,4,0,2" HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
       <Grid RowDefinitions="Auto,*">
-        <Border Name="IconWrapper" Grid.Row="0" Width="48" Height="48" HorizontalAlignment="Center">
+        <Border Name="IconWrapper" Grid.Row="0" Width="{Binding DesktopIconSize}" Height="{Binding DesktopIconSize}" HorizontalAlignment="Center">
           <Grid>
             <Image Name="AppIcon"
                    Source="{Binding IconBitmap}"

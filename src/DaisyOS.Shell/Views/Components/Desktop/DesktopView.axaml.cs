@@ -220,7 +220,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
                 // is gesture recognition and can be retargeted by pointer capture
                 // while a desktop item is preparing to drag. Native file managers
                 // instead make the second primary press the activation boundary.
-                if (e.ClickCount == 2)
+                if (e.ClickCount == 2 && !_viewModel.Preferences.SingleClick && !itemVm.IsWidgetCard)
                 {
                     e.Handled = true;
                     _ = ActivateDesktopItemAsync(itemVm, Avalonia.Wayland.WaylandActivation.RequestAsync(e, Path.GetFileNameWithoutExtension(itemVm.State.Id)));
@@ -231,6 +231,8 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             {
                 _viewModel.ClearSelection();
             }
+
+            if (_viewModel.Preferences.LockLayout) return;
 
             _dragController.OnPointerPressed(
                 itemVm,
@@ -271,11 +273,15 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
         private void OnPointerReleased(object? sender, PointerReleasedEventArgs e)
         {
+            var activate = e.InitialPressMouseButton == MouseButton.Left && _viewModel.Preferences.SingleClick && _dragController.ActiveSession is null
+                ? (e.Source as Visual)?.FindAncestorOfType<DesktopItemView>()?.DataContext as DesktopItemViewModel : null;
             _dragController.OnPointerReleased(
                 _viewModel,
                 CurrentMetrics,
                 InvalidateReorderPanel);
             e.Pointer.Capture(null);
+            if (activate is not null && !activate.IsWidgetCard)
+                _ = ActivateDesktopItemAsync(activate, Avalonia.Wayland.WaylandActivation.RequestAsync(e, Path.GetFileNameWithoutExtension(activate.State.Id)));
         }
 
         private async Task ActivateDesktopItemAsync(DesktopItemViewModel item, Task<string>? activation = null)
@@ -330,6 +336,24 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             }
         }
 
+        private void OnDesktopPreferenceChanged(object? sender, (string Key, string Value) change)
+        {
+            if (!change.Key.StartsWith("desktop.", StringComparison.Ordinal) || _app is null) return;
+            _viewModel.ApplyPreferences(DesktopPreferences.Read(_app.GetPreference), CurrentMetrics);
+            if (change.Key == "desktop.arrange-request" && CurrentMetrics is not null)
+            {
+                _viewModel.CalculateLayout(CurrentMetrics, forceAutoArrange: true);
+                _viewModel.SaveLayout();
+            }
+            if (change.Key == "desktop.sort-request" && CurrentMetrics is not null
+                && Enum.TryParse<DesktopSortMode>(change.Value.Split(':')[0], out var mode) && Enum.IsDefined(mode))
+            {
+                _viewModel.SortItemsBy(mode, CurrentMetrics);
+                _viewModel.SaveLayout();
+            }
+            InvalidateReorderPanel();
+        }
+
         private void OnLoaded(object? sender, RoutedEventArgs e)
         {
             _trashObserver?.Dispose();
@@ -338,6 +362,8 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             _app = Application.Current as App;
             if (_app is not null)
             {
+                _app.PreferenceChanged += OnDesktopPreferenceChanged;
+                _viewModel.ApplyPreferences(DesktopPreferences.Read(_app.GetPreference), CurrentMetrics, arrange: false);
             }
 
             if (TopLevel.GetTopLevel(this) is Window window)
@@ -370,6 +396,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
             if (_app is not null)
             {
+                _app.PreferenceChanged -= OnDesktopPreferenceChanged;
                 _app = null;
             }
 

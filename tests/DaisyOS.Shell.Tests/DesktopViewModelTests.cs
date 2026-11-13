@@ -16,6 +16,61 @@ public class DesktopViewModelTests
         new DesktopViewModel(new DesktopLayoutStore(Path.Combine(Path.GetTempPath(), $"daisy_test_layout_{Guid.NewGuid():N}.json")));
 
     [Fact]
+    public void LoadingPreferencesDoesNotRearrangeSavedManualPositions()
+    {
+        var vm = CreateTestViewModel(); vm.ClearItems();
+        var metrics = new DesktopGridMetrics("primary", new Rect(0, 0, 1000, 600), 96, 100, 100);
+        var item = new DesktopItemViewModel(new DesktopItemState("manual", "primary", 5, 4));
+        vm.AddItem(item); vm.CalculateLayout(metrics);
+        vm.ApplyPreferences(new DesktopPreferences { Alignment = DesktopAlignment.Right }, metrics, arrange: false);
+        vm.CalculateLayout(metrics);
+        Assert.Equal(new GridCell(5, 4), vm.GetCommittedCell(item.Id));
+    }
+
+    [Fact]
+    public void WidgetMotionPreservesDistantPositionsAndNoOpDoesNothing()
+    {
+        var vm = CreateTestViewModel(); vm.ClearItems();
+        var metrics = new DesktopGridMetrics("primary", new Rect(0, 0, 1000, 600), 96, 100, 100);
+        var widget = new DesktopItemViewModel(new DesktopItemState("desktop.widget.test", "primary", 4, 0)) { IsWidgetCard = true, ColumnSpan = 3, RowSpan = 2 };
+        var icon = new DesktopItemViewModel(new DesktopItemState("custom", "primary", 9, 4));
+        vm.AddItem(widget); vm.AddItem(icon); vm.CalculateLayout(metrics);
+        Assert.False(vm.ReorderItem(widget.Id, new GridCell(4, 0), new GridCell(5, 1), metrics));
+        Assert.True(vm.ReorderItem(widget.Id, new GridCell(4, 1), metrics));
+        vm.UpdateCommittedCells(metrics);
+        Assert.Equal(new GridCell(9, 4), vm.GetCommittedCell(icon.Id));
+    }
+
+    [Theory]
+    [InlineData(true, 0)]
+    [InlineData(false, 1)]
+    public void RemovingAnItemFillsTheGapOnlyWhenEnabled(bool fillGaps, int expectedRow)
+    {
+        var vm = CreateTestViewModel(); vm.ClearItems();
+        vm.ApplyPreferences(new DesktopPreferences { FillGaps = fillGaps });
+        var metrics = new DesktopGridMetrics("primary", new Rect(0, 0, 800, 600), 96, 100, 100);
+        var a = new DesktopItemViewModel(new DesktopItemState("A", "primary", 0, 0));
+        var b = new DesktopItemViewModel(new DesktopItemState("B", "primary", 0, 1, 1));
+        vm.AddItem(a); vm.AddItem(b); vm.CalculateLayout(metrics);
+        vm.RemoveDesktopPath("A"); // File-watcher path has no explicit metrics.
+        Assert.Equal(new GridCell(0, expectedRow), vm.GetCommittedCell(b.Id));
+    }
+
+    [Fact]
+    public void LockAndVisibilityPreferencesApplyWithoutLosingPositions()
+    {
+        var vm = CreateTestViewModel(); vm.ClearItems();
+        var metrics = new DesktopGridMetrics("primary", new Rect(0, 0, 800, 600), 96, 100, 100);
+        var icon = new DesktopItemViewModel(new DesktopItemState("custom", "primary", 5, 4));
+        vm.AddItem(icon); vm.CalculateLayout(metrics);
+        vm.ApplyPreferences(new DesktopPreferences { LockLayout = true, ShowItems = false, IconSize = 64 }, metrics);
+        Assert.False(vm.ReorderItem(icon.Id, new GridCell(1, 1), metrics));
+        Assert.False(icon.IsDesktopVisible); Assert.Equal(64, icon.DesktopIconSize);
+        vm.ApplyPreferences(new DesktopPreferences(), metrics);
+        Assert.True(icon.IsDesktopVisible); Assert.Equal(new GridCell(5, 4), vm.GetCommittedCell(icon.Id));
+    }
+
+    [Fact]
     public async global::System.Threading.Tasks.Task DroppingFileOnTrashCreatesRestorableMetadata()
     {
         var previousCulture = global::System.Globalization.CultureInfo.CurrentCulture;
@@ -344,7 +399,7 @@ public class DesktopViewModelTests
     }
 
     [Fact]
-    public void WidgetCard_DisplacesIconsDownWhenMovedOverThem()
+    public void WidgetCard_DisplacesOnlyOverlappedIconsWhenMovedOverThem()
     {
         var vm = CreateTestViewModel();
         vm.ClearItems();
@@ -371,13 +426,13 @@ public class DesktopViewModelTests
         Assert.True(moved);
 
         Assert.Equal(new GridCell(0, 0), vm.GetCommittedCell(widget.Id));
-        Assert.Equal(new GridCell(0, 2), vm.GetCommittedCell(itemA.Id));
-        Assert.Equal(new GridCell(0, 3), vm.GetCommittedCell(itemB.Id));
-        Assert.Equal(new GridCell(0, 4), vm.GetCommittedCell(itemC.Id));
+        Assert.Equal(new GridCell(0, 3), vm.GetCommittedCell(itemA.Id));
+        Assert.Equal(new GridCell(0, 4), vm.GetCommittedCell(itemB.Id));
+        Assert.Equal(new GridCell(0, 2), vm.GetCommittedCell(itemC.Id));
     }
 
     [Fact]
-    public void WidgetCard_ReturnsIconsBackUpWhenMovedAway()
+    public void WidgetCard_PreservesIconPositionsWhenMovedAway()
     {
         var vm = CreateTestViewModel();
         vm.ClearItems();
@@ -401,8 +456,8 @@ public class DesktopViewModelTests
         Assert.True(moved);
 
         Assert.Equal(new GridCell(4, 0), vm.GetCommittedCell(widget.Id));
-        Assert.Equal(new GridCell(0, 0), vm.GetCommittedCell(itemA.Id));
-        Assert.Equal(new GridCell(0, 1), vm.GetCommittedCell(itemB.Id));
+        Assert.Equal(new GridCell(0, 2), vm.GetCommittedCell(itemA.Id));
+        Assert.Equal(new GridCell(0, 3), vm.GetCommittedCell(itemB.Id));
     }
 
     [Theory]

@@ -62,7 +62,7 @@ public sealed class DesktopDragController
         DesktopGridMetrics? metrics,
         Action? invalidatePanel)
     {
-        if (ActiveSession != null || _draggedItem != null) return;
+        if (viewModel.Preferences.LockLayout || ActiveSession != null || _draggedItem != null) return;
 
         _pressPoint = pointerPos;
         _grabOffset = grabOffset;
@@ -80,7 +80,7 @@ public sealed class DesktopDragController
         Size itemSize,
         Action? invalidatePanel)
     {
-        if (ActiveSession != null || _draggedItem != null) return;
+        if (viewModel.Preferences.LockLayout || ActiveSession != null || _draggedItem != null) return;
 
         int originalIndex = viewModel.GetCommittedIndex(item.Id);
         // A drag is a manipulation gesture, not a retained selection. Clearing

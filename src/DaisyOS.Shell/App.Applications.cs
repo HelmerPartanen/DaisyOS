@@ -83,6 +83,7 @@ public partial class App
             case "dept-effect" when request.Length is 3 or 4: await SetDeptEffectAsync(bool.Parse(request[1]), bool.Parse(request[2])); break;
             case "motion" when request.Length == 2: await SetReduceMotionAsync(bool.Parse(request[1])); break;
             case "taskbar-size" when request.Length == 2: await SetTaskbarSizeAsync(int.Parse(request[1])); break;
+            case "bottom-auto-hide" when request.Length == 2: await SetBottomComponentsAutoHideAsync(bool.Parse(request[1])); break;
             case "taskbar-auto-hide" when request.Length == 2: await SetTaskbarAutoHideAsync(bool.Parse(request[1])); break;
             case "media-widget-auto-hide" when request.Length == 2: await SetMediaWidgetAutoHideAsync(bool.Parse(request[1])); break;
             case "systembar-auto-hide" when request.Length == 2: await SetSystemBarAutoHideAsync(bool.Parse(request[1])); break;

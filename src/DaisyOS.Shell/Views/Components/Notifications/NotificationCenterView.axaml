@@ -3,10 +3,10 @@
  xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
  xmlns:notifications="clr-namespace:DaisyOS.Shell.Views.Components.Notifications"
  Width="340" MaxHeight="600" ClipToBounds="False">
- <controls:ShellFrameBorder x:Name="MaterialFrame" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+ <controls:ShellFrameBorder x:Name="MaterialFrame" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
          BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}" CornerRadius="{DynamicResource RoundedXXL}">
   <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-           BackgroundSizing="InnerBorderEdge" BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+           BackgroundSizing="InnerBorderEdge" BorderThickness="{DynamicResource ShellFrameBorderThickness}" CornerRadius="{DynamicResource RoundedXXLInset}">
    <Border Padding="16" Background="{DynamicResource SurfaceBaseBrush}"
            CornerRadius="{DynamicResource RoundedXXLDoubleInset}" ClipToBounds="True">
     <Grid x:Name="MotionContent" RowDefinitions="Auto,*" RowSpacing="16">
@@ -38,10 +38,10 @@
        <ItemsControl.ItemTemplate>
         <DataTemplate>
          <!-- Same double-border frame as NotificationToastView so panel cards match toasts exactly. -->
-         <controls:ShellFrameBorder Classes="ToastCard" Margin="0,0,0,8" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+         <controls:ShellFrameBorder Classes="ToastCard" Margin="0,0,0,8" Padding="0" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                    CornerRadius="{DynamicResource RoundedXXL}">
           <controls:ShellFrameBorder Background="Transparent" BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                    BackgroundSizing="InnerBorderEdge" BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+                    BackgroundSizing="InnerBorderEdge" BorderThickness="{DynamicResource ShellFrameBorderThickness}" CornerRadius="{DynamicResource RoundedXXLInset}">
            <notifications:NotificationCard CornerRadius="{DynamicResource RoundedXXLDoubleInset}" Background="{DynamicResource SurfaceBaseBrush}"
                     DismissRequested="OnDismissCard" PrimaryActionRequested="OnPrimaryCard" SecondaryActionRequested="OnSecondaryCard" />
           </controls:ShellFrameBorder>

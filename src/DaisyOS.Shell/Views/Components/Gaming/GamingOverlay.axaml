@@ -13,8 +13,8 @@
   </UserControl.Styles>
 
   <controls:ShellFrameBorder x:Name="MaterialFrame" Margin="16" Padding="0"
-                            CornerRadius="28" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1">
-    <controls:ShellFrameBorder CornerRadius="27" BorderThickness="1"
+                            CornerRadius="28" Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}">
+    <controls:ShellFrameBorder CornerRadius="27" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                               BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
                               Background="Transparent" BackgroundSizing="InnerBorderEdge">
       <Border CornerRadius="26" Background="{DynamicResource SurfaceBaseBrush}" Padding="12,5">

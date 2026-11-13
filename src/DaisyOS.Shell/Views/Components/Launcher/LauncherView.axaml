@@ -90,13 +90,13 @@
       <controls:ShellFrameBorder x:Name="LauncherRootBorder"
               MaxWidth="{DynamicResource LauncherPanelMaxWidth}" MaxHeight="{DynamicResource LauncherPanelMaxHeight}"
               HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1" Padding="0"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}" Padding="0"
               CornerRadius="{DynamicResource RoundedXXL}"
               BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
               RenderTransformOrigin="50%,50%" ClipToBounds="False">
       <controls:ShellFrameBorder x:Name="LauncherInnerFrame" Background="Transparent"
               BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
-              BorderThickness="1" CornerRadius="{DynamicResource RoundedXXLInset}">
+              BorderThickness="{DynamicResource ShellFrameBorderThickness}" CornerRadius="{DynamicResource RoundedXXLInset}">
       <Border x:Name="LauncherPanelClip" Classes="LauncherBackdrop" ClipToBounds="True"
               CornerRadius="{DynamicResource RoundedXXLDoubleInset}">
       <Grid x:Name="LauncherInteractiveContent"
@@ -319,11 +319,11 @@
 
       <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
               HorizontalAlignment="Left" VerticalAlignment="Top"
-              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
               CornerRadius="{DynamicResource RoundedLG}" Padding="0"
               BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="100">
         <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
-                CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
+                CornerRadius="{DynamicResource RoundedLGInset}" Padding="{DynamicResource ShellFrameSurfaceInset}">
           <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
                   CornerRadius="{DynamicResource RoundedMD}" Padding="4">
             <StackPanel>
@@ -359,10 +359,10 @@
 
       <controls:ShellFrameBorder x:Name="LauncherAppContextMenuHost" IsVisible="False" Width="204"
               HorizontalAlignment="Left" VerticalAlignment="Top"
-              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
               CornerRadius="{DynamicResource RoundedLG}" Padding="0"
               BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="101">
-        <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}" CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
+        <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}" CornerRadius="{DynamicResource RoundedLGInset}" Padding="{DynamicResource ShellFrameSurfaceInset}">
           <Border Background="{DynamicResource ContextMenuBackgroundBrush}" CornerRadius="{DynamicResource RoundedMD}" Padding="4">
             <StackPanel>
               <MenuItem Header="{DynamicResource Loc_ED077F3D8125}" Click="OnContextOpenClicked"><MenuItem.Icon><controls:DaisyIcon Icon="arrow-square-out" Classes="MenuIcon" /></MenuItem.Icon></MenuItem>

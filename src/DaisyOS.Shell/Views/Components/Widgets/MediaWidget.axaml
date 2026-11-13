@@ -33,11 +33,11 @@
     <controls:ShellFrameBorder x:Name="MediaFrame"
             Height="52"
             Padding="0"
-            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
             CornerRadius="{DynamicResource RoundedXL}"
             PointerPressed="OnMediaPointerPressed">
       <controls:ShellFrameBorder Background="Transparent"
-              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge" BorderThickness="1"
+              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
               CornerRadius="{DynamicResource RoundedXLInset}">
         <Border Background="{DynamicResource SurfaceBaseBrush}"
                 CornerRadius="{DynamicResource RoundedXLDoubleInset}"
@@ -105,13 +105,13 @@
             MinWidth="184"
             MaxWidth="240"
             Padding="0"
-            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
             CornerRadius="{DynamicResource RoundedLG}"
             BoxShadow="{DynamicResource ElevationFlyoutShadow}"
             IsHitTestVisible="True">
       <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
               CornerRadius="{DynamicResource RoundedLGInset}"
-              Padding="1">
+              Padding="{DynamicResource ShellFrameSurfaceInset}">
         <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
                 CornerRadius="{DynamicResource RoundedMD}"
                 Padding="4">

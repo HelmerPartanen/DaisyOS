@@ -7648,4 +7648,144 @@ Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</
     <value>Remove decorative double borders from panels and app windows.</value>
     <comment>Source: Remove decorative double borders from panels and app windows.</comment>
   </data>
+  <data name="Loc_6EF0338BB77F" xml:space="preserve">
+    <value>Choose how desktop icons and widgets look, move and open.</value>
+    <comment>Choose how desktop icons and widgets look, move and open.</comment>
+  </data>
+  <data name="Loc_51D5E1BE817D" xml:space="preserve">
+    <value>Your positions are saved automatically. Widgets only displace items they overlap.</value>
+    <comment>Your positions are saved automatically. Widgets only displace items they overlap.</comment>
+  </data>
+  <data name="Loc_C593EBB6F7CB" xml:space="preserve">
+    <value>Auto-arrange items</value>
+    <comment>Auto-arrange items</comment>
+  </data>
+  <data name="Loc_8898C7F01FD7" xml:space="preserve">
+    <value>Keep new items arranged in the next available cells.</value>
+    <comment>Keep new items arranged in the next available cells.</comment>
+  </data>
+  <data name="Loc_43572DEEA1D3" xml:space="preserve">
+    <value>Item alignment</value>
+    <comment>Item alignment</comment>
+  </data>
+  <data name="Loc_E30B02B4BDFE" xml:space="preserve">
+    <value>Fill gaps after removal</value>
+    <comment>Fill gaps after removal</comment>
+  </data>
+  <data name="Loc_39F0CD7400A0" xml:space="preserve">
+    <value>Move remaining icons forward when an item is removed. Widgets stay in place.</value>
+    <comment>Move remaining icons forward when an item is removed. Widgets stay in place.</comment>
+  </data>
+  <data name="Loc_87C381E98CD9" xml:space="preserve">
+    <value>Lock desktop layout</value>
+    <comment>Lock desktop layout</comment>
+  </data>
+  <data name="Loc_71DF7FB87CEF" xml:space="preserve">
+    <value>Prevent accidental dragging and resizing while keeping items usable.</value>
+    <comment>Prevent accidental dragging and resizing while keeping items usable.</comment>
+  </data>
+  <data name="Loc_A628208B9308" xml:space="preserve">
+    <value>DESKTOP ITEMS</value>
+    <comment>DESKTOP ITEMS</comment>
+  </data>
+  <data name="Loc_FD79FA5E1913" xml:space="preserve">
+    <value>Show desktop items</value>
+    <comment>Show desktop items</comment>
+  </data>
+  <data name="Loc_6645AE0B929B" xml:space="preserve">
+    <value>Show application shortcuts, files and folders.</value>
+    <comment>Show application shortcuts, files and folders.</comment>
+  </data>
+  <data name="Loc_3151FB5D0A59" xml:space="preserve">
+    <value>Show Trash</value>
+    <comment>Show Trash</comment>
+  </data>
+  <data name="Loc_6EC4AE92CFA4" xml:space="preserve">
+    <value>Show the Trash shortcut on the desktop.</value>
+    <comment>Show the Trash shortcut on the desktop.</comment>
+  </data>
+  <data name="Loc_78B13EF8776B" xml:space="preserve">
+    <value>Show desktop widgets</value>
+    <comment>Show desktop widgets</comment>
+  </data>
+  <data name="Loc_CB5F130AEAA4" xml:space="preserve">
+    <value>Hide widgets without removing them or forgetting their positions.</value>
+    <comment>Hide widgets without removing them or forgetting their positions.</comment>
+  </data>
+  <data name="Loc_A86CAFC75686" xml:space="preserve">
+    <value>Icon size</value>
+    <comment>Icon size</comment>
+  </data>
+  <data name="Loc_D6F201651DCB" xml:space="preserve">
+    <value>INTERACTION</value>
+    <comment>INTERACTION</comment>
+  </data>
+  <data name="Loc_87C2F7A4F581" xml:space="preserve">
+    <value>Single-click to open</value>
+    <comment>Single-click to open</comment>
+  </data>
+  <data name="Loc_DC3D91DA867D" xml:space="preserve">
+    <value>Open files and applications with one click instead of two. Dragging still moves items.</value>
+    <comment>Open files and applications with one click instead of two. Dragging still moves items.</comment>
+  </data>
+  <data name="Loc_0E9E6C95865D" xml:space="preserve">
+    <value>Arrange now</value>
+    <comment>Arrange now</comment>
+  </data>
+  <data name="Loc_F165EA3A0C3C" xml:space="preserve">
+    <value>ARRANGE</value>
+    <comment>ARRANGE</comment>
+  </data>
+  <data name="Loc_AE9DDFDA0334" xml:space="preserve">
+    <value>Rearranging uses your selected alignment and leaves widgets in their current cells.</value>
+    <comment>Rearranging uses your selected alignment and leaves widgets in their current cells.</comment>
+  </data>
+  <data name="Loc_4A72A4889FFA" xml:space="preserve">
+    <value>Arrange items now</value>
+    <comment>Arrange items now</comment>
+  </data>
+  <data name="Loc_3C47909BF858" xml:space="preserve">
+    <value>Close gaps without changing the order of your items.</value>
+    <comment>Close gaps without changing the order of your items.</comment>
+  </data>
+  <data name="Loc_FBAF77989809" xml:space="preserve">
+    <value>Auto-hide bottom components</value>
+    <comment>Auto-hide bottom components</comment>
+  </data>
+  <data name="Loc_AB963EF0850B" xml:space="preserve">
+    <value>Hide the taskbar, system bar and media controls until you move to the bottom edge.</value>
+    <comment>Hide the taskbar, system bar and media controls until you move to the bottom edge.</comment>
+  </data>
+  <data name="Loc_3471CAA46636" xml:space="preserve">
+    <value>LAYOUT</value>
+    <comment>LAYOUT</comment>
+  </data>
+  <data name="Loc_501C2FFE8469" xml:space="preserve">
+    <value>Desktop layout</value>
+    <comment>Desktop layout</comment>
+  </data>
+  <data name="Loc_47DB9942C4B9" xml:space="preserve">
+    <value>Arrange icons, widgets and desktop items</value>
+    <comment>Arrange icons, widgets and desktop items</comment>
+  </data>
+  <data name="Loc_5E88C0D5409A" xml:space="preserve">
+    <value>Hide the taskbar, system bar and media controls together</value>
+    <comment>Hide the taskbar, system bar and media controls together</comment>
+  </data>
+  <data name="Loc_A44C9530C004" xml:space="preserve">
+    <value>Choose order</value>
+    <comment>Choose order</comment>
+  </data>
+  <data name="Loc_FC1889DCC1A7" xml:space="preserve">
+    <value>Sort items</value>
+    <comment>Sort items</comment>
+  </data>
+  <data name="Loc_04B88D90C918" xml:space="preserve">
+    <value>Arrange icons by name, type, size or modification date.</value>
+    <comment>Arrange icons by name, type, size or modification date.</comment>
+  </data>
+  <data name="Loc_48F6F77687FF" xml:space="preserve">
+    <value>Choose a desktop picture, colour or video.</value>
+    <comment>Choose a desktop picture, colour or video.</comment>
+  </data>
 </root>

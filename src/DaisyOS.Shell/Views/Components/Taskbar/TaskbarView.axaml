@@ -123,7 +123,7 @@
             HorizontalAlignment="Center"
             VerticalAlignment="Center"
             Padding="0"
-            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
             CornerRadius="{DynamicResource RoundedXL}">
       <Border.Transitions>
         <Transitions>
@@ -134,7 +134,7 @@
       <controls:ShellFrameBorder x:Name="TaskbarInnerFrame"
               Background="Transparent"
               BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
-              BorderThickness="1"
+              BorderThickness="{DynamicResource ShellFrameBorderThickness}"
               CornerRadius="{DynamicResource RoundedXLInset}">
         <!-- The two frame pixels leave the original 4px content inset and 40px controls intact. -->
         <Border x:Name="TaskbarFill"

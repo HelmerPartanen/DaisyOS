@@ -178,10 +178,10 @@
         <controls:ShellFrameBorder x:Name="AvatarBorder" Width="48"
                 Height="48"
                 Padding="0"
-                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                 CornerRadius="24"
                 HorizontalAlignment="Center">
-          <controls:ShellFrameBorder BorderThickness="1"
+          <controls:ShellFrameBorder BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                   BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
                   Background="Transparent"
                   CornerRadius="24">
@@ -216,10 +216,10 @@
         <controls:ShellFrameBorder x:Name="PasswordPillBorder"
                 MinHeight="40"
                 Padding="0"
-                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                 CornerRadius="20"
                 HorizontalAlignment="Center">
-          <controls:ShellFrameBorder BorderThickness="1"
+          <controls:ShellFrameBorder BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                   BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
                   Background="Transparent"
                   CornerRadius="{Binding CornerRadius, ElementName=PasswordPillBorder}">
@@ -378,11 +378,11 @@
 
     <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
             HorizontalAlignment="Left" VerticalAlignment="Top"
-            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
             CornerRadius="{DynamicResource RoundedLG}" Padding="0"
             BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="100">
       <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
-              CornerRadius="{DynamicResource RoundedLGInset}" Padding="1">
+              CornerRadius="{DynamicResource RoundedLGInset}" Padding="{DynamicResource ShellFrameSurfaceInset}">
         <Border Background="{DynamicResource ContextMenuBackgroundBrush}"
                 CornerRadius="{DynamicResource RoundedMD}" Padding="4">
           <StackPanel>
@@ -421,10 +421,10 @@
                                  Width="354"
                                  Height="160"
                                  Padding="0"
-                                 Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                                 Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                                  CornerRadius="{DynamicResource RoundedXXL}"
                                  RenderTransformOrigin="0.5,0.5">
-        <controls:ShellFrameBorder BorderThickness="1"
+        <controls:ShellFrameBorder BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                                    BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
                                    BackgroundSizing="InnerBorderEdge"
                                    Background="Transparent"
@@ -579,7 +579,7 @@
                 Height="312"
                 Padding="0"
                 HorizontalAlignment="Center"
-                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                 CornerRadius="{DynamicResource RoundedXXL}"
                 BoxShadow="{DynamicResource LockScreenMediaArtworkShadow}">
           <Panel>
@@ -615,7 +615,7 @@
             </Border>
             <controls:ShellFrameBorder Background="Transparent"
                     BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                    BorderThickness="1"
+                    BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                     BackgroundSizing="InnerBorderEdge"
                     CornerRadius="{DynamicResource RoundedXXLInset}"
                     IsHitTestVisible="False" />
@@ -626,11 +626,11 @@
         <controls:ShellFrameBorder x:Name="ExpandedMediaBorder"
                                    Width="354"
                                    Padding="0"
-                                   Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+                                   Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                                    CornerRadius="{DynamicResource RoundedXXL}"
                                    HorizontalAlignment="Center"
                                    RenderTransformOrigin="0.5,0.5">
-          <controls:ShellFrameBorder BorderThickness="1"
+          <controls:ShellFrameBorder BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                                      BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
                                      BackgroundSizing="InnerBorderEdge"
                                      Background="Transparent"
@@ -780,7 +780,7 @@
               Padding="0"
               HorizontalAlignment="Left"
               VerticalAlignment="Top"
-              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
               CornerRadius="14"
               BoxShadow="{DynamicResource LockScreenMediaMorphShadow}"
               IsVisible="False"
@@ -817,7 +817,7 @@
           <Border x:Name="MorphingArtworkHighlight"
                   Background="Transparent"
                   BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}"
-                  BorderThickness="1"
+                  BorderThickness="{DynamicResource ShellFrameBorderThickness}"
                   CornerRadius="13"
                   IsHitTestVisible="False" />
         </Panel>

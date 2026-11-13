@@ -288,9 +288,7 @@
 
           <Button x:Name="NavBattery" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Battery">
             <Grid ColumnDefinitions="24,*">
-              <controls:BatteryLevelIcon Width="24" Height="18" Percentage="0" IsCharging="False"
-                                         BaseBrush="{DynamicResource ContentPrimaryBrush}"
-                                         HorizontalAlignment="Center" VerticalAlignment="Center" />
+              <controls:DaisyIcon Icon="battery" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="Battery" Classes="NavLabel" />
             </Grid>
           </Button>
@@ -320,6 +318,13 @@
             <Grid ColumnDefinitions="24,*">
               <controls:DaisyIcon Icon="continuity" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_8971F58F9CCF}" Classes="NavLabel" />
+            </Grid>
+          </Button>
+
+          <Button x:Name="NavDesktop" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Desktop">
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="desktop" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_9BD88F2485AC}" Classes="NavLabel" />
             </Grid>
           </Button>
 
@@ -695,42 +700,11 @@
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                       <controls:DaisyIcon Icon="dock" Classes="SettingsRowIcon" />
                       <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Loc_366F0E927D5C}" Classes="SettingsLabel" />
-                        <TextBlock Text="{DynamicResource Loc_07A462DB4BC4}" Classes="SettingsDescription" TextWrapping="Wrap" />
+                        <TextBlock Text="{DynamicResource Loc_FBAF77989809}" Classes="SettingsLabel" />
+                        <TextBlock Text="{DynamicResource Loc_AB963EF0850B}" Classes="SettingsDescription" TextWrapping="Wrap" />
                       </StackPanel>
-                      <ComboBox x:Name="TaskbarVisibilityPicker" Grid.Column="2" Classes="ThemeModePicker" VerticalAlignment="Center" SelectionChanged="OnTaskbarVisibilitySelectionChanged">
-                        <ComboBoxItem Tag="Always" Content="{DynamicResource Loc_BC42910F32AA}" />
-                        <ComboBoxItem Tag="AutoHide" Content="{DynamicResource Loc_EA736CCEBBFF}" />
-                      </ComboBox>
+                      <ToggleSwitch x:Name="BottomComponentsAutoHideToggle" Grid.Column="2" VerticalAlignment="Center" Click="OnBottomComponentsAutoHideToggled" />
                     </Grid>
-                  </Border>
-                  <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
-                  <Border Classes="SettingsGroupRow">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <controls:DaisyIcon Icon="notification-01" Classes="SettingsRowIcon" />
-                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Loc_2BD578683CEE}" Classes="SettingsLabel" />
-                        <TextBlock Text="{DynamicResource Loc_F20EE17A58F8}" Classes="SettingsDescription" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <ComboBox x:Name="SystemBarVisibilityPicker" Grid.Column="2" Classes="ThemeModePicker" VerticalAlignment="Center" SelectionChanged="OnSystemBarVisibilitySelectionChanged">
-                        <ComboBoxItem Tag="Always" Content="{DynamicResource Loc_BC42910F32AA}" />
-                        <ComboBoxItem Tag="AutoHide" Content="{DynamicResource Loc_EA736CCEBBFF}" />
-                      </ComboBox>
-                    </Grid>
-                  </Border>
-                  <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
-                  <Border Classes="SettingsGroupRow">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <controls:DaisyIcon Icon="music-note-02" Classes="SettingsRowIcon" />
-                      <TextBlock Grid.Column="1" Text="{DynamicResource Loc_1011E1E878A4}" Classes="SettingsLabel" VerticalAlignment="Center" />
-                      <ComboBox x:Name="MediaWidgetVisibilityPicker" Grid.Column="2" Classes="ThemeModePicker" VerticalAlignment="Center" SelectionChanged="OnMediaWidgetVisibilitySelectionChanged">
-                        <ComboBoxItem Tag="Always" Content="{DynamicResource Loc_BC42910F32AA}" />
-                        <ComboBoxItem Tag="AutoHide" Content="{DynamicResource Loc_EA736CCEBBFF}" />
-                      </ComboBox>
-                    </Grid>
-                  </Border>
-                  <Border Margin="16,2,16,16" Padding="16,12" CornerRadius="{DynamicResource RoundedMD}" Background="{DynamicResource SurfaceSunkenBrush}">
-                    <TextBlock Text="{DynamicResource Loc_77065E4B7150}" Classes="SettingsDescription" TextWrapping="Wrap" />
                   </Border>
                 </StackPanel>
               </Border>
@@ -816,7 +790,7 @@
                   </Grid>
                 </Border>
                 <Border Margin="16,10,16,16" Padding="16" CornerRadius="{DynamicResource RoundedMD}"
-                        Background="{DynamicResource SurfaceSunkenBrush}">
+                        Background="{DynamicResource SurfaceRaisedBrush}">
                   <StackPanel Spacing="3">
                     <TextBlock Text="{DynamicResource Loc_5CAC4F980FED}" TextWrapping="Wrap" FontSize="{DynamicResource TypographyTitleSize}" FontWeight="SemiBold" />
                     <TextBlock Text="{DynamicResource Loc_4509EC0D7EB4}" TextWrapping="Wrap" FontSize="{DynamicResource TypographyBodySize}" />

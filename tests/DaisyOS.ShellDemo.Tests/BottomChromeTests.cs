@@ -15,7 +15,7 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class BottomChromeTests
 {
     [Fact]
-    public async Task MediaAutoHidePreferencePersistsWithoutChangingOtherBars()
+    public async Task BottomAutoHideMigratesLegacyPreferencesAndPersistsOneChoice()
     {
         var directory = Path.Combine(Path.GetTempPath(), "daisy-media-hide-" + Guid.NewGuid());
         var path = Path.Combine(directory, "appearance.json");
@@ -28,10 +28,14 @@ public sealed class BottomChromeTests
             });
             var settings = store.Load();
             Assert.True(settings.MediaWidgetAutoHide);
-            Assert.False(settings.TaskbarAutoHide);
+            Assert.True(settings.TaskbarAutoHide);
             Assert.True(settings.SystemBarAutoHide);
             await File.WriteAllTextAsync(path, "{\"TaskbarAutoHide\":true}");
-            Assert.False(store.Load().MediaWidgetAutoHide);
+            Assert.True(store.Load().MediaWidgetAutoHide);
+            await store.SaveAsync(new DaisyOS.Shell.Services.Appearance.AppearanceSettings
+            { BottomComponentsAutoHide = false, TaskbarAutoHide = true, SystemBarAutoHide = true, MediaWidgetAutoHide = true });
+            var disabled = store.Load();
+            Assert.False(disabled.TaskbarAutoHide); Assert.False(disabled.SystemBarAutoHide); Assert.False(disabled.MediaWidgetAutoHide);
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }

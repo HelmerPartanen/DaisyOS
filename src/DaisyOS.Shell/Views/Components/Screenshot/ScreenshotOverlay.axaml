@@ -306,13 +306,13 @@
             Margin="0,32,0,0"
             Opacity="0"
             IsHitTestVisible="False"
-            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
             CornerRadius="{DynamicResource RoundedXLInset}"
             Padding="0"
             BoxShadow="{DynamicResource ElevationFlyoutShadow}">
       <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
               CornerRadius="{DynamicResource RoundedXLInset}"
-              Padding="1">
+              Padding="{DynamicResource ShellFrameSurfaceInset}">
         <Border Background="{DynamicResource SurfaceOverlayBrush}"
                 CornerRadius="{DynamicResource RoundedXLDoubleInset}"
                 Padding="16,8">
@@ -336,7 +336,7 @@
       <controls:ShellFrameBorder x:Name="CountdownMaterial" Width="88"
               Height="88"
               HorizontalAlignment="Center"
-              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
               CornerRadius="{DynamicResource RadiusPill}"
               Padding="2"
               BoxShadow="{DynamicResource ElevationFlyoutShadow}">
@@ -384,13 +384,13 @@
             VerticalAlignment="Bottom"
             Margin="0,0,0,48"
             Opacity="0"
-            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="1"
+            Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
             CornerRadius="{DynamicResource RoundedXL}"
             Padding="0"
             BoxShadow="{DynamicResource ElevationShellDialogShadow}"
             PointerPressed="OnToolbarPointerPressed">
       <controls:ShellFrameBorder Background="Transparent"
-              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BorderThickness="1" BackgroundSizing="InnerBorderEdge"
+              BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}" BackgroundSizing="InnerBorderEdge"
               CornerRadius="{DynamicResource RoundedXLInset}">
         <Border Background="{DynamicResource SurfaceBaseBrush}"
                 CornerRadius="{DynamicResource RoundedXLDoubleInset}"

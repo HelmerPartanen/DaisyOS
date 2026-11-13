@@ -41,3 +41,19 @@ A live settings-IPC round trip persisted the opt-out and exported native
 WindowBorder=#00000000 and ActiveOutlineAlpha=0. Restoring the original false
 preference restored WindowBorder=#26FFFFFF and ActiveOutlineAlpha=38.
 `git diff --check` passed.
+
+## Borderless panel geometry follow-up
+
+The initial opt-out hid strokes but retained their thickness, surface inset and
+smaller nested corner radii. This left a transparent strip around translucent
+widget and panel surfaces. The preference now also zeros decorative frame
+thickness/padding/inset and aligns the nested surface radii with the outer frame.
+Only decorative frame resources are affected; input/focus outlines remain.
+Custom cartouche fills expand to the perimeter and observe edge resources so
+existing popovers redraw when the preference changes.
+
+Eight focused headless tests passed, covering a live preference change on an
+existing widget, actual edge pixels, restoring normal frame geometry, media
+widget layouts and integer/fractional-scale frame rendering. The rendered
+borderless fixture is `/tmp/daisy-borderless-widget.png`; test output is
+`/tmp/daisy-panel-border-test.log`.
