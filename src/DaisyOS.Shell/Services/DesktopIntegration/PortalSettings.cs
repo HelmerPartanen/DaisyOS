@@ -1,6 +1,7 @@
 using Avalonia;
 using Avalonia.Styling;
 using DaisyOS.Shell.Services.Theming;
+using DaisyOS.System.Appearance;
 using Tmds.DBus.Protocol;
 
 namespace DaisyOS.Shell.Services.DesktopIntegration;
@@ -40,6 +41,10 @@ internal sealed class PortalSettings(DBusConnection bus)
         {
             ["text-scaling-factor"] = Math.Clamp(App.Current is App app ? app.CurrentTextScalePercent : 100, 90, 150) / 100.0,
             ["font-name"] = (App.Current is App current ? current.CurrentSystemFontFamily : TypographyPolicy.DefaultFamilyName) + " 10"
+        },
+        ["org.gnome.desktop.wm.preferences"] = new()
+        {
+            ["button-layout"] = LinuxSystemThemeService.CaptionButtonLayout
         }
     };
 

@@ -14,6 +14,25 @@ namespace DaisyOS.ShellDemo.Tests;
 public sealed class SettingsLayoutTests
 {
     [AvaloniaFact]
+    public void AppearanceExposesPanelBorderPreference()
+    {
+        var window = new SettingsWindow { Width = 1000, Height = 900 };
+        window.Show();
+        try
+        {
+            window.SelectCategory("Appearance");
+            window.UpdateLayout();
+            Dispatcher.UIThread.RunJobs();
+            var view = window.FindControl<SettingsView>("SettingsContent")!;
+            var toggle = view.FindControl<ToggleSwitch>("DisablePanelBordersToggle");
+            Assert.NotNull(toggle);
+            Assert.True(toggle.IsEffectivelyVisible);
+            Assert.True(toggle.Bounds.Width > 0);
+        }
+        finally { window.Close(); }
+    }
+
+    [AvaloniaFact]
     public async Task ContinuityUsesSidebarIconAndSharedSettingsCards()
     {
         var window = new SettingsWindow { Width = 1000, Height = 900 };

@@ -12,7 +12,7 @@ public sealed class LinuxSystemThemeServiceTests : IDisposable
     [Fact]
     public async Task DarkThemeUpdatesGtkKdeAndFallbackSettings()
     {
-        var runner = new ScriptedCommandRunner(Succeeded(), Succeeded(), Succeeded());
+        var runner = new ScriptedCommandRunner(Succeeded(), Succeeded(), Succeeded(), Succeeded());
         var service = new LinuxSystemThemeService(runner, _configHome);
 
         var result = await service.ApplyAsync(ThemeMode.Dark);
@@ -26,6 +26,7 @@ public sealed class LinuxSystemThemeServiceTests : IDisposable
                 Assert.Equal(["set", "org.gnome.desktop.interface", "color-scheme", "prefer-dark"], call.Arguments);
             },
             call => Assert.Equal(["set", "org.gnome.desktop.interface", "gtk-theme", "Breeze-Dark"], call.Arguments),
+            call => Assert.Equal(["set", "org.gnome.desktop.wm.preferences", "button-layout", ":minimize,maximize,close"], call.Arguments),
             call =>
             {
                 Assert.Equal("kwriteconfig6", call.FileName);
@@ -38,7 +39,7 @@ public sealed class LinuxSystemThemeServiceTests : IDisposable
     [Fact]
     public async Task LightThemeUpdatesGtkKdeAndFallbackSettings()
     {
-        var runner = new ScriptedCommandRunner(Succeeded(), Succeeded(), Succeeded());
+        var runner = new ScriptedCommandRunner(Succeeded(), Succeeded(), Succeeded(), Succeeded());
         var service = new LinuxSystemThemeService(runner, _configHome);
 
         var result = await service.ApplyAsync(ThemeMode.Light);
@@ -52,6 +53,7 @@ public sealed class LinuxSystemThemeServiceTests : IDisposable
                 Assert.Equal(["set", "org.gnome.desktop.interface", "color-scheme", "prefer-light"], call.Arguments);
             },
             call => Assert.Equal(["set", "org.gnome.desktop.interface", "gtk-theme", "Breeze"], call.Arguments),
+            call => Assert.Equal(["set", "org.gnome.desktop.wm.preferences", "button-layout", ":minimize,maximize,close"], call.Arguments),
             call =>
             {
                 Assert.Equal("kwriteconfig6", call.FileName);
@@ -68,9 +70,9 @@ public sealed class LinuxSystemThemeServiceTests : IDisposable
         Directory.CreateDirectory(directory);
         await File.WriteAllTextAsync(
             Path.Combine(directory, "settings.ini"),
-            "[Settings]\ngtk-font-name=Inter 11\ngtk-theme-name=Old\n\n[Unrelated]\nvalue=keep\n");
+            "[Settings]\ngtk-font-name=Inter 11\ngtk-theme-name=Old\ngtk-decoration-layout=:close\n\n[Unrelated]\nvalue=keep\n");
         var service = new LinuxSystemThemeService(
-            new ScriptedCommandRunner(Succeeded(), Succeeded(), Succeeded()),
+            new ScriptedCommandRunner(Succeeded(), Succeeded(), Succeeded(), Succeeded()),
             _configHome);
 
         await service.ApplyAsync(ThemeMode.Light);
@@ -79,6 +81,8 @@ public sealed class LinuxSystemThemeServiceTests : IDisposable
         Assert.Contains("gtk-font-name=Inter 11", content);
         Assert.Contains("gtk-theme-name=Breeze", content);
         Assert.Contains("gtk-application-prefer-dark-theme=0", content);
+        Assert.Contains("gtk-decoration-layout=:minimize,maximize,close", content);
+        Assert.DoesNotContain("gtk-decoration-layout=:close", content);
         Assert.Contains("[Unrelated]\nvalue=keep", content);
     }
 
@@ -104,6 +108,7 @@ public sealed class LinuxSystemThemeServiceTests : IDisposable
         var content = File.ReadAllText(Path.Combine(_configHome, toolkitDirectory, "settings.ini"));
         Assert.Contains($"gtk-theme-name={expectedTheme}", content);
         Assert.Contains($"gtk-application-prefer-dark-theme={expectedDarkPreference}", content);
+        Assert.Contains("gtk-decoration-layout=:minimize,maximize,close", content);
     }
 
     private static CommandResult Succeeded() => new(0, string.Empty, string.Empty, TimedOut: false);

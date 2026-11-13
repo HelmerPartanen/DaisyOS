@@ -826,6 +826,18 @@
               </StackPanel>
             </Border>
 
+            <Border Classes="SettingsGroupCard">
+              <Border Classes="SettingsGroupRow">
+                <Grid ColumnDefinitions="*,Auto">
+                  <StackPanel Spacing="2">
+                    <TextBlock Text="{DynamicResource Loc_B6EFECF9B625}" Classes="SettingsLabel" />
+                    <TextBlock Text="{DynamicResource Loc_2993C395F241}" Classes="SettingsDescription" />
+                  </StackPanel>
+                  <ToggleSwitch x:Name="DisablePanelBordersToggle" Grid.Column="1" VerticalAlignment="Center" Click="OnDisablePanelBordersToggled" />
+                </Grid>
+              </Border>
+            </Border>
+
             <TextBlock Text="{DynamicResource Loc_040D4645676F}" Classes="SettingsSectionTitle" Margin="0,4,0,-12" />
             <Border Classes="SettingsGroupCard">
               <StackPanel>

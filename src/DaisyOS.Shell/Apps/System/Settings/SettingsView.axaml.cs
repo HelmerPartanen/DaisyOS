@@ -3853,6 +3853,12 @@ namespace DaisyOS.Shell.Apps.System.Settings
             await app.SetSolidWallpaperAsync(color);
         }
 
+        private async void OnDisablePanelBordersToggled(object? sender, RoutedEventArgs e)
+        {
+            if (!_isRefreshingAppearanceControls && Application.Current is App app)
+                await app.SetDisablePanelBordersAsync(DisablePanelBordersToggle.IsChecked == true);
+        }
+
         private async void OnHighContrastToggled(object? sender, RoutedEventArgs e)
         {
             if (Application.Current is App app && HighContrastToggle is not null)
@@ -4016,6 +4022,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             };
             AutomaticThemeInfo.IsVisible = app.CurrentThemeMode == ThemeMode.Automatic;
             AutomaticThemeInfo.Text = app.GetAutomaticThemeScheduleDescription();
+            DisablePanelBordersToggle.IsChecked = app.PanelBordersDisabled;
             HighContrastToggle.IsChecked = app.HighContrastEnabled;
             ReduceMotionToggle.IsChecked = app.ReduceMotionEnabled;
             if (!TaskbarSizeSlider.IsDragging)

@@ -87,7 +87,7 @@ public sealed class WindowDecorationThemeService
             ("SurfaceBase", ToArgb(Opaque(ResolveColor(application, theme, "SurfaceBaseSolidBrush", "SurfaceBaseColorSolid",
                 ToArgb(ResolveColor(application, theme, "SurfaceBaseBrush", "SurfaceBaseColor", "#FF121214")))))),
             ("SurfaceRaised", ToArgb(Opaque(ResolveColor(application, theme, "SurfaceRaisedBrush", "SurfaceRaisedColor", "#FF1A1A1D")))),
-            ("WindowBorder", ToArgb(ResolveColor(application, theme, "StrokeDefaultBrush", "StrokeDefaultColor", "#26FFFFFF"))),
+            ("WindowBorder", ToArgb(ResolveWindowBorder(application, theme))),
             ("ShellFrameOuterEdge", ToArgb(ResolveColor(application, theme, "ShellFrameOuterEdgeBrush", "ShellFrameOuterEdgeColor", "#99000000"))),
             ("ShellFrameInnerHighlight", ToArgb(ResolveColor(application, theme, "ShellFrameInnerHighlightBrush", "ShellFrameInnerHighlightColor", "#26FFFFFF"))),
             ("ContentPrimary", ToArgb(ResolveColor(application, theme, "ContentPrimaryBrush", "ContentPrimaryColor", "#FFF5F5F7"))),
@@ -172,7 +172,7 @@ public sealed class WindowDecorationThemeService
     internal static IReadOnlyList<KeyValuePair<string, string>> BuildFrameEffectConfig(Application application)
     {
         var theme = application.ActualThemeVariant;
-        var outer = ResolveColor(application, theme, "StrokeDefaultBrush", "StrokeDefaultColor", "#26FFFFFF");
+        var outer = ResolveWindowBorder(application, theme);
         var inner = Colors.Transparent;
         static string Rgb(Color color) => $"#{color.R:X2}{color.G:X2}{color.B:X2}";
         return
@@ -211,6 +211,10 @@ public sealed class WindowDecorationThemeService
             ? brush.Opacity : 0.6;
         return Color.FromArgb((byte)Math.Round(color.A * Math.Clamp(opacity, 0, 1)), color.R, color.G, color.B);
     }
+
+    private static Color ResolveWindowBorder(Application application, ThemeVariant? theme) =>
+        ResolveColor(application, theme, "WindowFrameBorderBrush", "WindowFrameBorderColor",
+            ToArgb(ResolveColor(application, theme, "StrokeDefaultBrush", "StrokeDefaultColor", "#26FFFFFF")));
 
     private static Color ResolveColor(Application application, ThemeVariant? theme, string brushKey, string colorKey, string fallback)
     {

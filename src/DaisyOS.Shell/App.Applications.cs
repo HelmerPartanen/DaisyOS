@@ -74,6 +74,7 @@ public partial class App
                 SessionState.LastKnownVolume = request[1].Length == 0 ? null : double.Parse(request[1], global::System.Globalization.CultureInfo.InvariantCulture); break;
             case "theme" when request.Length == 2 && Enum.TryParse<ThemeMode>(request[1], out var mode) && Enum.IsDefined(mode): await SetThemeModeAsync(mode); break;
             case "accent" when request.Length == 2 && Enum.TryParse<AccentColor>(request[1], out var accent) && Enum.IsDefined(accent): await SetAccentColorAsync(accent); break;
+            case "panel-borders" when request.Length == 2: await SetDisablePanelBordersAsync(bool.Parse(request[1])); break;
             case "contrast" when request.Length == 2: await SetHighContrastAsync(bool.Parse(request[1])); break;
             case "lock-screen" when request.Length == 2:
                 await SetLockScreenAppearanceAsync(global::System.Text.Json.JsonSerializer.Deserialize(request[1],

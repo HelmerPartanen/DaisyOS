@@ -21,6 +21,8 @@ public sealed class AppearanceSettings
 
     public bool HighContrast { get; set; }
 
+    public bool DisablePanelBorders { get; set; }
+
     public LockScreenAppearance LockScreen { get; set; } = new();
 
     public bool DeptEffectEnabled { get; set; } = true;

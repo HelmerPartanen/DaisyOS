@@ -45,6 +45,7 @@ static void request(PolkitAgentSession *source, const char *prompt, gboolean ech
     (void)source; (void)data; emit(echo ? "echo" : "password", prompt);
 }
 static void info(PolkitAgentSession *source, const char *text, gpointer data) { (void)source; (void)data; emit("info", text); }
+static void error_message(PolkitAgentSession *source, const char *text, gpointer data) { (void)source; (void)data; emit("error", text); }
 static void cancel_request(void) {
     if (session) { polkit_agent_session_cancel(session); return; }
     if (pending) {
@@ -57,11 +58,13 @@ static void cancelled(GCancellable *source, gpointer data) { (void)source; (void
 static void begin(PolkitAgentListener *listener, const gchar *action, const gchar *message, const gchar *icon,
                   PolkitDetails *details, const gchar *auth_cookie, GList *identities, GCancellable *stop,
                   GAsyncReadyCallback callback, gpointer data) {
-    (void)icon; (void)details;
+    (void)icon;
     GTask *task = g_task_new(listener, stop, callback, data);
     if (pending) { g_task_return_new_error(task, POLKIT_ERROR, POLKIT_ERROR_FAILED, "Authentication is busy"); g_object_unref(task); return; }
     pending = task; cookie = g_strdup(auth_cookie);
     emit("begin", message); emit("action", action);
+    const char *program = details ? polkit_details_lookup(details, "program") : NULL;
+    if (program) emit("program", program);
     for (GList *item = identities; item; item = item->next) {
         if (!POLKIT_IS_UNIX_USER(item->data)) continue;
         allowed = g_list_append(allowed, g_object_ref(item->data));
@@ -98,7 +101,7 @@ static gboolean input(GIOChannel *channel, GIOCondition condition, gpointer data
             waiting_identity = FALSE; session = polkit_agent_session_new(item->data, cookie);
             g_signal_connect(session, "request", G_CALLBACK(request), NULL);
             g_signal_connect(session, "show-info", G_CALLBACK(info), NULL);
-            g_signal_connect(session, "show-error", G_CALLBACK(info), NULL);
+            g_signal_connect(session, "show-error", G_CALLBACK(error_message), NULL);
             g_signal_connect(session, "completed", G_CALLBACK(completed), NULL);
             polkit_agent_session_initiate(session); break;
         }

@@ -45,9 +45,9 @@ internal sealed class PortalDialog : Window
         return _completion.Task;
     }
 
-    public static T Create<T>(Func<T> factory) where T : Window
+    public static T Create<T>(Func<T> factory, bool useWindowChrome = true) where T : Window
     {
-        var window = ClientSideDecorationsWindow.Create(factory);
+        var window = useWindowChrome ? ClientSideDecorationsWindow.Create(factory) : factory();
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY")))
             WaylandWindow.SetAppId(window, "org.daisyos.DesktopServices");
         window.Opened += (_, _) => { if (window.ShowActivated) _ = FocusAsync(window); };

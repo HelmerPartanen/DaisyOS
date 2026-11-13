@@ -10,6 +10,20 @@ namespace DaisyOS.Tests;
 public sealed class WindowDecorationThemeServiceTests
 {
     [Fact]
+    public void DisabledPanelBordersExportTransparentEdgesToNativeWindows()
+    {
+        var application = new Application();
+        PanelBorderPolicy.Apply(application.Resources, true);
+        var config = WindowDecorationThemeService.BuildConfig(application);
+        Assert.Contains("ShellFrameOuterEdge=#00000000", config);
+        Assert.Contains("ShellFrameInnerHighlight=#00000000", config);
+        var frame = WindowDecorationThemeService.BuildFrameEffectConfig(application).ToDictionary(pair => pair.Key, pair => pair.Value);
+        Assert.Equal("0", frame["ActiveOutlineAlpha"]);
+        Assert.Equal("0", frame["InactiveOutlineAlpha"]);
+        Assert.Contains("WindowBorder=#00000000", config);
+    }
+
+    [Fact]
     public void OverviewPaletteFollowsThemeChanges()
     {
         var application = new Application();

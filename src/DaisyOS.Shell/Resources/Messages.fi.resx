@@ -7411,4 +7411,27 @@ Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
     <comment>Source: Return unused desktop memory while hidden. Memory cleanup pauses during Gaming Mode.
 Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
   </data>
+  <data name="Loc_5E3CB607510B" xml:space="preserve">
+    <value>Todennus epäonnistui. Yritä toimintoa uudelleen.</value>
+    <comment>Source: Authentication failed. Please try the action again.
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</comment>
+  </data>
+  <data name="Loc_BB276AC5BB46" xml:space="preserve">
+    <value>Saako {0} tehdä muutoksia?</value>
+    <comment>Source: Allow {0} to make changes?
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</comment>
+  </data>
+  <data name="Loc_155F816C0407" xml:space="preserve">
+    <value>Lähetä</value>
+    <comment>Source: Submit
+Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</comment>
+  </data>
+  <data name="Loc_B6EFECF9B625" xml:space="preserve">
+    <value>Poista paneelien reunukset</value>
+    <comment>Source: Disable panel borders</comment>
+  </data>
+  <data name="Loc_2993C395F241" xml:space="preserve">
+    <value>Poista paneelien ja sovellusikkunoiden koristeelliset kaksoisreunukset.</value>
+    <comment>Source: Remove decorative double borders from panels and app windows.</comment>
+  </data>
 </root>

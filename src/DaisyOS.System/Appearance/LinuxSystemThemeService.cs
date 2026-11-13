@@ -17,6 +17,8 @@ namespace DaisyOS.System.Appearance;
 /// </summary>
 public sealed class LinuxSystemThemeService
 {
+    // Match the three caption actions exposed by the native DaisyOS decoration.
+    public const string CaptionButtonLayout = ":minimize,maximize,close";
     private static readonly TimeSpan ChangeTimeout = TimeSpan.FromSeconds(5);
 
     private readonly ICommandRunner _commandRunner;
@@ -55,6 +57,11 @@ public sealed class LinuxSystemThemeService
             ["set", "org.gnome.desktop.interface", "gtk-theme", gtkTheme],
             ChangeTimeout,
             cancellationToken);
+        var gsettingsButtons = _commandRunner.RunAsync(
+            "gsettings",
+            ["set", "org.gnome.desktop.wm.preferences", "button-layout", CaptionButtonLayout],
+            ChangeTimeout,
+            cancellationToken);
         // The KDE portal publishes its appearance preference from kdeglobals.
         // --notify gives already-running KDE/Qt clients a configuration change
         // signal; clients that do not support live theme updates use this on
@@ -65,9 +72,9 @@ public sealed class LinuxSystemThemeService
             ChangeTimeout,
             cancellationToken);
 
-        await Task.WhenAll(gsettingsColorScheme, gsettingsGtkTheme, kdeTheme);
+        await Task.WhenAll(gsettingsColorScheme, gsettingsGtkTheme, gsettingsButtons, kdeTheme);
         return new SystemThemeApplyResult(
-            GtkPreferenceUpdated: (await gsettingsColorScheme).Succeeded && (await gsettingsGtkTheme).Succeeded,
+            GtkPreferenceUpdated: (await gsettingsColorScheme).Succeeded && (await gsettingsGtkTheme).Succeeded && (await gsettingsButtons).Succeeded,
             KdePreferenceUpdated: (await kdeTheme).Succeeded,
             GtkFallbackFilesUpdated: gtkFallbackUpdated);
     }
@@ -102,6 +109,7 @@ public sealed class LinuxSystemThemeService
 
         UpsertKey(lines, settingsStart, "gtk-theme-name", gtkTheme);
         UpsertKey(lines, settingsStart, "gtk-application-prefer-dark-theme", dark ? "1" : "0");
+        UpsertKey(lines, settingsStart, "gtk-decoration-layout", CaptionButtonLayout);
 
         var directory = Path.GetDirectoryName(path)!;
         Directory.CreateDirectory(directory);

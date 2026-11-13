@@ -192,6 +192,7 @@ public partial class App : Application
     public ThemeMode CurrentThemeMode => _appearanceSettings.ThemeMode;
     public AccentColor CurrentAccentColor => _appearanceSettings.AccentColor;
     public bool HighContrastEnabled => _appearanceSettings.HighContrast;
+    public bool PanelBordersDisabled => _appearanceSettings.DisablePanelBorders;
     public bool ReduceMotionEnabled => _appearanceSettings.ReduceMotion;
     public int CurrentTaskbarSize => Math.Clamp(_appearanceSettings.TaskbarSize, 0, 2);
 
@@ -477,14 +478,15 @@ public partial class App : Application
             || !string.Equals(previous.CursorThemeId, loaded.CursorThemeId, StringComparison.Ordinal)
             || previous.CursorSize != loaded.CursorSize;
 
-        if (accessibilityChanged) ApplyAccessibilityPreferences();
+        var bordersChanged = previous.DisablePanelBorders != loaded.DisablePanelBorders;
+        if (accessibilityChanged || bordersChanged) ApplyAccessibilityPreferences();
         if (accentChanged) ApplyAccentPreference();
         if (languageChanged) ApplyLanguageResources();
         if (typographyChanged) TypographyPolicy.Apply(Resources, _appearanceSettings.SystemFontFamily, _appearanceSettings.TextScalePercent);
         if (profilePictureChanged || typographyChanged) ApplyProfilePictureResources();
         if (taskbarSizeChanged || typographyChanged) ApplyTaskbarSizeResources();
 
-        if (accessibilityChanged || accentChanged || languageChanged || typographyChanged ||
+        if (bordersChanged || accessibilityChanged || accentChanged || languageChanged || typographyChanged ||
             profilePictureChanged || taskbarSizeChanged || wallpaperChanged || lockScreenChanged || barVisibilityChanged ||
             previous.ThemeMode != loaded.ThemeMode)
         {
@@ -1165,6 +1167,15 @@ public partial class App : Application
         ApplyAccentPreference();
         await PersistAppearanceAsync();
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task SetDisablePanelBordersAsync(bool disabled)
+    {
+        _appearanceSettings.DisablePanelBorders = disabled;
+        PanelBorderPolicy.Apply(Resources, disabled);
+        AppearanceChanged?.Invoke(this, EventArgs.Empty);
+        if (_useDesktopSettings) await ApplyDesktopSettingAsync("panel-borders", disabled.ToString());
+        else await PersistAppearanceAsync();
     }
 
     public async Task SetHighContrastAsync(bool enabled)
@@ -3546,6 +3557,7 @@ public partial class App : Application
     private void ApplyAccessibilityPreferences()
     {
         if (Resources is null) return;
+        PanelBorderPolicy.Apply(Resources, _appearanceSettings.DisablePanelBorders);
         if (_appearanceSettings.ReduceMotion) Services.Motion.GuiMotion.SettleActiveAnimations();
         _ = ExportWindowDecorationThemeAsync();
 
