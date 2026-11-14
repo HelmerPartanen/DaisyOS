@@ -1,4 +1,4 @@
-<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming" x:Class="DaisyOS.Shell.Apps.Mail.MailStyles">
+<Styles xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming;assembly=DaisyOS.Shell" x:Class="DaisyOS.Shell.Apps.Mail.MailStyles">
     <Style Selector="TextBlock.MailSecondary">
       <Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}" />
       <Setter Property="FontSize" Value="{DynamicResource TypeSizeBodySmall}" />

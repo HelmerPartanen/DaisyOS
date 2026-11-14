@@ -16,7 +16,7 @@ internal static class Program
                 .Where(arg => !arg.StartsWith('-'))
                 .Select(ToLocalPath)
                 .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate) &&
-                    string.Equals(Path.GetExtension(candidate), ".AppImage", StringComparison.OrdinalIgnoreCase));
+                    DaisyOS.System.Applications.ApplicationManagementService.SupportsFile(candidate));
             if (path is not null)
             {
                 if (autoInstall)

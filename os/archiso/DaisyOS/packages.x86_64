@@ -46,6 +46,8 @@ nano
 less
 bash-completion
 flatpak
+fuse2
+squashfs-tools
 alacritty
 kscreen
 udisks2

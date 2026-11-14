@@ -21,6 +21,8 @@ public static class PackagedApplicationLauncher
     }
     public static AppLaunchResult Launch(string application, IEnumerable<string>? arguments = null)
     {
+        if (DaisyOS.System.Applications.OptionalApplicationState.IsRemoved(application))
+            return new AppLaunchResult(false, "This optional application was removed. Reinstall it from App Store or an application package.");
         var binary = Environment.GetEnvironmentVariable("DAISYOS_" + application.ToUpperInvariant() + "_BINARY");
         if (string.IsNullOrWhiteSpace(binary))
         {

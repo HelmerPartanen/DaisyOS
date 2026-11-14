@@ -539,6 +539,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             icon.AddHandler(InputElement.PointerPressedEvent, Icon_PointerPressed, RoutingStrategies.Tunnel);
             icon.PointerEntered += PreviewPointerEntered;
             icon.PointerExited += PreviewPointerExited;
+            icon.AddHandler(ToolTip.ToolTipOpeningEvent, PreviewToolTipOpening);
             icon.PointerMoved += Icon_PointerMoved;
             icon.PointerReleased += Icon_PointerReleased;
             icon.PointerCaptureLost += Icon_PointerCaptureLost;
@@ -551,6 +552,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             icon.RemoveHandler(InputElement.PointerPressedEvent, Icon_PointerPressed);
             icon.PointerEntered -= PreviewPointerEntered;
             icon.PointerExited -= PreviewPointerExited;
+            icon.RemoveHandler(ToolTip.ToolTipOpeningEvent, PreviewToolTipOpening);
             icon.PointerMoved -= Icon_PointerMoved;
             icon.PointerReleased -= Icon_PointerReleased;
             icon.PointerCaptureLost -= Icon_PointerCaptureLost;

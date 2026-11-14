@@ -59,7 +59,7 @@ public sealed class BottomChromeTooltips : Canvas
             _dismissedOwner = null;
             _owner = owner;
             _suppress = suppress;
-            if (owner is not null) _delay.Start();
+            if (owner is not null && suppress?.Invoke(owner) != true) _delay.Start();
         }, RoutingStrategies.Tunnel, handledEventsToo: true);
         root.AddHandler(InputElement.PointerPressedEvent, (_, _) => DismissUntilExit(), RoutingStrategies.Tunnel, handledEventsToo: true);
         root.AddHandler(InputElement.PointerWheelChangedEvent, (_, _) => DismissUntilExit(), RoutingStrategies.Tunnel, handledEventsToo: true);

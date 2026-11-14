@@ -330,9 +330,8 @@ public sealed class UsabilityTests
         {
             using var frame = window.CaptureRenderedFrame();
             Assert.NotNull(frame);
-            var editor = (view.FindControl<Control>("CodeEditor")?.IsVisible == true
-                ? view.FindControl<Control>("CodeEditor")
-                : view.FindControl<Control>("RichEditor")) ?? (Control?)view.FindControl<TextBox>("ContentTextBox");
+            var editor = view.GetVisualDescendants().OfType<Control>()
+                .FirstOrDefault(control => control.Name is "CodeEditor" or "RichEditor" && control.IsVisible);
             Assert.NotNull(editor);
             Assert.True(editor.Bounds.Width > 200);
             SaveFrame(frame, $"notes-{(dark ? "dark" : "light")}-{width}.png");

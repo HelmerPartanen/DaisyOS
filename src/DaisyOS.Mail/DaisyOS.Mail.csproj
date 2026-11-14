@@ -10,4 +10,13 @@
  <Target Name="ValidateMailRegistrationFile" BeforeTargets="PrepareForBuild" Condition="'$(DaisyMailProviderConfig)' != ''">
   <Error Condition="!Exists('$(DaisyMailProviderConfig)')" Text="DaisyMailProviderConfig does not identify an existing provider registration file." />
  </Target>
+  <PropertyGroup><OptionalApplicationSource>Mail</OptionalApplicationSource></PropertyGroup>
+  <Import Project="../DaisyOS.OptionalApplication.targets" />
+  <Target Name="BuildMailRenderer" BeforeTargets="PrepareForBuild" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <Exec Command="bash &quot;$(MSBuildProjectDirectory)/../../scripts/build-mail-renderer.sh&quot;" />
+  </Target>
+  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
+    <None Include="../native/daisy_mail_renderer/build/daisy-mail-renderer" Link="daisy-mail-renderer" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_mail_renderer/build/daisy-mail-renderer')" />
+  </ItemGroup>
+
 </Project>

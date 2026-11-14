@@ -2071,7 +2071,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
         {
             var service = new InstalledApplicationService();
             IReadOnlyList<AppEntry> apps;
-            try { apps = await Task.Run(service.GetInstalledApplications); }
+            try { apps = await service.GetInstalledApplicationsAsync(); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
                 if (buildVersion != _categoryBuildVersion) return;
@@ -2105,6 +2105,25 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 Foreground = TryBrush("ContentSecondaryBrush"),
                 Margin = new Thickness(0, -10, 0, -8)
             }, "Caption"));
+            var hidden = service.GetRemovedApplications();
+            if (hidden.Count > 0)
+            {
+                var hiddenRows = new StackPanel { Spacing = 8 };
+                hiddenRows.Children.Add(Secondary(Loc.Get("Hidden from the launcher — not uninstalled")));
+                foreach (var removed in hidden)
+                {
+                    var restore = new Button { Content = Loc.Get("Restore"), Classes = { "Secondary", "Small" } };
+                    restore.Click += (_, _) => { service.RestoreRemovedApplication(removed.DesktopId); ShowCategory("InstalledApps"); };
+                    var remove = new Button { Content = Loc.Get("Review uninstall"), Classes = { "Secondary", "Small" } };
+                    remove.Click += async (_, _) =>
+                    {
+                        var entry = new AppEntry(removed.DesktopId, removed.Name, "", removed.Icon, false, AppLaunchKind.DesktopEntry);
+                        if (await Services.ApplicationManagementUi.RemoveAsync(service, entry, TopLevel.GetTopLevel(this) as Window)) ShowCategory("InstalledApps");
+                    };
+                    hiddenRows.Children.Add(PreferenceRow(removed.Name, Loc.Get("Hiding a launcher does not remove the installed application."), new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, Children = { restore, remove } }));
+                }
+                CategoryContent.Children.Add(hiddenRows);
+            }
             var rowsHost = new StackPanel { Spacing = 8 };
             CategoryContent.Children.Add(rowsHost);
             foreach (var app in apps)
@@ -2158,6 +2177,15 @@ namespace DaisyOS.Shell.Apps.System.Settings
             menu.Items.Add(repair);
             menu.Items.Add(new Separator());
             menu.Items.Add(uninstall);
+            var hide = new MenuItem { Header = Loc.Get("Hide from launcher") };
+            hide.Click += async (_, _) =>
+            {
+                menu.Close();
+                var target = await service.ResolveAsync(app);
+                if (target.IsProtected) { (Application.Current as App)?.Feedback.Show(target.UnavailableReason); return; }
+                if (service.HideApplication(target)) ShowCategory("InstalledApps");
+            };
+            menu.Items.Add(hide);
             more.ContextMenu = menu;
             more.Click += (_, _) => menu.Open(more);
 
@@ -2165,32 +2193,31 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 menu.Close();
                 more.IsEnabled = false;
-                var target = await service.ResolveAsync(app);
-                if (!target.CanManage)
+                try
                 {
+                    var target = await service.ResolveAsync(app);
+                    if (!target.CanManage)
+                    {
+                        more.IsEnabled = true;
+                        (Application.Current as App)?.Feedback.Show(target.UnavailableReason);
+                        return;
+                    }
+                    var plan = await service.PrepareRepairAsync(target);
+                    var confirmation = new DaisyOS.Shell.Views.Dialogs.ApplicationTransactionDialog(plan);
+                    if (!await confirmation.ConfirmAsync(TopLevel.GetTopLevel(this) as Window)) { more.IsEnabled = true; return; }
+                    var repaired = (await service.ExecuteRepairAsync(confirmation.Plan)).Succeeded;
                     more.IsEnabled = true;
-                    (Application.Current as App)?.Feedback.Show(target.UnavailableReason);
-                    return;
+                    (Application.Current as App)?.Feedback.Show(repaired ? Loc.Format("{0} was repaired.", app.Name) : Loc.Format("Couldn’t repair {0}.", app.Name));
                 }
-                var repaired = await service.RepairAsync(target);
-                more.IsEnabled = true;
-                (Application.Current as App)?.Feedback.Show(repaired ? Loc.Format("{0} was repaired.", app.Name) : Loc.Format("Couldn’t repair {0}.", app.Name));
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or global::System.Text.Json.JsonException)
+                { (Application.Current as App)?.Feedback.Show(ex.Message); }
+                finally { more.IsEnabled = true; }
             };
             uninstall.Click += async (_, _) =>
             {
                 menu.Close();
-                var target = await service.ResolveAsync(app);
-                if (!target.CanManage)
-                {
-                    (Application.Current as App)?.Feedback.Show(target.UnavailableReason);
-                    return;
-                }
-                if (!await ConfirmApplicationRemovalAsync(app.Name)) return;
-                more.IsEnabled = false;
-                var removed = await service.UninstallAsync(target);
-                (Application.Current as App)?.Feedback.Show(removed ? Loc.Format("{0} was uninstalled.", app.Name) : Loc.Format("Couldn’t uninstall {0}.", app.Name));
-                if (removed && buildVersion == _categoryBuildVersion) ShowCategory("Apps");
-                else more.IsEnabled = true;
+                var removed = await DaisyOS.Shell.Services.ApplicationManagementUi.RemoveAsync(service, app, TopLevel.GetTopLevel(this) as Window);
+                if (removed && buildVersion == _categoryBuildVersion) ShowCategory("InstalledApps");
             };
 
             var row = new Border

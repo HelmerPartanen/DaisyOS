@@ -127,7 +127,9 @@ restart_shell() {
     echo "Shell build failed. The running desktop was left untouched." >&2
     exit 1
   fi
-  for application in Files Mail Notes Settings DiskManager AppInstaller; do
+  for application in Files Mail Notes Settings DiskManager AppInstaller Calculator AppStore UIKit; do
+    removed_apps="${XDG_DATA_HOME:-$HOME/.local/share}/daisyos/applications/removed-optional-applications"
+    if [[ -f "$removed_apps" ]] && grep -q -i -x "$application" "$removed_apps"; then continue; fi
     if ! dotnet build "$source_root/src/DaisyOS.$application/DaisyOS.$application.csproj" -c "${DAISYOS_APP_CONFIGURATION:-Release}" --no-restore --disable-build-servers -m:1 -v:minimal; then
       echo "Build failed. The running DaisyOS shell was left untouched." >&2
       exit 1

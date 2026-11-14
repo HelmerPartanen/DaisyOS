@@ -41,7 +41,11 @@ public partial class AppInstallerWindow : Window
     public async Task InstallFileAsync(string path)
     {
         await OpenFileAsync(path);
-        if (ViewModel is { } vm) await vm.InstallAsync();
+        if (ViewModel is { } vm)
+        {
+            if (vm.SelectedPlan is { } plan && !await new ApplicationTransactionDialog(plan).ConfirmAsync(this)) return;
+            await vm.InstallAsync();
+        }
     }
 
     protected override void OnClosed(EventArgs e)
@@ -55,13 +59,15 @@ public partial class AppInstallerWindow : Window
     {
         if (Application.Current is not App app) return;
         var files = await app.PickFilesAsync(this, new DaisyFilePickerOptions(
-            Loc.Get("Choose an AppImage"), false, false, [".AppImage", ".appimage"]));
+            Loc.Get("Choose an application package"), false, false, [".AppImage", ".appimage", ".flatpakref", ".flatpak", ".deb", ".rpm", ".zst", ".xz", ".gz"]));
         if (files?.FirstOrDefault() is { } path) await OpenFileAsync(path);
     }
 
     private async void OnInstallClicked(object? sender, RoutedEventArgs e)
     {
-        if (ViewModel is { } viewModel) await viewModel.InstallAsync();
+        if (ViewModel is not { } viewModel) return;
+        if (viewModel.SelectedPlan is { } plan && !await new ApplicationTransactionDialog(plan).ConfirmAsync(this)) return;
+        await viewModel.InstallAsync();
     }
 
     private void OnQuitClicked(object? sender, RoutedEventArgs e) => Close();
@@ -148,7 +154,7 @@ public partial class AppInstallerWindow : Window
         var path = files?
             .Select(file => file.TryGetLocalPath())
             .FirstOrDefault(candidate => !string.IsNullOrWhiteSpace(candidate) &&
-                string.Equals(Path.GetExtension(candidate), ".AppImage", StringComparison.OrdinalIgnoreCase));
+                DaisyOS.System.Applications.ApplicationManagementService.SupportsFile(candidate));
         if (path is not null) await OpenFileAsync(path);
         e.Handled = true;
     }

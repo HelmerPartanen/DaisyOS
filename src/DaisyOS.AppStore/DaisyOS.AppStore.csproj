@@ -1,0 +1,6 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><OptionalApplicationSource>AppStore</OptionalApplicationSource></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../DaisyOS.Shell/DaisyOS.Shell.csproj" /></ItemGroup>
+  <Import Project="../DaisyOS.OptionalApplication.targets" />
+  <ItemGroup><AvaloniaResource Include="../DaisyOS.Shell/Assets/AppStore/**/*" Link="Assets/AppStore/%(RecursiveDir)%(Filename)%(Extension)" /></ItemGroup>
+</Project>

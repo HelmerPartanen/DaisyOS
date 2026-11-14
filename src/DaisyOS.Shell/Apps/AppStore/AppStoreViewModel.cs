@@ -97,7 +97,33 @@ public sealed class AppStoreCardViewModel : INotifyPropertyChanged
         PropertyChanged?.Invoke(this, new(null));
     }
     public Task InstallAsync() => RunAsync("install");
-    public Task UninstallAsync() => RunAsync("remove");
+    private ApplicationTransactionPlan? _installationPlan;
+    public async Task<ApplicationTransactionPlan?> PrepareInstallAsync() => _service is LinuxAppStoreService native ? await native.PrepareInstallAsync(Item) : null;
+    public Task InstallReviewedAsync(ApplicationTransactionPlan plan) { _installationPlan = plan; return RunAsync("install"); }
+    private async Task<bool> InstallAsync(Action<double> progress, CancellationToken token)
+    {
+        if (_installationPlan is null || _service is not LinuxAppStoreService native) return await _service.InstallAppAsync(Item.PackageName, progress, token);
+        var result = await native.Applications.ExecuteAsync(_installationPlan, progress: new Progress<ApplicationProgress>(p => { if (p.Fraction is { } fraction) progress(fraction); }), token: token);
+        if (!result.Succeeded) throw new AppStoreException(result.Message + " " + result.Details);
+        (Application.Current as App)?.NotifyApplicationRestored(Item.Id);
+        return true;
+    }
+    private ApplicationTransactionPlan? _removalPlan;
+    private bool _removeData;
+    public Task<ApplicationTransactionPlan?> PrepareRemovalAsync() => _service is DaisyOS.System.AppStore.LinuxAppStoreService native
+        ? Prepare(native) : Task.FromResult<ApplicationTransactionPlan?>(null);
+    private async Task<ApplicationTransactionPlan?> Prepare(DaisyOS.System.AppStore.LinuxAppStoreService native) => await native.PrepareRemovalAsync(Item);
+    public Task UninstallAsync(ApplicationTransactionPlan? plan = null, bool removeData = false)
+    { _removalPlan = plan; _removeData = removeData; return RunAsync("remove"); }
+    private async Task<bool> RemoveAsync(CancellationToken token)
+    {
+        if (_removalPlan is null || _service is not DaisyOS.System.AppStore.LinuxAppStoreService native) return await _service.UninstallAppAsync(Item.PackageName, token);
+        var result = await native.Applications.ExecuteAsync(_removalPlan, _removeData, token: token);
+        if (!result.Succeeded) throw new DaisyOS.System.AppStore.AppStoreException(result.Message + " " + result.Details);
+        foreach (var id in result.RemovedDesktopIds) (Application.Current as App)?.NotifyApplicationRemoved(id);
+        if (result.RemovedDesktopIds.Length == 0) (Application.Current as App)?.NotifyApplicationRestored(Item.Id);
+        return true;
+    }
     public Task UpdateAsync() => RunAsync("update");
     public async Task PrimaryActionAsync()
     {
@@ -118,9 +144,9 @@ public sealed class AppStoreCardViewModel : INotifyPropertyChanged
         {
             var success = operation switch
             {
-                "remove" => await _service.UninstallAppAsync(Item.PackageName, request.Token),
+                "remove" => await RemoveAsync(request.Token),
                 "update" => await _service.UpdateAppAsync(Item.PackageName, cancellationToken: request.Token),
-                _ => await _service.InstallAppAsync(Item.PackageName, cancellationToken: request.Token)
+                _ => await InstallAsync(_ => { }, request.Token)
             };
             if (!success) throw new IOException("The operation could not finish. Try again.");
             _state = operation == "remove" ? AppInstallState.NotInstalled : AppInstallState.Installed;

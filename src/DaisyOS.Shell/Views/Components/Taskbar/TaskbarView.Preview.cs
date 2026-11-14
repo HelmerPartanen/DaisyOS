@@ -3,6 +3,7 @@ using System.Linq;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
 using DaisyOS.Shell.Services.Compositor;
@@ -12,6 +13,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar;
 public partial class TaskbarView
 {
     internal bool IsNativePanelHosted { get; set; }
+    internal event EventHandler? PreviewShown;
     private CompositorWindowRecord[] _previewWindows = [];
     private Button? _previewButton;
     private DispatcherTimer? _previewDelay;
@@ -100,10 +102,17 @@ public partial class TaskbarView
             Application.Current is App { ReduceMotionEnabled: true }, IsNativePanelHosted ? top.Bounds.Height : 0,
             Color("ContentOnActionBrush", "#ffffffff"), DockEdge.ToString(), IsNativePanelHosted ? top.Bounds.Width : 0));
         _previewShown = true;
+        PreviewShown?.Invoke(this, EventArgs.Empty);
     }
 
     internal bool HasHoverPreview(Control owner) => owner is Button button &&
-        PreviewsEnabled && TaskbarPreviewState.IsAvailable && PreviewWindows(button).Length > 0;
+        PreviewsEnabled && (TaskbarPreviewState.IsAvailable || _previewShown) && PreviewWindows(button).Length > 0;
+
+    private void PreviewToolTipOpening(object? sender, CancelRoutedEventArgs e)
+    {
+        if (sender is Control control && HasHoverPreview(control))
+            e.Cancel = true;
+    }
 
     private static void RestorePreviewTooltip(Button button)
     {

@@ -11,8 +11,9 @@ using DaisyOS.Core.Helpers;
 
 namespace DaisyOS.Shell.Apps.Notes;
 
-public class NotesViewModel : INotifyPropertyChanged, IDisposable
+public class NotesViewModel : INotifyPropertyChanged, IDisposable, DaisyOS.Shell.Services.Diagnostics.IApplicationPerformanceContent
 {
+    public bool IsBenchmarkReady => Notes.Count == 20;
     private NoteItem? _selectedNote;
     private string _searchQuery = string.Empty;
     private readonly string _notesDir;

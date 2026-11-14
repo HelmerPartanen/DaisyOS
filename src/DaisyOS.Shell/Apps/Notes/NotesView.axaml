@@ -3,7 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:notes="clr-namespace:DaisyOS.Shell.Apps.Notes"
-    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell"
     xmlns:rich="clr-namespace:DaisyOS.Shell.Apps.Notes.Editor.Rich"
     xmlns:code="clr-namespace:DaisyOS.Shell.Apps.Notes.Editor.Code"
     KeyDown="OnViewKeyDown">

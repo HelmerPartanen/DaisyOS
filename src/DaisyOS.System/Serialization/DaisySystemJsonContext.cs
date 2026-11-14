@@ -20,6 +20,8 @@ namespace DaisyOS.System.Serialization;
 [JsonSerializable(typeof(JsonAppPolicyService.AppPolicyDocument))]
 [JsonSerializable(typeof(JsonAppPolicyService.AppPolicyEntryDocument))]
 [JsonSerializable(typeof(AppImageRegistryDocument))]
+[JsonSerializable(typeof(List<DaisyOS.Core.Models.InstalledApplication>))]
+[JsonSerializable(typeof(DaisyOS.System.Applications.NativeTransaction))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSerializable(typeof(Dictionary<string, LocalSendService.FileInfoDto>))]
 internal sealed partial class DaisySystemJsonContext : JsonSerializerContext

@@ -7956,4 +7956,131 @@ Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</
     <value>Position and size</value>
     <comment>Source: Position and size</comment>
   </data>
+  <data name="Loc_6A2580047C5B" xml:space="preserve">
+    <value>Choose an application package</value>
+    <comment>Source: Choose an application package</comment>
+  </data>
+  <data name="Loc_13112C170595" xml:space="preserve">
+    <value>Drop an application package here, or choose a file from your computer.</value>
+    <comment>Source: Drop an application package here, or choose a file from your computer.</comment>
+  </data>
+  <data name="Loc_B04B27E6C23C" xml:space="preserve">
+    <value>Administrator authentication required. This folder will be permanently removed.</value>
+    <comment>Source: Administrator authentication required. This folder will be permanently removed.
+Used by: src/DaisyOS.Shell/Views/Dialogs/ApplicationTransactionDialog.cs</comment>
+  </data>
+  <data name="Loc_215A68FA9190" xml:space="preserve">
+    <value>Also delete this app’s saved data</value>
+    <comment>Source: Also delete this app’s saved data
+Used by: src/DaisyOS.Shell/Views/Dialogs/ApplicationTransactionDialog.cs</comment>
+  </data>
+  <data name="Loc_41E2478A7238" xml:space="preserve">
+    <value>Application removal</value>
+    <comment>Source: Application removal
+Used by: src/DaisyOS.Shell/Services/ApplicationManagementUi.cs</comment>
+  </data>
+  <data name="Loc_BD53644FE2C6" xml:space="preserve">
+    <value>Choose installation folder</value>
+    <comment>Source: Choose installation folder
+Used by: src/DaisyOS.Shell/Views/Dialogs/ApplicationTransactionDialog.cs</comment>
+  </data>
+  <data name="Loc_02378840C5B7" xml:space="preserve">
+    <value>Choose the app’s dedicated installation folder. User folders move to Trash. System installations require authentication and are permanently removed. Shared folders cannot be removed.</value>
+    <comment>Source: Choose the app’s dedicated installation folder. User folders move to Trash. System installations require authentication and are permanently removed. Shared folders cannot be removed.
+Used by: src/DaisyOS.Shell/Views/Dialogs/ApplicationTransactionDialog.cs</comment>
+  </data>
+  <data name="Loc_747D464599CC" xml:space="preserve">
+    <value>Cleanup pending</value>
+    <comment>Source: Cleanup pending
+Used by: src/DaisyOS.Shell/Services/InstalledApplicationService.cs</comment>
+  </data>
+  <data name="Loc_57D820C662B6" xml:space="preserve">
+    <value>Couldn’t read the selected application package. Try again.</value>
+    <comment>Source: Couldn’t read the selected application package. Try again.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_B192CFAE9EFD" xml:space="preserve">
+    <value>Hidden from the launcher — not uninstalled</value>
+    <comment>Source: Hidden from the launcher — not uninstalled
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_1194D3FA0F39" xml:space="preserve">
+    <value>Hide from launcher</value>
+    <comment>Source: Hide from launcher
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_E3AE3128A7EE" xml:space="preserve">
+    <value>Hiding a launcher does not remove the installed application.</value>
+    <comment>Source: Hiding a launcher does not remove the installed application.
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_65D1EA25C1BE" xml:space="preserve">
+    <value>Managed by the package system</value>
+    <comment>Source: Managed by the package system
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_30AA8DCCBF0A" xml:space="preserve">
+    <value>Package changes</value>
+    <comment>Source: Package changes
+Used by: src/DaisyOS.Shell/Views/Dialogs/ApplicationTransactionDialog.cs</comment>
+  </data>
+  <data name="Loc_D4D0ABFF3680" xml:space="preserve">
+    <value>Private compatibility environment</value>
+    <comment>Source: Private compatibility environment
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_2E4CCEB031A3" xml:space="preserve">
+    <value>Review uninstall</value>
+    <comment>Source: Review uninstall
+Used by: src/DaisyOS.Shell/Apps/System/Settings/SettingsView.axaml.cs</comment>
+  </data>
+  <data name="Loc_0398DD59968A" xml:space="preserve">
+    <value>The application could not be removed.</value>
+    <comment>Source: The application could not be removed.
+Used by: src/DaisyOS.Shell/Services/ApplicationManagementUi.cs</comment>
+  </data>
+  <data name="Loc_48B2C65549D5" xml:space="preserve">
+    <value>This app has no package ownership record. Use guided removal; hiding its shortcut will not uninstall it.</value>
+    <comment>Source: This app has no package ownership record. Use guided removal; hiding its shortcut will not uninstall it.
+Used by: src/DaisyOS.Shell/Services/InstalledApplicationService.cs</comment>
+  </data>
+  <data name="Loc_84FF9EE96541" xml:space="preserve">
+    <value>This application is required for system management and recovery.</value>
+    <comment>Source: This application is required for system management and recovery.
+Used by: src/DaisyOS.Shell/Services/InstalledApplicationService.cs</comment>
+  </data>
+  <data name="Loc_9B230B83E107" xml:space="preserve">
+    <value>This application will be managed by DaisyOS.</value>
+    <comment>Source: This application will be managed by DaisyOS.
+Used by: src/DaisyOS.Shell/Apps/AppInstaller/AppInstallerViewModel.cs</comment>
+  </data>
+  <data name="Loc_ED6299272673" xml:space="preserve">
+    <value>This installation no longer exists. Refresh the application list.</value>
+    <comment>Source: This installation no longer exists. Refresh the application list.
+Used by: src/DaisyOS.Shell/Services/InstalledApplicationService.cs</comment>
+  </data>
+  <data name="Loc_FDAA297657CE" xml:space="preserve">
+    <value>Install application</value>
+    <comment>Source: Install application</comment>
+  </data>
+  <data name="Loc_14B8936F1C9D" xml:space="preserve">
+    <value>Uninstall application</value>
+    <comment>Source: Uninstall application</comment>
+  </data>
+  <data name="Loc_23427F1AFEDA" xml:space="preserve">
+    <value>Repair application</value>
+    <comment>Source: Repair application</comment>
+  </data>
+  <data name="Loc_D06E67214F2F" xml:space="preserve">
+    <value>The application and its shortcuts will be removed. Your saved data and personal documents are kept unless you choose otherwise.</value>
+    <comment>Source: The application and its shortcuts will be removed. Your saved data and personal documents are kept unless you choose otherwise.</comment>
+  </data>
+  <data name="Loc_6B6B7991D913" xml:space="preserve">
+    <value>This application will use its own compatibility environment. The first installation may download additional system components.</value>
+    <comment>Source: This application will use its own compatibility environment. The first installation may download additional system components.</comment>
+  </data>
+  <data name="Loc_3424E38D2B7E" xml:space="preserve">
+    <value>Review this application before installing. Native packages may request administrator authentication.</value>
+    <comment>Source: Review this application before installing. Native packages may request administrator authentication.</comment>
+  </data>
 </root>

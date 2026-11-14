@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:c="clr-namespace:DaisyOS.Shell.Controls"
+        xmlns:c="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell"
         xmlns:m="clr-namespace:DaisyOS.Shell.Apps.Mail"
         x:Class="DaisyOS.Shell.Apps.Mail.MailWindow"
         Title="Mail" Width="1380" Height="860" MinWidth="1000" MinHeight="600"
@@ -8,7 +8,7 @@
         TextOptions.TextRenderingMode="Antialias" Background="{DynamicResource SurfaceBaseSolidBrush}">
   <Window.Styles>
     <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
-    <StyleInclude Source="avares://DaisyOS.Shell/Apps/Mail/MailStyles.axaml" />
+    <StyleInclude Source="avares://DaisyOS.Mail/Apps/Mail/MailStyles.axaml" />
   </Window.Styles>
   <Grid x:Name="RootLayout" ColumnDefinitions="240,*">
     <Border x:Name="NavigationSidebar" IsVisible="False" Background="{DynamicResource SurfaceRaisedSubtleBrush}" Padding="12,12,8,12">

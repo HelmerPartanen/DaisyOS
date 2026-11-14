@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
+  <mime-type type="application/vnd.appimage"><comment>AppImage application</comment><glob pattern="*.AppImage"/><glob pattern="*.appimage"/></mime-type>
+  <mime-type type="application/x-daisyos-arch-package"><comment>Arch Linux application package</comment><glob pattern="*.pkg.tar"/><glob pattern="*.pkg.tar.zst"/><glob pattern="*.pkg.tar.xz"/><glob pattern="*.pkg.tar.gz"/></mime-type>
+</mime-info>

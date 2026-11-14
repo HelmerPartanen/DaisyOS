@@ -1,7 +1,7 @@
 <Window x:Class="DaisyOS.Shell.Apps.UIKit.UIKitWindow"
         xmlns="https://github.com/avaloniaui"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+        xmlns:controls="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell"
         Title="{DynamicResource Loc_940B0A090484}"
         Width="1120"
         Height="760"

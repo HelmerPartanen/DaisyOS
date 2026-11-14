@@ -30,8 +30,9 @@ public sealed class LinuxAppStoreServiceTests : IDisposable
     </components>
     """;
     public LinuxAppStoreServiceTests() => File.WriteAllText(_catalog, Xml);
-    public void Dispose() => File.Delete(_catalog);
-    private LinuxAppStoreService Service(ScriptedCommandRunner runner) => new(runner, _catalog);
+    private string DataHome => _catalog + ".data";
+    public void Dispose() { File.Delete(_catalog); if(Directory.Exists(DataHome))Directory.Delete(DataHome,true); }
+    private LinuxAppStoreService Service(ScriptedCommandRunner runner) => new(runner, _catalog, dataHome: DataHome);
 
     [Fact]
     public void AppStreamContainsRealLocalizedMetadataAndExcludesRuntimes()
@@ -113,19 +114,21 @@ public sealed class LinuxAppStoreServiceTests : IDisposable
         var runner = new ScriptedCommandRunner(CommandResult.Success());
         var progress = new List<double>();
         Assert.True(await Service(runner).InstallAppAsync("org.mozilla.firefox", progress.Add));
-        Assert.All(runner.Calls, c => Assert.Equal("flatpak", c.FileName));
+        Assert.DoesNotContain(runner.Calls, c => c.FileName is "pacman" or "pkexec");
         Assert.Contains(runner.Calls, c => c.Arguments.SequenceEqual(new[] { "remote-add", "--user", "--if-not-exists", "flathub", "https://dl.flathub.org/repo/flathub.flatpakrepo" }));
-        Assert.Equal(new[] { "install", "--user", "--noninteractive", "-y", "flathub", "org.mozilla.firefox" }, runner.Calls.Last().Arguments);
+        var install=Assert.Single(runner.Calls.Where(c=>c.FileName=="flatpak"&&c.Arguments[0]=="install"));
+        Assert.Equal(new[] { "install", "--user", "-y", "--noninteractive", "--", "flathub", "org.mozilla.firefox" }, install.Arguments);
         Assert.Equal(new double[] { 0, 1 }, progress);
-        Assert.Equal(TimeSpan.FromMinutes(30), runner.Calls.Last().Timeout);
+        Assert.Equal(TimeSpan.FromMinutes(20), install.Timeout);
     }
     [Fact]
     public async Task RemoveUsesActualSystemScopeAndKeepsApplicationData()
     {
-        var runner = new ScriptedCommandRunner(CommandResult.Success("org.mozilla.firefox\tFirefox\t157\tflathub\tsystem\n"), CommandResult.Success());
+        var runner = new ScriptedCommandRunner(CommandResult.Success("org.mozilla.firefox\tFirefox\t157\tflathub\tsystem\n"), CommandResult.Success(), CommandResult.Success(), CommandResult.Success(), CommandResult.Success());
         Assert.True(await Service(runner).UninstallAppAsync("org.mozilla.firefox"));
-        Assert.Equal(new[] { "uninstall", "--system", "--noninteractive", "-y", "org.mozilla.firefox" }, runner.Calls.Last().Arguments);
-        Assert.DoesNotContain("--delete-data", runner.Calls.Last().Arguments);
+        var uninstall=Assert.Single(runner.Calls.Where(c=>c.FileName=="flatpak"&&c.Arguments[0]=="uninstall"));
+        Assert.Equal(new[] { "uninstall", "--system", "-y", "--noninteractive", "--", "org.mozilla.firefox" }, uninstall.Arguments);
+        Assert.DoesNotContain("--delete-data", uninstall.Arguments);
     }
     [Fact]
     public async Task InstalledAndUpdatesUseActualIdsVersionsAndScope()
@@ -155,7 +158,7 @@ public sealed class LinuxAppStoreServiceTests : IDisposable
             var desktop = Path.Combine(directory, "firefox.desktop");
             File.WriteAllText(desktop, "[Desktop Entry]\nType=Application\nName=Firefox\nExec=firefox %u\n");
             var runner = new ScriptedCommandRunner(CommandResult.Success(), CommandResult.Success(), CommandResult.Success());
-            var service = new LinuxAppStoreService(runner, _catalog, [directory]);
+            var service = new LinuxAppStoreService(runner, _catalog, [directory], DataHome);
             var app = (await service.GetAppsByCategoryAsync(AppCategory.Discover)).Single(a => a.Id == "org.mozilla.firefox");
             Assert.Equal(AppInstallState.Installed, app.InstallState); Assert.Equal(desktop, app.NativeDesktopFile);
             Assert.Equal("native", app.InstallationScope);
@@ -187,13 +190,13 @@ public sealed class LinuxAppStoreServiceTests : IDisposable
         {
             var desktop = Path.Combine(directory, "firefox.desktop");
             File.WriteAllText(desktop, "[Desktop Entry]\nType=Application\nName=Firefox\nExec=firefox %u\n");
-            var runner = new ScriptedCommandRunner(CommandResult.Success(), CommandResult.Success("firefox\n"), CommandResult.Success());
-            var service = new LinuxAppStoreService(runner, _catalog, [directory]);
+            var transaction=CommandResult.Success("{\"packages\":[\"remove:firefox=1\"],\"desktopFiles\":[]}");
+            var runner = new ScriptedCommandRunner(CommandResult.Success(), CommandResult.Success("firefox\n"), transaction, transaction, CommandResult.Success());
+            var service = new LinuxAppStoreService(runner, _catalog, [directory], DataHome);
             Assert.True(await service.UninstallAppAsync("org.mozilla.firefox"));
-            Assert.Collection(runner.Calls,
-                c => Assert.Equal("list", c.Arguments[0]),
-                c => { Assert.Equal("pacman", c.FileName); Assert.Equal(new[] { "-Qqo", "--", desktop }, c.Arguments); },
-                c => { Assert.Equal("pkexec", c.FileName); Assert.Equal(new[] { "pacman", "-R", "--noconfirm", "--", "firefox" }, c.Arguments); });
+            Assert.Contains(runner.Calls,c=>c.FileName=="pacman"&&c.Arguments.SequenceEqual(new[]{"-Qqo","--",desktop}));
+            Assert.Contains(runner.Calls,c=>c.FileName=="pkexec"&&c.Arguments[0]==DaisyOS.System.Applications.ApplicationManagementService.PackageHelper&&c.Arguments[1]=="remove"&&c.Arguments[2]=="firefox"&&c.Arguments[3].Length==64);
+            Assert.DoesNotContain(runner.Calls,c=>c.Arguments.Any(arg=>arg is "--nodeps" or "-Rdd"));
         }
         finally { Directory.Delete(directory, true); }
     }

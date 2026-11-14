@@ -43,19 +43,21 @@ public sealed class InstalledApplicationManagementTests
         Assert.True(target.CanManage);
         Assert.Equal(scope, target.InstallationScope);
         Assert.True(await service.UninstallAsync(target, TestContext.Current.CancellationToken));
-        Assert.Equal(new[] { "uninstall", scopeArgument, "-y", "--noninteractive", "--", "org.example.ScopeTest" }, runner.Calls[1]);
+        Assert.Contains(runner.Calls, args => args.SequenceEqual(new[] { "uninstall", scopeArgument, "-y", "--noninteractive", "--", "app/org.example.ScopeTest/x86_64/stable" }));
         Assert.True(await service.RepairAsync(target, TestContext.Current.CancellationToken));
-        Assert.Equal(new[] { "install", scopeArgument, "--reinstall", "-y", "--noninteractive", "--", "company-repo", "org.example.ScopeTest" }, runner.Calls[2]);
+        Assert.Contains(runner.Calls, args => args.SequenceEqual(new[] { "install", scopeArgument, "-y", "--noninteractive", "--reinstall", "--", "company-repo", "org.example.ScopeTest" }));
     }
 
     private sealed class PackageRunner(string installations) : ICommandRunner
     {
+        private bool _removed;
         public List<string[]> Calls { get; } = [];
         public Task<CommandResult> RunAsync(string fileName, IReadOnlyList<string> arguments, TimeSpan timeout, CancellationToken cancellationToken = default)
         {
-            Assert.Equal("flatpak", fileName);
             Calls.Add(arguments.ToArray());
-            return Task.FromResult(CommandResult.Success(arguments[0] == "list" ? installations : ""));
+            if (fileName != "flatpak") return Task.FromResult(CommandResult.Failed("not installed"));
+            if (arguments[0] == "uninstall") { _removed = true; return Task.FromResult(CommandResult.Success()); }
+            return Task.FromResult(CommandResult.Success(arguments[0] == "list" && !_removed ? (arguments.Contains("--columns=application,installation,ref") ? installations.Replace("company-repo", "app/org.example.ScopeTest/x86_64/stable") : installations) : ""));
         }
     }
 }

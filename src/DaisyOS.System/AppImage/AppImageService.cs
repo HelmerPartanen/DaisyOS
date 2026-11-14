@@ -91,9 +91,13 @@ public sealed class AppImageService : IAppImageInstallerService
             var appDirectory = string.IsNullOrWhiteSpace(destinationDirectory)
                 ? Path.Combine(_installRoot, desktopId)
                 : Path.GetFullPath(destinationDirectory);
+            if (Applications.ApplicationRegistry.HasSymbolicAncestor(appDirectory)) throw new IOException("Choose an installation folder without symbolic links.");
             Directory.CreateDirectory(appDirectory);
 
+            var previous = registry.Installations.FirstOrDefault(item => item.DesktopId == desktopId);
             var appImagePath = Path.Combine(appDirectory, desktopId + ".AppImage");
+            if (File.Exists(appImagePath) && !string.Equals(inspection.SourcePath, appImagePath, StringComparison.Ordinal) && previous?.AppImagePath != appImagePath)
+                throw new IOException("An unregistered file already exists in this location. Choose another folder.");
             if (!string.Equals(inspection.SourcePath, appImagePath, StringComparison.Ordinal))
                 await CopyFileAsync(inspection.SourcePath, appImagePath, cancellationToken).ConfigureAwait(false);
             MakeExecutable(appImagePath);
@@ -108,13 +112,13 @@ public sealed class AppImageService : IAppImageInstallerService
                 Version = AppImageDesktopEntry.CleanValue(inspection.Version, ""),
                 Categories = AppImageDesktopEntry.CleanCategories(inspection.Categories),
                 StartupWMClass = AppImageDesktopEntry.CleanValue(inspection.StartupWMClass, ""),
+                OriginalSourcePath = previous?.AppImagePath == appImagePath ? previous.OriginalSourcePath : inspection.SourcePath,
                 AppImagePath = appImagePath,
                 DesktopFilePath = desktopFilePath,
                 IconPath = iconPath,
                 InstalledAt = DateTimeOffset.UtcNow
             };
 
-            var previous = registry.Installations.FirstOrDefault(item => item.DesktopId == desktopId);
             await AtomicTextFile.WriteAsync(desktopFilePath, AppImageDesktopEntry.Build(installation), cancellationToken).ConfigureAwait(false);
             if (previous is not null && !string.Equals(previous.IconPath, iconPath, StringComparison.Ordinal))
                 RemoveOwnedIcon(previous.IconPath, desktopId);
@@ -137,19 +141,9 @@ public sealed class AppImageService : IAppImageInstallerService
         try
         {
             var registry = await LoadRegistryAsync(cancellationToken).ConfigureAwait(false);
-            var valid = registry.Installations
-                .Where(item => File.Exists(item.AppImagePath) && File.Exists(item.DesktopFilePath))
-                .OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase)
-                .ToArray();
-            foreach (var item in valid)
-            {
-                MakeExecutable(item.AppImagePath);
-            }
-            if (valid.Length != registry.Installations.Count)
-            {
-                registry.Installations = valid.ToList();
-                await SaveRegistryAsync(registry, cancellationToken).ConfigureAwait(false);
-            }
+            // Inventory is read-only. Keep broken ownership records so a missing
+            // launcher can be repaired and an orphaned payload can be removed.
+            var valid = registry.Installations.OrderBy(item => item.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
             return valid;
         }
         finally
@@ -170,9 +164,9 @@ public sealed class AppImageService : IAppImageInstallerService
             var installation = registry.Installations.FirstOrDefault(item => item.DesktopId == desktopId);
             if (installation is null) return false;
 
+            RemoveInstalledBinary(installation);
             await RemoveOwnedDesktopFileAsync(installation.DesktopFilePath, desktopId, cancellationToken).ConfigureAwait(false);
             RemoveOwnedIcon(installation.IconPath, desktopId);
-            RemoveInstallDirectory(desktopId);
 
             registry.Installations.RemoveAll(item => item.DesktopId == desktopId);
             await SaveRegistryAsync(registry, cancellationToken).ConfigureAwait(false);
@@ -800,19 +794,12 @@ public sealed class AppImageService : IAppImageInstallerService
         }
     }
 
-    private static async Task RemoveOwnedDesktopFileAsync(
-        string path,
-        string desktopId,
-        CancellationToken cancellationToken)
+    private static async Task RemoveOwnedDesktopFileAsync(string path, string desktopId, CancellationToken cancellationToken)
     {
-        try
-        {
-            if (!File.Exists(path)) return;
-            var text = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
-            if (AppImageDesktopEntry.IsOwnedBy(text, desktopId)) File.Delete(path);
-        }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        if (!File.Exists(path)) return;
+        if (Applications.ApplicationRegistry.HasSymbolicAncestor(path)) throw new IOException("The AppImage shortcut path contains a symbolic link. Review it before removal.");
+        var text = await File.ReadAllTextAsync(path, cancellationToken).ConfigureAwait(false);
+        if (AppImageDesktopEntry.IsOwnedBy(text, desktopId)) File.Delete(path);
     }
 
     private void RemoveOwnedIcon(string path, string desktopId)
@@ -823,20 +810,19 @@ public sealed class AppImageService : IAppImageInstallerService
         if (!fullPath.StartsWith(iconsRoot + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return;
         var fileName = Path.GetFileName(fullPath);
         if (!string.Equals(Path.GetFileNameWithoutExtension(fileName), desktopId, StringComparison.Ordinal)) return;
-        try { File.Delete(fullPath); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        if (Applications.ApplicationRegistry.HasSymbolicAncestor(fullPath)) throw new IOException("The AppImage icon path contains a symbolic link. Review it before removal.");
+        File.Delete(fullPath);
     }
 
-    private void RemoveInstallDirectory(string desktopId)
+    private void RemoveInstalledBinary(AppImageInstallation installation)
     {
-        var directory = Path.GetFullPath(Path.Combine(_installRoot, desktopId));
-        var root = Path.GetFullPath(_installRoot);
-        if (!directory.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal)) return;
-        if (!string.Equals(Path.GetFileName(directory), desktopId, StringComparison.Ordinal)) return;
-        try { Directory.Delete(directory, recursive: true); }
-        catch (IOException) { }
-        catch (UnauthorizedAccessException) { }
+        var path = Path.GetFullPath(installation.AppImagePath);
+        if (Path.GetFileName(path) != installation.DesktopId + ".AppImage") throw new IOException("The recorded AppImage path does not match this application. Review its installation first.");
+        if (Applications.ApplicationRegistry.HasSymbolicAncestor(path)) throw new IOException("The AppImage installation contains a symbolic link. Review it before removal.");
+        // Integrating an original file in place does not transfer ownership of that download.
+        if (!string.Equals(path, installation.OriginalSourcePath, StringComparison.Ordinal) && File.Exists(path)) File.Delete(path);
+        var directory = Path.GetDirectoryName(path)!;
+        if (directory == Path.GetFullPath(Path.Combine(_installRoot, installation.DesktopId)) && Directory.Exists(directory) && !Directory.EnumerateFileSystemEntries(directory).Any()) Directory.Delete(directory);
     }
 
     private async Task<AppImageRegistryDocument> LoadRegistryAsync(CancellationToken cancellationToken)
@@ -846,14 +832,11 @@ public sealed class AppImageService : IAppImageInstallerService
         {
             await using var stream = new FileStream(_registryPath, FileMode.Open, FileAccess.Read, FileShare.Read,
                 bufferSize: 4096, FileOptions.Asynchronous | FileOptions.SequentialScan);
-            return await JsonSerializer.DeserializeAsync(
-                stream,
-                DaisySystemJsonContext.Default.AppImageRegistryDocument,
-                cancellationToken).ConfigureAwait(false) ?? new AppImageRegistryDocument();
+            var registry = await JsonSerializer.DeserializeAsync(stream, DaisySystemJsonContext.Default.AppImageRegistryDocument, cancellationToken).ConfigureAwait(false);
+            if (registry?.Installations is null) throw new IOException("The AppImage ownership registry is invalid. Restore its backup before continuing.");
+            return registry;
         }
-        catch (JsonException) { return new AppImageRegistryDocument(); }
-        catch (IOException) { return new AppImageRegistryDocument(); }
-        catch (UnauthorizedAccessException) { return new AppImageRegistryDocument(); }
+        catch (JsonException ex) { throw new IOException("The AppImage ownership registry is invalid. Restore its backup before continuing.", ex); }
     }
 
     private async Task SaveRegistryAsync(AppImageRegistryDocument registry, CancellationToken cancellationToken)

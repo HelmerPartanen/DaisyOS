@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net10.0</TargetFramework><Nullable>enable</Nullable><ImplicitUsings>enable</ImplicitUsings><OptionalApplicationSource>Calculator</OptionalApplicationSource></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../DaisyOS.Shell/DaisyOS.Shell.csproj" /></ItemGroup>
+  <Import Project="../DaisyOS.OptionalApplication.targets" />
+</Project>

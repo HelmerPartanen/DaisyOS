@@ -1,8 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             xmlns:controls="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell"
              xmlns:rich="clr-namespace:DaisyOS.Shell.Apps.Notes.Editor.Rich"
-             xmlns:converters="clr-namespace:DaisyOS.Shell.Converters"
+             xmlns:converters="clr-namespace:DaisyOS.Shell.Converters;assembly=DaisyOS.Shell"
              x:Class="DaisyOS.Shell.Apps.Notes.Editor.Rich.RichEditorView">
 
   <UserControl.Resources>

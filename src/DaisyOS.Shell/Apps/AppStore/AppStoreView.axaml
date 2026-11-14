@@ -1,6 +1,6 @@
 <UserControl x:Class="DaisyOS.Shell.Apps.AppStore.AppStoreView"
              xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:store="clr-namespace:DaisyOS.Shell.Apps.AppStore" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls"
+             xmlns:store="clr-namespace:DaisyOS.Shell.Apps.AppStore" xmlns:controls="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell"
              >
   <UserControl.Resources>
     <DataTemplate x:Key="AppCardTemplate" DataType="store:AppStoreCardViewModel">

@@ -18,4 +18,7 @@ public sealed record AppEntry(
     string? LaunchTarget = null,
     IReadOnlyList<string>? LaunchArguments = null,
     IReadOnlyList<string>? Categories = null,
-    IReadOnlyList<string>? SearchTerms = null);
+    IReadOnlyList<string>? SearchTerms = null)
+{
+    public ApplicationIdentity? Installation { get; init; }
+}

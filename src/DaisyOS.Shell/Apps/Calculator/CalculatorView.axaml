@@ -3,7 +3,7 @@
     xmlns="https://github.com/avaloniaui"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:calculator="clr-namespace:DaisyOS.Shell.Apps.Calculator"
-    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
+    xmlns:controls="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell">
   <UserControl.Styles>
     <Style Selector="Button.CalcTile">
       <Setter Property="HorizontalAlignment" Value="Stretch" />

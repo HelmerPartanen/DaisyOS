@@ -1,5 +1,5 @@
 <UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:c="clr-namespace:DaisyOS.Shell.Controls" xmlns:t="clr-namespace:DaisyOS.Shell.Services.Theming"
+             xmlns:c="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell" xmlns:t="clr-namespace:DaisyOS.Shell.Services.Theming;assembly=DaisyOS.Shell"
              x:Class="DaisyOS.Shell.Apps.Mail.MailComposer" UseLayoutRounding="True">
   <UserControl.Resources>
     <ResourceDictionary><ResourceDictionary.MergedDictionaries>

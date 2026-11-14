@@ -25,11 +25,9 @@ using DaisyOS.Shell.Views;
 using System;
 using System.IO;
 
-using DaisyOS.Shell.Apps.Calculator;
 using DaisyOS.Shell.Views.Windows;
 using DaisyOS.Shell.Apps.Files;
 using DaisyOS.Shell.Apps.Files.Services;
-using DaisyOS.Shell.Apps.UIKit;
 using DaisyOS.Shell.Services.Windows;
 using DaisyOS.Shell.Services.Notifications;
 using DaisyOS.Shell.Services.Compositor;
@@ -70,11 +68,7 @@ public partial class App : Application
     private readonly LinuxSystemThemeService _systemThemeService = new(new SafeCommandRunner());
     private readonly LinuxPersonalizationService _personalizationService = new(new SafeCommandRunner());
     private CancellationTokenSource? _systemThemeSyncCancellation;
-    private CalculatorWindow? _calculatorWindow;
-    private DaisyOS.Shell.Apps.AppStore.AppStoreWindow? _appStoreWindow;
-    private DaisyOS.Shell.Apps.AppStore.AppStoreViewModel? _appStoreSession;
     private DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerWindow? _taskManagerWindow;
-    private UIKitWindow? _uiKitWindow;
     private DaisyOS.Shell.Views.Components.Clipboard.ClipboardHistoryWindow? _clipboardHistoryWindow;
     // LocalSend is shell UI in a native session. Its persistent content is
     // mounted once on a layer-shell overlay, not created as an xdg app window
@@ -2199,11 +2193,7 @@ public partial class App : Application
     private void ReclaimHiddenShellCaches()
     {
         _shellView?.Launcher.ReclaimHiddenIcons();
-        if (_appStoreWindow is null && _appStoreSession is { HasActiveOperations: false } store)
-        {
-            _appStoreSession = null;
-            store.Dispose();
-        }
+
     }
 
     /// <summary>True while no part of the shell is visible: a game or fullscreen app covers it, it's locked, or the display is off.</summary>
@@ -2846,55 +2836,19 @@ public partial class App : Application
     }
 
     /// <summary>Opens one instance of the native DaisyOS Calculator app.</summary>
-    public void ShowCalculator()
+    public async void ShowCalculator()
     {
         HideLauncher(restoreFocus: false);
-        if (_nativeWindowTracker.RestoreAndActivate("calculator"))
-        {
-            return;
-        }
-
-        if (_calculatorWindow is { IsVisible: false } cached)
-        {
-            _nativeWindowTracker.Register("calculator", cached);
-            ShowNormalApplicationWindow(cached);
-            cached.Activate();
-            return;
-        }
-        _calculatorWindow = new CalculatorWindow();
-        _lightweightWindows.Track(_calculatorWindow, () => { }, () => { }, () => _nativeWindowTracker.Unregister("calculator"));
-        SetNativeApplicationId(_calculatorWindow, "calculator");
-        _nativeWindowTracker.Register("calculator", _calculatorWindow);
-        _calculatorWindow.Closed += (_, _) => _calculatorWindow = null;
-
-        ShowNormalApplicationWindow(_calculatorWindow);
+        var result = await PackagedApplicationLauncher.LaunchAsync("Calculator");
+        if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }
 
     /// <summary>Opens one instance of the native DaisyOS App Store.</summary>
-    public void ShowAppStore()
+    public async void ShowAppStore()
     {
         HideLauncher(restoreFocus: false);
-        if (_nativeWindowTracker.RestoreAndActivate("appstore"))
-        {
-            return;
-        }
-
-        if (_appStoreWindow is { IsVisible: false } cached)
-        {
-            _nativeWindowTracker.Register("appstore", cached);
-            ShowNormalApplicationWindow(cached);
-            cached.Activate();
-            return;
-        }
-
-        _appStoreSession ??= new DaisyOS.Shell.Apps.AppStore.AppStoreViewModel();
-        _appStoreWindow = new DaisyOS.Shell.Apps.AppStore.AppStoreWindow(_appStoreSession, ownsViewModel: false);
-        _lightweightWindows.Track(_appStoreWindow, () => { }, () => { }, () => _nativeWindowTracker.Unregister("appstore"));
-        SetNativeApplicationId(_appStoreWindow, "appstore");
-        _nativeWindowTracker.Register("appstore", _appStoreWindow);
-        _appStoreWindow.Closed += (_, _) => _appStoreWindow = null;
-
-        ShowNormalApplicationWindow(_appStoreWindow);
+        var result = await PackagedApplicationLauncher.LaunchAsync("AppStore");
+        if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }
 
     /// <summary>Opens one instance of Disk Manager in its own application process.</summary>
@@ -2947,28 +2901,11 @@ public partial class App : Application
     }
 
     /// <summary>Opens the live catalog of reusable DaisyOS interface components.</summary>
-    public void ShowUIKit()
+    public async void ShowUIKit()
     {
         HideLauncher(restoreFocus: false);
-        if (_nativeWindowTracker.RestoreAndActivate("uikit"))
-        {
-            return;
-        }
-
-        if (_uiKitWindow is { IsVisible: false } cached)
-        {
-            _nativeWindowTracker.Register("uikit", cached);
-            ShowNormalApplicationWindow(cached);
-            cached.Activate();
-            return;
-        }
-
-        _uiKitWindow = new UIKitWindow();
-        _lightweightWindows.Track(_uiKitWindow, () => { }, () => { }, () => _nativeWindowTracker.Unregister("uikit"));
-        SetNativeApplicationId(_uiKitWindow, "uikit");
-        _nativeWindowTracker.Register("uikit", _uiKitWindow);
-        _uiKitWindow.Closed += (_, _) => _uiKitWindow = null;
-        ShowNormalApplicationWindow(_uiKitWindow);
+        var result = await PackagedApplicationLauncher.LaunchAsync("UIKit");
+        if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }
 
     /// <summary>Opens the floating Clipboard History overlay (Super + V).</summary>

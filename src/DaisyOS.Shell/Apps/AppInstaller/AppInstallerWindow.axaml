@@ -57,6 +57,10 @@
             </Grid>
           </Border>
 
+          <ComboBox IsVisible="{Binding CanChooseCompatibilityImage}" IsEnabled="{Binding !IsBusy}"
+                    ItemsSource="{Binding CompatibilityImages}" SelectedItem="{Binding CompatibilityImage, Mode=TwoWay}"
+                    HorizontalAlignment="Stretch" />
+
           <!-- Destination location pill -->
           <Border Background="{DynamicResource SurfaceRaisedSubtleBrush}"
                   BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="{DynamicResource BorderThicknessDefault}"
@@ -66,7 +70,7 @@
                          Classes="Muted" FontSize="{DynamicResource TypeSizeBodySmall}"
                          TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding InstallDestinationPath}" />
               <Button Content="{DynamicResource Loc_3227AA966625}" Classes="Primary"
-                      Click="OnBrowseDestinationClicked" CornerRadius="{DynamicResource RadiusButtonSmall}"
+                      IsVisible="{Binding CanChooseDestination}" Click="OnBrowseDestinationClicked" CornerRadius="{DynamicResource RadiusButtonSmall}"
                       Padding="16,4" Height="30" VerticalAlignment="Center" />
             </Grid>
           </Border>
@@ -85,8 +89,8 @@
         <StackPanel IsVisible="{Binding !HasSelection}" Spacing="{DynamicResource Space3}" HorizontalAlignment="Center">
           <controls:DaisyIcon Icon="package" Size="{DynamicResource IconSizeHero}" HorizontalAlignment="Center"
                               Foreground="{DynamicResource ContentSecondaryBrush}" />
-          <TextBlock Text="{DynamicResource Loc_F03472E3AF76}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold" HorizontalAlignment="Center" />
-          <TextBlock Text="{DynamicResource Loc_E72037CAD533}" Classes="Muted" TextAlignment="Center"
+          <TextBlock Text="{DynamicResource Loc_6A2580047C5B}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold" HorizontalAlignment="Center" />
+          <TextBlock Text="{DynamicResource Loc_13112C170595}" Classes="Muted" TextAlignment="Center"
                      TextWrapping="Wrap" MaxWidth="380" />
           <Button Content="{DynamicResource Loc_5C6623857CC7}" Classes="Primary Pill" Click="OnChooseFileClicked"
                   HorizontalAlignment="Center" />
@@ -104,7 +108,7 @@
                   IsVisible="{Binding ShowOpenButton}" IsDefault="{Binding ShowOpenButton}" MinWidth="100" />
           <Button Content="{DynamicResource Loc_569CA49F4AAF}" Classes="Primary Pill" Click="OnInstallClicked"
                   IsVisible="{Binding ShowFirstTimeInstallButton}" IsDefault="{Binding ShowFirstTimeInstallButton}"
-                  IsEnabled="{Binding !IsBusy}" MinWidth="100" />
+                  IsEnabled="{Binding CanInstall}" MinWidth="100" />
         </StackPanel>
       </Grid>
     </Grid>

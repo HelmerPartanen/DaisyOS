@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using DaisyOS.Core.Models;
 using DaisyOS.Core.Services;
 using DaisyOS.System.Processes;
+using DaisyOS.System.Applications;
 
 namespace DaisyOS.System.AppStore;
 
@@ -14,7 +15,12 @@ namespace DaisyOS.System.AppStore;
 public sealed partial class LinuxAppStoreService : IAppStoreService
 {
     private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(60) };
+    private sealed class ProgressCallback(Action<double> callback) : IProgress<ApplicationProgress>
+    {
+        public void Report(ApplicationProgress value) { if (value.Fraction is { } fraction) callback(fraction); }
+    }
     private readonly ICommandRunner _runner;
+    public ApplicationManagementService Applications { get; }
     private readonly SemaphoreSlim _catalogGate = new(1, 1);
     private readonly SemaphoreSlim _transactionGate = new(1, 1);
     private readonly string? _catalogOverride;
@@ -29,9 +35,9 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
     private static string CacheFile => Path.Combine(Environment.GetEnvironmentVariable("XDG_CACHE_HOME")
         ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".cache"), "daisyos", "flathub", $"{Architecture}.xml.gz");
 
-    public LinuxAppStoreService(ICommandRunner commandRunner, string? catalogPath = null, IReadOnlyList<string>? desktopDirectories = null)
+    public LinuxAppStoreService(ICommandRunner commandRunner, string? catalogPath = null, IReadOnlyList<string>? desktopDirectories = null, string? dataHome = null)
     {
-        _runner = commandRunner; _catalogOverride = catalogPath;
+        _runner = commandRunner; Applications = new(commandRunner, dataHome); _catalogOverride = catalogPath;
         _desktopDirectories = desktopDirectories ?? (catalogPath is not null ? [] : DefaultDesktopDirectories());
     }
     private static string[] DefaultDesktopDirectories() =>
@@ -292,6 +298,27 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
     public async Task<bool> IsPackageInstalledAsync(string packageName, CancellationToken cancellationToken = default) =>
         ValidAppId(packageName) && (await InstalledAsync(cancellationToken).ConfigureAwait(false)).Any(a => a.Id == packageName);
 
+    public Task<ApplicationTransactionPlan> PrepareInstallAsync(AppStoreItem item, CancellationToken token = default) => Applications.PrepareInstallAsync(
+        new InstalledApplication(new(ApplicationBackend.Flatpak, item.Id, "user"), item.Name, item.Version) { Origin = "flathub", DesktopIds = [item.Id + ".desktop"] }, token);
+
+    public async Task<ApplicationTransactionPlan> PrepareRemovalAsync(AppStoreItem item, CancellationToken token = default)
+    {
+        var managed = (await Applications.GetManagedInstalledAsync(token).ConfigureAwait(false)).FirstOrDefault(app => app.DesktopIds.Contains(item.Id + ".desktop") || app.DesktopIds.Contains(item.DesktopFileId));
+        if (managed is not null) return await Applications.PrepareUninstallAsync(managed, token).ConfigureAwait(false);
+        var kind = ApplicationBackend.Flatpak; var package = item.Id;
+        if (item.NativeDesktopFile.Length > 0)
+        {
+            var owner = await NativeApplicationPackages.FindOwnerAsync(_runner, item.NativeDesktopFile, token).ConfigureAwait(false);
+            package = owner ?? item.Id;
+            kind = owner is null ? ApplicationBackend.Unmanaged : ApplicationBackend.Pacman;
+        }
+        var application = new InstalledApplication(new(kind, package, item.NativeDesktopFile.Length > 0 ? "system" : item.InstallationScope), item.Name, item.Version)
+        { Origin = item.Origin, DesktopIds = [item.DesktopFileId.Length > 0 ? item.DesktopFileId : item.Id + ".desktop"],
+          OwnedLaunchers = item.NativeDesktopFile.Length > 0 ? [item.NativeDesktopFile] : [],
+          OwnedCommands = ApplicationIntegration.Commands(item.NativeDesktopFile.Length > 0 ? [item.NativeDesktopFile] : []) };
+        return await Applications.PrepareUninstallAsync(application, token).ConfigureAwait(false);
+    }
+
     public Task<bool> InstallAppAsync(string packageName, Action<double>? progressCallback = null, CancellationToken cancellationToken = default)
         => TransactionAsync(packageName, "install", progressCallback, cancellationToken);
     public Task<bool> UninstallAppAsync(string packageName, CancellationToken cancellationToken = default)
@@ -306,42 +333,32 @@ public sealed partial class LinuxAppStoreService : IAppStoreService
         {
             var installed = await InstalledAsync(token, required: true).ConfigureAwait(false);
             var existing = installed.FirstOrDefault(a => a.Id == id);
-            if (existing == null && operation == "uninstall")
+            if (operation == "uninstall")
             {
                 var catalog = await CatalogAsync(token, allowDownload: false).ConfigureAwait(false);
-                var native = catalog.FirstOrDefault(a => a.Id == id) is { } item ? WithNativeState(item) : null;
-                if (native?.NativeDesktopFile.Length > 0)
-                {
-                    var package = await NativeApplicationPackages.FindOwnerAsync(_runner, native.NativeDesktopFile, token).ConfigureAwait(false);
-                    if (package == null && !native.NativeDesktopFile.StartsWith("/usr/share/applications/", StringComparison.Ordinal))
-                    {
-                        var systemDesktop = Path.Combine("/usr/share/applications", Path.GetFileName(native.NativeDesktopFile));
-                        if (File.Exists(systemDesktop))
-                            package = await NativeApplicationPackages.FindOwnerAsync(_runner, systemDesktop, token).ConfigureAwait(false);
-                    }
-                    if (package != null)
-                    {
-                        var removal = await NativeApplicationPackages.RemoveAsync(_runner, package, token).ConfigureAwait(false);
-                        if (!removal.Succeeded) throw new AppStoreException("The operation could not finish. Check your connection, available storage and permissions, then try again.");
-                        DesktopApplicationMaskStore.RemoveDesktopShortcut(Path.GetFileName(native.NativeDesktopFile));
-                        return true;
-                    }
-                    if (DesktopApplicationMaskStore.RemoveOrMask(Path.GetFileName(native.NativeDesktopFile), native.NativeDesktopFile, native.Name))
-                        return true;
-                    throw new AppStoreException("This application is not owned by a supported Pacman or Flatpak package.");
-                }
+                var item = catalog.FirstOrDefault(app => app.Id == id);
+                if (item is null) throw new AppStoreException("This application is no longer listed. Use Installed apps to review its installation.");
+                item = existing is null ? WithNativeState(item) : item with { InstallationScope = existing.Scope, Origin = existing.Origin };
+                var plan = await PrepareRemovalAsync(item, token).ConfigureAwait(false);
+                var removalResult = await Applications.ExecuteAsync(plan, token: token).ConfigureAwait(false);
+                if (!removalResult.Succeeded) throw new AppStoreException(removalResult.Message);
+                return true;
             }
             var scope = existing?.Scope ?? "user";
             if (operation != "install" && existing == null) throw new AppStoreException("This application is no longer installed. Refresh the library.");
             if (operation == "install")
             {
-                DesktopApplicationMaskStore.Restore(id);
                 if (existing != null) { progress?.Invoke(1); return true; }
-                var remote = await _runner.RunAsync("flatpak", ["remote-add", "--user", "--if-not-exists", "flathub",
-                    "https://dl.flathub.org/repo/flathub.flatpakrepo"], QueryTimeout, token).ConfigureAwait(false);
-                if (!remote.Succeeded) throw new AppStoreException("Flathub could not be configured. Check your connection and try again.");
+
             }
             progress?.Invoke(0);
+            if (operation == "install")
+            {
+                var application = new InstalledApplication(new(ApplicationBackend.Flatpak, id, scope), id) { Origin = "flathub", DesktopIds = [id + ".desktop"] };
+                var installation = await Applications.ExecuteAsync(new(ApplicationOperation.Install, application), progress: progress is null ? null : new ProgressCallback(progress), token: token).ConfigureAwait(false);
+                if (!installation.Succeeded) throw new AppStoreException(installation.Message);
+                return true;
+            }
             List<string> arguments = [operation, ScopeArgument(scope), "--noninteractive", "-y"];
             if (operation == "install") arguments.Add("flathub");
             arguments.Add(id);

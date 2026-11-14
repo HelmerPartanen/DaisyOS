@@ -7,6 +7,8 @@ using Avalonia.Media.Imaging;
 using DaisyOS.Shell.Services.Localization;
 using DaisyOS.Shell.ViewModels;
 using DaisyOS.System.AppImage;
+using DaisyOS.System.Applications;
+using DaisyOS.Core.Models;
 using DaisyOS.System.Processes;
 
 namespace DaisyOS.Shell.Apps.AppInstaller;
@@ -16,6 +18,27 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     private readonly IAppImageInstallerService _service;
     private readonly SafeProcessLauncher _launcher;
     private AppImageInspection? _selected;
+    private ApplicationTransactionPlan? _packagePlan;
+    private readonly ApplicationManagementService _management;
+    private readonly CancellationTokenSource _lifetime = new();
+    public ApplicationTransactionPlan? SelectedPlan => _packagePlan;
+    public bool CanChooseDestination => _packagePlan is null;
+    public bool CanChooseCompatibilityImage => _packagePlan?.Application.Identity.Backend == ApplicationBackend.Container;
+    public string[] CompatibilityImages => CompatibilityApplications.Images.Where(image => SelectedPath.EndsWith(".deb", StringComparison.OrdinalIgnoreCase) == image.Contains("ubuntu", StringComparison.Ordinal)).ToArray();
+    public string? CompatibilityImage
+    {
+        get => _packagePlan?.Application.Image;
+        set { if (CanChooseCompatibilityImage && !_isBusy && value is not null && value != CompatibilityImage) _ = ChangeCompatibilityImageAsync(value); }
+    }
+    private async Task ChangeCompatibilityImageAsync(string image)
+    {
+        if (_packagePlan is null) return;
+        SetBusy(true);
+        try { _packagePlan = await _management.InspectFileAsync(_packagePlan.Application.SourcePath, image, _lifetime.Token); PublishSelection(); }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException) { SetError(ex.Message); }
+        finally { SetBusy(false); }
+    }
+    public bool CanInstall => !_isBusy && (_packagePlan?.CanExecute ?? _selected is not null);
     private Bitmap? _selectedIcon;
     private bool _isSelectedInstalled;
     private bool _justInstalled;
@@ -26,24 +49,25 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     private string? _customDestinationDirectory;
     private bool _disposed;
 
-    public AppInstallerViewModel(IAppImageInstallerService? service = null, SafeProcessLauncher? launcher = null)
+    public AppInstallerViewModel(IAppImageInstallerService? service = null, SafeProcessLauncher? launcher = null, string? dataHome = null)
     {
         _service = service ?? new AppImageService();
         _launcher = launcher ?? new SafeProcessLauncher();
+        _management = new(images: _service, dataHome: dataHome);
     }
 
     public ObservableCollection<InstalledAppImageViewModel> Installed { get; } = [];
-    public bool HasSelection => _selected is not null;
-    public string SelectedName => _selected?.Name ?? "";
-    public string SelectedPath => _selected?.SourcePath ?? "";
-    public string SelectedComment => _selected?.Comment ?? "";
-    public bool HasSelectedComment => !string.IsNullOrWhiteSpace(_selected?.Comment);
+    public bool HasSelection => _selected is not null || _packagePlan is not null;
+    public string SelectedName => _packagePlan?.Application.Name ?? _selected?.Name ?? "";
+    public string SelectedPath => _packagePlan?.Application.SourcePath ?? _selected?.SourcePath ?? "";
+    public string SelectedComment => _packagePlan is not null ? _packagePlan.Error.Length > 0 ? _packagePlan.Error : Loc.Get("This application will be managed by DaisyOS.") : _selected?.Comment ?? "";
+    public bool HasSelectedComment => !string.IsNullOrWhiteSpace(SelectedComment);
     public Bitmap? SelectedIcon => _selectedIcon;
     public bool HasSelectedIcon => _selectedIcon is not null;
     public bool IsSelectedInstalled => _isSelectedInstalled;
     public bool JustInstalled => _justInstalled;
     public InstalledAppImageViewModel? InstalledMatch => _installedMatch;
-    public bool ShowOpenButton => HasSelection && (JustInstalled || IsSelectedInstalled);
+    public bool ShowOpenButton => _packagePlan is null && HasSelection && (JustInstalled || IsSelectedInstalled);
     public bool ShowInstallButton => HasSelection && !JustInstalled;
     public bool ShowFirstTimeInstallButton => HasSelection && !IsSelectedInstalled && !JustInstalled;
     public bool ShowReinstallButton => HasSelection && IsSelectedInstalled && !JustInstalled;
@@ -67,6 +91,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     {
         get
         {
+            if (_packagePlan is not null) return _packagePlan.Application.Identity.Backend == ApplicationBackend.Container ? Loc.Get("Private compatibility environment") : Loc.Get("Managed by the package system");
             if (!string.IsNullOrWhiteSpace(_customDestinationDirectory))
                 return _customDestinationDirectory;
             if (_installedMatch is not null)
@@ -84,6 +109,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     {
         get
         {
+            if (_packagePlan is not null) return $"{_packagePlan.Application.Identity.Backend} • {_packagePlan.Application.Version} • {_packagePlan.Application.Architecture}";
             if (_selected is null) return "";
             var size = FormatSize(_selected.SizeBytes);
             var parts = new List<string>();
@@ -136,6 +162,14 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
         ClearMessage();
         try
         {
+            _packagePlan = null; _selected = null;
+            if (!path.EndsWith(".AppImage", StringComparison.OrdinalIgnoreCase))
+            {
+                _packagePlan = await _management.InspectFileAsync(path, token: _lifetime.Token);
+                _justInstalled = false; _isSelectedInstalled = false; UpdateSelectedIcon(); PublishSelection();
+                if (!_packagePlan.CanExecute) SetError(_packagePlan.Error);
+                return;
+            }
             _selected = await _service.InspectAsync(path);
             _justInstalled = false;
             UpdateSelectedIcon();
@@ -150,20 +184,43 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
         {
             ClearSelection();
-            SetError(Loc.Get("Couldn’t read the selected AppImage. Try again."));
+            SetError(Loc.Get("Couldn’t read the selected application package. Try again."));
         }
         finally { SetBusy(false); }
     }
 
     public async Task InstallAsync()
     {
-        if (_selected is null || _isBusy) return;
+        if (_isBusy) return;
+        if (_packagePlan is not null)
+        {
+            SetBusy(true); ClearMessage();
+            try
+            {
+                var result = await _management.ExecuteAsync(_packagePlan, progress: new Progress<ApplicationProgress>(p => SetMessage(Loc.Get(p.Stage), false)), token: _lifetime.Token);
+                if (result.RequiresReview) _packagePlan = await _management.InspectFileAsync(_packagePlan.Application.SourcePath, token: _lifetime.Token);
+                _justInstalled = result.Succeeded;
+                SetMessage(Loc.Get(result.Message) + (result.Details.Length > 0 ? "\n" + result.Details : ""), !result.Succeeded);
+                if (result.Succeeded) (Avalonia.Application.Current as App)?.NotifyApplicationRestored(_packagePlan.Application.DesktopIds.FirstOrDefault() ?? _packagePlan.Application.Identity.PackageId);
+                PublishSelection();
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException)
+            { SetError(ex.Message); }
+            finally { SetBusy(false); }
+            return;
+        }
+        if (_selected is null) return;
         var path = _selected.SourcePath;
         SetBusy(true);
         ClearMessage();
         try
         {
-            var installation = await _service.InstallAsync(path, _customDestinationDirectory);
+            var plan = await _management.InspectFileAsync(path, token: _lifetime.Token);
+            if (_customDestinationDirectory is not null) plan = plan with { Application = plan.Application with { DataDirectory = _customDestinationDirectory } };
+            var result = await _management.ExecuteAsync(plan, token: _lifetime.Token);
+            if (!result.Succeeded) throw new IOException(result.Message + " " + result.Details);
+            var installation = (await _service.GetInstalledAsync()).First(item => item.DesktopId == (result.Application?.Identity.PackageId ?? plan.Application.Identity.PackageId));
+            (Avalonia.Application.Current as App)?.NotifyApplicationRestored(installation.DesktopId);
             await ReloadInstalledAsync(showError: false);
             _justInstalled = true;
             _isSelectedInstalled = true;
@@ -206,6 +263,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     public void ClearSelection()
     {
         _selected = null;
+        _packagePlan = null;
         _customDestinationDirectory = null;
         _selectedIcon?.Dispose();
         _selectedIcon = null;
@@ -223,7 +281,11 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
         ClearMessage();
         try
         {
-            if (!await _service.UninstallAsync(item.DesktopId)) throw new IOException();
+            var application = new InstalledApplication(new(ApplicationBackend.AppImage, item.DesktopId), item.Name)
+            { DesktopIds = [item.DesktopId], OwnedLaunchers = [item.Installation.DesktopFilePath], OwnedIcons = [item.Installation.IconPath], OwnedCommands = ApplicationIntegration.Commands([item.Installation.DesktopFilePath]) };
+            var removal = await _management.ExecuteAsync(await _management.PrepareUninstallAsync(application), token: _lifetime.Token);
+            if (!removal.Succeeded) throw new IOException(removal.Message);
+            (Avalonia.Application.Current as App)?.NotifyApplicationRemoved(item.DesktopId);
             await ReloadInstalledAsync(showError: false);
             if (_selected?.DesktopId == item.DesktopId)
             {
@@ -339,7 +401,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     {
         if (_isBusy == value) return;
         _isBusy = value;
-        OnPropertyChanged(nameof(IsBusy));
+        OnPropertyChanged(nameof(IsBusy)); OnPropertyChanged(nameof(CanInstall));
         OnPropertyChanged(nameof(ShowInstalledEmpty));
     }
 
@@ -366,6 +428,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
 
     private void PublishSelection()
     {
+        OnPropertyChanged(nameof(CanChooseCompatibilityImage)); OnPropertyChanged(nameof(CompatibilityImages)); OnPropertyChanged(nameof(CompatibilityImage)); OnPropertyChanged(nameof(SelectedPlan)); OnPropertyChanged(nameof(CanChooseDestination)); OnPropertyChanged(nameof(CanInstall));
         OnPropertyChanged(nameof(HasSelection));
         OnPropertyChanged(nameof(SelectedName));
         OnPropertyChanged(nameof(SelectedPath));
@@ -392,6 +455,7 @@ public sealed class AppInstallerViewModel : INotifyPropertyChanged, IDisposable
     public void Dispose()
     {
         _disposed = true;
+        _lifetime.Cancel(); _lifetime.Dispose();
         _selectedIcon?.Dispose();
         _selectedIcon = null;
     }

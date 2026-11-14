@@ -21,4 +21,9 @@
     <ProjectReference Include="../../src/DaisyOS.Files/DaisyOS.Files.csproj" />
     <ProjectReference Include="../../src/DaisyOS.Installer/DaisyOS.Installer.csproj" />
   </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.Notes/DaisyOS.Notes.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.Mail/DaisyOS.Mail.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.Calculator/DaisyOS.Calculator.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.AppStore/DaisyOS.AppStore.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.UIKit/DaisyOS.UIKit.csproj" /></ItemGroup>
 </Project>

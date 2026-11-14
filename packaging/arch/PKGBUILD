@@ -1,16 +1,17 @@
-pkgname=daisyos-shell
+pkgbase=daisyos-shell
+pkgname=('daisyos-shell' 'daisyos-files' 'daisyos-mail' 'daisyos-notes' 'daisyos-calculator' 'daisyos-appstore' 'daisyos-diskmanager' 'daisyos-uikit' 'daisyos-settings' 'daisyos-appinstaller')
 pkgver=0.1.0
 pkgrel=1
 pkgdesc="DaisyOS custom C#/.NET Avalonia shell"
 arch=('x86_64')
 url="https://github.com/helmeri/SnapOS"
 license=('custom')
-depends=('webkit2gtk-4.1' 'xorg-xwayland' 'libsecret' 'libnotify' 'gnome-keyring' 'bluez' 'bluez-utils' 'libinput' 'xf86-input-libinput' 'qt6-connectivity' 'qt6-declarative' 'libpulse' 'openssl' 'dotnet-runtime' 'aspnet-runtime' 'avahi' 'wl-clipboard' 'libei' 'libxkbcommon' 'gstreamer' 'gst-plugins-base' 'gst-plugins-good' 'gst-plugin-pipewire' 'kwin' 'qt5-wayland' 'qt6-wayland' 'gamemode' 'lib32-gamemode' 'mangohud' 'lib32-mangohud')
+depends=('pacman' 'polkit' 'libarchive' 'xorg-xwayland' 'libsecret' 'libnotify' 'gnome-keyring' 'bluez' 'bluez-utils' 'libinput' 'xf86-input-libinput' 'qt6-connectivity' 'qt6-declarative' 'libpulse' 'openssl' 'dotnet-runtime' 'aspnet-runtime' 'avahi' 'wl-clipboard' 'libei' 'libxkbcommon' 'gstreamer' 'gst-plugins-base' 'gst-plugins-good' 'gst-plugin-pipewire' 'kwin' 'qt5-wayland' 'qt6-wayland' 'gamemode' 'lib32-gamemode' 'mangohud' 'lib32-mangohud')
 backup=('etc/daisyos/settings.json')
-source=("$pkgname-$pkgver.tar.gz")
+source=("$pkgbase-$pkgver.tar.gz")
 sha256sums=('SKIP')
 
-package() {
+package_daisyos-shell() {
   [[ -x "$srcdir/airpods-root/usr/lib/daisyos/librepods" ]] || { echo "Missing AirPods companion payload" >&2; return 1; }
   cp -a "$srcdir/airpods-root/." "$pkgdir/"
   if [[ ! -d "$srcdir/gaming-root/usr/local/lib/daisyos" ]]; then
@@ -40,16 +41,55 @@ package() {
   mkdir -p "$pkgdir/usr/share/daisyos/defaults"
   mkdir -p "$pkgdir/etc/daisyos"
 
-  cp -r * "$pkgdir/usr/lib/daisyos/"
+  [[ -x "$srcdir/application-management-root/usr/lib/daisyos/daisy-package-helper" ]] || { echo 'Missing application management payload' >&2; return 1; }
+  cp -a "$srcdir/application-management-root/." "$pkgdir/"
+  for entry in "$srcdir/"*; do
+    case "$(basename "$entry")" in apps|*-root|*.service|*.desktop) continue ;; esac
+    cp -a "$entry" "$pkgdir/usr/lib/daisyos/"
+  done
+  mkdir -p "$pkgdir/usr/lib/daisyos/apps/Continuity"
+  cp -a "$srcdir/apps/Continuity/." "$pkgdir/usr/lib/daisyos/apps/Continuity/"
   ln -s /usr/lib/daisyos/daisyos-shell "$pkgdir/usr/bin/daisyos-shell"
-  ln -s /usr/lib/daisyos/apps/Mail/DaisyOS.Mail "$pkgdir/usr/bin/daisyos-mail"
   ln -s /usr/lib/daisyos/apps/Continuity/DaisyOS.Continuity "$pkgdir/usr/bin/daisyos-continuity"
   cp "$srcdir/daisyos-continuity.service" "$pkgdir/usr/lib/systemd/user/daisyos-continuity.service"
   cp "$srcdir/daisyos-shell.service" "$pkgdir/usr/lib/systemd/user/daisyos-shell.service"
   install -Dm644 "$srcdir/daisyos-gamingd.service" "$pkgdir/usr/lib/systemd/user/daisyos-gamingd.service"
   install -Dm644 "$srcdir/org.daisyos.Gaming1.service" "$pkgdir/usr/share/dbus-1/services/org.daisyos.Gaming1.service"
   ln -sfn ../daisyos-gamingd.service "$pkgdir/usr/lib/systemd/user/graphical-session.target.wants/daisyos-gamingd.service"
-  # Background mail check: installed system-wide and enabled for every user (like `systemctl --global enable`).
+  cp "$srcdir/defaults/settings.json" "$pkgdir/usr/share/daisyos/defaults/settings.json"
+  cp "$srcdir/defaults/settings.json" "$pkgdir/etc/daisyos/settings.json"
+}
+
+_package_application() {
+  local application="$1" lower="${1,,}"
+  depends=("daisyos-shell=$pkgver")
+  install -d "$pkgdir/usr/lib/daisyos/apps/$application" "$pkgdir/usr/bin" "$pkgdir/usr/lib/systemd/user"
+  cp -a "$srcdir/apps/$application/." "$pkgdir/usr/lib/daisyos/apps/$application/"
+  # Share identical runtime files; removing an app leaves required shared libraries intact.
+  for dependency in "$pkgdir/usr/lib/daisyos/apps/$application/"*; do
+    [[ -f "$dependency" ]] || continue
+    local name="$(basename "$dependency")"
+    [[ -f "$srcdir/$name" ]] || continue
+    if cmp -s "$dependency" "$srcdir/$name"; then
+      ln -sfn "../../$name" "$dependency"
+    fi
+  done
+  ln -s "/usr/lib/daisyos/apps/$application/DaisyOS.$application" "$pkgdir/usr/bin/daisyos-$lower"
+  install -Dm644 "$srcdir/applications/org.daisyos.$lower.desktop" "$pkgdir/usr/share/applications/org.daisyos.$lower.desktop"
+  install -Dm644 "$srcdir/applications/icons/org.daisyos.$lower.png" "$pkgdir/usr/share/icons/hicolor/1024x1024/apps/org.daisyos.$lower.png"
+}
+package_daisyos-files() { _package_application Files; }
+package_daisyos-notes() { _package_application Notes; }
+package_daisyos-calculator() { _package_application Calculator; }
+package_daisyos-appstore() { _package_application AppStore; }
+package_daisyos-diskmanager() { _package_application DiskManager; }
+package_daisyos-uikit() { _package_application UIKit; }
+package_daisyos-settings() { _package_application Settings; }
+package_daisyos-appinstaller() { _package_application AppInstaller; depends+=(fuse2 squashfs-tools); }
+package_daisyos-mail() {
+  _package_application Mail
+  depends+=(webkit2gtk-4.1)
+  # These units are owned by Mail and disappear with that optional package.
   cat > "$pkgdir/usr/lib/systemd/user/daisyos-mail-check.service" <<'UNIT'
 [Unit]
 Description=DaisyOS Mail background check
@@ -76,6 +116,4 @@ WantedBy=timers.target
 UNIT
   mkdir -p "$pkgdir/usr/lib/systemd/user/timers.target.wants"
   ln -s ../daisyos-mail-check.timer "$pkgdir/usr/lib/systemd/user/timers.target.wants/daisyos-mail-check.timer"
-  cp "$srcdir/defaults/settings.json" "$pkgdir/usr/share/daisyos/defaults/settings.json"
-  cp "$srcdir/defaults/settings.json" "$pkgdir/etc/daisyos/settings.json"
 }

@@ -23,12 +23,6 @@
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
     <AvaloniaResourcesTemporaryFilePath Condition="'$(DesignTimeBuild)' == 'true'">$(MSBuildProjectDirectory)/obj/$(Configuration)/$(TargetFramework)/Avalonia/resources.designtime</AvaloniaResourcesTemporaryFilePath>
   </PropertyGroup>
-  <Target Name="BuildMailRenderer" BeforeTargets="PrepareForBuild" Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-    <Exec Command="bash &quot;$(MSBuildProjectDirectory)/../../scripts/build-mail-renderer.sh&quot;" />
-  </Target>
-  <ItemGroup Condition="$([MSBuild]::IsOSPlatform('Linux'))">
-    <None Include="../native/daisy_mail_renderer/build/daisy-mail-renderer" Link="daisy-mail-renderer" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_mail_renderer/build/daisy-mail-renderer')" />
-  </ItemGroup>
   <ItemGroup>
     <None Include="../native/daisy_idle_monitor/build/libdaisy_idle.so" Link="libdaisy_idle.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_idle_monitor/build/libdaisy_idle.so')" />
     <None Include="../native/daisy_portal_capture/build/daisyos-portal-capture" Link="daisyos-portal-capture" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" Condition="Exists('../native/daisy_portal_capture/build/daisyos-portal-capture')" />
@@ -54,7 +48,7 @@
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.1" />
   </ItemGroup>
   <ItemGroup>
-    <AvaloniaResource Include="Assets\**\*" Exclude="Assets\Cursor\**\*;Assets\Icons\HugeIcons\**\*.svg;Assets\Icons\Phosphor\**\*;Assets\fonts\MaterialSymbolsRounded*.ttf;Assets\Icons\MaterialSymbols*.ttf" />
+    <AvaloniaResource Include="Assets\**\*" Exclude="Assets\AppStore\**\*;Assets\Cursor\**\*;Assets\Icons\HugeIcons\**\*.svg;Assets\Icons\Phosphor\**\*;Assets\fonts\MaterialSymbolsRounded*.ttf;Assets\Icons\MaterialSymbols*.ttf" />
   </ItemGroup>
   <ItemGroup>
     <!--
@@ -121,4 +115,5 @@
   <Target Name="CopyMpvWallpaperAtomically" BeforeTargets="CopyFilesToOutputDirectory" Condition="$([MSBuild]::IsOSPlatform('Linux')) And Exists('$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/libdaisy_mpv_wallpaper.so')">
     <Exec Command="cp &quot;$(MSBuildThisFileDirectory)../native/daisy_mpv_wallpaper/build/libdaisy_mpv_wallpaper.so&quot; &quot;$(TargetDir)libdaisy_mpv_wallpaper.so.next&quot; &amp;&amp; mv &quot;$(TargetDir)libdaisy_mpv_wallpaper.so.next&quot; &quot;$(TargetDir)libdaisy_mpv_wallpaper.so&quot;" />
   </Target>
+  <ItemGroup><Compile Remove="Apps/Notes/**/*.cs;Apps/Mail/**/*.cs;Apps/Calculator/**/*.cs;Apps/AppStore/**/*.cs;Apps/UIKit/**/*.cs" /><AvaloniaXaml Remove="Apps/Notes/**/*.axaml;Apps/Mail/**/*.axaml;Apps/Calculator/**/*.axaml;Apps/AppStore/**/*.axaml;Apps/UIKit/**/*.axaml" /></ItemGroup>
 </Project>

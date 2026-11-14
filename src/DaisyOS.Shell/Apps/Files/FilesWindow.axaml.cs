@@ -1774,7 +1774,7 @@ public partial class FilesWindow : Window
             return;
         }
 
-        if (string.Equals(Path.GetExtension(entry.Path), ".AppImage", StringComparison.OrdinalIgnoreCase))
+        if (DaisyOS.System.Applications.ApplicationManagementService.SupportsFile(entry.Path))
         {
             var appImageResult = DaisyOS.Shell.Services.PackagedApplicationLauncher.Launch("AppInstaller", [entry.Path]);
             if (!appImageResult.Succeeded)

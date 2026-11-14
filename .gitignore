@@ -117,3 +117,9 @@ packaging/gaming/*
 /mail-providers.local.json
 !packaging/mail/
 !packaging/mail/mail-providers.example.json
+
+# Source-controlled application ownership policy and authentication action.
+!packaging/applications/
+!packaging/applications/**
+!packaging/polkit/
+!packaging/polkit/**

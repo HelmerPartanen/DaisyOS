@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Update only known DaisyOS development binary paths in desktop copies."""
+import os
 import shutil
 import subprocess
 import sys
@@ -13,7 +14,10 @@ desktop = Path.home() / 'Desktop'
 if shutil.which('xdg-user-dir'):
     result = subprocess.run(['xdg-user-dir', 'DESKTOP'], capture_output=True, text=True, timeout=2)
     if result.returncode == 0 and result.stdout.strip(): desktop = Path(result.stdout.strip())
-for app in ('Files', 'Mail', 'Notes', 'Settings', 'DiskManager', 'AppInstaller'):
+removed_file = Path(os.environ.get('XDG_DATA_HOME', str(Path.home()/'.local/share'))) / 'daisyos/applications/removed-optional-applications'
+removed = set(removed_file.read_text().lower().splitlines()) if removed_file.exists() else set()
+for app in ('Files', 'Mail', 'Notes', 'Settings', 'DiskManager', 'AppInstaller', 'Calculator', 'AppStore', 'UIKit'):
+    if app.lower() in removed: continue
     shortcut = desktop / f'org.daisyos.{app.lower()}.desktop'
     if not shortcut.is_file(): continue
     text = shortcut.read_text()

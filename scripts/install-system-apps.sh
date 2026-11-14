@@ -7,10 +7,20 @@ files_binary="${1:-$repo_root/src/DaisyOS.Files/bin/$app_configuration/net10.0/D
 if [[ $# -eq 0 && ! -x "$files_binary" ]] && command -v dotnet >/dev/null 2>&1; then
   dotnet build "$repo_root/src/DaisyOS.Files/DaisyOS.Files.csproj" -c "$app_configuration" --disable-build-servers -m:1 -v:minimal
 fi
-"$repo_root/scripts/install-files-app.sh" "$files_binary"
+data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
+removed_apps="$data_home/daisyos/applications/removed-optional-applications"
+mkdir -p "$HOME/.local/bin" "$data_home/applications"
+if [[ ! -f "$removed_apps" ]] || ! grep -q -i -x Files "$removed_apps"; then
+  "$repo_root/scripts/install-files-app.sh" "$files_binary"
+fi
 python3 "$repo_root/scripts/install-user-gaming-integration.py"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
-for application in Mail Notes Settings DiskManager AppInstaller; do
+removed_apps="$data_home/daisyos/applications/removed-optional-applications"
+for application in Mail Notes Settings DiskManager AppInstaller Calculator AppStore UIKit; do
+  if [[ -f "$removed_apps" ]] && grep -q -i -x "$application" "$removed_apps"; then
+    echo "Keeping intentionally removed optional application absent: $application"
+    continue
+  fi
   binary="$repo_root/src/DaisyOS.$application/bin/$app_configuration/net10.0/DaisyOS.$application"
   if [[ $# -gt 0 ]]; then binary="$(dirname "$1")/../$application/DaisyOS.$application"; fi
   if [[ $# -eq 0 && ! -x "$binary" ]] && command -v dotnet >/dev/null 2>&1; then
@@ -25,6 +35,8 @@ for application in Mail Notes Settings DiskManager AppInstaller; do
   lower="${application,,}"
   icon_name="$application"
   [[ "$application" != DiskManager ]] || icon_name=Disk_Manager
+  [[ "$application" != AppStore ]] || icon_name=Store
+  [[ "$application" != UIKit ]] || icon_name=UiKit
   icon_suffix=""
   [[ "$application" != DiskManager ]] || icon_suffix=_Dark
   install -Dm0644 "$repo_root/src/DaisyOS.Shell/Assets/AppIcons/${icon_name}${icon_suffix}.png" "$data_home/icons/hicolor/1024x1024/apps/org.daisyos.$lower.png"
@@ -38,6 +50,7 @@ Path(target).write_text(Path(source).read_text().replace('Exec=daisyos-' + name,
 PY
   echo "Installed standalone $application: $binary"
 done
+python3 "$repo_root/scripts/register-development-applications.py" "$repo_root" "$app_configuration"
 python3 "$repo_root/scripts/update-system-app-shortcuts.py" "$repo_root" "$app_configuration"
 
 # Register AppImage MIME definition and associations
@@ -55,6 +68,7 @@ cat > "$data_home/mime/packages/org.daisyos.appimage.xml" <<'XML'
     <glob pattern="*.AppImage"/>
     <glob pattern="*.appimage"/>
   </mime-type>
+  <mime-type type="application/x-daisyos-arch-package"><comment>Arch Linux application package</comment><glob pattern="*.pkg.tar"/><glob pattern="*.pkg.tar.zst"/><glob pattern="*.pkg.tar.xz"/><glob pattern="*.pkg.tar.gz"/></mime-type>
 </mime-info>
 XML
 
@@ -91,7 +105,7 @@ for target_dir in [config_home, os.path.join(data_home, "applications")]:
     defaults = sections.setdefault("[Default Applications]", [])
     added = sections.setdefault("[Added Associations]", [])
     
-    for m in ["application/vnd.appimage", "application/x-iso9660-appimage"]:
+    for m in ["application/vnd.appimage", "application/x-iso9660-appimage", "application/vnd.flatpak.ref", "application/vnd.flatpak", "application/vnd.debian.binary-package", "application/x-rpm", "application/x-daisyos-arch-package"]:
         defaults = [l for l in defaults if not l.startswith(f"{m}=")]
         defaults.append(f"{m}=org.daisyos.appinstaller.desktop")
         added = [l for l in added if not l.startswith(f"{m}=")]

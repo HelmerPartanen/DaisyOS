@@ -2,10 +2,10 @@
 Type=Application
 Name=App Installer
 Name[fi]=Sovellusasentaja
-Comment=Install applications packaged as AppImages
-Comment[fi]=Asenna AppImage-muodossa pakattuja sovelluksia
+Comment=Install Linux application packages
+Comment[fi]=Asenna Linux-sovelluspaketteja
 Exec=daisyos-appinstaller %U
 Icon=org.daisyos.appinstaller
 StartupWMClass=org.daisyos.appinstaller
 Categories=System;PackageManager;
-MimeType=application/vnd.appimage;application/x-iso9660-appimage;
+MimeType=application/vnd.appimage;application/x-iso9660-appimage;application/vnd.flatpak.ref;application/vnd.flatpak;application/vnd.debian.binary-package;application/x-rpm;application/x-daisyos-arch-package;

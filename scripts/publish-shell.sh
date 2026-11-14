@@ -77,7 +77,7 @@ fi
 
 rm -rf "$output_dir"
 rm -f "$output_mode_file"
-for application in Files Mail Notes Settings DiskManager Continuity AppInstaller; do
+for application in Files Mail Notes Settings DiskManager Continuity AppInstaller Calculator AppStore UIKit; do
   dotnet restore "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --runtime linux-x64 "${publish_properties[@]}"
 done
@@ -102,12 +102,21 @@ install -d "$output_dir/window-menus-root/etc/xdg"
 kwriteconfig6 --file "$output_dir/window-menus-root/etc/xdg/kwinrc" --group Plugins --key daisyos-window-menus-v4Enabled --type bool true
 "$repo_root/scripts/configure-kwin-blur.sh" --stage-root "$output_dir/window-menus-root"
 
+mkdir -p "$output_dir/applications"
+cp "$repo_root/src/native/daisy_window_decoration/applications/"*.desktop "$output_dir/applications/"
+mkdir -p "$output_dir/applications/icons"
+for application in Files Mail Notes Settings DiskManager AppInstaller Calculator AppStore UIKit; do
+  icon="$application"
+  case "$application" in DiskManager) icon=Disk_Manager_Dark ;; AppStore) icon=Store ;; UIKit) icon=UiKit ;; esac
+  install -m644 "$repo_root/src/DaisyOS.Shell/Assets/AppIcons/$icon.png" "$output_dir/applications/icons/org.daisyos.${application,,}.png"
+done
+
 mkdir -p "$output_dir/cursor-themes"
 cp -a "$repo_root/artifacts/cursors/"DaisyOS-* "$output_dir/cursor-themes/"
 
 # Publish into its own directory so composite ReadyToRun ownership cannot
 # overwrite the desktop’s runtime assemblies.
-for application in Files Mail Notes Settings DiskManager Continuity AppInstaller; do
+for application in Files Mail Notes Settings DiskManager Continuity AppInstaller Calculator AppStore UIKit; do
   dotnet publish "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --configuration Release --runtime linux-x64 --self-contained true \
     --no-restore --output "$output_dir/apps/$application" "${publish_properties[@]}"
@@ -146,6 +155,8 @@ echo ""
   fi
   ffmpeg -version | sed -n '1p'
 } > "$output_dir/wallpaper-dependencies.txt"
+
+"$repo_root/scripts/install-application-management.sh" --root "$output_dir/application-management-root"
 
 "$repo_root/scripts/stage-gaming-integration.sh" --root "$output_dir/gaming-root"
 "$repo_root/scripts/build-librepods.sh"

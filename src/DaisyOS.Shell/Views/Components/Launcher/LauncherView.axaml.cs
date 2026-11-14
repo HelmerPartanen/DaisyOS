@@ -1186,26 +1186,13 @@ public partial class LauncherView : UserControl
     private async void OnLauncherUninstallClicked(object? sender, RoutedEventArgs e)
     {
         if (_contextMenuItem is not { } item) return;
+        var owner = TopLevel.GetTopLevel(this) as Window;
         CloseAppContextMenu();
-        var target = await _installedApplications.ResolveAsync(item.App);
-        if (!target.CanManage)
-        {
-            (Application.Current as App)?.Feedback.Show(target.UnavailableReason);
-            return;
-        }
-
-        if (!await ConfirmUninstallAsync(item.Name)) return;
-        var removed = await _installedApplications.UninstallAsync(target);
-        (Application.Current as App)?.Feedback.Show(removed
-            ? Loc.Format("{0} was uninstalled.", item.Name)
-            : Loc.Format("Couldn’t uninstall {0}.", item.Name));
-        if (removed) await ViewModel.ReloadApplicationsAsync();
-    }
-
-    private async Task<bool> ConfirmUninstallAsync(string appName)
-    {
-        if (TopLevel.GetTopLevel(this) is not Window owner) return false;
-        return await DaisyOS.Shell.Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(owner, appName);
+        // A normal dialog cannot stack above the native launcher's layer surface.
+        // Release that surface and its keyboard grab before handing focus to the dialog.
+        (Application.Current as App)?.HideLauncher(immediate: true, restoreFocus: false);
+        if (await Services.ApplicationManagementUi.RemoveAsync(_installedApplications, item.App, owner))
+            await ViewModel.ReloadApplicationsAsync();
     }
 
     private async void OnSearchKeyDown(object? sender, KeyEventArgs e)

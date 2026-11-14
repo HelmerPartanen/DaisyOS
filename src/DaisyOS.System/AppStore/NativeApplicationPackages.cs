@@ -13,11 +13,13 @@ public static partial class NativeApplicationPackages
         return result.Succeeded && PackageName().IsMatch(package) ? package : null;
     }
 
-    public static Task<CommandResult> RemoveAsync(ICommandRunner runner, string package, CancellationToken token = default)
+    public static async Task<CommandResult> RemoveAsync(ICommandRunner runner, string package, CancellationToken token = default)
     {
         if (!PackageName().IsMatch(package)) throw new ArgumentException("Invalid package name.", nameof(package));
-        // Keep dependency checks enabled: removing an application must not remove the desktop with it.
-        return runner.RunAsync("pkexec", ["pacman", "-R", "--noconfirm", "--", package], TimeSpan.FromMinutes(3), token);
+        var service = new DaisyOS.System.Applications.ApplicationManagementService(runner);
+        var plan = await service.PrepareUninstallAsync(new(new(DaisyOS.Core.Models.ApplicationBackend.Pacman, package, "system"), package), token).ConfigureAwait(false);
+        var result = await service.ExecuteAsync(plan, token: token).ConfigureAwait(false);
+        return result.Succeeded ? CommandResult.Success(result.Message) : CommandResult.Failed(result.Message);
     }
 
     [GeneratedRegex(@"^[a-zA-Z0-9@._+][a-zA-Z0-9@._+\-]*\z")]

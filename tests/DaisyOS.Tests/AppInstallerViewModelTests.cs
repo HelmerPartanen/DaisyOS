@@ -4,8 +4,13 @@ using Xunit;
 
 namespace DaisyOS.Tests;
 
-public sealed class AppInstallerViewModelTests
+public sealed class AppInstallerViewModelTests : IDisposable
 {
+    private readonly string _root=Path.Combine(Path.GetTempPath(),"daisy-installer-test-"+Guid.NewGuid().ToString("N"));
+    private string PackagePath=>Path.Combine(_root,"TestApp.AppImage");
+    public AppInstallerViewModelTests() { Directory.CreateDirectory(_root); File.WriteAllText(PackagePath,"fixture inspected by fake AppImage service"); }
+    public void Dispose() { if(Directory.Exists(_root)) Directory.Delete(_root,true); }
+
     private sealed class FakeAppImageInstallerService : IAppImageInstallerService
     {
         public List<AppImageInstallation> InstalledApps { get; } = [];
@@ -80,7 +85,7 @@ public sealed class AppInstallerViewModelTests
             InstalledAt = DateTimeOffset.UtcNow
         });
 
-        using var vm = new AppInstallerViewModel(service);
+        using var vm = new AppInstallerViewModel(service, dataHome: _root);
         await vm.InitializeAsync();
 
         Assert.Single(vm.Installed);
@@ -92,9 +97,9 @@ public sealed class AppInstallerViewModelTests
     public async Task SelectFileAsyncInspectsFileAndConfiguresFirstTimeButtons()
     {
         var service = new FakeAppImageInstallerService();
-        using var vm = new AppInstallerViewModel(service);
+        using var vm = new AppInstallerViewModel(service, dataHome: _root);
 
-        await vm.SelectFileAsync("/home/user/Downloads/TestApp.AppImage");
+        await vm.SelectFileAsync(PackagePath);
 
         Assert.True(vm.HasSelection);
         Assert.Equal("Test App", vm.SelectedName);
@@ -122,8 +127,8 @@ public sealed class AppInstallerViewModelTests
             InstalledAt = DateTimeOffset.UtcNow
         });
 
-        using var vm = new AppInstallerViewModel(service);
-        await vm.SelectFileAsync("/home/user/Downloads/TestApp.AppImage");
+        using var vm = new AppInstallerViewModel(service, dataHome: _root);
+        await vm.SelectFileAsync(PackagePath);
 
         Assert.True(vm.HasSelection);
         Assert.True(vm.IsSelectedInstalled);
@@ -136,9 +141,9 @@ public sealed class AppInstallerViewModelTests
     public async Task InstallAsyncInstallsAndExposesOpenButton()
     {
         var service = new FakeAppImageInstallerService();
-        using var vm = new AppInstallerViewModel(service);
+        using var vm = new AppInstallerViewModel(service, dataHome: _root);
 
-        await vm.SelectFileAsync("/home/user/Downloads/TestApp.AppImage");
+        await vm.SelectFileAsync(PackagePath);
         Assert.True(vm.ShowFirstTimeInstallButton);
         Assert.False(vm.ShowOpenButton);
 
@@ -156,9 +161,9 @@ public sealed class AppInstallerViewModelTests
     public async Task RemoveAsyncUninstallsAndUpdatesState()
     {
         var service = new FakeAppImageInstallerService();
-        using var vm = new AppInstallerViewModel(service);
+        using var vm = new AppInstallerViewModel(service, dataHome: _root);
 
-        await vm.SelectFileAsync("/home/user/Downloads/TestApp.AppImage");
+        await vm.SelectFileAsync(PackagePath);
         await vm.InstallAsync();
         Assert.Single(vm.Installed);
 
@@ -174,12 +179,12 @@ public sealed class AppInstallerViewModelTests
     public async Task SelectFileAsyncAwaitsInitializationWithoutDroppingFile()
     {
         var service = new FakeAppImageInstallerService();
-        using var vm = new AppInstallerViewModel(service);
+        using var vm = new AppInstallerViewModel(service, dataHome: _root);
 
         // Simulate concurrent startup where InitializeAsync starts on window Opened
         // and SelectFileAsync is called immediately afterwards by activation
         var initTask = vm.InitializeAsync();
-        var selectTask = vm.SelectFileAsync("/home/user/Downloads/TestApp.AppImage");
+        var selectTask = vm.SelectFileAsync(PackagePath);
 
         await Task.WhenAll(initTask, selectTask);
 
@@ -191,9 +196,9 @@ public sealed class AppInstallerViewModelTests
     public async Task InstallDestinationPathUpdatesWithCustomDirectory()
     {
         var service = new FakeAppImageInstallerService();
-        using var vm = new AppInstallerViewModel(service);
+        using var vm = new AppInstallerViewModel(service, dataHome: _root);
 
-        await vm.SelectFileAsync("/home/user/Downloads/TestApp.AppImage");
+        await vm.SelectFileAsync(PackagePath);
         Assert.Contains("test-app", vm.InstallDestinationPath);
 
         vm.CustomDestinationDirectory = "/custom/install/dir";

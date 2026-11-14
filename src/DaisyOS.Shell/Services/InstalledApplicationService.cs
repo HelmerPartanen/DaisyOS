@@ -1,4 +1,5 @@
 using DaisyOS.System.AppStore;
+using DaisyOS.System.Applications;
 using DaisyOS.Core.Models;
 using DaisyOS.Shell.ViewModels;
 using DaisyOS.System.Processes;
@@ -10,7 +11,9 @@ public enum InstalledApplicationPackageKind
     None,
     Pacman,
     Flatpak,
-    DesktopEntry
+    DesktopEntry,
+    AppImage,
+    Container
 }
 
 public sealed record InstalledApplicationManagement(
@@ -20,17 +23,20 @@ public sealed record InstalledApplicationManagement(
     string? DesktopEntryPath,
     string UnavailableReason)
 {
-    public bool CanManage => PackageKind != InstalledApplicationPackageKind.None && !string.IsNullOrWhiteSpace(PackageId);
+    public bool CanManage => !IsProtected && PackageKind != InstalledApplicationPackageKind.None && !string.IsNullOrWhiteSpace(PackageId);
     public string InstallationScope { get; init; } = "user";
     public string Origin { get; init; } = "flathub";
+    public InstalledApplication? Installation { get; init; }
+    public bool IsProtected { get; init; }
 }
 
 /// <summary>Resolves visible desktop applications to their real Linux package owner or user-level desktop entry.</summary>
 public sealed class InstalledApplicationService
 {
     private readonly ICommandRunner _runner;
+    private readonly ApplicationManagementService _management;
 
-    public InstalledApplicationService(ICommandRunner? runner = null) => _runner = runner ?? new SafeCommandRunner();
+    public InstalledApplicationService(ICommandRunner? runner = null) { _runner = runner ?? new SafeCommandRunner(); _management = new(_runner); }
 
     public IReadOnlyList<AppEntry> GetInstalledApplications() =>
         new LinuxAppLauncherService().GetAvailableApps()
@@ -41,6 +47,21 @@ public sealed class InstalledApplicationService
             })
             .OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase)
             .ToArray();
+
+    public async Task<IReadOnlyList<AppEntry>> GetInstalledApplicationsAsync(CancellationToken token = default)
+    {
+        var launchers = GetInstalledApplications();
+        var inventory = await _management.GetInstalledAsync(token);
+        var result = new List<AppEntry>();
+        foreach (var installation in inventory)
+        {
+            var launcher = launchers.FirstOrDefault(app => installation.DesktopIds.Contains(DesktopApplicationMaskStore.NormalizeDesktopId(app.Id), StringComparer.OrdinalIgnoreCase));
+            var entry = launcher ?? new AppEntry(installation.DesktopIds.FirstOrDefault() ?? installation.Identity.PackageId, installation.Name, "", "package", false, AppLaunchKind.DesktopEntry);
+            result.Add(entry with { Name = entry.Name + (installation.CleanupPending ? " — " + Loc.Get("Cleanup pending") : "") + " (" + installation.Identity.Backend + " · " + installation.Identity.Scope + (installation.Identity.Reference is null ? "" : " · " + installation.Identity.Reference.Split('/').Last()) + ")", Installation = installation.Identity });
+        }
+        result.AddRange(launchers.Where(app => !inventory.Any(installation => installation.DesktopIds.Contains(DesktopApplicationMaskStore.NormalizeDesktopId(app.Id), StringComparer.OrdinalIgnoreCase))));
+        return result.OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase).ToArray();
+    }
 
     public IReadOnlyList<(string DesktopId, string Name, string Icon)> GetRemovedApplications() =>
         DesktopApplicationMaskStore.GetRemovedApplications();
@@ -58,6 +79,23 @@ public sealed class InstalledApplicationService
     public async Task<InstalledApplicationManagement> ResolveAsync(AppEntry app, CancellationToken cancellationToken = default)
     {
         string? desktopPath = null;
+        var normalized = DesktopApplicationMaskStore.NormalizeDesktopId(app.Id);
+        if (app.Installation is { } selectedIdentity)
+        {
+            var installed = (await _management.GetInstalledAsync(cancellationToken)).FirstOrDefault(record => record.Identity == selectedIdentity);
+            if (installed is null) return new(app, null, InstalledApplicationPackageKind.None, null, Loc.Get("This installation no longer exists. Refresh the application list."));
+            return new(app, selectedIdentity.PackageId, selectedIdentity.Backend switch
+            {
+                ApplicationBackend.Pacman => InstalledApplicationPackageKind.Pacman, ApplicationBackend.Flatpak => InstalledApplicationPackageKind.Flatpak,
+                ApplicationBackend.AppImage => InstalledApplicationPackageKind.AppImage, ApplicationBackend.Container => InstalledApplicationPackageKind.Container,
+                _ => InstalledApplicationPackageKind.DesktopEntry
+            }, installed.OwnedLaunchers.FirstOrDefault(), installed.ProtectionReason)
+            { Installation = installed, InstallationScope = selectedIdentity.Scope, Origin = installed.Origin, IsProtected = installed.IsProtected };
+        }
+        if (new[] { "org.daisyos.settings.desktop", "org.daisyos.appinstaller.desktop", "org.daisyos.installer.desktop", "org.daisyos.taskmanager.desktop" }.Contains(normalized, StringComparer.OrdinalIgnoreCase))
+            return new(app, null, InstalledApplicationPackageKind.None, null, Loc.Get("This application is required for system management and recovery.")) { IsProtected = true };
+        var managed = (await _management.GetManagedInstalledAsync(cancellationToken)).FirstOrDefault(record => record.DesktopIds.Contains(normalized, StringComparer.OrdinalIgnoreCase));
+        if (managed is not null) return new(app, managed.Identity.PackageId, managed.Identity.Backend switch { ApplicationBackend.AppImage => InstalledApplicationPackageKind.AppImage, ApplicationBackend.Container => InstalledApplicationPackageKind.Container, _ => InstalledApplicationPackageKind.DesktopEntry }, managed.OwnedLaunchers.FirstOrDefault(), "") { Installation = managed };
         if (app.LaunchKind != AppLaunchKind.Internal)
         {
             desktopPath = DesktopItemLoader.FindDesktopEntryFilePath([app.Id, app.Name, app.Icon]);
@@ -91,60 +129,64 @@ public sealed class InstalledApplicationService
             }
         }
 
-        var normalizedId = DesktopApplicationMaskStore.NormalizeDesktopId(app.Id);
-        if (!string.IsNullOrWhiteSpace(normalizedId))
-        {
-            var isDaisy = app.LaunchKind == AppLaunchKind.Internal || normalizedId.StartsWith("org.daisyos.", StringComparison.OrdinalIgnoreCase);
-            var reason = isDaisy ? Loc.Get("DaisyOS system applications are managed with system updates.") : string.Empty;
-            return new(app, normalizedId, InstalledApplicationPackageKind.DesktopEntry, desktopPath, reason)
-                { InstallationScope = "user", Origin = isDaisy ? "daisyos" : "local" };
-        }
-
-        return new(app, null, InstalledApplicationPackageKind.None, desktopPath,
-            Loc.Get("This application is not owned by a supported Pacman or Flatpak package."));
+        return new(app, normalized, InstalledApplicationPackageKind.DesktopEntry, desktopPath,
+            Loc.Get("This app has no package ownership record. Use guided removal; hiding its shortcut will not uninstall it."));
     }
 
-    public async Task<bool> RepairAsync(InstalledApplicationManagement target, CancellationToken cancellationToken = default)
+    public Task<ApplicationTransactionPlan> PrepareUninstallAsync(InstalledApplicationManagement target, CancellationToken token = default)
     {
-        if (!target.CanManage) return false;
-        if (target.PackageKind == InstalledApplicationPackageKind.DesktopEntry)
+        var identity = new ApplicationIdentity(target.PackageKind switch
         {
-            DesktopApplicationMaskStore.Restore(target.PackageId!);
-            (Avalonia.Application.Current as App)?.NotifyApplicationRestored(target.App.Id);
-            return true;
+            InstalledApplicationPackageKind.Pacman => ApplicationBackend.Pacman,
+            InstalledApplicationPackageKind.Flatpak => ApplicationBackend.Flatpak,
+            InstalledApplicationPackageKind.AppImage => ApplicationBackend.AppImage,
+            InstalledApplicationPackageKind.Container => ApplicationBackend.Container,
+            _ => ApplicationBackend.Unmanaged
+        }, target.PackageId ?? target.App.Id, target.InstallationScope);
+        var app = target.Installation ?? new InstalledApplication(identity, target.App.Name)
+        {
+            DesktopIds = [DesktopApplicationMaskStore.NormalizeDesktopId(target.App.Id)],
+            OwnedLaunchers = target.DesktopEntryPath is null ? [] : [target.DesktopEntryPath],
+            OwnedCommands = ApplicationIntegration.Commands(target.DesktopEntryPath is null ? [] : [target.DesktopEntryPath]),
+            Origin = target.Origin, IsProtected = target.IsProtected, ProtectionReason = target.UnavailableReason
+        };
+        return _management.PrepareUninstallAsync(app, token);
+    }
+
+    public async Task<ApplicationTransactionResult> ExecuteUninstallAsync(ApplicationTransactionPlan plan, bool removeData = false, CancellationToken token = default)
+    {
+        var result = await _management.ExecuteAsync(plan, removeData, token: token);
+        if (result.Succeeded)
+        {
+            foreach (var id in result.RemovedDesktopIds) (Avalonia.Application.Current as App)?.NotifyApplicationRemoved(id);
+            if (result.RemovedDesktopIds.Length == 0) (Avalonia.Application.Current as App)?.NotifyApplicationRestored(plan.Application.DesktopIds.FirstOrDefault() ?? plan.Application.Identity.PackageId);
         }
-        var result = target.PackageKind == InstalledApplicationPackageKind.Flatpak
-            ? await _runner.RunAsync("flatpak", ["install", ScopeArgument(target.InstallationScope), "--reinstall", "-y", "--noninteractive", "--", target.Origin, target.PackageId!], TimeSpan.FromMinutes(10), cancellationToken)
-            : await _runner.RunAsync("pkexec", ["pacman", "-S", "--noconfirm", "--", target.PackageId!], TimeSpan.FromMinutes(5), cancellationToken);
-        return result.Succeeded;
+        return result;
+    }
+
+    public async Task<ApplicationTransactionPlan> PrepareRepairAsync(InstalledApplicationManagement target, CancellationToken token = default)
+    {
+        var removal = await PrepareUninstallAsync(target, token);
+        return await _management.PrepareRepairAsync(removal.Application, token);
+    }
+    public async Task<bool> RepairAsync(InstalledApplicationManagement target, CancellationToken cancellationToken = default) =>
+        (await _management.ExecuteAsync(await PrepareRepairAsync(target, cancellationToken), token: cancellationToken)).Succeeded;
+    public async Task<ApplicationTransactionResult> ExecuteRepairAsync(ApplicationTransactionPlan plan, CancellationToken token = default)
+    {
+        var result = await _management.ExecuteAsync(plan, token: token);
+        if (result.Succeeded) foreach (var id in plan.Application.DesktopIds) (Avalonia.Application.Current as App)?.NotifyApplicationRestored(id);
+        return result;
     }
 
     public async Task<bool> UninstallAsync(InstalledApplicationManagement target, CancellationToken cancellationToken = default)
     {
         if (!target.CanManage) return false;
-        bool succeeded;
-        if (target.PackageKind == InstalledApplicationPackageKind.DesktopEntry)
-        {
-            succeeded = DesktopApplicationMaskStore.RemoveOrMask(target.PackageId!, target.DesktopEntryPath, target.App.Name, target.App.Icon);
-        }
-        else
-        {
-            var result = target.PackageKind == InstalledApplicationPackageKind.Flatpak
-                ? await _runner.RunAsync("flatpak", ["uninstall", ScopeArgument(target.InstallationScope), "-y", "--noninteractive", "--", target.PackageId!], TimeSpan.FromMinutes(5), cancellationToken)
-                : await NativeApplicationPackages.RemoveAsync(_runner, target.PackageId!, cancellationToken);
-            succeeded = result.Succeeded;
-            if (succeeded)
-            {
-                DesktopApplicationMaskStore.RemoveDesktopShortcut(target.App.Id);
-            }
-        }
-
-        if (succeeded)
-        {
-            (Avalonia.Application.Current as App)?.NotifyApplicationRemoved(target.App.Id);
-        }
-        return succeeded;
+        var plan = await PrepareUninstallAsync(target, cancellationToken);
+        return (await ExecuteUninstallAsync(plan, token: cancellationToken)).Succeeded;
     }
+
+    public bool HideApplication(InstalledApplicationManagement target) => DesktopApplicationMaskStore.RemoveOrMask(
+        target.App.Id, target.DesktopEntryPath, target.App.Name, target.App.Icon);
 
     public string? AddToDesktop(AppEntry app)
     {
@@ -163,6 +205,7 @@ public sealed class InstalledApplicationService
         if (hasSource)
         {
             File.Copy(source!, destination, overwrite: true);
+            File.AppendAllText(destination, "\nX-DaisyOS-SourceDesktopFile=" + Path.GetFullPath(source!) + "\n");
         }
         else
         {

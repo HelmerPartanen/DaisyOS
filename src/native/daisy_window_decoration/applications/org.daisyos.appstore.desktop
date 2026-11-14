@@ -4,7 +4,7 @@ Name=App Store
 Name[fi]=Sovelluskauppa
 Comment=Discover and install applications for DaisyOS
 Comment[fi]=Etsi ja asenna sovelluksia DaisyOS:ään
-Exec=daisyos-shell --open-app=appstore
+Exec=daisyos-appstore
 Icon=org.daisyos.appstore
 StartupWMClass=org.daisyos.appstore
 Categories=System;PackageManager;

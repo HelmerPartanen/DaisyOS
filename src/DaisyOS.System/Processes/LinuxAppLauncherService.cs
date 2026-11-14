@@ -172,12 +172,12 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
         new(
             "org.daisyos.appinstaller.desktop",
             "App Installer",
-            "Install applications packaged as AppImages",
+            "Install Linux application packages",
             "org.daisyos.appinstaller",
             IsPinned: false,
             AppLaunchKind.Internal,
             Categories: ["System", "PackageManager"],
-            SearchTerms: ["AppImage", "Installer", "Package"]),
+            SearchTerms: ["AppImage", "Flatpak", "DEB", "RPM", "Installer", "Package"]),
         new(
             "org.daisyos.taskmanager.desktop",
             "System Monitor",
@@ -261,8 +261,14 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             }
         }
 
+        apps.RemoveAll(app => Applications.OptionalApplicationState.IsRemoved(app.Id));
         foreach (var builtIn in BuiltInSystemApps)
         {
+            if (!Applications.OptionalApplicationState.IsPayloadAvailable(builtIn.Id))
+            {
+                apps.RemoveAll(app => NativeIdsMatch(app.Id, builtIn.Id));
+                continue;
+            }
             var normalizedId = builtIn.Id.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)
                 ? builtIn.Id[..^8]
                 : builtIn.Id;

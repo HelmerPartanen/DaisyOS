@@ -4,7 +4,6 @@ using Avalonia.Controls;
 using Avalonia.Rendering.Composition;
 using Avalonia.Threading;
 using DaisyOS.Shell.Apps.Files;
-using DaisyOS.Shell.Apps.Notes;
 using DaisyOS.Shell.Apps.System.Settings;
 
 namespace DaisyOS.Shell.Services.Diagnostics;
@@ -55,7 +54,7 @@ public static class ApplicationPerformanceProbe
     internal static bool ContentReady(Window window, string id) => id switch
     {
         "files" => window.DataContext is FilesViewModel { ActiveTab.CurrentSession.IsReady: true } files && files.ActiveTab!.Entries.Count == 1000,
-        "notes" => window.DataContext is NotesViewModel notes && notes.Notes.Count == 20,
+        "notes" => window.DataContext is IApplicationPerformanceContent { IsBenchmarkReady: true },
         "settings" => window is SettingsWindow settings && settings.FindControl<SettingsView>("SettingsContent")?.FindControl<StackPanel>("CategoryContent") is { } content &&
             content.Children.Count >= 2 && !content.Children.OfType<TextBlock>().Any(text => text.Text?.EndsWith("…", StringComparison.Ordinal) == true),
         _ => false

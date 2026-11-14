@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup><AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../DaisyOS.Shell/Apps/$(OptionalApplicationSource)/**/*.cs" Link="Apps/$(OptionalApplicationSource)/%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="../DaisyOS.Shell/LocalizationUsings.cs" Link="LocalizationUsings.cs" />
+    <Compile Include="../OptionalApplicationAssemblyInfo.cs" Link="Properties/AssemblyInfo.cs" />
+    <AvaloniaXaml Include="../DaisyOS.Shell/Apps/$(OptionalApplicationSource)/**/*.axaml" Link="Apps/$(OptionalApplicationSource)/%(RecursiveDir)%(Filename)%(Extension)" />
+    <ProjectReference Include="../../external/Avalonia/src/tools/Avalonia.Generators/Avalonia.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" PrivateAssets="all" />
+    <ProjectReference Include="../../external/Avalonia/src/Avalonia.Build.Tasks/Avalonia.Build.Tasks.csproj" ReferenceOutputAssembly="false" PrivateAssets="all" />
+  </ItemGroup>
+  <Import Project="$(MSBuildThisFileDirectory)../external/Avalonia/src/tools/Avalonia.Generators/Avalonia.Generators.props" />
+  <Import Project="$(MSBuildThisFileDirectory)../external/Avalonia/build/BuildTargets.targets" />
+  <PropertyGroup><AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault></PropertyGroup>
+</Project>

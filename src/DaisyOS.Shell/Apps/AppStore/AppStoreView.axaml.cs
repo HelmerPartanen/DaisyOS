@@ -144,7 +144,21 @@ public partial class AppStoreView : UserControl
         { ViewModel?.ShowDetails(card); DetailScroller.Offset = default; }
     }
     private async void OnActionButtonClicked(object? sender, RoutedEventArgs e)
-    { if (sender is Button { DataContext: AppStoreCardViewModel card }) await card.PrimaryActionAsync(); }
+    {
+        if (sender is not Button { DataContext: AppStoreCardViewModel card }) return;
+        try
+        {
+            if (card.CanInstall && await card.PrepareInstallAsync() is { } plan)
+            {
+                var dialog = new Views.Dialogs.ApplicationTransactionDialog(plan);
+                if (await dialog.ConfirmAsync(TopLevel.GetTopLevel(this) as Window)) await card.InstallReviewedAsync(dialog.Plan);
+                return;
+            }
+            await card.PrimaryActionAsync();
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or global::System.Text.Json.JsonException)
+        { (Application.Current as App)?.Feedback.Show(ex.Message); }
+    }
     private void OnOpenClicked(object? sender, RoutedEventArgs e)
     { if (sender is Button { DataContext: AppStoreCardViewModel card }) card.Launch(); }
     private void OnCancelClicked(object? sender, RoutedEventArgs e)
@@ -152,7 +166,15 @@ public partial class AppStoreView : UserControl
     private async void OnUninstallButtonClicked(object? sender, RoutedEventArgs e)
     {
         if (sender is not Button { DataContext: AppStoreCardViewModel card } || TopLevel.GetTopLevel(this) is not Window owner) return;
-        if (await Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(owner, card.Name)) await card.UninstallAsync();
+        try
+        {
+            var plan = await card.PrepareRemovalAsync();
+            if (plan is null) { if (await Views.Dialogs.ConfirmationDialog.ShowApplicationRemovalAsync(owner, card.Name)) await card.UninstallAsync(); return; }
+            var dialog = new Views.Dialogs.ApplicationTransactionDialog(plan);
+            if (await dialog.ConfirmAsync(owner)) await card.UninstallAsync(dialog.Plan, dialog.RemoveData);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or InvalidOperationException or global::System.Text.Json.JsonException)
+        { (Application.Current as App)?.Feedback.Show(ex.Message); }
     }
     private void OnFlathubClicked(object? sender, RoutedEventArgs e)
     { if (sender is Button { DataContext: AppStoreCardViewModel card }) OpenUrl(card.AppUrl); }

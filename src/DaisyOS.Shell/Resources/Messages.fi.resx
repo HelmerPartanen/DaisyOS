@@ -7762,4 +7762,112 @@ Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</
     <value>Sijainti ja koko</value>
     <comment>Source: Position and size</comment>
   </data>
+  <data name="Loc_6A2580047C5B" xml:space="preserve">
+    <value>Valitse sovelluspaketti</value>
+    <comment>Source: Choose an application package</comment>
+  </data>
+  <data name="Loc_13112C170595" xml:space="preserve">
+    <value>Pudota sovelluspaketti tähän tai valitse tiedosto tietokoneelta.</value>
+    <comment>Source: Drop an application package here, or choose a file from your computer.</comment>
+  </data>
+  <data name="Loc_B04B27E6C23C" xml:space="preserve">
+    <value>Ylläpitäjän tunnistautuminen vaaditaan. Tämä kansio poistetaan pysyvästi.</value>
+    <comment>Source: Administrator authentication required. This folder will be permanently removed.</comment>
+  </data>
+  <data name="Loc_215A68FA9190" xml:space="preserve">
+    <value>Poista myös sovelluksen tallennetut tiedot</value>
+    <comment>Source: Also delete this app’s saved data</comment>
+  </data>
+  <data name="Loc_41E2478A7238" xml:space="preserve">
+    <value>Sovelluksen poistaminen</value>
+    <comment>Source: Application removal</comment>
+  </data>
+  <data name="Loc_BD53644FE2C6" xml:space="preserve">
+    <value>Valitse asennuskansio</value>
+    <comment>Source: Choose installation folder</comment>
+  </data>
+  <data name="Loc_02378840C5B7" xml:space="preserve">
+    <value>Valitse sovelluksen oma asennuskansio. Käyttäjän kansiot siirretään roskakoriin. Järjestelmäasennukset poistetaan pysyvästi tunnistautumisen jälkeen. Jaettuja kansioita ei voi poistaa.</value>
+    <comment>Source: Choose the app’s dedicated installation folder. User folders move to Trash. System installations require authentication and are permanently removed. Shared folders cannot be removed.</comment>
+  </data>
+  <data name="Loc_747D464599CC" xml:space="preserve">
+    <value>Siivous kesken</value>
+    <comment>Source: Cleanup pending</comment>
+  </data>
+  <data name="Loc_57D820C662B6" xml:space="preserve">
+    <value>Valittua sovelluspakettia ei voitu lukea. Yritä uudelleen.</value>
+    <comment>Source: Couldn’t read the selected application package. Try again.</comment>
+  </data>
+  <data name="Loc_B192CFAE9EFD" xml:space="preserve">
+    <value>Piilotettu käynnistimestä — asennusta ei ole poistettu</value>
+    <comment>Source: Hidden from the launcher — not uninstalled</comment>
+  </data>
+  <data name="Loc_1194D3FA0F39" xml:space="preserve">
+    <value>Piilota käynnistimestä</value>
+    <comment>Source: Hide from launcher</comment>
+  </data>
+  <data name="Loc_E3AE3128A7EE" xml:space="preserve">
+    <value>Käynnistimen piilottaminen ei poista sovelluksen asennusta.</value>
+    <comment>Source: Hiding a launcher does not remove the installed application.</comment>
+  </data>
+  <data name="Loc_65D1EA25C1BE" xml:space="preserve">
+    <value>Paketinhallinnan hallinnoima</value>
+    <comment>Source: Managed by the package system</comment>
+  </data>
+  <data name="Loc_30AA8DCCBF0A" xml:space="preserve">
+    <value>Pakettimuutokset</value>
+    <comment>Source: Package changes</comment>
+  </data>
+  <data name="Loc_D4D0ABFF3680" xml:space="preserve">
+    <value>Sovelluskohtainen yhteensopivuusympäristö</value>
+    <comment>Source: Private compatibility environment</comment>
+  </data>
+  <data name="Loc_2E4CCEB031A3" xml:space="preserve">
+    <value>Tarkista poistaminen</value>
+    <comment>Source: Review uninstall</comment>
+  </data>
+  <data name="Loc_0398DD59968A" xml:space="preserve">
+    <value>Sovellusta ei voitu poistaa.</value>
+    <comment>Source: The application could not be removed.</comment>
+  </data>
+  <data name="Loc_48B2C65549D5" xml:space="preserve">
+    <value>Sovelluksella ei ole paketin omistustietoja. Käytä ohjattua poistamista. Pikakuvakkeen piilottaminen ei poista sovelluksen asennusta.</value>
+    <comment>Source: This app has no package ownership record. Use guided removal; hiding its shortcut will not uninstall it.</comment>
+  </data>
+  <data name="Loc_84FF9EE96541" xml:space="preserve">
+    <value>Tämä sovellus tarvitaan järjestelmän hallintaan ja palauttamiseen.</value>
+    <comment>Source: This application is required for system management and recovery.</comment>
+  </data>
+  <data name="Loc_9B230B83E107" xml:space="preserve">
+    <value>DaisyOS hallinnoi tätä sovellusta.</value>
+    <comment>Source: This application will be managed by DaisyOS.</comment>
+  </data>
+  <data name="Loc_ED6299272673" xml:space="preserve">
+    <value>Tätä asennusta ei enää ole. Päivitä sovellusluettelo.</value>
+    <comment>Source: This installation no longer exists. Refresh the application list.</comment>
+  </data>
+  <data name="Loc_FDAA297657CE" xml:space="preserve">
+    <value>Asenna sovellus</value>
+    <comment>Source: Install application</comment>
+  </data>
+  <data name="Loc_14B8936F1C9D" xml:space="preserve">
+    <value>Poista sovelluksen asennus</value>
+    <comment>Source: Uninstall application</comment>
+  </data>
+  <data name="Loc_23427F1AFEDA" xml:space="preserve">
+    <value>Korjaa sovellus</value>
+    <comment>Source: Repair application</comment>
+  </data>
+  <data name="Loc_D06E67214F2F" xml:space="preserve">
+    <value>Sovellus ja sen pikakuvakkeet poistetaan. Tallennetut tiedot ja omat asiakirjat säilytetään, ellet valitse toisin.</value>
+    <comment>Source: The application and its shortcuts will be removed. Your saved data and personal documents are kept unless you choose otherwise.</comment>
+  </data>
+  <data name="Loc_6B6B7991D913" xml:space="preserve">
+    <value>Sovellus käyttää omaa yhteensopivuusympäristöään. Ensimmäinen asennus voi ladata tarvittavia järjestelmäkomponentteja.</value>
+    <comment>Source: This application will use its own compatibility environment. The first installation may download additional system components.</comment>
+  </data>
+  <data name="Loc_3424E38D2B7E" xml:space="preserve">
+    <value>Tarkista sovellus ennen asentamista. Järjestelmäpaketit voivat vaatia ylläpitäjän tunnistautumisen.</value>
+    <comment>Source: Review this application before installing. Native packages may request administrator authentication.</comment>
+  </data>
 </root>

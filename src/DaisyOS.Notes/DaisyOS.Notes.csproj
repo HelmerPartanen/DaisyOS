@@ -10,4 +10,6 @@
          gets an independent executable, dispatcher and application lifetime. -->
     <ProjectReference Include="../DaisyOS.Shell/DaisyOS.Shell.csproj" />
   </ItemGroup>
+  <PropertyGroup><OptionalApplicationSource>Notes</OptionalApplicationSource></PropertyGroup>
+  <Import Project="../DaisyOS.OptionalApplication.targets" />
 </Project>

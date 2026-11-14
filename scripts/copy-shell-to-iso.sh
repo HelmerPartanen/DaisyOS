@@ -19,7 +19,7 @@ fi
 
 "$repo_root/scripts/check-game-telemetry-payload.sh" "$publish_dir"
 
-for application in Files Mail Notes Settings DiskManager AppInstaller; do
+for application in Files Mail Notes Settings DiskManager AppInstaller Calculator AppStore UIKit; do
   if [[ ! -x "$publish_dir/apps/$application/DaisyOS.$application" ]]; then
     echo "Standalone $application is missing. Re-run scripts/publish-shell.sh before staging the ISO." >&2
     exit 1
@@ -55,11 +55,12 @@ install -d "$iso_root/usr/lib/systemd/user/graphical-session.target.wants"
 ln -sfn ../daisyos-gamingd.service "$iso_root/usr/lib/systemd/user/graphical-session.target.wants/daisyos-gamingd.service"
 "$repo_root/scripts/install-memory-resilience.sh" --root "$iso_root" --no-disk-swap --no-package --no-activate
 mkdir -p "$iso_root/usr/local/bin" "$iso_root/usr/share/applications" "$iso_root/usr/share/dbus-1/services"
-for application in Files Mail Notes Settings DiskManager AppInstaller; do
+for application in Files Mail Notes Settings DiskManager AppInstaller Calculator AppStore UIKit; do
   lower="${application,,}"
   printf '#!/usr/bin/env bash\nset -euo pipefail\nexec /opt/DaisyOS/shell/apps/%s/DaisyOS.%s "$@"\n' "$application" "$application" > "$iso_root/usr/local/bin/daisyos-$lower"
   chmod +x "$iso_root/usr/local/bin/daisyos-$lower" "$iso_shell_dir/apps/$application/DaisyOS.$application"
   cp "$repo_root/src/native/daisy_window_decoration/applications/org.daisyos.$lower.desktop" "$iso_root/usr/share/applications/"
+  install -Dm644 "$publish_dir/applications/icons/org.daisyos.$lower.png" "$iso_root/usr/share/icons/hicolor/1024x1024/apps/org.daisyos.$lower.png"
 done
 printf '[D-BUS Service]\nName=org.freedesktop.FileManager1\nExec=/opt/DaisyOS/shell/apps/Files/DaisyOS.Files\n' > "$iso_root/usr/share/dbus-1/services/org.freedesktop.FileManager1.service"
 
@@ -148,3 +149,7 @@ EOF
 
 "$repo_root/scripts/stage-gaming-integration.sh" --root "$iso_root"
 echo "Copied shell to $iso_shell_dir"
+
+# Give real package ownership to the copied application payload before first login.
+"$repo_root/scripts/install-application-management.sh" --root "$iso_root"
+python3 "$repo_root/scripts/stage-managed-applications.py" --root "$iso_root"

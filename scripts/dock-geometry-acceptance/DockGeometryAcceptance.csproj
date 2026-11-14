@@ -1,4 +1,9 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
   <ItemGroup><ProjectReference Include="../../src/DaisyOS.Shell/DaisyOS.Shell.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.Notes/DaisyOS.Notes.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.Mail/DaisyOS.Mail.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.Calculator/DaisyOS.Calculator.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.AppStore/DaisyOS.AppStore.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/DaisyOS.UIKit/DaisyOS.UIKit.csproj" /></ItemGroup>
 </Project>

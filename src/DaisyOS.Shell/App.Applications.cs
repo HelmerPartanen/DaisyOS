@@ -108,6 +108,8 @@ public partial class App
             case "profile-picture" when request.Length == 2:
                 await SetProfilePictureAsync(string.IsNullOrWhiteSpace(request[1]) ? null : request[1]);
                 break;
+            case "app-removed" when request.Length == 2: NotifyApplicationRemoved(request[1]); break;
+            case "app-restored" when request.Length == 2: NotifyApplicationRestored(request[1]); break;
             case "refresh-applications" when request.Length == 1: RefreshApplicationCatalogs(); break;
             case "pin" when request.Length == 2: PinApplicationToTaskbar(request[1]); break;
             default: return "Unknown or invalid settings operation.";
