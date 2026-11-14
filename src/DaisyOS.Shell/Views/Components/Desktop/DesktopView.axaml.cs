@@ -42,6 +42,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
         private readonly DesktopDragController _dragController;
         private App? _app;
         private bool _isLaunchingDesktopItem;
+        private bool _deletingSelection;
 
         /// <summary>
         /// Raised whenever a desktop or widget context menu changes its popup
@@ -215,6 +216,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
             {
                 _viewModel.SelectItem(itemVm);
+                InteractionSurface.Focus(NavigationMethod.Pointer);
 
                 // Use the platform's click count directly. Routed DoubleTapped
                 // is gesture recognition and can be retargeted by pointer capture
@@ -541,7 +543,30 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             }
         }
 
-        private void OnKeyDown(object? sender, KeyEventArgs e)
+        internal async Task DeleteSelectedItemsAsync()
+        {
+            if (_deletingSelection || _viewModel.Items.Any(item => item.IsRenaming)) return;
+            var selected = _viewModel.Items.Where(item => item.IsSelected && item.IsDesktopVisible && (item.CanBeTrashed || item.IsWidgetCard)).ToArray();
+            _deletingSelection = true;
+            try
+            {
+                foreach (var item in selected)
+                {
+                    if (item.IsWidgetCard) _viewModel.RemoveWidget(item, CurrentMetrics);
+                    else if (!await _viewModel.MoveItemToTrash(item, CurrentMetrics))
+                        (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t move the item to Trash."));
+                }
+                if (selected.Length > 0) { _viewModel.SaveLayout(); InvalidateReorderPanel(); }
+            }
+            catch (Exception ex)
+            {
+                Console.Error.WriteLine($"[desktop] Delete selection failed: {ex.Message}");
+                (Application.Current as App)?.Feedback.Show(Loc.Get("Couldn’t move the item to Trash."));
+            }
+            finally { _deletingSelection = false; }
+        }
+
+        private async void OnKeyDown(object? sender, KeyEventArgs e)
         {
             // Desktop shortcuts are registered with handledEventsToo so they still
             // work after ordinary controls process a key. Never reinterpret text
@@ -550,6 +575,17 @@ namespace DaisyOS.Shell.Views.Components.Desktop
                 e.Source is Visual source && source.GetVisualAncestors().Any(visual => visual is TextBox) ||
                 _viewModel.Items.Any(item => item.IsRenaming))
             {
+                return;
+            }
+
+            if (e.Key == Key.Delete && e.KeyModifiers == KeyModifiers.None && !e.Handled)
+            {
+                if (e.Source is Visual control && control.GetSelfAndVisualAncestors().Any(v => v is Button or ComboBox or Slider or NumericUpDown)) return;
+                if (_deletingSelection || _viewModel.Items.Any(item => item.IsSelected && item.IsDesktopVisible && (item.CanBeTrashed || item.IsWidgetCard)))
+                {
+                    e.Handled = true;
+                    await DeleteSelectedItemsAsync();
+                }
                 return;
             }
 
@@ -723,7 +759,7 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
         private void OnChangeWallpaperClicked(object? sender, RoutedEventArgs e)
         {
-            _viewModel.OpenSettings("desktop");
+            _viewModel.OpenSettings("Appearance", setting: "Wallpaper");
         }
 
         private void OnOpenInFilesClicked(object? sender, RoutedEventArgs e)
@@ -738,7 +774,9 @@ namespace DaisyOS.Shell.Views.Components.Desktop
 
         private void OnDesktopSettingsClicked(object? sender, RoutedEventArgs e)
         {
-            _viewModel.OpenSettings("desktop");
+            HideWidgetContextMenu();
+            CloseAnyOpenContextMenu();
+            _viewModel.OpenSettings("Desktop");
         }
     }
 }

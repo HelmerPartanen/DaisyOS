@@ -1444,9 +1444,9 @@ public class DesktopViewModel : INotifyPropertyChanged
         (Application.Current as App)?.ShowFiles(directoryPath ?? GetDesktopDirectoryPath());
     }
 
-    public void OpenSettings(string? section = null)
+    public void OpenSettings(string? category = null, string? section = null, string? setting = null)
     {
-        (Application.Current as App)?.ShowSettings(section ?? "desktop");
+        (Application.Current as App)?.ShowSettings(category ?? "Desktop", section, setting);
     }
 
     public void ShareWithLocalSend(DesktopItemViewModel item)

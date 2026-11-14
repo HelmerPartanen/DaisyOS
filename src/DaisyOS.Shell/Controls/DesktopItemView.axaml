@@ -256,6 +256,8 @@
         <MenuItem Header="{DynamicResource Loc_AE43692B2A31}" Click="OnPropertiesClicked" IsVisible="{Binding !IsWidgetCard}">
           <MenuItem.Icon><controls:DaisyIcon Icon="info" Classes="MenuIcon"/></MenuItem.Icon>
         </MenuItem>
+        <Separator />
+        <MenuItem Header="{DynamicResource Loc_08D8E71DAB97}" Click="OnDesktopSettingsClicked"><MenuItem.Icon><controls:DaisyIcon Icon="desktop" Classes="MenuIcon"/></MenuItem.Icon></MenuItem>
       </ContextMenu>
     </Panel.ContextMenu>
 

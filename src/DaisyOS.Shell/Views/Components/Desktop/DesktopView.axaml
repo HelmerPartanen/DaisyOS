@@ -79,7 +79,7 @@
         <Separator />
 
         <!-- Desktop Settings -->
-        <MenuItem Header="{DynamicResource Loc_4A38195D3F65}" Click="OnDesktopSettingsClicked">
+        <MenuItem Header="{DynamicResource Loc_08D8E71DAB97}" Click="OnDesktopSettingsClicked">
           <MenuItem.Icon><controls:DaisyIcon Icon="gear-six" Classes="MenuIcon"/></MenuItem.Icon>
         </MenuItem>
       </ContextMenu>
@@ -165,6 +165,8 @@
             <MenuItem Header="{DynamicResource Loc_66DC00642E56}" Classes="Danger" Click="OnOverlayRemoveWidgetClicked">
               <MenuItem.Icon><controls:DaisyIcon Icon="trash" Classes="MenuIcon TrashIcon" /></MenuItem.Icon>
             </MenuItem>
+            <Separator />
+            <MenuItem Header="{DynamicResource Loc_08D8E71DAB97}" Click="OnDesktopSettingsClicked"><MenuItem.Icon><controls:DaisyIcon Icon="desktop" Classes="MenuIcon"/></MenuItem.Icon></MenuItem>
           </StackPanel>
         </Border>
       </controls:ShellFrameBorder>

@@ -324,6 +324,12 @@ public partial class DesktopItemView : UserControl
         }
     }
 
+    private void OnDesktopSettingsClicked(object? sender, RoutedEventArgs e)
+    {
+        CloseContextMenu();
+        (Application.Current as App)?.ShowSettings("Desktop");
+    }
+
     private async void OnMoveToTrashClicked(object? sender, RoutedEventArgs e)
     {
         if (DataContext is DesktopItemViewModel vm)

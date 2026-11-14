@@ -37,6 +37,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         /// <summary>Raised when the taskbar context menu visibility changes.</summary>
         public event EventHandler<bool>? ContextMenuVisibilityChanged;
+        public event EventHandler<Apps.System.Settings.SettingsDestination>? SettingsRequested;
 
         /// <summary>Raised when App Info is requested from a taskbar context menu.</summary>
         public event EventHandler<string>? AppInfoRequested;
@@ -152,6 +153,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             _contextMenuHost = this.FindControl<CartoucheBorder>("TaskbarContextMenuHost");
             _contextMenuItems = this.FindControl<StackPanel>("TaskbarContextMenuItems");
 
+            AddHandler(InputElement.PointerPressedEvent, OnTaskbarBackgroundPressed, RoutingStrategies.Bubble);
             InitializeIcons();
             DetachedFromVisualTree += (_, _) => HideHoverPreview();
         }
@@ -1234,6 +1236,36 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 return ResolveEffectiveAppIdForWindow(rec2);
             }
             return NormalizeAppId(tag);
+        }
+
+        private void OnTaskbarBackgroundPressed(object? sender, PointerPressedEventArgs e)
+        {
+            if (_taskbarBody is null || !e.GetCurrentPoint(this).Properties.IsRightButtonPressed) return;
+            if (e.Source is Visual source && source.GetSelfAndVisualAncestors().Any(v => v is Button || v is MenuItem)) return;
+            var point = e.GetPosition(_taskbarBody);
+            if (!new Rect(_taskbarBody.Bounds.Size).Contains(point)) return;
+            ShowBackgroundContextMenu(point);
+            e.Handled = true;
+        }
+
+        public void ShowBackgroundContextMenu(Point point)
+        {
+            if (_contextMenuHost is null || _contextMenuItems is null || _taskbarBody is null) return;
+            HideContextMenu(); HideHoverPreview();
+            _contextMenuItems.Children.Clear();
+            void Add(string label, string icon, Apps.System.Settings.SettingsDestination destination)
+            {
+                var item = CreateMenuItem(label, icon);
+                item.Click += (_, _) => { HideContextMenu(); SettingsRequested?.Invoke(this, destination); };
+                _contextMenuItems.Children.Add(item);
+            }
+            Add("Taskbar settings", "gear", new("Taskbar"));
+            Add("Position and size", "desktop", new("Taskbar", "LAYOUT"));
+            Add("Auto-hide", "caret-down", new("Taskbar", "AUTO-HIDE"));
+            _contextMenuItems.Children.Add(CreateMenuSeparator());
+            Add("Desktop settings", "desktop", new("Desktop"));
+            DockPopupPlacement.Position(_contextMenuHost, _taskbarBody, DockEdge, IsNativePanelHosted, point);
+            ContextMenuVisibilityChanged?.Invoke(this, true);
         }
 
         public void ShowContextMenuFor(Button icon)

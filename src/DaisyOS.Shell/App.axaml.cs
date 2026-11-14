@@ -1750,6 +1750,7 @@ public partial class App : Application
         shell.Taskbar.AppIconClicked += (_, appId) =>
             LaunchTaskbarApp(appId, shell.Taskbar.TakeWasActiveAtActivation(appId));
         shell.Taskbar.ForceQuitRequested += (_, appId) => RequestForceQuit(appId);
+        shell.Taskbar.SettingsRequested += (_, target) => ShowSettings(target.Category, target.Section, target.Setting);
         shell.Taskbar.AppInfoRequested += (_, appId) => ShowSettings("InstalledApps");
         shell.Taskbar.CloseAppRequested += (_, appId) => RequestClose(appId);
         foreach (var appId in NativeAppIds)
@@ -2732,11 +2733,11 @@ public partial class App : Application
         Console.Error.WriteLine($"[shell-recovery] Fatal shell failure: {e.ExceptionObject}");
 
     /// <summary>Opens one normal, compositor-managed instance of the DaisyOS Settings app.</summary>
-    public async void ShowSettings(string? category = null)
+    public async void ShowSettings(string? category = null, string? section = null, string? setting = null)
     {
         HideLauncher(restoreFocus: false);
         var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.settings");
-        var result = await PackagedApplicationLauncher.LaunchAsync("Settings", category is null ? [] : ["--category=" + category]);
+        var result = await PackagedApplicationLauncher.LaunchAsync("Settings", category is null ? [] : new Apps.System.Settings.SettingsDestination(category, section, setting).ToArguments());
         if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
         if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }

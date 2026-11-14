@@ -15,6 +15,7 @@ public static class DockPopupPlacement
         public required Control Anchor;
         public DockEdge Edge;
         public bool NativePanel;
+        public Point? AnchorPoint;
         public bool Updating;
         public EventHandler? Reflow;
         public double MaxWidth;
@@ -22,7 +23,7 @@ public static class DockPopupPlacement
     }
     private static readonly ConditionalWeakTable<Control, Placement> Placements = new();
 
-    public static void Position(Control popup, Control anchor, DockEdge edge, bool nativePanel = true)
+    public static void Position(Control popup, Control anchor, DockEdge edge, bool nativePanel = true, Point? anchorPoint = null)
     {
         if (!Placements.TryGetValue(popup, out var placement))
         {
@@ -44,6 +45,7 @@ public static class DockPopupPlacement
         placement.Anchor = anchor;
         placement.Edge = edge;
         placement.NativePanel = nativePanel;
+        placement.AnchorPoint = anchorPoint;
         popup.IsVisible = true;
         // Commit both roots before starting motion. DesiredSize alone can differ
         // from the final arranged size after wrapping and fractional-scale rounding.
@@ -61,14 +63,17 @@ public static class DockPopupPlacement
         placement.Updating = true;
         try
         {
-            var point = LayoutOrigin(placement.Anchor, owner);
+            var local = placement.AnchorPoint ?? default;
+            var point = LayoutOrigin(placement.Anchor, owner, local);
+            var end = LayoutOrigin(placement.Anchor, owner, placement.AnchorPoint ?? new Point(placement.Anchor.Bounds.Width, placement.Anchor.Bounds.Height));
+            var anchorSize = new Size(Math.Abs(end.X - point.X), Math.Abs(end.Y - point.Y));
             if (placement.NativePanel && !ReferenceEquals(owner, overlay))
             {
                 if (placement.Edge == DockEdge.Bottom) point = new Point(point.X, point.Y + overlay.Bounds.Height - owner.Bounds.Height);
                 if (placement.Edge == DockEdge.Right) point = new Point(point.X + overlay.Bounds.Width - owner.Bounds.Width, point.Y);
             }
             var origin = LayoutOrigin(parent, overlay);
-            var anchor = new Rect(point - (Vector)origin, placement.Anchor.Bounds.Size);
+            var anchor = new Rect(point - (Vector)origin, anchorSize);
             if (popup is Controls.CartoucheBorder cartouche)
             {
                 cartouche.TailHeight = 8;
@@ -113,13 +118,23 @@ public static class DockPopupPlacement
         finally { placement.Updating = false; }
     }
 
-    internal static Point LayoutOrigin(Visual control, Visual root)
+    internal static Point LayoutOrigin(Visual control, Visual root, Point localPoint = default)
     {
         // A revealing dock is translated temporarily. Anchor to its resting
         // layout box so the popover does not chase that transform and snap back.
-        var origin = new Point();
+        var origin = localPoint;
         for (Visual? current = control; current is not null && current != root; current = current.GetVisualParent())
+        {
+            // LayoutTransformControl implements taskbar sizing through a render
+            // matrix. Preserve scale/rotation, while ignoring reveal translations.
+            if (current.RenderTransform?.Value is { } matrix &&
+                (matrix.M11 != 1 || matrix.M12 != 0 || matrix.M21 != 0 || matrix.M22 != 1))
+            {
+                var pivot = current.RenderTransformOrigin.ToPixels(current.Bounds.Size);
+                origin = (origin - (Vector)pivot).Transform(matrix) + (Vector)pivot;
+            }
             origin += (Vector)current.Bounds.Position;
+        }
         return origin;
     }
 

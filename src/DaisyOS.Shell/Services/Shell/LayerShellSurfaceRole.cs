@@ -67,7 +67,8 @@ public sealed record LayerShellSurfaceOptions(
         Desktop(outputName) with
         {
             Role = LayerShellSurfaceRole.DesktopContent,
-            Namespace = "daisyos.desktop-content"
+            Namespace = "daisyos.desktop-content",
+            KeyboardInteractivity = LayerShellKeyboardInteractivity.OnDemand
         };
 
     public static LayerShellSurfaceOptions PrimaryPanel(

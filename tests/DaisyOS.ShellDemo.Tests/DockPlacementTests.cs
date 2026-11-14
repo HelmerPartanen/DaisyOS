@@ -125,7 +125,7 @@ public sealed class DockPlacementTests
             Assert.Equal(3, content.GetVisualDescendants().OfType<ComboBox>().Count());
             Assert.Single(content.GetVisualDescendants().OfType<QuickSettingsSlider>());
             var nav = view.FindControl<Button>("NavTaskbar")!;
-            Assert.Equal("desktop", Assert.Single(nav.GetVisualDescendants().OfType<DaisyIcon>()).Icon);
+            Assert.Equal("taskbar", Assert.Single(nav.GetVisualDescendants().OfType<DaisyIcon>()).Icon);
             Assert.True(nav.Classes.Contains("Active"));
             foreach (var picker in content.GetVisualDescendants().OfType<ComboBox>())
             {

@@ -12,7 +12,7 @@ internal static class Program
         {
             if (activation.FirstOrDefault(arg => arg.StartsWith("--continuity-send=", StringComparison.Ordinal)) is { } send)
                 ((SettingsWindow)window).PrepareContinuitySend(send["--continuity-send=".Length..]);
-            if (activation.FirstOrDefault(arg => arg.StartsWith("--category=", StringComparison.Ordinal)) is { } category)
-                ((SettingsWindow)window).SelectCategory(category["--category=".Length..]);
+            if (SettingsDestination.FromArguments(activation) is { } destination)
+                ((SettingsWindow)window).Navigate(destination);
         });
 }

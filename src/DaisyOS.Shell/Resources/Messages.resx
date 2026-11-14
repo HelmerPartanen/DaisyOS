@@ -7948,4 +7948,12 @@ Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</
     <value>Place the date beside the clock or above it on side panels.</value>
     <comment>Place the date beside the clock or above it on side panels.</comment>
   </data>
+  <data name="Loc_1809374E4178" xml:space="preserve">
+    <value>Taskbar settings</value>
+    <comment>Source: Taskbar settings</comment>
+  </data>
+  <data name="Loc_274BBCDECA4F" xml:space="preserve">
+    <value>Position and size</value>
+    <comment>Source: Position and size</comment>
+  </data>
 </root>

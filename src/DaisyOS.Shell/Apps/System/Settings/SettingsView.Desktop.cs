@@ -46,7 +46,7 @@ public partial class SettingsView
             PreferenceRow(Loc.Get("Arrange items now"), Loc.Get("Close gaps without changing the order of your items."), arrange),
             PreferenceRow(Loc.Get("Sort items"), Loc.Get("Arrange icons by name, type, size or modification date."), sort));
         var wallpaper = new Button { Content = Loc.Get("Change wallpaper"), Classes = { "Secondary", "Small" } };
-        wallpaper.Click += (_, _) => SelectCategory("Appearance");
+        wallpaper.Click += (_, _) => Navigate(new("Appearance", Setting: "Wallpaper"));
         AddSection(Loc.Get("PERSONALIZATION"), null,
             PreferenceRow(Loc.Get("Wallpaper"), Loc.Get("Choose a desktop picture, colour or video."), wallpaper));
     }

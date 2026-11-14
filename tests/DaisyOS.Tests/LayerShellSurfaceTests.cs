@@ -14,6 +14,8 @@ public sealed class LayerShellSurfaceTests
         Assert.Equal(LayerShellSurfaceRole.Background, wallpaper.Role);
         Assert.Equal(LayerShellSurfaceRole.DesktopContent, desktop.Role);
         Assert.NotEqual(wallpaper.Namespace, desktop.Namespace);
+        Assert.Equal(LayerShellKeyboardInteractivity.OnDemand, desktop.KeyboardInteractivity);
+        Assert.Equal(LayerShellKeyboardInteractivity.None, wallpaper.KeyboardInteractivity);
         Assert.Equal(wallpaper.Anchor, desktop.Anchor);
         Assert.Equal("eDP-1", desktop.OutputName);
         Assert.Equal(LayerShellSurfaceOptions.IgnoreOtherExclusiveZones, desktop.ExclusiveZone);

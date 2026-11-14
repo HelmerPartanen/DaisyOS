@@ -323,7 +323,7 @@
 
           <Button x:Name="NavTaskbar" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Taskbar">
             <Grid ColumnDefinitions="24,*">
-              <controls:DaisyIcon Icon="desktop" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <controls:DaisyIcon Icon="taskbar" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
               <TextBlock Grid.Column="1" Text="{DynamicResource Loc_366F0E927D5C}" Classes="NavLabel" />
             </Grid>
           </Button>

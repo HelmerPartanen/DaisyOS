@@ -26,6 +26,8 @@ public partial class SettingsWindow : Window
 
     public void PrepareContinuitySend(string path) => SettingsContent.PrepareContinuitySend(path);
 
+    public void Navigate(SettingsDestination destination) => SettingsContent.Navigate(destination);
+
     public void SelectCategory(string category) => SettingsContent.SelectCategory(category);
 
     private void OnWindowPointerPressed(object? sender, PointerPressedEventArgs e)

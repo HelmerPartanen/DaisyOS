@@ -472,6 +472,16 @@ namespace DaisyOS.Shell.Apps.System.Settings
             }
         }
 
+        public void Navigate(SettingsDestination destination)
+        {
+            NavigationSearch.Text = string.Empty;
+            CategoryView.Offset = default;
+            AppearanceView.Offset = default;
+            LockScreenView.Offset = default;
+            _pendingSettingTitle = destination.Setting;
+            SelectCategory(destination.Category, destination.Section);
+        }
+
         public void SelectCategory(string category, string? section = null)
         {
             if (string.Equals(category, "taskbar", StringComparison.OrdinalIgnoreCase)) category = "Taskbar";

@@ -7754,4 +7754,12 @@ Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</
     <value>Näytä päivämäärä kellon vieressä tai sen yläpuolella sivupalkeissa.</value>
     <comment>Place the date beside the clock or above it on side panels.</comment>
   </data>
+  <data name="Loc_1809374E4178" xml:space="preserve">
+    <value>Tehtäväpalkin asetukset</value>
+    <comment>Source: Taskbar settings</comment>
+  </data>
+  <data name="Loc_274BBCDECA4F" xml:space="preserve">
+    <value>Sijainti ja koko</value>
+    <comment>Source: Position and size</comment>
+  </data>
 </root>
