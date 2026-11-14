@@ -371,7 +371,7 @@
                         <ToggleSwitch IsVisible="{Binding IsBoolean}" x:DataType="vm:SettingSearchResultViewModel"
                                       IsChecked="{Binding Value, Mode=OneWay}" IsEnabled="{Binding CanUpdate}"
                                       AutomationProperties.Name="{Binding Title}" Click="OnSearchSettingClick" />
-                        <ComboBox Classes="LauncherSettingSelector" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Choices}"
+                        <ComboBox DropDownOpened="OnSearchChoiceOpened" Classes="LauncherSettingSelector" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Choices}"
                                   SelectedItem="{Binding Choice, Mode=TwoWay}" IsEnabled="{Binding CanUpdate}"
                                   AutomationProperties.Name="{Binding Title}" HorizontalAlignment="Right" />
 
@@ -460,6 +460,21 @@
       </controls:ShellFrameBorder>
       </controls:ShellFrameBorder>
       </Grid>
+
+      <controls:ShellFrameBorder x:Name="LauncherChoiceMenuHost" IsVisible="False"
+              HorizontalAlignment="Left" VerticalAlignment="Top"
+              Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}"
+              BorderThickness="{DynamicResource ShellFrameBorderThickness}" CornerRadius="{DynamicResource RoundedLG}"
+              Padding="0" BoxShadow="{DynamicResource ElevationFlyoutShadow}" ZIndex="101">
+        <controls:ShellFrameBorder Background="{DynamicResource ShellFrameInnerHighlightBrush}"
+                CornerRadius="{DynamicResource RoundedLGInset}" Padding="{DynamicResource ShellFrameSurfaceInset}">
+          <Border Background="{DynamicResource ContextMenuBackgroundBrush}" CornerRadius="{DynamicResource RoundedMD}" Padding="4">
+            <ListBox x:Name="LauncherChoiceMenuList" Background="Transparent" BorderThickness="0" Padding="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled" ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     PointerReleased="OnSearchChoiceReleased" />
+          </Border>
+        </controls:ShellFrameBorder>
+      </controls:ShellFrameBorder>
 
       <controls:ShellFrameBorder x:Name="MenuBlurHost" IsVisible="False" Width="184"
               HorizontalAlignment="Left" VerticalAlignment="Top"

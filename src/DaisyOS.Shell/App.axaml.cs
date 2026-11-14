@@ -550,8 +550,14 @@ public partial class App : Application
         var widgetLibrary = shell.Desktop.DetachWidgetLibraryForNativeOverlay();
         var systemFlyoutContent = shell.SystemBar.DetachFlyoutsForNativeOverlay(shell.DockReservedExtent);
         Control? launcherAppContextMenu = null;
+        Control? launcherChoiceMenu = null;
         if (systemFlyoutContent is Panel flyoutPanel)
         {
+            if (shell.Launcher.DetachSearchChoiceMenuForNativeOverlay() is { } choiceMenu)
+            {
+                launcherChoiceMenu = choiceMenu;
+                flyoutPanel.Children.Add(choiceMenu);
+            }
             if (shell.Launcher.DetachPowerMenuForNativeOverlay() is { } launcherPowerMenu)
             {
                 flyoutPanel.Children.Add(launcherPowerMenu);
@@ -775,7 +781,7 @@ public partial class App : Application
         _blurEffects.Add(new KWinBlur(systemFlyoutSurface, systemFlyoutSurface, () =>
             new[] { shell.SystemBar.QuickSettingsMaterialFrame,
                 shell.SystemBar.NotificationMaterialFrame, shell.SystemBar.CalendarMaterialFrame, shell.SystemBar.AppTrayMaterialFrame,
-                launcherAppContextMenu,
+                launcherAppContextMenu, launcherChoiceMenu,
                 shell.Taskbar.FindControl<Control>("TaskbarContextMenuHost"),
                 shell.MediaWidget.FindControl<Control>("MediaContextMenuHost"),
                 shell.Desktop.FindControl<Control>("DesktopWidgetContextMenuHost") }.OfType<Control>()
@@ -828,7 +834,7 @@ public partial class App : Application
         systemFlyoutSurface.Deactivated += (_, _) => desktopMenus.Close();
         ConfigureTransientSurfaceDismissal(
             systemFlyoutSurface,
-            () => shell.Launcher.IsPowerMenuVisible || shell.Launcher.IsAppContextMenuVisible || shell.SystemBar.IsQuickSettingsVisible || shell.SystemBar.IsCalendarPanelVisible || shell.SystemBar.IsNotificationPanelVisible || shell.SystemBar.IsAppTrayVisible || shell.Taskbar.IsContextMenuVisible || shell.MediaWidget.IsContextMenuVisible || shell.Desktop.IsWidgetContextMenuVisible || desktopMenus.IsOpen,
+            () => shell.Launcher.IsSearchChoiceMenuVisible || shell.Launcher.IsPowerMenuVisible || shell.Launcher.IsAppContextMenuVisible || shell.SystemBar.IsQuickSettingsVisible || shell.SystemBar.IsCalendarPanelVisible || shell.SystemBar.IsNotificationPanelVisible || shell.SystemBar.IsAppTrayVisible || shell.Taskbar.IsContextMenuVisible || shell.MediaWidget.IsContextMenuVisible || shell.Desktop.IsWidgetContextMenuVisible || desktopMenus.IsOpen,
             source => IsWithinVisibleFlyout(source, systemFlyoutContent) ||
                 source.GetSelfAndVisualAncestors().OfType<Border>().Any(border => border.Name == "MenuBlurHost"),
             () => { desktopMenus.Close(); DismissTransientShellSurfaces(); });
@@ -844,6 +850,7 @@ public partial class App : Application
             () => _localSendWindow?.Dismiss());
 
         LauncherVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(launcherSurface, visible, captureKeyboard: true);
+        shell.Launcher.SearchChoiceMenuVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(systemFlyoutSurface, visible, captureKeyboard: true);
         shell.Launcher.PowerMenuVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(systemFlyoutSurface, visible, captureKeyboard: true);
         shell.Launcher.AppContextMenuVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(systemFlyoutSurface, visible, captureKeyboard: true);
         shell.SystemBar.FlyoutVisibilityChanged += (_, visible) => SetNativeSurfaceVisible(systemFlyoutSurface, visible, captureKeyboard: true);
@@ -2255,6 +2262,12 @@ public partial class App : Application
 
     public bool DismissTransientShellSurfaces()
     {
+        if (_shellView?.Launcher.IsSearchChoiceMenuVisible == true)
+        {
+            _shellView.Launcher.CloseSearchChoiceMenu();
+            return true;
+        }
+
         if (_nativeDesktopMenus?.IsOpen == true)
         {
             _nativeDesktopMenus.Close();
@@ -3114,6 +3127,7 @@ public partial class App : Application
 
         if (_shellView is not null)
         {
+            _shellView.Launcher.CloseSearchChoiceMenu();
             _shellView.Launcher.ClosePowerMenu();
             _shellView.Launcher.CloseAppContextMenu();
             _shellView.Desktop.HideWidgetContextMenu();

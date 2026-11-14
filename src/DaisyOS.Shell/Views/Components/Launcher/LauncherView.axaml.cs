@@ -325,6 +325,7 @@ public partial class LauncherView : UserControl
                 immediate: true,
                 closedScale: 1.0);
         }
+        CloseSearchChoiceMenu();
         ClosePowerMenu();
         CloseAppContextMenu();
 
@@ -481,6 +482,7 @@ public partial class LauncherView : UserControl
             {
                 view.CancelPageDrag();
                 view.CancelInteractiveReveal();
+                view.CloseSearchChoiceMenu();
                 view.ClosePowerMenu();
                 view.CloseAppContextMenu();
             }
@@ -1210,6 +1212,7 @@ public partial class LauncherView : UserControl
             return;
         }
 
+        CloseSearchChoiceMenu();
         var menu = _powerMenu ?? this.FindControl<Border>("MenuBlurHost");
         var button = this.FindControl<Button>("PowerButton");
         var surface = menu is null ? null : TopLevel.GetTopLevel(menu);

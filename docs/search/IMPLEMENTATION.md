@@ -261,3 +261,14 @@ activates the focused result and opens the Settings page for numeric settings.
 - Tests cover pointer-opened dropdowns, keyboard commits, wheel scrolling, long-list
   keyboard navigation, numeric page links, equivalent-result suppression, fallback
   restoration, read failures/recovery and existing write-error behavior.
+
+Native launcher choice menus use the system flyout layer-shell surface, shared
+with the power menu, and register their material frame with that surface's
+`KWinBlur`. Windowed hosts retain ordinary Avalonia dropdowns. Native placement
+converts selector corners with `PointToScreen` / `PointToClient`, without manual
+render-scale division, then clamps the card and flips it above the selector when
+needed. The standard popup closes after its opening notification completes;
+mouse and keyboard selection operate the overlay list, with focus restored on
+close. Geometry and interaction tests cover 100%, 125%, 150%, 200%, and mixed
+source/overlay scales. Headless checks verify geometry and event routing; actual
+compositor blur uses the existing power-menu pipeline.
