@@ -1,3 +1,4 @@
+using Avalonia;
 using System.Reflection;
 using Avalonia.Controls;
 using Avalonia.Headless.XUnit;
@@ -24,6 +25,15 @@ public sealed class SystemBarThemeTests
         window.Show();
         try
         {
+            window.UpdateLayout();
+            var frame = bar.FindControl<Border>("SystemBarFrame")!;
+            var first = bar.FindControl<Button>("AppTrayButton")!;
+            var last = bar.FindControl<Button>("CalendarButton")!;
+            var start = first.TranslatePoint(default, frame)!.Value;
+            var end = last.TranslatePoint(new Avalonia.Point(last.Bounds.Width, last.Bounds.Height), frame)!.Value;
+            Assert.Equal(start.X, start.Y, 3);
+            Assert.Equal(start.Y, frame.Bounds.Width - end.X, 3);
+            Assert.Equal(start.Y, frame.Bounds.Height - end.Y, 3);
             typeof(SystemBarView).GetMethod("UpdateNetworkPresentation", BindingFlags.Instance | BindingFlags.NonPublic)!
                 .Invoke(bar, [new NetworkStatus(true, "Test", "", NetworkConnectionKind.WiFi, NetworkConnectivity.Full, 45),
                     new WirelessRadioStatus(true, true, ""), new BluetoothStatus(true, true, false, [], "")]);

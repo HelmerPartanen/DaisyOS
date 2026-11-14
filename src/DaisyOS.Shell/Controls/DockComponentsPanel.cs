@@ -12,6 +12,8 @@ public sealed class DockComponentsPanel : Panel
     public double ReservedExtent { get; set; } = 58;
     public bool IncludeMedia { get; set; } = true;
     public bool IncludeSystemBar { get; set; } = true;
+    private const double EdgeInset = 3;
+    private const double ComponentGap = 8;
     private Size _media, _taskbar, _system;
     private readonly Rect[] _slots = new Rect[3];
     public Rect GetComponentSlot(int index) => _slots[index];
@@ -57,7 +59,7 @@ public sealed class DockComponentsPanel : Panel
         var componentSpace = SizeFor(along, ReservedExtent);
         _media = IncludeMedia ? MeasureComponent(Children[0], componentSpace) : default;
         _system = IncludeSystemBar ? MeasureComponent(Children[2], componentSpace) : default;
-        var centreSpace = Math.Max(40, along - Along(_media) - Along(_system) - 32);
+        var centreSpace = Math.Max(40, along - Along(_media) - Along(_system) - 2 * (EdgeInset + ComponentGap));
         _taskbar = MeasureComponent(Children[1], SizeFor(centreSpace, ReservedExtent));
         return availableSize;
     }
@@ -65,16 +67,16 @@ public sealed class DockComponentsPanel : Panel
     {
         if (Children.Count != 3) return finalSize;
         var span = Along(finalSize);
-        var min = IncludeMedia ? Along(_media) + 14 : 6;
-        var max = Math.Max(min, span - (IncludeSystemBar ? Along(_system) + 14 : 6) - Along(_taskbar));
+        var min = IncludeMedia ? Along(_media) + EdgeInset + ComponentGap : EdgeInset;
+        var max = Math.Max(min, span - (IncludeSystemBar ? Along(_system) + EdgeInset + ComponentGap : EdgeInset) - Along(_taskbar));
         var centre = DockAlignment switch
         {
             DockAlignment.Start => min, DockAlignment.End => max,
             _ => Math.Clamp((span - Along(_taskbar)) / 2, min, max)
         };
-        ArrangeComponent(Children[0], _media, 6, finalSize);
+        ArrangeComponent(Children[0], _media, EdgeInset, finalSize);
         ArrangeComponent(Children[1], _taskbar, centre, finalSize);
-        ArrangeComponent(Children[2], _system, Math.Max(6, span - Along(_system) - 6), finalSize);
+        ArrangeComponent(Children[2], _system, Math.Max(EdgeInset, span - Along(_system) - EdgeInset), finalSize);
         return finalSize;
     }
     private void ArrangeComponent(Control control, Size desired, double along, Size finalSize)

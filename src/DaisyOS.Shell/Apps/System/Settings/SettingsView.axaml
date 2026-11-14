@@ -399,7 +399,7 @@
           <Button x:Name="NavSearch" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Search">
             <Grid ColumnDefinitions="24,*">
               <controls:DaisyIcon Icon="magnifying-glass" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
-              <TextBlock Grid.Column="1" Text="Daisy Search" Classes="NavLabel" />
+              <TextBlock Grid.Column="1" Text="Search" Classes="NavLabel" />
             </Grid>
           </Button>
           <Button x:Name="NavAbout" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="About">

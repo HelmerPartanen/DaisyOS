@@ -565,7 +565,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 "Input" => Loc.Get("Language & input"),
                 "DateTime" => Loc.Get("Date & time"),
                 "Gaming" => Loc.Get("Gaming"),
-                "Search" => Loc.Get("Daisy Search"),
+                "Search" => Loc.Get("Search"),
                 "About" => Loc.Get("About this system"),
                 _ => Loc.Get("System")
             };
@@ -1849,7 +1849,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 // filesystem. Resolve icons here too, keeping page navigation free
                 // to render and accept input while the rows are prepared.
                 apps = await Task.Run(() => new InstalledApplicationService().GetInstalledApplications()
-                    .Where(app => app.LaunchKind != AppLaunchKind.Internal)
                     .OrderBy(app => app.Name, StringComparer.CurrentCultureIgnoreCase)
                     .Select(app => (app, DesktopItemLoader.ResolveApplicationIconPath([app.Icon, app.Id, app.Name])))
                     .ToArray());
@@ -1876,16 +1875,16 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var appId = application.Id.Trim();
                 if (appId.EndsWith(".desktop", StringComparison.OrdinalIgnoreCase)) appId = appId[..^8];
                 var key = "notifications.app." + appId.ToLowerInvariant();
-                var icon = new Image { Width = 24, Height = 24, Stretch = Avalonia.Media.Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center };
-                try { if (!string.IsNullOrWhiteSpace(iconPath) && File.Exists(iconPath)) icon.Source = new Bitmap(iconPath); }
-                catch { }
                 var enabled = shell?.GetPreference(key, "true") != "false";
                 var toggle = new ToggleSwitch { IsChecked = enabled, VerticalAlignment = VerticalAlignment.Center };
                 toggle.Click += (_, _) => shell?.SetPreference(key, toggle.IsChecked == true ? "true" : "false");
-                var label = new TextBlock { Text = application.Name, Classes = { "SettingsLabel" }, VerticalAlignment = VerticalAlignment.Center };
-                rows.Add(PreferenceRow(application.Name, null, toggle, leadingOverride: icon));
+                rows.Add(CreateApplicationListRow(application, toggle, iconPath));
             }
-            AddSection(Loc.Get("APP NOTIFICATIONS"), Loc.Get("Choose which installed applications can send notifications."), rows.ToArray());
+            var rowsHost = new StackPanel { Spacing = 8 };
+            foreach (var row in rows) rowsHost.Children.Add(row);
+            var section = CreateSection(Loc.Get("APP NOTIFICATIONS"), Loc.Get("Choose which installed applications can send notifications."));
+            section.Children[1] = rowsHost;
+            CategoryContent.Children.Add(section);
         }
 
         private void BuildGaming()
@@ -1983,16 +1982,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 Func<AppAssociationInfo, Task> onChanged)
             {
                 var selected = choices.FirstOrDefault(app => string.Equals(app.DesktopId, selectedDesktopId, StringComparison.OrdinalIgnoreCase)) ?? choices[0];
-                var picker = new ComboBox
-                {
-                    MinWidth = 210, MaxWidth = 440, Height = 40,
-                    HorizontalContentAlignment = HorizontalAlignment.Stretch,
-                    VerticalContentAlignment = VerticalAlignment.Center,
-                    ItemTemplate = new FuncDataTemplate<AppAssociationInfo>((item, _) => BuildAppChoice(item)),
-                    SelectionBoxItemTemplate = new FuncDataTemplate<AppAssociationInfo>((item, _) => BuildAppChoice(item))
-                };
-                picker.Classes.Add("ThemeModePicker");
-                foreach (var choice in choices) picker.Items.Add(choice);
+                var picker = CreateDefaultApplicationPicker(choices);
                 picker.SelectedItem = selected;
                 picker.SelectionChanged += async (_, _) =>
                 {
@@ -2000,19 +1990,6 @@ namespace DaisyOS.Shell.Apps.System.Settings
                         await onChanged(chosen);
                 };
                 return PreferenceRow(Loc.Get(title), null, picker);
-            }
-
-            Control BuildAppChoice(AppAssociationInfo choice)
-            {
-                var path = DesktopItemLoader.ResolveApplicationIconPath([choice.IconName, choice.DesktopId, choice.DisplayName]);
-                var image = new Image { Width = 24, Height = 24, Stretch = Avalonia.Media.Stretch.Uniform, VerticalAlignment = VerticalAlignment.Center };
-                try { if (!string.IsNullOrWhiteSpace(path) && File.Exists(path)) image.Source = new Bitmap(path); }
-                catch { }
-                return new StackPanel
-                {
-                    Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center,
-                    Children = { image, new TextBlock { Text = choice.DisplayName, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis } }
-                };
             }
 
             // 1. Web Browser
@@ -2225,50 +2202,74 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 if (removed && buildVersion == _categoryBuildVersion) ShowCategory("InstalledApps");
             };
 
-            var row = new Border
-            {
-                Padding = new Thickness(18, 12),
-                MinHeight = 68,
-                HorizontalAlignment = HorizontalAlignment.Stretch,
-                Background = TryBrush("SurfaceRaisedSubtleBrush"),
-                CornerRadius = new CornerRadius(12),
-                Child = new Grid
-                {
-                    HorizontalAlignment = HorizontalAlignment.Stretch,
-                    ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
-                    Children =
-                    {
-                        CreateInstalledApplicationIcon(app),
-                        new StackPanel
-                        {
-                            Margin = new Thickness(14, 0, 16, 0),
-                            VerticalAlignment = VerticalAlignment.Center,
-                            Spacing = 2,
-                            Children =
-                            {
-                                new TextBlock { Text = app.Name, Classes = { "SettingsLabel" } },
-                                DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock { Text = app.Description, FontSize = 12, Foreground = TryBrush("ContentSecondaryBrush"), TextTrimming = TextTrimming.CharacterEllipsis }, "Caption")
-                            }
-                        },
-                        more
-                    }
-                }
-            };
-            Grid.SetColumn(((Grid)row.Child).Children[1], 1);
-            Grid.SetColumn(more, 2);
-            return (app, row);
+            return (app, CreateApplicationListRow(app, more));
         }
 
-        private static Control CreateInstalledApplicationIcon(AppEntry app)
+        internal Border CreateApplicationListRow(AppEntry app, Control trailing, string? iconPath = null)
         {
-            var iconPath = DesktopItemLoader.ResolveApplicationIconPath([app.Icon, app.Id, app.Name]);
+            var copy = new StackPanel
+            {
+                Margin = new Thickness(14, 0, 16, 0), VerticalAlignment = VerticalAlignment.Center, Spacing = 2
+            };
+            copy.Children.Add(new TextBlock { Text = app.Name, Classes = { "SettingsLabel" }, TextTrimming = TextTrimming.CharacterEllipsis });
+            if (!string.IsNullOrWhiteSpace(app.Description))
+                copy.Children.Add(DaisyOS.Shell.Services.Theming.TypographyPolicy.Bind(new TextBlock
+                {
+                    Text = app.Description, FontSize = 12, Foreground = TryBrush("ContentSecondaryBrush"),
+                    TextTrimming = TextTrimming.CharacterEllipsis
+                }, "Caption"));
+            var content = new Grid
+            {
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                ColumnDefinitions = new ColumnDefinitions("Auto,*,Auto"),
+                Children = { CreateInstalledApplicationIcon(app, 34, iconPath), copy, trailing }
+            };
+            Grid.SetColumn(copy, 1);
+            Grid.SetColumn(trailing, 2);
+            var row = new Border
+            {
+                Padding = new Thickness(18, 12), MinHeight = 68,
+                HorizontalAlignment = HorizontalAlignment.Stretch,
+                Background = TryBrush("SurfaceRaisedSubtleBrush"), CornerRadius = new CornerRadius(12), Child = content
+            };
+            row.Classes.Add("SettingsApplicationRow");
+            return row;
+        }
+
+        internal static ComboBox CreateDefaultApplicationPicker(IReadOnlyList<AppAssociationInfo> choices)
+        {
+            var picker = new ComboBox
+            {
+                MinWidth = 210, MaxWidth = 440, Height = 40, ItemsSource = choices,
+                HorizontalContentAlignment = HorizontalAlignment.Stretch,
+                VerticalContentAlignment = VerticalAlignment.Center,
+                ItemTemplate = new FuncDataTemplate<AppAssociationInfo>((item, _) => BuildDefaultApplicationChoice(item)),
+                SelectionBoxItemTemplate = new FuncDataTemplate<AppAssociationInfo>((item, _) => BuildDefaultApplicationChoice(item))
+            };
+            picker.Classes.Add("DefaultApplicationPicker");
+            return picker;
+        }
+
+        internal static Control BuildDefaultApplicationChoice(AppAssociationInfo choice)
+        {
+            var icon = CreateInstalledApplicationIcon(new AppEntry(choice.DesktopId, choice.DisplayName, "", choice.IconName ?? "", false), 24);
+            return new StackPanel
+            {
+                Orientation = Orientation.Horizontal, Spacing = 10, VerticalAlignment = VerticalAlignment.Center,
+                Children = { icon, new TextBlock { Text = choice.DisplayName, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis } }
+            };
+        }
+
+        internal static Control CreateInstalledApplicationIcon(AppEntry app, double size = 34, string? resolvedPath = null)
+        {
+            var iconPath = resolvedPath ?? DesktopItemLoader.ResolveApplicationIconPath([app.Icon, app.Id, app.Name]);
             if (iconPath.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
             {
                 return new Avalonia.Svg.Skia.Svg(new Uri("file:///"))
                 {
                     Path = iconPath,
-                    Width = 34,
-                    Height = 34,
+                    Width = size,
+                    Height = size,
                     Stretch = Stretch.Uniform,
                     EnableCache = true,
                     HorizontalAlignment = HorizontalAlignment.Center,
@@ -2281,8 +2282,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 var icon = new Image
                 {
                     Source = DesktopItemLoader.LoadBitmapSafe(iconPath),
-                    Width = 34,
-                    Height = 34,
+                    Width = size,
+                    Height = size,
                     Stretch = Stretch.Uniform,
                     HorizontalAlignment = HorizontalAlignment.Center,
                     VerticalAlignment = VerticalAlignment.Center
@@ -2295,8 +2296,8 @@ namespace DaisyOS.Shell.Apps.System.Settings
             {
                 Icon = "squares-four",
                 Size = 20,
-                Width = 34,
-                Height = 34,
+                Width = size,
+                Height = size,
                 HorizontalAlignment = HorizontalAlignment.Center,
                 VerticalAlignment = VerticalAlignment.Center
             };

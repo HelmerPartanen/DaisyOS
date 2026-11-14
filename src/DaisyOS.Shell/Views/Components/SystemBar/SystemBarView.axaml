@@ -8,7 +8,7 @@
  xmlns:systemBar="clr-namespace:DaisyOS.Shell.Views.Components.SystemBar"
  HorizontalAlignment="Right"
  VerticalAlignment="Bottom"
- Margin="0,3,6,3">
+ Margin="0,3,3,3">
 
 <UserControl.Resources> <!-- Flyout has no second opaque frame; each popover owns its material card. --> <ControlTheme x:Key="SystemBarFlyoutPresenter" TargetType="FlyoutPresenter"> <Setter Property="Background" Value="Transparent"/> <Setter Property="BorderThickness" Value="0"/> <Setter Property="Padding" Value="0"/> <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}"/> </ControlTheme>
 </UserControl.Resources>
@@ -92,7 +92,7 @@
           VerticalAlignment="Center"
           Spacing="0">
 
-        <Button x:Name="AppTrayButton" Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}"
+        <Button x:Name="AppTrayButton" Classes="ShellButton" Width="40" Height="40"
                 Padding="0" ToolTip.Tip="{DynamicResource Loc_D15070AD05F6}" AutomationProperties.Name="{DynamicResource Loc_D15070AD05F6}"
                 Click="OnAppTrayRequested">
           <controls:DaisyIcon x:Name="AppTrayChevron" Icon="caret-up"
@@ -113,7 +113,7 @@
 
         <Button x:Name="QuickSettingsButton"
                 Classes="ShellButton"
-                Height="{DynamicResource ControlHeightStandard}"
+                Height="40"
                 Padding="8,0"
                 Background="Transparent"
                 BorderBrush="Transparent"
@@ -121,7 +121,7 @@
                 ToolTip.Tip="{DynamicResource Loc_6BED1F88D239}"
                 Click="OnQuickSettingsRequested">
 
-          <Border x:Name="QuickSettingsContent" Height="{DynamicResource ControlHeightStandard}"
+          <Border x:Name="QuickSettingsContent" Height="40"
                   Background="Transparent"
                   BorderBrush="Transparent"
                   BorderThickness="0"
@@ -202,8 +202,8 @@
 
         <Button x:Name="NotificationsButton"
                 Classes="ShellButton"
-                Width="{DynamicResource ControlHeightStandard}"
-                Height="{DynamicResource ControlHeightStandard}"
+                Width="40"
+                Height="40"
                 Padding="0"
                 Background="Transparent"
                 BorderBrush="Transparent"
@@ -260,7 +260,7 @@
 
         <Button x:Name="CalendarButton"
                 Classes="Ghost ShellButton"
-                Height="{DynamicResource ControlHeightStandard}"
+                Height="40"
                 Padding="8,0"
                 Background="Transparent"
                 BorderBrush="Transparent"
@@ -269,7 +269,7 @@
                 Click="OnCalendarRequested">
 
           <Border x:Name="CalendarContent"
-              Height="{DynamicResource ControlHeightStandard}"
+              Height="40"
               Background="Transparent"
               BorderBrush="Transparent"
               BorderThickness="0"

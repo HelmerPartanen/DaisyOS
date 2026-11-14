@@ -57,6 +57,8 @@ public sealed class DockPlacementTests
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
             var components = new Control[] { shell.MediaWidget, shell.Taskbar, shell.SystemBar };
             var rectangles = components.Select(c => new Rect(c.TranslatePoint(default, panel)!.Value, c.Bounds.Size)).ToArray();
+            Assert.Equal(3, vertical ? rectangles[0].Top : rectangles[0].Left, 3);
+            Assert.Equal(3, vertical ? panel.Bounds.Height - rectangles[2].Bottom : panel.Bounds.Width - rectangles[2].Right, 3);
             foreach (var rect in rectangles)
             {
                 Assert.True(rect.Width > 0 && rect.Height > 0);

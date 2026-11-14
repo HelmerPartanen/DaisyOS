@@ -9,7 +9,7 @@
     Height="52"
     HorizontalAlignment="Left"
     VerticalAlignment="Bottom"
-    Margin="6,6,0,6">
+    Margin="3,3,0,3">
   <UserControl.Styles>
     <Style Selector="Border.spectrumBar">
       <Setter Property="Background" Value="{DynamicResource ContentPrimaryBrush}" />

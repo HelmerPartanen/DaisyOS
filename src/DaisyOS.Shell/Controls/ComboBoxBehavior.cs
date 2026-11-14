@@ -2,6 +2,7 @@ using System.Collections.Specialized;
 using System.Runtime.CompilerServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Layout;
@@ -30,6 +31,12 @@ public sealed class ComboBoxBehavior : AvaloniaObject
             comboBox.AddHandler(InputElement.PointerWheelChangedEvent, OnPointerWheelChanged,
                 RoutingStrategies.Tunnel, handledEventsToo: true);
             comboBox.AttachedToVisualTree += (_, _) => ScheduleMeasure(comboBox);
+            comboBox.PropertyChanged += (_, args) =>
+            {
+                if (args.Property == ComboBox.FontSizeProperty || args.Property == ComboBox.FontFamilyProperty ||
+                    args.Property == ComboBox.FontWeightProperty || args.Property == ComboBox.MaxWidthProperty)
+                    ScheduleMeasure(comboBox);
+            };
             if (comboBox.Items is INotifyCollectionChanged observable)
                 observable.CollectionChanged += (_, _) => ScheduleMeasure(comboBox);
             ScheduleMeasure(comboBox);
@@ -82,6 +89,17 @@ public sealed class ComboBoxBehavior : AvaloniaObject
         var longest = 0d;
         foreach (var item in comboBox.Items)
         {
+            // Templated choices can include an icon and a human-readable label.
+            // Measure that content rather than a model's diagnostic ToString().
+            if (comboBox.ItemTemplate?.Build(item) is { } content)
+            {
+                TextElement.SetFontFamily(content, comboBox.FontFamily);
+                TextElement.SetFontSize(content, comboBox.FontSize);
+                TextElement.SetFontWeight(content, comboBox.FontWeight);
+                content.Measure(Size.Infinity);
+                longest = Math.Max(longest, content.DesiredSize.Width);
+                continue;
+            }
             var text = item switch
             {
                 ComboBoxItem { Content: TextBlock block } => block.Text,
