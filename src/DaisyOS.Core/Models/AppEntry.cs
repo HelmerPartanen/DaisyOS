@@ -20,5 +20,8 @@ public sealed record AppEntry(
     IReadOnlyList<string>? Categories = null,
     IReadOnlyList<string>? SearchTerms = null)
 {
+    public IReadOnlyList<AppDesktopAction> DesktopActions { get; init; } = [];
     public ApplicationIdentity? Installation { get; init; }
 }
+
+public sealed record AppDesktopAction(string Id, string Name, string? Icon = null);

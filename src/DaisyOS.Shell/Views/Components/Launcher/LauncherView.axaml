@@ -7,6 +7,7 @@
              ClipToBounds="True">
 
   <UserControl.Styles>
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/SettingsInsetStyles.axaml" />
     <Style Selector="Border.LauncherBackdrop">
       <Setter Property="Background" Value="{DynamicResource SurfaceBaseBrush}" />
     </Style>
@@ -183,13 +184,13 @@
 
         <Grid x:Name="LauncherStage" RowDefinitions="Auto,*,Auto" RenderTransformOrigin="50%,50%">
           <!-- Primary top focal axis: search and top results sit immediately adjacent. -->
-          <Border Grid.Row="0" MaxWidth="480"
+          <Border Grid.Row="0" MaxWidth="{DynamicResource LauncherSearchMaxWidth}"
                   CornerRadius="{DynamicResource RadiusPill}"
                   BoxShadow="{DynamicResource ElevationShellGlassPanelShadow}"
                   HorizontalAlignment="Stretch"
                   Margin="0,0,0,16">
             <controls:SearchBar x:Name="LauncherSearchBar"
-                                MaxWidth="480"
+                                MaxWidth="{DynamicResource LauncherSearchMaxWidth}"
                                 HorizontalAlignment="Stretch"
                                 Height="{DynamicResource SearchHeightStandard}"
                                 CornerRadius="{DynamicResource RadiusPill}"
@@ -200,7 +201,7 @@
 
           <!-- Application stage -->
           <Grid Grid.Row="1" RowDefinitions="Auto,*" ClipToBounds="True">
-            <Grid Grid.Row="0" ColumnDefinitions="Auto,Auto,*" Width="{Binding PageGridWidth}" HorizontalAlignment="Center" Margin="0,0,0,16">
+            <Grid Grid.Row="0" IsVisible="{Binding !ShowUnifiedSearch}" ColumnDefinitions="Auto,Auto,*" Width="{Binding PageGridWidth}" HorizontalAlignment="Center" Margin="0,0,0,16">
               <StackPanel Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center" Margin="14,0,0,0">
                 <TextBlock Text="{DynamicResource Loc_9CB965E5630E}" IsVisible="{Binding !HasSearchQuery}"
                            FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="SemiBold"
@@ -229,7 +230,16 @@
               </Border>
             </Grid>
 
-            <Grid x:Name="LauncherPageViewport" Grid.Row="1" SizeChanged="OnPageViewportSizeChanged" ClipToBounds="True">
+            <Grid Grid.Row="0" IsVisible="{Binding ShowUnifiedSearch}" ColumnDefinitions="*,Auto"
+                  Margin="{DynamicResource LauncherResultsHeadingInset}">
+              <TextBlock Text="{Binding ResultsHeading}" FontSize="{DynamicResource TypeSizeTitle}" FontWeight="SemiBold"
+                         Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{Binding SearchResultsCountText}" VerticalAlignment="Center"
+                         FontSize="{DynamicResource TypeSizeCaption}" Foreground="{DynamicResource ContentSecondaryBrush}" />
+            </Grid>
+
+            <Grid x:Name="LauncherPageViewport" Grid.Row="1" RowDefinitions="Auto,*,Auto" SizeChanged="OnPageViewportSizeChanged" ClipToBounds="True">
+              <Panel Grid.Row="1" IsVisible="{Binding ShowApplicationGrid}">
               <controls:LauncherItemsControl x:Name="OutgoingPageGrid" IsVisible="False" IsHitTestVisible="False"
                             Width="{Binding PageGridWidth}" Height="{Binding PageGridHeight}"
                             HorizontalAlignment="Center" VerticalAlignment="Center"
@@ -248,13 +258,147 @@
                 </ItemsControl.ItemsPanel>
               </controls:LauncherItemsControl>
 
-              <StackPanel Classes="EmptyState" IsVisible="{Binding ShowNoResults}"
+              </Panel>
+              <Border x:Name="SearchResultsSurface" Classes="SettingsGroupCard" Grid.Row="1" Grid.RowSpan="2" VerticalAlignment="Top"
+                      IsVisible="{Binding ShowUnifiedSearch}">
+              <ListBox x:Name="UniversalSearchList"
+                       IsVisible="{Binding ShowUnifiedSearch}" ItemsSource="{Binding UniversalResults}"
+                       SelectedItem="{Binding SelectedUniversalResult, Mode=TwoWay}"
+                       Background="Transparent" BorderThickness="0" Padding="0"
+                       ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                       ScrollViewer.VerticalScrollBarVisibility="Auto">
+                <ListBox.ItemContainerTheme>
+                  <ControlTheme TargetType="ListBoxItem">
+                    <Setter Property="Template">
+                      <ControlTemplate>
+                        <ContentPresenter Name="PART_ContentPresenter" Content="{TemplateBinding Content}"
+                                          ContentTemplate="{TemplateBinding ContentTemplate}"
+                                          Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"
+                                          BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+                                          CornerRadius="{TemplateBinding CornerRadius}" HorizontalContentAlignment="Stretch" />
+                      </ControlTemplate>
+                    </Setter>
+                  </ControlTheme>
+                </ListBox.ItemContainerTheme>
+                <ListBox.Styles>
+                  <Style Selector="ListBoxItem">
+                    <Setter Property="Padding" Value="{DynamicResource SpaceInsetNone}" />
+                    <Setter Property="Margin" Value="{DynamicResource SpaceInsetNone}" />
+                    <Setter Property="CornerRadius" Value="{DynamicResource RoundedNone}" />
+                    <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                  </Style>
+                  <Style Selector="ListBoxItem:selected, ListBoxItem:selected:pointerover, ListBoxItem:pressed">
+                    <Setter Property="Background" Value="Transparent" />
+                  </Style>
+                  <Style Selector="ListBoxItem:pointerover">
+                    <Setter Property="Background" Value="{DynamicResource LauncherResultHoverBrush}" />
+                  </Style>
+                  <Style Selector="Border.SearchResultRow.KeyboardSelected">
+                    <Setter Property="Background" Value="{DynamicResource LauncherResultSelectedBrush}" />
+                  </Style>
+                  <Style Selector="Button.SearchResultLabel, Button.SearchResultAction">
+                    <Setter Property="Background" Value="Transparent" />
+                    <Setter Property="BorderThickness" Value="0" />
+                    <Setter Property="CornerRadius" Value="{DynamicResource RoundedSM}" />
+                  </Style>
+                  <Style Selector="Button.SearchResultLabel:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                    <Setter Property="Background" Value="Transparent" />
+                  </Style>
+                  <Style Selector="Button.SearchResultAction:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+                    <Setter Property="Background" Value="{DynamicResource LauncherResultHoverBrush}" />
+                  </Style>
+                  <Style Selector="ComboBox.LauncherSettingSelector">
+                    <Setter Property="MinWidth" Value="{DynamicResource LauncherSettingMinWidth}" />
+                    <Setter Property="MaxWidth" Value="{DynamicResource LauncherSettingMaxWidth}" />
+                    <Setter Property="Width" Value="{DynamicResource LauncherSettingPreferredWidth}" />
+                  </Style>
+                </ListBox.Styles>
+                <ListBox.ItemTemplate>
+                  <DataTemplate DataType="vm:UniversalSearchResultViewModel">
+                    <Border Classes="SearchResultRow" Classes.KeyboardSelected="{Binding IsKeyboardSelected}"
+                            MinHeight="{DynamicResource SettingsInsetRowMinHeight}"
+                            Loaded="OnUniversalResultLoaded" DataContextChanged="OnUniversalResultDataContextChanged">
+                      <Border.ContextMenu>
+                        <ContextMenu ItemsSource="{Binding Actions}">
+                          <ContextMenu.ItemContainerTheme>
+                            <ControlTheme TargetType="MenuItem" BasedOn="{StaticResource {x:Type MenuItem}}"
+                                          x:DataType="vm:UniversalSearchActionViewModel">
+                              <Setter Property="Header" Value="{Binding Label}" />
+                              <Setter Property="Command" Value="{Binding Command}" />
+                            </ControlTheme>
+                          </ContextMenu.ItemContainerTheme>
+                        </ContextMenu>
+                      </Border.ContextMenu>
+                      <Grid RowDefinitions="*,Auto">
+                      <Border Classes="SettingsGroupRow">
+                      <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,Auto" ColumnSpacing="{DynamicResource Space3}">
+                        <Grid VerticalAlignment="Center" ToolTip.Tip="{Binding Subtitle}">
+                          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource LauncherResultIconGap}">
+                            <Panel Width="{DynamicResource LauncherResultIconSlot}" VerticalAlignment="Center">
+                              <controls:DaisyIcon Icon="{Binding IconName}" Size="{DynamicResource LauncherResultIconSize}"
+                                  IsVisible="{Binding Application.IsFallbackIconVisible, FallbackValue=True}"
+                                  Foreground="{DynamicResource ContentPrimaryBrush}" HorizontalAlignment="Left" />
+                              <Image Source="{Binding Application.IconBitmap}" Width="{DynamicResource LauncherResultIconSize}"
+                                     Height="{DynamicResource LauncherResultIconSize}" Stretch="Uniform" HorizontalAlignment="Left"
+                                     IsVisible="{Binding Application.IsBitmapIconVisible, FallbackValue=False}" />
+                            </Panel>
+                            <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                              <TextBlock Text="{Binding Title}" FontSize="{DynamicResource TypeSizeBody}"
+                                         Foreground="{DynamicResource ContentPrimaryBrush}" TextTrimming="CharacterEllipsis" />
+                              <TextBlock Text="{Binding Subtitle}" IsVisible="{Binding ShowSubtitle}"
+                                         Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}"
+                                         TextTrimming="CharacterEllipsis" />
+                            </StackPanel>
+                          </Grid>
+                          <Button Classes="SearchResultLabel" Background="Transparent" Padding="0" Focusable="False"
+                                  HorizontalAlignment="Stretch" VerticalAlignment="Stretch" IsVisible="{Binding CanActivate}"
+                                  AutomationProperties.Name="{Binding Title}"
+                                  Click="OnUniversalResultClick" PointerPressed="OnUniversalResultPointerPressed" />
+                        </Grid>
+                        <Button Grid.Column="1" Classes="SearchResultAction" IsVisible="{Binding CanActivate}"
+                                IsEnabled="{Binding CanActivate}" Padding="{DynamicResource LauncherResultActionInset}"
+                                VerticalAlignment="Center" AutomationProperties.Name="{Binding PrimaryActionLabel}"
+                                Click="OnUniversalResultClick" PointerPressed="OnUniversalResultPointerPressed">
+                          <StackPanel Orientation="Horizontal" Spacing="{DynamicResource Space2}">
+                            <TextBlock Text="{Binding PrimaryActionLabel}" Foreground="{DynamicResource ContentPrimaryBrush}"
+                                       FontSize="{DynamicResource TypeSizeBodyMedium}" />
+                            <controls:DaisyIcon Icon="{Binding PrimaryActionIcon}" Size="{DynamicResource IconSizeStandard}"
+                                                Foreground="{DynamicResource ContentPrimaryBrush}" />
+                          </StackPanel>
+                        </Button>
+                        <Panel Grid.Column="1" IsVisible="{Binding HasSetting}">
+                        <StackPanel DataContext="{Binding Setting}" x:DataType="vm:SettingSearchResultViewModel" Spacing="4" MaxWidth="{DynamicResource LauncherSettingMaxWidth}">
+                        <ToggleSwitch IsVisible="{Binding IsBoolean}" x:DataType="vm:SettingSearchResultViewModel"
+                                      IsChecked="{Binding Value, Mode=OneWay}" IsEnabled="{Binding CanUpdate}"
+                                      AutomationProperties.Name="{Binding Title}" Click="OnSearchSettingClick" />
+                        <ComboBox Classes="LauncherSettingSelector" IsVisible="{Binding IsChoice}" ItemsSource="{Binding Choices}"
+                                  SelectedItem="{Binding Choice, Mode=TwoWay}" IsEnabled="{Binding CanUpdate}"
+                                  AutomationProperties.Name="{Binding Title}" HorizontalAlignment="Right" />
+
+                        </StackPanel>
+                        </Panel>
+                        <StackPanel Grid.Row="1" Grid.ColumnSpan="2">
+                          <TextBlock Text="{Binding Error}" IsVisible="{Binding HasError, FallbackValue=False}" TextWrapping="Wrap" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                          <TextBlock DataContext="{Binding Setting}" x:DataType="vm:SettingSearchResultViewModel"
+                                     Text="{Binding Error}" IsVisible="{Binding HasError, FallbackValue=False}" TextWrapping="Wrap" Foreground="{DynamicResource ContentPrimaryBrush}" />
+                        </StackPanel>
+                      </Grid>
+                      </Border>
+                      <Border Grid.Row="1" Classes="SettingsGroupDivider" IsVisible="{Binding ShowDivider}" />
+                      </Grid>
+                    </Border>
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+              </Border>
+
+              <StackPanel Grid.Row="1" Classes="EmptyState" IsVisible="{Binding ShowNoResults}"
                           HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="10">
                 <controls:DaisyIcon Icon="magnifying-glass-minus"
                                     Size="{DynamicResource IconSizeHero}"
                                     Foreground="{DynamicResource ContentPrimaryBrush}"
                                     HorizontalAlignment="Center" />
-                <TextBlock Text="{DynamicResource Loc_68940BCF6E81}"
+                <TextBlock Text="{Binding EmptySearchText}"
                            FontSize="{DynamicResource TypeSizeBodyMedium}"
                            FontWeight="Medium"
                            Foreground="{DynamicResource ContentPrimaryBrush}"
@@ -264,7 +408,7 @@
           </Grid>
 
           <!-- Utility bar: identity on the left, page indicators in the centre, power on the right. -->
-          <Border Grid.Row="2" Padding="0,12,0,0">
+          <Border Grid.Row="2" Padding="0,12,0,0" IsVisible="{Binding ShowApplicationGrid}">
             <Grid ColumnDefinitions="*,Auto,*" HorizontalAlignment="Stretch">
               <Border Grid.Column="0" HorizontalAlignment="Left" Padding="4,5"
                       VerticalAlignment="Center">

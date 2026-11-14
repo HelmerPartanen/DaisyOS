@@ -66,6 +66,12 @@ public partial class App
         if (request.Length == 0) return "Missing settings operation.";
         switch (request[0])
         {
+            case "search-status" when request.Length == 1:
+                return SearchStatusProtocol.Serialize(CaptureSearchStatus());
+            case "search-pause" when request.Length == 2 && bool.TryParse(request[1], out var paused):
+                SearchService.Files?.SetPaused(paused); break;
+            case "search-reconcile" when request.Length == 1:
+                if (SearchService.Files is not null) await SearchService.Files.ReindexAsync(); break;
             case "preference" when request.Length == 3: SetPreference(request[1], request[2]); break;
             case "dnd" when request.Length == 2: SetDoNotDisturb(bool.Parse(request[1])); break;
             case "show-date" when request.Length == 2: SessionState.ShowDateInSystemBar = bool.Parse(request[1]); break;

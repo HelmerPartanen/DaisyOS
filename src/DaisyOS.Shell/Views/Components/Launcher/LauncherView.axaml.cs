@@ -8,6 +8,7 @@ using Avalonia.Animation.Easings;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Threading;
@@ -22,6 +23,77 @@ namespace DaisyOS.Shell.Views.Components.Launcher;
 
 public partial class LauncherView : UserControl
 {
+    private async void OnSearchSettingClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        if (sender is Avalonia.Controls.ToggleSwitch { DataContext: SettingSearchResultViewModel setting })
+        {
+            e.Handled = true;
+            await setting.ToggleAsync();
+        }
+    }
+
+    private void OnUniversalResultLoaded(object? sender, RoutedEventArgs e) => RegisterUniversalIcon(sender as Control);
+    private void OnUniversalResultDataContextChanged(object? sender, EventArgs e)
+    {
+        if (sender is Control { IsLoaded: true } control) RegisterUniversalIcon(control);
+    }
+    private void RegisterUniversalIcon(Control? control)
+    {
+        if (control?.DataContext is UniversalSearchResultViewModel { Application: { } item })
+            _icons.Register(item, TopLevel.GetTopLevel(this)?.RenderScaling ?? 1);
+    }
+    private void OnUniversalResultPointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        if (sender is Control { DataContext: UniversalSearchResultViewModel { Result.Payload: DaisyOS.Core.Search.ApplicationSearchPayload payload } })
+        {
+            _activationApp = payload.ApplicationId;
+            _activationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, payload.ApplicationId.Replace(".desktop", ""));
+        }
+    }
+    private async void OnUniversalResultClick(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Control { DataContext: UniversalSearchResultViewModel result })
+        {
+            e.Handled = true;
+            ViewModel.SelectedUniversalResult = result;
+            await ActivateUniversalAsync(result);
+        }
+    }
+    private async Task ActivateUniversalAsync(UniversalSearchResultViewModel result)
+    {
+        if (!ViewModel.HasCurrentSearchResults)
+        {
+            await ViewModel.SearchReady;
+            if (!ViewModel.HasCurrentSearchResults) return;
+            var current = ViewModel.UniversalResults.FirstOrDefault(row => row.Result.ProviderId == result.Result.ProviderId && row.Result.Id == result.Result.Id);
+            if (current is null) return;
+            result = current;
+        }
+        if (result.HasSetting && result.Setting is { } setting)
+        {
+            if (setting.IsBoolean) await setting.ToggleAsync();
+            else if (setting.IsChoice)
+            {
+                var list = this.FindControl<ListBox>("UniversalSearchList");
+                list?.ScrollIntoView(result);
+                list?.UpdateLayout();
+                var container = list?.ContainerFromIndex(ViewModel.UniversalResults.IndexOf(result));
+                var selector = container?.GetVisualDescendants().OfType<ComboBox>().FirstOrDefault();
+                if (selector is not null) { selector.Focus(); selector.IsDropDownOpen = true; }
+            }
+            return;
+        }
+        if (result.Result.Payload is DaisyOS.Core.Search.ApplicationSearchPayload payload &&
+            ViewModel.AllApps.FirstOrDefault(item => item.App.Id == payload.ApplicationId) is { } app)
+            await LaunchItemAsync(app);
+        else
+        {
+            await result.ActivateAsync();
+            if (result.Error is null && result.CanActivate && result.Result.Type != DaisyOS.Core.Search.SearchResultType.Calculator)
+                AppLaunchRequested?.Invoke(this, EventArgs.Empty);
+        }
+    }
+
     private static readonly Easing StageEnterEasing = new SplineEasing(0.16, 1.0, 0.3, 1.0);
     private static readonly Easing StageExitEasing = new CubicEaseIn();
 
@@ -429,7 +501,7 @@ public partial class LauncherView : UserControl
 
     private void OnPageWheel(object? sender, PointerWheelEventArgs e)
     {
-        if (IsWithinFlyout(e.Source as Visual ?? this)) return;
+        if (ViewModel.ShowUnifiedSearch || IsWithinFlyout(e.Source as Visual ?? this)) return;
         if (e.IsPrecise)
         {
             e.Handled = true;
@@ -812,6 +884,11 @@ public partial class LauncherView : UserControl
         };
         ScheduleCatalogIconPreload();
         DataContext = ViewModel;
+        ViewModel.ClipboardWriter = async text =>
+        {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard ?? throw new InvalidOperationException("Clipboard is unavailable.");
+            await clipboard.SetTextAsync(text);
+        };
         ViewModel.PropertyChanged += (_, e) =>
         {
             if (e.PropertyName == nameof(LauncherViewModel.PageIndex)) OnPageChanged();
@@ -839,6 +916,47 @@ public partial class LauncherView : UserControl
     private async void OnLauncherTunnelKeyDown(object? sender, KeyEventArgs e)
     {
         if (IsWithinFlyout(e.Source as Visual)) return;
+        // Interactive search controls own their keys, including Space and Enter.
+        if (e.Source is StyledElement { DataContext: SettingSearchResultViewModel }) return;
+        if (e.Source is Visual control && (control is ToggleSwitch or Slider or ComboBox ||
+            control.GetVisualAncestors().Any(parent => parent is ToggleSwitch or Slider or ComboBox))) return;
+        if (e.Key == Key.Tab && ViewModel.ShowUnifiedSearch) return;
+        if (ViewModel.ShowUnifiedSearch)
+        {
+            if (e.Key is Key.Down or Key.Up or Key.PageDown or Key.PageUp)
+            {
+                var delta = e.Key switch { Key.Down => 1, Key.Up => -1, Key.PageDown => 5, _ => -5 };
+                if (ViewModel.MoveUniversalSelection(delta))
+                {
+                    this.FindControl<ListBox>("UniversalSearchList")?.ScrollIntoView(ViewModel.SelectedUniversalResult!);
+                    FocusSearchAtEnd();
+                }
+                e.Handled = true;
+                return;
+            }
+            var focusedResult = (e.Source as StyledElement)?.DataContext as UniversalSearchResultViewModel;
+            if (e.Key == Key.Enter && (focusedResult ?? ViewModel.SelectedUniversalResult) is { } selected)
+            {
+                if (e.KeyModifiers.HasFlag(KeyModifiers.Alt))
+                {
+                    if (selected.Actions.Count == 0) { e.Handled = true; return; }
+                    var list = this.FindControl<ListBox>("UniversalSearchList");
+                    var container = list?.ContainerFromIndex(ViewModel.UniversalResults.IndexOf(selected));
+                    var border = container?.GetVisualDescendants().OfType<Border>().FirstOrDefault(b => b.ContextMenu is not null);
+                    if (border is not null) border.ContextMenu!.Open(border);
+                    e.Handled = true;
+                    return;
+                }
+                if (selected.Result.Payload is DaisyOS.Core.Search.ApplicationSearchPayload payload)
+                {
+                    _activationApp = payload.ApplicationId;
+                    _activationToken = Avalonia.Wayland.WaylandActivation.RequestAsync(e, payload.ApplicationId.Replace(".desktop", ""));
+                }
+                await ActivateUniversalAsync(selected);
+                e.Handled = true;
+                return;
+            }
+        }
 
         // Space activates an explicitly focused tile button without interfering with typing spaces in Search.
         if (e.Key == Key.Space && e.Source is Visual spaceVisual && GetSearchInput()?.IsFocused != true)
@@ -966,6 +1084,8 @@ public partial class LauncherView : UserControl
     private void OnLauncherTunnelTextInput(object? sender, TextInputEventArgs e)
     {
         if (IsWithinFlyout(e.Source as Visual)) return;
+        if (e.Source is Visual control && (control is ComboBox or ComboBoxItem ||
+            control.GetVisualAncestors().Any(parent => parent is ComboBox or ComboBoxItem))) return;
         if (string.IsNullOrEmpty(e.Text) || char.IsControl(e.Text[0])) return;
         var input = GetSearchInput();
         if (input is null || input.IsFocused) return;
@@ -1136,7 +1256,7 @@ public partial class LauncherView : UserControl
     {
         while (visual != null)
         {
-            if (visual is MenuFlyoutPresenter or MenuItem or FlyoutPresenter)
+            if (visual is MenuFlyoutPresenter or MenuItem or FlyoutPresenter or ComboBoxItem)
                 return true;
             visual = visual.GetVisualParent();
         }
@@ -1268,8 +1388,8 @@ public partial class LauncherView : UserControl
     }
 
     private static bool IsInteractive(Visual source) =>
-        source is TextBox or Button ||
-        source.GetVisualAncestors().Any(ancestor => ancestor is TextBox or Button);
+        source is TextBox or Button or ToggleSwitch or ComboBox or ComboBoxItem or ScrollBar ||
+        source.GetVisualAncestors().Any(ancestor => ancestor is TextBox or Button or ToggleSwitch or ComboBox or ComboBoxItem or ScrollBar);
 
     public void FocusSearch()
     {

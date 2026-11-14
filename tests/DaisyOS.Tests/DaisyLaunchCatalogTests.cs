@@ -12,6 +12,16 @@ public sealed class DaisyLaunchCatalogTests
         """;
 
     [Fact]
+    public async Task DesktopActionMetadataSurvivesTheCatalogBoundary()
+    {
+        var catalog = Catalog.Replace("\"argv\"", "\"actions\":[{\"id\":\"new\",\"name\":\"New window\",\"icon\":\"window\"}],\"argv\"");
+        var client = new DaisyLaunchClient(_ => Task.FromResult(catalog));
+        var action = Assert.Single(Assert.Single(await client.CatalogAsync()).DesktopActions);
+        Assert.Equal("new", action.Id);
+        Assert.Equal("New window", action.Name);
+    }
+
+    [Fact]
     public async Task ConcurrentReadersShareOneFetchAndParsedSnapshot()
     {
         var response = new TaskCompletionSource<string>(TaskCreationOptions.RunContinuationsAsynchronously);

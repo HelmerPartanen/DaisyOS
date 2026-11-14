@@ -150,3 +150,20 @@ toolbar groups must measure their children and leave flexible navigation space.
 `MotionDurationHover` is 50 ms for pointer/row background feedback and becomes zero with Reduce motion. It is separate from `MotionDurationBase` (160 ms) used by theme color fades. Files rows animate their presenter fill only, avoiding stacked parent/presenter hover trails.
 
 `CaptionCloseGlyphBrush` is always white, independent of accent contrast, for custom titlebar close symbols on hover and press.
+
+## Launcher search results
+
+Search uses the same `SurfaceRaisedSubtleBrush`, `RoundedLG` corners and inset
+`StrokeDefaultBrush` dividers as Settings group cards. `LauncherResultHoverBrush`
+and `LauncherResultSelectedBrush` add restrained feedback for actionable rows;
+selection paint appears after keyboard navigation, leaving initial groups calm. Row geometry
+uses shared `SettingsInsetRowMinHeight` / `SettingsInsetRowPadding` and
+`LauncherResultIconSize`, `LauncherResultIconSlot`, and
+`LauncherResultActionInset`. `LauncherSearchMaxWidth` keeps the centered search
+field proportionate; setting selectors use the shared launcher minimum/maximum
+width tokens. These resources apply only to the search presentation; browsing
+continues to use the existing application tiles.
+
+`Styles/SettingsInsetStyles.axaml` is shared by Settings and launcher search.
+`SettingsInsetDividerMargin` and `SettingsInsetDividerHeight` keep separators
+inside the card edges, and the last result omits its separator.

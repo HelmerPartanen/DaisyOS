@@ -44,9 +44,9 @@
   <Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/>
 </Style>
 
-<!-- Match the bottom media widget: primary text, tertiary symbols. -->
+<!-- Use the same foreground for system bar labels and symbols. -->
 <Style Selector="Border#SystemBarFrame Button TextBlock">
-  <Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/>
+  <Setter Property="Foreground" Value="{DynamicResource ContentTertiaryBrush}"/>
 </Style>
 
 <Style Selector="Border#SystemBarFrame Button controls|DaisyIcon">
@@ -186,7 +186,7 @@
                   IconHeight="18"
                   LabelFontSize="{DynamicResource TypeSizeBodySmall}"
                   SubtleIcon="True"
-                  Foreground="{DynamicResource ContentPrimaryBrush}"
+                  Foreground="{DynamicResource ContentTertiaryBrush}"
                   VerticalAlignment="Center"/>
 
             </StackPanel>
@@ -286,7 +286,7 @@
                   IsVisible="False"
                   FontSize="{DynamicResource TypeSizeBodySmall}"
                   FontWeight="Medium"
-                  Foreground="{DynamicResource ContentPrimaryBrush}"
+                  Foreground="{DynamicResource ContentTertiaryBrush}"
                   TextAlignment="Center"
                   VerticalAlignment="Center"/>
 
@@ -294,7 +294,7 @@
                   x:Name="ClockText"
                   FontSize="{DynamicResource TypeSizeBodySmall}"
                   FontWeight="Medium"
-                  Foreground="{DynamicResource ContentPrimaryBrush}"
+                  Foreground="{DynamicResource ContentTertiaryBrush}"
                   TextAlignment="Center"
                   VerticalAlignment="Center"/>
 

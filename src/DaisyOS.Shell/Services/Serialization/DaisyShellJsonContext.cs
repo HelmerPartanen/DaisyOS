@@ -24,6 +24,7 @@ namespace DaisyOS.Shell.Services.Serialization;
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(string[]))]
 [JsonSerializable(typeof(DaisyOS.Shell.Services.Compositor.TaskbarPreviewRequest))]
+[JsonSerializable(typeof(DaisyOS.Shell.Services.SearchStatusReport))]
 internal sealed partial class DaisyShellJsonContext : JsonSerializerContext
 {
 }

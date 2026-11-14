@@ -9,6 +9,8 @@ using Avalonia.Threading;
 using DaisyOS.Shell.Apps.Files.Collections;
 using DaisyOS.Shell.Services.Diagnostics;
 using DaisyOS.Core.Models;
+using DaisyOS.Core.Search;
+using System.Threading;
 using DaisyOS.Shell.Services;
 using DaisyOS.System.Processes;
 
@@ -19,6 +21,46 @@ public class LauncherViewModel : INotifyPropertyChanged
     public const int MaxPageRows = 5;
 
     private readonly LinuxAppLauncherService _launcherService;
+    private readonly ApplicationSearchProvider _applicationSearch;
+    private readonly DaisySearchService? _searchService;
+    private readonly SearchSession? _searchSession;
+    public FastObservableCollection<SettingSearchResultViewModel> SettingResults { get; } = new();
+    public FastObservableCollection<UniversalSearchResultViewModel> UniversalResults { get; } = new();
+    private UniversalSearchResultViewModel? _selectedUniversalResult;
+    public UniversalSearchResultViewModel? SelectedUniversalResult
+    { get => _selectedUniversalResult; set
+        {
+            if (ReferenceEquals(_selectedUniversalResult, value)) return;
+            if (_selectedUniversalResult is not null)
+                _selectedUniversalResult.IsKeyboardSelected = false;
+            _selectedUniversalResult = value; OnPropertyChanged();
+        } }
+    public bool ShowUnifiedSearch => _searchSession is not null && HasSearchQuery;
+    public bool ShowApplicationGrid => !ShowUnifiedSearch;
+    public string ResultsHeading => Loc.Get("Results");
+    public bool HasSearchFeedback => !string.IsNullOrEmpty(SearchFeedback);
+    public string EmptySearchText => Loc.Get(ShowUnifiedSearch ? "No results found" : "No apps found");
+    public string SearchFeedback
+    {
+        get
+        {
+            if (!ShowUnifiedSearch) return "";
+            var status = _searchService?.Files?.Diagnostics.Status;
+            if (status is "Initializing" or "Indexing") return Loc.Get("Files are being indexed…");
+            if (status == "Paused") return Loc.Get("File indexing is paused.");
+            if (status is "Unavailable" or "Degraded") return Loc.Get("The file index needs attention. Open Search in Settings.");
+            if (SearchDiagnostics?.Providers.Any(p => p.Status is SearchProviderStatus.Failed or SearchProviderStatus.TimedOut) == true)
+                return Loc.Get("Some search results could not be loaded.");
+            return "";
+        }
+    }
+    public Func<string, Task>? ClipboardWriter { get; set; }
+    public bool HasSettingResults => SettingResults.Count > 0;
+    private bool _isSearching;
+    public bool IsSearching { get => _isSearching; private set { _isSearching = value; OnPropertyChanged(); OnPropertyChanged(nameof(ShowNoResults)); } }
+    public Task SearchReady { get; private set; } = Task.CompletedTask;
+    public SearchSnapshot? SearchDiagnostics { get; private set; }
+
     private readonly bool _externalDiscoveryEnabled;
     private readonly ShellSessionState _sessionState;
     private string _searchText = string.Empty;
@@ -99,13 +141,14 @@ public class LauncherViewModel : INotifyPropertyChanged
     public string UserInitial => UserName.Length > 0 ? UserName[..1] : "U";
 
     public bool HasSearchQuery => !string.IsNullOrWhiteSpace(SearchText);
-    public bool ShowNoResults => HasSearchQuery && FilteredApps.Count == 0;
+    public bool ShowNoResults => HasSearchQuery && FilteredApps.Count == 0 && UniversalResults.Count == 0 && !HasSettingResults && !IsSearching;
     public string AllAppsCountText => Loc.Format("{0} items", AllApps.Count);
-    public string SearchResultsCountText => Loc.Format("{0} items", FilteredApps.Count);
+    public string SearchResultsCountText => Loc.Format("{0} items", ShowUnifiedSearch ? UniversalResults.Count : FilteredApps.Count + SettingResults.Count);
     public Task ApplicationsReady { get; }
 
     private int _searchGeneration;
     private int _appliedSearchGeneration;
+    private CancellationTokenSource? _searchRequest;
 
     public string SearchText
     {
@@ -121,8 +164,18 @@ public class LauncherViewModel : INotifyPropertyChanged
             _searchText = normalized;
             OnPropertyChanged();
             OnPropertyChanged(nameof(HasSearchQuery));
+            OnPropertyChanged(nameof(ShowUnifiedSearch));
+            OnPropertyChanged(nameof(ShowApplicationGrid));
+            OnPropertyChanged(nameof(EmptySearchText));
+            OnPropertyChanged(nameof(SearchFeedback));
+            OnPropertyChanged(nameof(HasSearchFeedback));
 
             var generation = ++_searchGeneration;
+            if (_searchSession is not null)
+            {
+                SearchReady = UpdateSearchAsync(generation);
+                return;
+            }
             if (AllApps.Count <= 2500 && (Dispatcher.UIThread.CheckAccess() || Avalonia.Application.Current is null))
             {
                 UpdateFilteredApps();
@@ -139,12 +192,34 @@ public class LauncherViewModel : INotifyPropertyChanged
 
     public LauncherViewModel(ShellSessionState? sessionState = null) : this(sessionState, null) { }
 
-    internal LauncherViewModel(ShellSessionState? sessionState, IReadOnlyList<AppEntry>? applications)
+    internal LauncherViewModel(ShellSessionState? sessionState, IReadOnlyList<AppEntry>? applications, DaisySearchService? searchService = null)
     {
         _externalDiscoveryEnabled = applications is null;
+        _searchService = searchService ?? (applications is null && Avalonia.Application.Current is App app ? app.SearchService : null);
+        _applicationSearch = _searchService?.Applications ?? new ApplicationSearchProvider();
+        _searchSession = _searchService?.Coordinator.CreateSession();
+        if (_searchService is not null)
+        {
+            _searchService.Settings.ValueChanged += OnSearchSettingChanged;
+            _searchService.ResultsChanged += (_, _) =>
+            {
+                OnPropertyChanged(nameof(SearchFeedback));
+                OnPropertyChanged(nameof(HasSearchFeedback));
+                if (HasSearchQuery && !IsSearching) SearchReady = UpdateSearchAsync(++_searchGeneration, clear: false);
+            };
+        }
         _launcherService = new LinuxAppLauncherService();
-        if (applications is null) DaisyLaunchClient.Shared.CatalogChanged += () => _ = ReloadApplicationsAsync();
+        if (_searchService is not null)
+            _searchService.CatalogChanged += (_, _) => ApplyApplicationCatalog(_searchService.Catalog);
+        else if (applications is null) DaisyLaunchClient.Shared.CatalogChanged += () => _ = ReloadApplicationsAsync();
         _sessionState = sessionState ?? new ShellSessionState();
+        if (_searchService is null) _applicationSearch.UsageBoost = id =>
+        {
+            var (count, last) = _sessionState.GetApplicationUsage(id);
+            if (count <= 0) return 0;
+            var age = (DateTimeOffset.UtcNow - last).TotalHours;
+            return Math.Min(45, count * 5d) + (age <= 24 ? 20 : age <= 168 ? 10 : 0);
+        };
 
         if (applications is null) ApplicationsReady = LoadApplicationsAsync();
         else
@@ -157,6 +232,7 @@ public class LauncherViewModel : INotifyPropertyChanged
     public async Task ReloadApplicationsAsync()
     {
         if (!_externalDiscoveryEnabled) return;
+        if (_searchService is not null) { await _searchService.RefreshCatalogAsync(); return; }
         try
         {
             var entries = await Task.Run(() => { _launcherService.Refresh(); return BuildApplicationCatalog(); }).ConfigureAwait(false);
@@ -179,7 +255,13 @@ public class LauncherViewModel : INotifyPropertyChanged
     {
         try
         {
-            var entries = await Task.Run(BuildApplicationCatalog).ConfigureAwait(false);
+            IReadOnlyList<AppEntry> entries;
+            if (_searchService is not null)
+            {
+                await _searchService.ApplicationsReady.ConfigureAwait(false);
+                entries = _searchService.Catalog;
+            }
+            else entries = await Task.Run(BuildApplicationCatalog).ConfigureAwait(false);
             if (Dispatcher.UIThread.CheckAccess())
             {
                 ApplyApplicationCatalog(entries);
@@ -213,9 +295,12 @@ public class LauncherViewModel : INotifyPropertyChanged
             return new LauncherItemViewModel(app);
         }).ToArray();
         AllApps.ReplaceAll(items);
+        // Use localized catalog names in the UI and in search alike.
+        if (_searchService is null) _applicationSearch.ReplaceCatalog(items.Select(item => item.App with { Name = item.Name, Description = item.Description }));
         OnPropertyChanged(nameof(AllAppsCountText));
         ++_searchGeneration;
-        UpdateFilteredApps();
+        if (_searchSession is not null && HasSearchQuery) SearchReady = UpdateSearchAsync(_searchGeneration);
+        else UpdateFilteredApps();
     }
 
     private void UpdateFilteredApps()
@@ -230,41 +315,9 @@ public class LauncherViewModel : INotifyPropertyChanged
         }
         else
         {
-            var query = SearchText.Trim().ToUpperInvariant();
-            var tokens = query.Contains(' ', StringComparison.Ordinal)
-                ? query.Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                : [query];
-            var now = DateTimeOffset.UtcNow;
-            var scored = new List<(LauncherItemViewModel Item, int Score, int OriginalIndex)>(AllApps.Count);
-
-            for (var index = 0; index < AllApps.Count; index++)
-            {
-                var item = AllApps[index];
-                var baseScore = ScoreMatch(item, query, tokens);
-                if (baseScore <= 0) continue;
-
-                var (launchCount, lastLaunched) = _sessionState.GetApplicationUsage(item.App.Id);
-                var usageBoost = 0;
-                if (launchCount > 0)
-                {
-                    usageBoost += Math.Min(45, launchCount * 5);
-                    var ageHours = (now - lastLaunched).TotalHours;
-                    if (ageHours <= 24) usageBoost += 20;
-                    else if (ageHours <= 24 * 7) usageBoost += 10;
-                }
-
-                scored.Add((item, baseScore + usageBoost, index));
-            }
-
-            scored.Sort(static (left, right) =>
-            {
-                var byScore = right.Score.CompareTo(left.Score);
-                return byScore != 0 ? byScore : left.OriginalIndex.CompareTo(right.OriginalIndex);
-            });
-
-            var result = new LauncherItemViewModel[scored.Count];
-            for (var i = 0; i < scored.Count; i++) result[i] = scored[i].Item;
-            matching = result;
+            var byId = AllApps.ToDictionary(item => item.App.Id, StringComparer.Ordinal);
+            matching = _applicationSearch.Search(SearchQuery.Parse(SearchText))
+                .Select(result => byId[result.Id]).ToArray();
         }
 
         if (!FilteredApps.SequenceEqual(matching))
@@ -288,6 +341,145 @@ public class LauncherViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(SearchResultsCountText));
         OnPropertyChanged(nameof(ShowNoResults));
     }
+
+    private async Task UpdateSearchAsync(int generation, bool clear = true)
+    {
+        _searchRequest?.Cancel();
+        var request = _searchRequest = new CancellationTokenSource();
+        var query = SearchText;
+        if (!HasSearchQuery)
+        {
+            await foreach (var ignored in _searchSession!.SearchAsync("")) { }
+            if (generation == _searchGeneration)
+            {
+                SettingResults.Clear();
+                UniversalResults.Clear();
+                SelectedUniversalResult = null;
+                OnPropertyChanged(nameof(HasSettingResults));
+                IsSearching = false;
+                UpdateFilteredApps();
+            }
+            if (ReferenceEquals(_searchRequest, request)) _searchRequest = null;
+            request.Dispose();
+            return;
+        }
+        IsSearching = true;
+        OnPropertyChanged(nameof(HasSettingResults));
+        OnPropertyChanged(nameof(SearchResultsCountText));
+        OnPropertyChanged(nameof(ShowNoResults));
+        try
+        {
+            // Coalesce typing; retain the previous complete list while providers work.
+            if (clear) await Task.Delay(75, request.Token);
+            await foreach (var snapshot in _searchSession!.SearchAsync(query, request.Token))
+            {
+                // Publishing partial background snapshots removes and re-adds slower results.
+                // Present one coherent update once all providers finish or reach their deadline.
+                if (!snapshot.IsComplete) continue;
+                await Dispatcher.UIThread.InvokeAsync(() =>
+                {
+                    if (generation != _searchGeneration || request.IsCancellationRequested) return;
+                    SearchDiagnostics = snapshot;
+                    OnPropertyChanged(nameof(SearchDiagnostics));
+                    OnPropertyChanged(nameof(SearchFeedback));
+                    OnPropertyChanged(nameof(HasSearchFeedback));
+                    var byId = AllApps.ToDictionary(item => item.App.Id, StringComparer.Ordinal);
+                    var apps = snapshot.Results.Where(r => r.Payload is ApplicationSearchPayload && byId.ContainsKey(r.Id))
+                        .Select(r => byId[r.Id]).ToArray();
+                    if (!FilteredApps.SequenceEqual(apps))
+                    {
+                        FilteredApps.ReplaceAll(apps);
+                        _pages.Clear();
+                        _pageIndex = 0;
+                        RefreshPage();
+                        ApplySelection(apps.Length > 0 ? 0 : -1);
+                    }
+                    var existing = SettingResults.ToDictionary(r => r.Id, StringComparer.Ordinal);
+                    var settings = snapshot.Results.Where(r => r.Payload is SettingSearchPayload)
+                        .Select(r => existing.TryGetValue(r.Id, out var item) ? item : new SettingSearchResultViewModel(r, _searchService!.Settings)).ToArray();
+                    SynchronizeSearchRows(SettingResults, settings);
+                    var selectedKey = SelectedUniversalResult is { } selected ? (selected.Result.ProviderId, selected.Result.Id) : default;
+                    var priorRows = UniversalResults.ToDictionary(row => (row.Result.ProviderId, row.Result.Id));
+                    var projected = snapshot.Results.Select(result => priorRows.TryGetValue((result.ProviderId, result.Id), out var row) && row.Result.Title == result.Title && row.Result.Subtitle == result.Subtitle &&
+                        row.Result.Payload == result.Payload && row.Result.IsEnabled == result.IsEnabled && row.Result.Actions.SequenceEqual(result.Actions)
+                        ? row : new UniversalSearchResultViewModel(result,
+                            settings.FirstOrDefault(setting => setting.Id == result.Id && result.Payload is SettingSearchPayload),
+                            ExecuteSearchActionAsync, result.Payload is ApplicationSearchPayload appPayload ? byId.GetValueOrDefault(appPayload.ApplicationId) : null)).ToArray();
+                    for (var rowIndex = 0; rowIndex < projected.Length; rowIndex++) projected[rowIndex].ShowDivider = rowIndex < projected.Length - 1;
+                    SynchronizeSearchRows(UniversalResults, projected);
+                    SelectedUniversalResult = projected.FirstOrDefault(result => (result.Result.ProviderId, result.Result.Id) == selectedKey) ?? projected.FirstOrDefault();
+                    foreach (var setting in settings.Where(setting => !existing.ContainsKey(setting.Id))) _ = setting.RefreshAsync();
+                    _appliedSearchGeneration = generation;
+                    IsSearching = !snapshot.IsComplete;
+                    OnPropertyChanged(nameof(HasSettingResults));
+                    OnPropertyChanged(nameof(SearchResultsCountText));
+                    OnPropertyChanged(nameof(ShowNoResults));
+                });
+            }
+        }
+        catch (OperationCanceledException) { }
+        finally
+        {
+            if (ReferenceEquals(_searchRequest, request))
+            {
+                _searchRequest = null;
+                if (generation == _searchGeneration) IsSearching = false;
+            }
+            request.Dispose();
+        }
+    }
+
+    // Preserve containers, focus, scroll position and selection for unchanged rows.
+    private static void SynchronizeSearchRows<T>(FastObservableCollection<T> target, IReadOnlyList<T> rows)
+    {
+        for (var index = 0; index < rows.Count; index++)
+        {
+            if (index < target.Count && EqualityComparer<T>.Default.Equals(target[index], rows[index])) continue;
+            var previous = target.IndexOf(rows[index]);
+            if (previous >= 0) target.Move(previous, index);
+            else target.Insert(index, rows[index]);
+        }
+        while (target.Count > rows.Count) target.RemoveAt(target.Count - 1);
+    }
+
+    public bool HasCurrentSearchResults => _appliedSearchGeneration == _searchGeneration;
+
+    private async Task ExecuteSearchActionAsync(SearchAction action)
+    {
+        if (!HasCurrentSearchResults)
+        {
+            await SearchReady;
+            if (!HasCurrentSearchResults) return;
+            if (!UniversalResults.Any(row => row.Result.Actions.Contains(action))) return;
+        }
+        if (action.Id is "copy-result" or "copy-path")
+        {
+            var source = UniversalResults.Select(r => r.Result).FirstOrDefault(r => r.ProviderId == action.ProviderId && r.Actions.Contains(action));
+            if (source is null || ClipboardWriter is null) throw new InvalidOperationException("Clipboard is unavailable.");
+            var text = source.Payload switch
+            {
+                CalculatorSearchPayload calculation => calculation.Value,
+                FileSearchPayload file => file.Path,
+                _ => throw new InvalidOperationException("This item cannot be copied.")
+            };
+            await ClipboardWriter(text);
+            return;
+        }
+        await _searchService!.Coordinator.ExecuteAsync(action);
+    }
+    public bool MoveUniversalSelection(int delta)
+    {
+        if (UniversalResults.Count == 0) return false;
+        var index = SelectedUniversalResult is null ? 0 : UniversalResults.IndexOf(SelectedUniversalResult);
+        SelectedUniversalResult = UniversalResults[Math.Clamp(index + delta, 0, UniversalResults.Count - 1)];
+        SelectedUniversalResult.IsKeyboardSelected = true;
+        return true;
+    }
+
+    private void OnSearchSettingChanged(object? sender, string id) => Dispatcher.UIThread.Post(() =>
+    {
+        foreach (var setting in SettingResults.Where(s => s.Id == id)) _ = setting.RefreshAsync();
+    });
 
     private void ApplySelection(int filteredIndex)
     {
@@ -408,101 +600,10 @@ public class LauncherViewModel : INotifyPropertyChanged
     {
         if (_appliedSearchGeneration != _searchGeneration)
         {
+            if (_searchSession is not null) return null;
             UpdateFilteredApps();
         }
         return TopSearchResult;
-    }
-
-    private static int ScoreMatch(LauncherItemViewModel item, string query, string[] tokens)
-    {
-        var upperName = item.UpperName;
-        if (string.Equals(upperName, query, StringComparison.Ordinal))
-        {
-            return 1000;
-        }
-
-        if (upperName.StartsWith(query, StringComparison.Ordinal))
-        {
-            return 860 - Math.Min(40, upperName.Length - query.Length);
-        }
-
-        var words = item.NameWords;
-        for (var i = 0; i < words.Length; i++)
-        {
-            if (words[i].StartsWith(query, StringComparison.Ordinal))
-            {
-                return 740 - Math.Min(30, i * 8);
-            }
-        }
-
-        if (query.Length >= 2)
-        {
-            if (string.Equals(item.NameAcronym, query, StringComparison.Ordinal) ||
-                string.Equals(item.CamelAcronym, query, StringComparison.Ordinal))
-            {
-                return 680;
-            }
-            if (item.NameAcronym.StartsWith(query, StringComparison.Ordinal) ||
-                item.CamelAcronym.StartsWith(query, StringComparison.Ordinal))
-            {
-                return 640;
-            }
-        }
-
-        if (tokens.Length > 1 && MatchesWordPrefixesInOrder(words, tokens))
-        {
-            return 700;
-        }
-
-        var nameHit = upperName.IndexOf(query, StringComparison.Ordinal);
-        if (nameHit >= 0)
-        {
-            return 520 - Math.Min(60, nameHit * 2);
-        }
-
-        foreach (var term in item.UpperSearchTerms)
-        {
-            if (string.Equals(term, query, StringComparison.Ordinal)) return 460;
-            if (term.StartsWith(query, StringComparison.Ordinal)) return 410;
-        }
-
-        if (item.SearchKey.Contains(query, StringComparison.Ordinal))
-        {
-            return 220;
-        }
-
-        if (tokens.Length > 1)
-        {
-            for (var i = 0; i < tokens.Length; i++)
-            {
-                if (!item.SearchKey.Contains(tokens[i], StringComparison.Ordinal))
-                {
-                    return 0;
-                }
-            }
-            return 200;
-        }
-
-        return 0;
-    }
-
-    private static bool MatchesWordPrefixesInOrder(string[] words, string[] tokens)
-    {
-        var wordIndex = 0;
-        for (var t = 0; t < tokens.Length; t++)
-        {
-            var matched = false;
-            while (wordIndex < words.Length)
-            {
-                if (words[wordIndex++].StartsWith(tokens[t], StringComparison.Ordinal))
-                {
-                    matched = true;
-                    break;
-                }
-            }
-            if (!matched) return false;
-        }
-        return true;
     }
 
     public async Task<AppLaunchResult?> LaunchAppAsync(LauncherItemViewModel? item, string activationToken = "")

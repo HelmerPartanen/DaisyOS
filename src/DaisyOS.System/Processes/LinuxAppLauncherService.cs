@@ -13,7 +13,7 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
 {
     private static readonly HashSet<string> SupportedKeys = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Name", "Comment", "Icon", "Exec", "TryExec", "NoDisplay", "Hidden", "Terminal", "Type", "Categories", "X-DaisyOS-Removed"
+        "Name", "Comment", "Icon", "Exec", "TryExec", "NoDisplay", "Hidden", "Terminal", "Type", "Categories", "GenericName", "Keywords", "OnlyShowIn", "NotShowIn", "X-DaisyOS-Removed"
     };
 
     private readonly ILogService _log;
@@ -215,51 +215,7 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             { _log.Log(LogLevel.Warning, "Native catalog unavailable; using legacy discovery."); }
         }
         var nativeCatalog = apps.Count > 0;
-        var seenIds = new HashSet<string>(apps.Select(app => app.Id).Concat(maskedIds), StringComparer.OrdinalIgnoreCase);
-        var seenNameAndTarget = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-
-        foreach (var directory in nativeCatalog ? [] : GetApplicationDirectories())
-        {
-            if (!Directory.Exists(directory))
-            {
-                continue;
-            }
-
-            IEnumerable<string> desktopFiles;
-            try
-            {
-                desktopFiles = Directory.EnumerateFiles(directory, "*.desktop", SearchOption.AllDirectories);
-            }
-            catch
-            {
-                desktopFiles = Directory.EnumerateFiles(directory, "*.desktop", SearchOption.TopDirectoryOnly);
-            }
-
-            foreach (var file in desktopFiles)
-            {
-                var fileId = Path.GetFileName(file);
-                if (DesktopApplicationMaskStore.IsDesktopFileHiddenOrMasked(file))
-                {
-                    seenIds.Add(fileId);
-                    continue;
-                }
-
-                var app = TryReadDesktopEntry(file);
-                if (app is null || !seenIds.Add(app.Id))
-                {
-                    continue;
-                }
-
-                // Deduplicate identical apps (e.g. google-chrome.desktop and com.google.Chrome.desktop)
-                var nameTargetKey = $"{app.Name}|{Path.GetFileName(app.LaunchTarget)}";
-                if (!seenNameAndTarget.Add(nameTargetKey))
-                {
-                    continue;
-                }
-
-                apps.Add(app);
-            }
-        }
+        if (!nativeCatalog) apps.AddRange(DiscoverDesktopEntries(GetApplicationDirectories(), maskedIds));
 
         apps.RemoveAll(app => Applications.OptionalApplicationState.IsRemoved(app.Id));
         foreach (var builtIn in BuiltInSystemApps)
@@ -301,8 +257,6 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
                 apps.Add(builtIn);
             }
 
-            seenIds.Add(builtIn.Id);
-            seenIds.Add(normalizedId);
         }
 
         return apps
@@ -316,6 +270,29 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             ? id[..^8]
             : id;
         return string.Equals(Normalize(left), Normalize(right), StringComparison.OrdinalIgnoreCase);
+    }
+
+    internal IReadOnlyList<AppEntry> DiscoverDesktopEntries(IEnumerable<string> directories, IEnumerable<string>? maskedIds = null)
+    {
+        var seen = new HashSet<string>(maskedIds ?? [], StringComparer.Ordinal);
+        var apps = new List<AppEntry>();
+        foreach (var directory in directories)
+        {
+            if (!Directory.Exists(directory)) continue;
+            try
+            {
+                foreach (var file in Directory.EnumerateFiles(directory, "*.desktop", new EnumerationOptions
+                { RecurseSubdirectories = true, IgnoreInaccessible = true, AttributesToSkip = FileAttributes.ReparsePoint }))
+                {
+                    var id = Path.GetRelativePath(directory, file).Replace(Path.DirectorySeparatorChar, '-');
+                    // Claim precedence before visibility checks: hidden user entries mask system entries.
+                    if (!seen.Add(id) || DesktopApplicationMaskStore.IsDesktopFileHiddenOrMasked(file)) continue;
+                    if (TryReadDesktopEntry(file) is { } app) apps.Add(app with { Id = id });
+                }
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { }
+        }
+        return apps;
     }
 
     private AppEntry? TryReadDesktopEntry(string file)
@@ -361,7 +338,8 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
                 }
 
                 var key = line[..separator];
-                if (!SupportedKeys.Contains(key) && !key.StartsWith("Name[", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("Comment[", StringComparison.OrdinalIgnoreCase))
+                if (!SupportedKeys.Contains(key) && !key.StartsWith("Name[", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("Comment[", StringComparison.OrdinalIgnoreCase) &&
+                    !key.StartsWith("GenericName[", StringComparison.OrdinalIgnoreCase) && !key.StartsWith("Keywords[", StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -411,7 +389,9 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             AppLaunchKind.DesktopEntry,
             command[0],
             command.Skip(1).ToArray(),
-            categories);
+            categories,
+            SearchTerms: new[] { DesktopEntryLocalization.GetValue(entry, "GenericName") ?? "" }
+                .Concat((DesktopEntryLocalization.GetValue(entry, "Keywords") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries)).ToArray());
     }
 
     private static IEnumerable<string> GetApplicationDirectories()
@@ -423,24 +403,13 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             dataHome = Path.Combine(home, ".local", "share");
         }
 
-        var searchDirs = new List<string>
-        {
-            Path.Combine(dataHome, "applications"),
-            Path.Combine(home, ".local", "share", "applications"),
-            Path.Combine(home, ".local", "share", "flatpak", "exports", "share", "applications"),
-            "/var/lib/flatpak/exports/share/applications",
-            "/var/lib/snapd/desktop/applications",
-            "/usr/local/share/applications",
-            "/usr/share/applications"
-        };
-
-        var xdgDataDirs = Environment.GetEnvironmentVariable("XDG_DATA_DIRS")
-            ?.Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? [];
-
-        foreach (var dir in xdgDataDirs)
-        {
-            searchDirs.Add(Path.Combine(dir, "applications"));
-        }
+        var searchDirs = new List<string> { Path.Combine(dataHome, "applications") };
+        var xdgDataDirs = (Environment.GetEnvironmentVariable("XDG_DATA_DIRS") ?? "/usr/local/share:/usr/share")
+            .Split(':', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        searchDirs.AddRange(xdgDataDirs.Where(Path.IsPathFullyQualified).Select(dir => Path.Combine(dir, "applications")));
+        searchDirs.Add(Path.Combine(home, ".local", "share", "flatpak", "exports", "share", "applications"));
+        searchDirs.Add("/var/lib/flatpak/exports/share/applications");
+        searchDirs.Add("/var/lib/snapd/desktop/applications");
 
         try
         {
@@ -465,7 +434,15 @@ public sealed class LinuxAppLauncherService : IAppLauncherService
             && string.Equals(type, "Application", StringComparison.OrdinalIgnoreCase)
             && !IsTruthy(entry, "NoDisplay")
             && !IsTruthy(entry, "Hidden")
-            && !IsTruthy(entry, "Terminal");
+            && IsVisibleInCurrentDesktop(entry);
+    }
+
+    private static bool IsVisibleInCurrentDesktop(Dictionary<string, string> entry)
+    {
+        var desktops = (Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP") ?? "").Split(':', StringSplitOptions.RemoveEmptyEntries);
+        static string[] List(string value) => value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        if (TryGet(entry, "NotShowIn", out var excluded) && List(excluded).Any(desktops.Contains)) return false;
+        return !TryGet(entry, "OnlyShowIn", out var included) || List(included).Any(desktops.Contains);
     }
 
     private static bool IsTruthy(Dictionary<string, string> entry, string key)

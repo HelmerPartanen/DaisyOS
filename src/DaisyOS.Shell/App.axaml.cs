@@ -115,6 +115,7 @@ public partial class App : Application
     private KWinBlur? _launcherBlur;
     private readonly NativeAppWindowTracker _nativeWindowTracker = new();
     private ICompositorWindowService? _compositorWindows;
+    internal ICompositorWindowService? SearchCompositor => _compositorWindows;
     private readonly DaisyScreenshotService _screenshotService = new();
     private bool _isScreenshotOpening;
     private readonly HashSet<string> _reportedUnresponsiveWindows = new(StringComparer.Ordinal);
@@ -187,6 +188,8 @@ public partial class App : Application
     public bool UsesSolidWallpaper => _appearanceSettings.UseSolidWallpaper
         || WallpaperSource.TryGetSolidColor(GetSafeWallpaperUri(_appearanceSettings.WallpaperUri), out _);
     public Color CurrentSolidWallpaperColor => GetSolidWallpaperColor();
+    private DaisySearchService? _searchService;
+    public DaisySearchService SearchService => _searchService ??= new DaisySearchService(this);
     public ThemeMode CurrentThemeMode => _appearanceSettings.ThemeMode;
     public AccentColor CurrentAccentColor => _appearanceSettings.AccentColor;
     public bool HighContrastEnabled => _appearanceSettings.HighContrast;
@@ -328,6 +331,7 @@ public partial class App : Application
                 _ = _continuitySession.RunAsync(traceLifetime.Token);
                 _ = new ContinuityPairingService().RunAsync(traceLifetime.Token);
             }
+            _ = SearchService.ApplicationsReady;
             StartApplicationSettingsService(traceLifetime.Token);
             _ = DaisyOS.Shell.Services.Diagnostics.ResponsivenessTrace.RunAsync(traceLifetime.Token);
             _ = Task.Run(() => ShellResourceTrace.RunAsync(traceLifetime.Token));
@@ -341,6 +345,7 @@ public partial class App : Application
             gamingAutomation.Start();
             desktop.Exit += (_, _) =>
             {
+                _ = _searchService?.DisposeAsync();
                 StopNativeDisplayTracking();
                 _continuitySession?.Dispose();
                 traceLifetime.Cancel();
@@ -799,6 +804,14 @@ public partial class App : Application
             source => shell.Launcher.IsWithinInteractiveSurface(source),
             () =>
             {
+                var selector = shell.Launcher.GetVisualDescendants().OfType<ComboBox>()
+                    .FirstOrDefault(control => control.IsDropDownOpen);
+                if (selector is not null)
+                {
+                    selector.IsDropDownOpen = false;
+                    selector.Focus();
+                    return;
+                }
                 if (shell.Launcher.IsPowerMenuVisible || shell.Launcher.IsAppContextMenuVisible)
                 {
                     shell.Launcher.ClosePowerMenu();

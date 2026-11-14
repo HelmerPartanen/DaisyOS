@@ -246,6 +246,9 @@ static std::shared_ptr<const Snapshot> discover() {
         labels.insert(locale.isEmpty() ? key : key + "[" + locale + "]", value);
       }
     }
+    QJsonArray desktopActions;
+    for (const auto &action : app->actions())
+      desktopActions.append(QJsonObject{{"id", action.name()}, {"name", action.text()}, {"icon", action.icon()}});
     KIO::DesktopExecParser exec(*app, {});
     const auto argv = exec.resultingArguments();
     entries.append(QJsonObject{
@@ -258,7 +261,8 @@ static std::shared_ptr<const Snapshot> discover() {
         {"icon", app->icon()},
         {"path", app->entryPath()},
         {"argv", QJsonArray::fromStringList(argv)},
-        {"categories", QJsonArray::fromStringList(app->categories())}});
+        {"categories", QJsonArray::fromStringList(app->categories())},
+        {"actions", desktopActions}});
   }
   s->catalog =
       QString::fromUtf8(QJsonDocument(entries).toJson(QJsonDocument::Compact));

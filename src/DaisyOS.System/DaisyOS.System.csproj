@@ -3,6 +3,7 @@
     <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsAotCompatible>true</IsAotCompatible>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <EnableAotAnalyzer>true</EnableAotAnalyzer>
@@ -11,6 +12,7 @@
     <AllowMissingPrunePackageData>true</AllowMissingPrunePackageData>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.15" />
     <PackageReference Include="Tmds.DBus.Protocol" Version="0.94.1" />
     <ProjectReference Include="../DaisyOS.Core/DaisyOS.Core.csproj" />
     <None Update="Power/SessionLogout.sh" Link="daisyos-session-logout" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />

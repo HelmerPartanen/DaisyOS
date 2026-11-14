@@ -138,7 +138,9 @@ try:
         time.sleep(.02)
     else: raise AssertionError('Registry did not refresh')
     binary=os.environ.get('DAISY_LAUNCH_TEST_BINARY',str(ROOT/'services/DaisyLaunch/build/daisy-launch'))
-    assert any(e['id']=='org.daisyos.launchtest.desktop' for e in json.loads(subprocess.check_output([binary,'--catalog'],text=True)))
+    catalog = json.loads(subprocess.check_output([binary,'--catalog'],text=True))
+    fixture = next(e for e in catalog if e['id']=='org.daisyos.launchtest.desktop')
+    assert any(action['id']=='Test' and action['name']=='Test action' for action in fixture['actions'])
     if Path(binary).with_name('daisy-launch-backend').exists():
         started=time.monotonic()
         subprocess.run([binary,'--launch','org.daisyos.launchtest.desktop'],capture_output=True,check=True,timeout=2)

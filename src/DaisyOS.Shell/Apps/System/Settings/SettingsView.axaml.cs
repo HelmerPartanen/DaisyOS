@@ -94,9 +94,10 @@ namespace DaisyOS.Shell.Apps.System.Settings
             ("CONNECTIONS", ["Network", "Ethernet", "Bluetooth", "Continuity"]),
             ("PERSONALIZATION", ["Appearance", "Desktop", "Taskbar", "LockScreen", "Notifications", "Apps", "Password"]),
             ("GAMING", ["Gaming"]),
-            ("MANAGEMENT", ["Storage", "Accessibility", "Input", "DateTime", "About"])
+            ("MANAGEMENT", ["Storage", "Accessibility", "Input", "DateTime", "Search", "About"])
         ];
 
+        internal static IReadOnlyList<SettingsSearchEntry> SearchCatalog => SearchIndex;
         private static readonly SettingsSearchEntry[] SearchIndex =
         [
             new("Taskbar", "LAYOUT", "Taskbar position", "Place the taskbar, system bar and media controls on any screen edge", "taskbar dock position bottom left top right vertical alignment"),
@@ -126,6 +127,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Taskbar", "AUTO-HIDE", "Auto-hide taskbar components", "Hide the taskbar, system bar and media controls together", "taskbar systembar system bar media dock auto-hide maximize fullscreen"),
             new("Appearance", "", "Profile picture", "Shown in the launcher and on the lock screen.", "profile avatar account user photo picture"),
             new("Appearance", "", "Wallpaper", "Desktop picture or video wallpaper", "wallpaper background picture video live"),
+            new("Appearance", "", "Panel borders", "Show borders around desktop panels", "panel borders outline appearance"),
             new("Appearance", "", "Accent color", "Control and focus colors", "accent colour color focus"),
             new("Input", "CURSOR", "Cursor", "Pointer theme and cursor size", "cursor pointer theme size mouse"),
             new("Appearance", "", "System font", "Font family and text size", "font typography text size add font"),
@@ -142,6 +144,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             new("Input", "MOUSE & TRACKPAD", "Trackpad scroll speed", "Medium", "trackpad touchpad scroll scrolling speed slider mouse"),
             new("DateTime", "TIME", "Automatic date and time", "System time, time zone, and clock format", "date time timezone time zone clock ntp automatic"),
             new("DateTime", "TIME", "Time format", "Choose between 24-hour and 12-hour time", "time format clock 12h 24h 12-hour 24-hour am pm"),
+            new("Search", "INDEX", "Daisy Search", "Index status, privacy and search performance", "search spotlight index indexing diagnostics pause rebuild"),
             new("About", "DAISYOS", "About this system", "Version and desktop-session information", "version about diagnostics support")
         ];
 
@@ -562,6 +565,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 "Input" => Loc.Get("Language & input"),
                 "DateTime" => Loc.Get("Date & time"),
                 "Gaming" => Loc.Get("Gaming"),
+                "Search" => Loc.Get("Daisy Search"),
                 "About" => Loc.Get("About this system"),
                 _ => Loc.Get("System")
             };
@@ -655,6 +659,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 case "Accessibility": BuildAccessibility(); break;
                 case "Input": BuildInput(); break;
                 case "DateTime": BuildDateTime(buildVersion); break;
+                case "Search": BuildSearchDiagnostics(buildVersion); break;
                 case "About": BuildAbout(buildVersion); break;
                 default: BuildSystem(buildVersion); break;
             }
@@ -3219,12 +3224,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
                 rowsHost.Children.Add(rows[index]);
                 if (index < rows.Length - 1)
                 {
-                    rowsHost.Children.Add(new Border
-                    {
-                        Height = 1,
-                        Margin = new Thickness(16, 0),
-                        Background = TryBrush("StrokeDefaultBrush")
-                    });
+                    rowsHost.Children.Add(new Border { Classes = { "SettingsGroupDivider" } });
                 }
             }
 
@@ -3683,7 +3683,7 @@ namespace DaisyOS.Shell.Apps.System.Settings
             }
         }
 
-        private sealed record SettingsSearchEntry(
+        internal sealed record SettingsSearchEntry(
             string Category,
             string Section,
             string Title,

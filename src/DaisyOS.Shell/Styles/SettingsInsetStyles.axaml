@@ -1,0 +1,18 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <Style Selector="Border.SettingsGroupCard">
+    <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
+    <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
+    <Setter Property="ClipToBounds" Value="True" />
+  </Style>
+  <Style Selector="Border.SettingsGroupRow">
+    <Setter Property="Padding" Value="{DynamicResource SettingsInsetRowPadding}" />
+    <Setter Property="MinHeight" Value="{DynamicResource SettingsInsetRowMinHeight}" />
+    <Setter Property="Background" Value="Transparent" />
+  </Style>
+  <Style Selector="Border.SettingsGroupDivider">
+    <Setter Property="Height" Value="{DynamicResource SettingsInsetDividerHeight}" />
+    <Setter Property="Margin" Value="{DynamicResource SettingsInsetDividerMargin}" />
+    <Setter Property="Background" Value="{DynamicResource StrokeDefaultBrush}" />
+  </Style>
+</Styles>

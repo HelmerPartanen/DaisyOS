@@ -157,6 +157,10 @@
       <SolidColorBrush x:Key="LauncherSolidBackdropBrush" Color="#FF171717" />
       <SolidColorBrush x:Key="LauncherSearchSurfaceBrush" Color="#EBFFFFFF" />
       <SolidColorBrush x:Key="LauncherSearchBorderBrush" Color="#24000000" />
+
+
+      <SolidColorBrush x:Key="LauncherResultHoverBrush" Color="#08000000" />
+      <SolidColorBrush x:Key="LauncherResultSelectedBrush" Color="#10000000" />
       <SolidColorBrush x:Key="LauncherTileHoverBrush" Color="#12000000" />
       <SolidColorBrush x:Key="LauncherTileSelectedBrush" Color="#241598FF" />
       <SolidColorBrush x:Key="LauncherTileSelectedBorderBrush" Color="#881598FF" />
@@ -373,6 +377,10 @@
       <SolidColorBrush x:Key="LauncherSolidBackdropBrush" Color="#FF171717" />
       <SolidColorBrush x:Key="LauncherSearchSurfaceBrush" Color="#D41F2127" />
       <SolidColorBrush x:Key="LauncherSearchBorderBrush" Color="#2EFFFFFF" />
+
+
+      <SolidColorBrush x:Key="LauncherResultHoverBrush" Color="#0AFFFFFF" />
+      <SolidColorBrush x:Key="LauncherResultSelectedBrush" Color="#14FFFFFF" />
       <SolidColorBrush x:Key="LauncherTileHoverBrush" Color="#16FFFFFF" />
       <SolidColorBrush x:Key="LauncherTileSelectedBrush" Color="#2E148BE8" />
       <SolidColorBrush x:Key="LauncherTileSelectedBorderBrush" Color="#96148BE8" />
@@ -627,6 +635,19 @@
   <CornerRadius x:Key="RadiusSmall">4</CornerRadius>
   <CornerRadius x:Key="RadiusControl">10</CornerRadius>
   <CornerRadius x:Key="RadiusControlInner">8</CornerRadius>
+  <x:Double x:Key="LauncherSearchMaxWidth">560</x:Double>
+  <x:Double x:Key="SettingsInsetRowMinHeight">60</x:Double>
+  <Thickness x:Key="SettingsInsetRowPadding">20,12</Thickness>
+  <Thickness x:Key="SettingsInsetDividerMargin">16,0</Thickness>
+  <x:Double x:Key="SettingsInsetDividerHeight">1</x:Double>
+  <x:Double x:Key="LauncherResultIconSize">20</x:Double>
+  <x:Double x:Key="LauncherResultIconSlot">24</x:Double>
+  <x:Double x:Key="LauncherSettingMinWidth">104</x:Double>
+  <x:Double x:Key="LauncherSettingMaxWidth">180</x:Double>
+  <Thickness x:Key="LauncherResultsHeadingInset">12,4,12,20</Thickness>
+  <Thickness x:Key="LauncherResultActionInset">12,8</Thickness>
+  <x:Double x:Key="LauncherResultIconGap">14</x:Double>
+  <x:Double x:Key="LauncherSettingPreferredWidth">144</x:Double>
   <x:Double x:Key="LauncherPanelMaxWidth">900</x:Double>
   <x:Double x:Key="LauncherPanelMaxHeight">600</x:Double>
   <CornerRadius x:Key="RadiusSurface">18</CornerRadius>

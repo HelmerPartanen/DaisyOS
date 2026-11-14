@@ -1,0 +1,2 @@
+{"Applications":1000,"Settings":100,"Samples":250,"ApplicationP95Ms":0.9834,"SettingsP95Ms":0.0866,"FirstSnapshotP95Ms":0.3826,"AggregationP95Ms":1.2785,"ManagedBytes":2588120}
+{"Applications":10000,"Settings":1000,"Samples":250,"ApplicationP95Ms":1.8829,"SettingsP95Ms":0.5826,"FirstSnapshotP95Ms":1.0559,"AggregationP95Ms":2.527,"ManagedBytes":21256264}

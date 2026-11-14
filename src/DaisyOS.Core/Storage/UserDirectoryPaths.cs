@@ -8,8 +8,8 @@ public static class UserDirectoryPaths
     public static IReadOnlyDictionary<string, string> Load(string? homePath = null, string? configPath = null)
     {
         var home = Path.GetFullPath(homePath ?? Environment.GetFolderPath(Environment.SpecialFolder.UserProfile));
-        var names = new[] { "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music" };
-        var keys = new[] { "DESKTOP", "DOCUMENTS", "DOWNLOAD", "PICTURES", "VIDEOS", "MUSIC" };
+        var names = new[] { "Desktop", "Documents", "Downloads", "Pictures", "Videos", "Music", "Public" };
+        var keys = new[] { "DESKTOP", "DOCUMENTS", "DOWNLOAD", "PICTURES", "VIDEOS", "MUSIC", "PUBLICSHARE" };
         var paths = names.ToDictionary(name => name, name => Path.Combine(home, name), StringComparer.Ordinal);
         paths["Home"] = home;
         var configHome = homePath is null ? Environment.GetEnvironmentVariable("XDG_CONFIG_HOME") : null;

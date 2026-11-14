@@ -61,16 +61,7 @@
       <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}" />
     </Style>
 
-    <Style Selector="Border.SettingsGroupCard">
-      <Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}" />
-      <Setter Property="CornerRadius" Value="{DynamicResource RoundedLG}" />
-      <Setter Property="ClipToBounds" Value="True" />
-    </Style>
-    <Style Selector="Border.SettingsGroupRow">
-      <Setter Property="Padding" Value="20,12" />
-      <Setter Property="MinHeight" Value="60" />
-      <Setter Property="Background" Value="Transparent" />
-    </Style>
+    <StyleInclude Source="avares://DaisyOS.Shell/Styles/SettingsInsetStyles.axaml" />
     <!-- Keep this preference editor's paint and hit area stable across Fluent
          hover/focus states. Focus changes color without an animated fill or resize. -->
     <Style Selector="TextBox.SettingsTextInput, TextBox.SettingsTextInput:pointerover, TextBox.SettingsTextInput:focus">
@@ -405,6 +396,12 @@
             </Grid>
           </Button>
 
+          <Button x:Name="NavSearch" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Search">
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="magnifying-glass" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="Daisy Search" Classes="NavLabel" />
+            </Grid>
+          </Button>
           <Button x:Name="NavAbout" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="About">
             <Grid ColumnDefinitions="24,*">
               <controls:DaisyIcon Icon="info" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />

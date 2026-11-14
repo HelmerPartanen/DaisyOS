@@ -60,7 +60,12 @@ public sealed class DaisyLaunchClient
             entry.GetProperty("icon").GetString()!, false, AppLaunchKind.DesktopEntry,
             argv.FirstOrDefault(), LaunchArguments: argv.Skip(1).ToArray(), Categories: entry.GetProperty("categories").EnumerateArray().Select(c => c.GetString()!).ToArray(),
             SearchTerms: new[] { DesktopEntryLocalization.GetValue(labels, "GenericName") ?? "" }
-                .Concat((DesktopEntryLocalization.GetValue(labels, "Keywords") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries)).ToArray());
+                .Concat((DesktopEntryLocalization.GetValue(labels, "Keywords") ?? "").Split(';', StringSplitOptions.RemoveEmptyEntries)).ToArray())
+        {
+            DesktopActions = entry.TryGetProperty("actions", out var actions) ? actions.EnumerateArray()
+                .Select(action => new AppDesktopAction(action.GetProperty("id").GetString()!, action.GetProperty("name").GetString()!,
+                    action.TryGetProperty("icon", out var icon) ? icon.GetString() : null)).ToArray() : []
+        };
     }
 
     private static MessageBuffer Call(DBusConnection connection, string member, string signature = "", params string[] strings)
