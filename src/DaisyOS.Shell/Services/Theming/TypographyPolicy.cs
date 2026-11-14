@@ -11,17 +11,17 @@ public static class TypographyPolicy
     // Request proportional alternates explicitly; some UI fonts default to tabular digits.
     public static FontFeatureCollection ProportionalNumerals { get; } = FontFeatureCollection.Parse("tnum=0,pnum=1");
 
-    public const string DefaultFamilyName = "Inter";
-    public const string BundledDefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter";
+    public const string DefaultFamilyName = "Noto Sans";
+    public const string BundledInterFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter";
 
     public static FontFamily ResolveFontFamily(string? family)
     {
         family = string.IsNullOrWhiteSpace(family) ? DefaultFamilyName : family.Trim();
-        var primary = family.Equals(DefaultFamilyName, StringComparison.OrdinalIgnoreCase)
-            ? BundledDefaultFamilyName
+        var primary = family.Equals("Inter", StringComparison.OrdinalIgnoreCase)
+            ? BundledInterFamilyName
             : family.Equals("Atkinson Hyperlegible", StringComparison.OrdinalIgnoreCase)
                 ? "avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible" : family;
-        return new FontFamily(primary + ", Noto Sans, DejaVu Sans");
+        return new FontFamily(primary.Equals(DefaultFamilyName, StringComparison.OrdinalIgnoreCase) ? "Noto Sans, DejaVu Sans" : primary + ", Noto Sans, DejaVu Sans");
     }
 
     private static readonly (string Role, double Size, double Line)[] Roles =

@@ -18,7 +18,7 @@ Directory.CreateDirectory(output);
 AppBuilder.Configure<MonitorQaApp>()
     .UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
     .UseSkia().UseHarfBuzz()
-    .With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" })
+    .With(new FontManagerOptions { DefaultFamilyName = "Noto Sans" })
     .SetupWithoutStarting();
 
 foreach (var (id, label, expected) in new[] { ("files", "files", "Files"), ("taskmanager", "taskmanager", "System Monitor"), ("org.daisyos.appstore.desktop", "appstore", "App Store"), ("custom", "my LibreOffice app", "My LibreOffice App") })

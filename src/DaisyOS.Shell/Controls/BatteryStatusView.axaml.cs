@@ -9,6 +9,8 @@ public partial class BatteryStatusView : UserControl
         AvaloniaProperty.Register<BatteryStatusView, int>(nameof(ChargePercent));
     public static readonly StyledProperty<string> StateTextProperty =
         AvaloniaProperty.Register<BatteryStatusView, string>(nameof(StateText), string.Empty);
+    public static readonly StyledProperty<bool> ShowIconProperty =
+        AvaloniaProperty.Register<BatteryStatusView, bool>(nameof(ShowIcon), true);
     public static readonly StyledProperty<bool> ShowStateProperty =
         AvaloniaProperty.Register<BatteryStatusView, bool>(nameof(ShowState));
     public static readonly StyledProperty<bool> IsChargingProperty =
@@ -41,6 +43,7 @@ public partial class BatteryStatusView : UserControl
         set => SetValue(ChargePercentProperty, Math.Clamp(value, 0, 100));
     }
     public string StateText { get => GetValue(StateTextProperty); set => SetValue(StateTextProperty, value); }
+    public bool ShowIcon { get => GetValue(ShowIconProperty); set => SetValue(ShowIconProperty, value); }
     public bool ShowState { get => GetValue(ShowStateProperty); set => SetValue(ShowStateProperty, value); }
     public bool IsCharging { get => GetValue(IsChargingProperty); set => SetValue(IsChargingProperty, value); }
     public double IconWidth { get => GetValue(IconWidthProperty); set => SetValue(IconWidthProperty, value); }

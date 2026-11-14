@@ -14,6 +14,7 @@ namespace DaisyOS.Shell.Services.Serialization;
     PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase,
     PropertyNameCaseInsensitive = true)]
 [JsonSerializable(typeof(AppearanceSettings))]
+[JsonSerializable(typeof(TaskbarPreferences))]
 [JsonSerializable(typeof(LockScreenAppearance))]
 [JsonSerializable(typeof(DaisyOS.Shell.Services.Wallpaper.VideoWallpaper.VideoOptimizationStatus))]
 [JsonSerializable(typeof(DesktopLayoutConfig))]

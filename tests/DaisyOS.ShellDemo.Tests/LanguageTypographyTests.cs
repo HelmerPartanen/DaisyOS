@@ -18,6 +18,16 @@ namespace DaisyOS.ShellDemo.Tests;
 
 public sealed class LanguageTypographyTests
 {
+    [Fact]
+    public void DefaultFontIsNotoSansAndInterRemainsAnExplicitChoice()
+    {
+        Assert.Equal("Noto Sans", TypographyPolicy.DefaultFamilyName);
+        Assert.Equal("Noto Sans", TypographyPolicy.ResolveFontFamily(null).Name);
+        Assert.DoesNotContain("Inter", TypographyPolicy.ResolveFontFamily(null).ToString());
+        Assert.Contains("#Inter", TypographyPolicy.ResolveFontFamily("Inter").ToString());
+        Assert.Equal("Noto Sans", new DaisyOS.Shell.Services.Appearance.AppearanceSettings().SystemFontFamily);
+    }
+
     [AvaloniaTheory]
     [InlineData("Inter")]
     [InlineData("Atkinson Hyperlegible")]
@@ -59,10 +69,10 @@ public sealed class LanguageTypographyTests
     [InlineData(FontWeight.Medium, FontStyle.Italic)]
     [InlineData(FontWeight.SemiBold, FontStyle.Normal)]
     [InlineData(FontWeight.SemiBold, FontStyle.Italic)]
-    public void DefaultFontUsesTheBundledFaceWithoutSyntheticStyles(FontWeight weight, FontStyle style)
+    public void DefaultFontUsesNotoSansWithoutSyntheticStyles(FontWeight weight, FontStyle style)
     {
         var face = new Typeface(TypographyPolicy.ResolveFontFamily(null), style, weight).GlyphTypeface;
-        // Inter's static medium/semibold faces retain their legacy family names.
+        // Installed static medium and semibold faces expose weight-specific family names.
         var suffix = weight == FontWeight.Medium ? " Medium" : weight == FontWeight.SemiBold ? " SemiBold" : "";
         Assert.Equal(TypographyPolicy.DefaultFamilyName + suffix, face.FamilyName);
         Assert.Equal(weight, face.Weight);

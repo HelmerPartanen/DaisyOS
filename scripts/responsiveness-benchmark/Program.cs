@@ -22,7 +22,7 @@ var samples = args.Length == 2 ? int.Parse(args[1]) : 40;
 if (samples < 5) throw new ArgumentException("At least five samples are required.");
 LinuxTextIsolation();
 AppBuilder.Configure<QaApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" }).SetupWithoutStarting();
+    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = "Noto Sans" }).SetupWithoutStarting();
 var fixture = Directory.CreateTempSubdirectory("daisy-launcher-benchmark-");
 try
 {

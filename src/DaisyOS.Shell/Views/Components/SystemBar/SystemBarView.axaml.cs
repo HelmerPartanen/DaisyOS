@@ -87,24 +87,87 @@ public partial class SystemBarView : UserControl
     public bool IsNotificationPanelVisible => GuiMotion.IsOpen(_notifications);
     public bool IsCalendarPanelVisible => GuiMotion.IsOpen(_calendar);
 
-    public Control DetachFlyoutsForNativeOverlay()
+    private bool _verticalDock;
+    private Services.Appearance.DockEdge _dockEdge;
+    internal Services.Shell.BottomChromeOverlayHost? DockOverlay { get; private set; }
+    public void SetDockEdge(Services.Appearance.DockEdge edge)
+    {
+        if (_dockEdge != edge)
+        {
+            HideQuickSettingsPanel(immediate: true);
+            HideNotificationPanel(immediate: true);
+            HideCalendarPanel(immediate: true);
+            HideAppTrayPanel(immediate: true);
+        }
+        _dockEdge = edge;
+        _verticalDock = Services.Shell.DockGeometry.IsVertical(edge);
+        var frame = this.FindControl<Border>("SystemBarFrame")!;
+        frame.Height = _verticalDock ? double.NaN : 52;
+        frame.Width = _verticalDock ? ShellSurfacePlan.VerticalSystemBarWidth : double.NaN;
+        var items = this.FindControl<StackPanel>("SystemDockItems")!;
+        items.Orientation = _verticalDock ? Avalonia.Layout.Orientation.Vertical : Avalonia.Layout.Orientation.Horizontal;
+        items.Spacing = _verticalDock ? 4 : 0;
+        var status = this.FindControl<StackPanel>("QuickStatusItems")!;
+        status.IsVisible = true;
+        status.Orientation = _verticalDock ? Avalonia.Layout.Orientation.Vertical : Avalonia.Layout.Orientation.Horizontal;
+        status.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center;
+        status.Spacing = 12;
+        this.FindControl<BatteryStatusView>("SystemBarBattery")!.ShowIcon = !_verticalDock;
+        _trayChevron.Icon = edge switch
+        {
+            Services.Appearance.DockEdge.Left => "caret-right", Services.Appearance.DockEdge.Right => "caret-left",
+            Services.Appearance.DockEdge.Top => "caret-down", _ => "caret-up"
+        };
+        foreach (var name in new[] { "CalendarButton", "QuickSettingsButton" })
+        {
+            var button = this.FindControl<Button>(name)!;
+            Avalonia.Data.BindingOperations.GetBindingExpressionBase(button, HeightProperty)?.Dispose();
+            button.Height = _verticalDock ? double.NaN : 40;
+            button.Width = _verticalDock ? 40 : double.NaN;
+            button.Padding = _verticalDock ? new Thickness(0, 8) : new Thickness(8, 0);
+        }
+        foreach (var name in new[] { "CalendarContent", "QuickSettingsContent" })
+        {
+            var content = this.FindControl<Border>(name)!;
+            Avalonia.Data.BindingOperations.GetBindingExpressionBase(content, HeightProperty)?.Dispose();
+            content.Height = _verticalDock ? double.NaN : 40;
+        }
+        var calendar = this.FindControl<StackPanel>("CalendarValues")!;
+        calendar.Orientation = _verticalDock ? Avalonia.Layout.Orientation.Vertical : Avalonia.Layout.Orientation.Horizontal;
+        calendar.Spacing = 12;
+        void Radius(Border border, string normalKey)
+        {
+            Avalonia.Data.BindingOperations.GetBindingExpressionBase(border, Border.CornerRadiusProperty)?.Dispose();
+            border.Bind(Border.CornerRadiusProperty, border.GetResourceObservable(normalKey));
+        }
+        Radius(frame, "RoundedXL");
+        Radius(this.FindControl<Border>("SystemBarInnerFrame")!, "RoundedXLInset");
+        Radius(this.FindControl<Border>("SystemBarFill")!, "RoundedXLDoubleInset");
+        foreach (var name in new[] { "AppTrayButton", "NotificationsButton" })
+            this.FindControl<Button>(name)!.HorizontalAlignment = _verticalDock ? Avalonia.Layout.HorizontalAlignment.Center : Avalonia.Layout.HorizontalAlignment.Stretch;
+        var clock = this.FindControl<TextBlock>("ClockText")!;
+        clock.SetCurrentValue(TextBlock.FontSizeProperty, this.TryFindResource("TypeSizeBodySmall", out var fontSize) && fontSize is double value ? value : 13);
+        DockOverlay?.SetDockEdge(edge);
+        UpdateClock(); InvalidateMeasure();
+    }
+
+    public Control DetachFlyoutsForNativeOverlay(double reservedExtent = ShellSurfacePlan.PrimaryPanelExclusiveZone)
     {
         var overlay = new BottomChromeOverlayHost();
+        DockOverlay = overlay;
         if (Content is not Grid root)
             return overlay;
 
-        // Keep the cards on a viewport that ends three pixels above the
-        // visible bottom chrome. Their transforms are clipped at this fixed
-        // edge, leaving the blur and card opacity untouched. Context menus
-        // added to the outer host remain outside this clipping viewport.
+        // Clip flyouts at the reserved dock edge while menus in the outer
+        // host retain access to the full output. Each flyout is positioned
+        // relative to its own button when opened.
 
         foreach (var name in new[] { "QuickSettingsPanel", "NotificationDrawer", "CalendarPanel", "AppTrayPanel" })
         {
             if (this.FindControl<Control>(name) is { } panel)
             {
                 root.Children.Remove(panel);
-                // The viewport itself ends at the shared bar clearance, so
-                // cards rest flush against that clip boundary.
+                // Initial fallback until the opening button supplies its position.
                 panel.Margin = new Thickness(
                     0,
                     0,
@@ -114,7 +177,27 @@ public partial class SystemBarView : UserControl
             }
         }
 
+        overlay.SetDockEdge(_dockEdge, reservedExtent);
         return overlay;
+    }
+
+    private void PositionFlyout(Control panel, string buttonName) =>
+        DockPopupPlacement.Position(panel, this.FindControl<Button>(buttonName)!, _dockEdge);
+
+    private Point FlyoutOffset(Control panel)
+    {
+        var margin = panel.Margin;
+        var width = Math.Max(panel.Bounds.Width, panel.DesiredSize.Width - margin.Left - margin.Right);
+        var height = Math.Max(panel.Bounds.Height, panel.DesiredSize.Height - margin.Top - margin.Bottom);
+        var viewport = (panel.Parent as Control)?.Bounds.Size ?? default;
+        var distance = _dockEdge switch
+        {
+            Services.Appearance.DockEdge.Top => height + margin.Top,
+            Services.Appearance.DockEdge.Left => width + margin.Left,
+            Services.Appearance.DockEdge.Right => viewport.Width - margin.Left,
+            _ => viewport.Height - margin.Top
+        };
+        return Services.Shell.DockGeometry.Slide(_dockEdge, Math.Max(GuiMotion.ShellSlideDistance, distance + 6));
     }
 
     private void RaiseFlyoutVisibilityChanged() =>
@@ -128,8 +211,9 @@ public partial class SystemBarView : UserControl
         _quickSettings.ShowPanel();
         HideNotificationPanel(immediate: true);
         HideCalendarPanel(immediate: true);
+        PositionFlyout(_quickSettings, "QuickSettingsButton");
         _ = GuiMotion.SetVisibleAsync(_quickSettings, _quickSettings.MaterialSurface, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
+            immediate: false, offset: FlyoutOffset(_quickSettings), durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         QueueStatusRefresh();
         SetFlyoutButtonActive("QuickSettingsButton", true);
         RaiseFlyoutVisibilityChanged();
@@ -139,7 +223,7 @@ public partial class SystemBarView : UserControl
     public void HideQuickSettingsPanel(bool immediate = false)
     {
         _ = GuiMotion.SetVisibleAsync(_quickSettings, _quickSettings.MaterialSurface, false, RaiseFlyoutVisibilityChanged, immediate,
-            GuiMotion.ShellSlideDistance, GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
+            FlyoutOffset(_quickSettings), GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
         SetFlyoutButtonActive("QuickSettingsButton", false);
         RaiseFlyoutVisibilityChanged();
     }
@@ -148,8 +232,9 @@ public partial class SystemBarView : UserControl
     {
         Services.Diagnostics.ResponsivenessTrace.Feedback(this, "notification-center");
         HideAppTrayPanel(immediate: true);
+        PositionFlyout(_notifications, "NotificationsButton");
         _ = GuiMotion.SetVisibleAsync(_notifications, NotificationMaterialFrame, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
+            immediate: false, offset: FlyoutOffset(_notifications), durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         HideQuickSettingsPanel(immediate: true);
         HideCalendarPanel(immediate: true);
         SetFlyoutButtonActive("NotificationsButton", true);
@@ -159,7 +244,7 @@ public partial class SystemBarView : UserControl
     public void HideNotificationPanel(bool immediate = false)
     {
         _ = GuiMotion.SetVisibleAsync(_notifications, NotificationMaterialFrame, false, RaiseFlyoutVisibilityChanged, immediate,
-            GuiMotion.ShellSlideDistance, GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
+            FlyoutOffset(_notifications), GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
         SetFlyoutButtonActive("NotificationsButton", false);
         RaiseFlyoutVisibilityChanged();
     }
@@ -168,8 +253,9 @@ public partial class SystemBarView : UserControl
     {
         Services.Diagnostics.ResponsivenessTrace.Feedback(this, "calendar");
         HideAppTrayPanel(immediate: true);
+        PositionFlyout(_calendar, "CalendarButton");
         _ = GuiMotion.SetVisibleAsync(_calendar, _calendar, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
+            immediate: false, offset: FlyoutOffset(_calendar), durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         HideQuickSettingsPanel(immediate: true);
         HideNotificationPanel(immediate: true);
         SetFlyoutButtonActive("CalendarButton", true);
@@ -179,7 +265,7 @@ public partial class SystemBarView : UserControl
     public void HideCalendarPanel(bool immediate = false)
     {
         _ = GuiMotion.SetVisibleAsync(_calendar, _calendar, false, RaiseFlyoutVisibilityChanged, immediate,
-            GuiMotion.ShellSlideDistance, GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
+            FlyoutOffset(_calendar), GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
         SetFlyoutButtonActive("CalendarButton", false);
         RaiseFlyoutVisibilityChanged();
     }
@@ -190,8 +276,9 @@ public partial class SystemBarView : UserControl
         HideQuickSettingsPanel(immediate: true);
         HideNotificationPanel(immediate: true);
         HideCalendarPanel(immediate: true);
+        PositionFlyout(_appTray, "AppTrayButton");
         _ = GuiMotion.SetVisibleAsync(_appTray, _appTray.MaterialSurface, true, RaiseFlyoutVisibilityChanged,
-            offset: GuiMotion.ShellSlideDistance, durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
+            immediate: false, offset: FlyoutOffset(_appTray), durationOverride: GuiMotion.ShellSlideDuration(this, true), fadeOnEnter: false);
         ConfigureTrayTransition();
         _trayChevron.RenderTransform = TransformOperations.Parse("rotate(180deg)");
         SetFlyoutButtonActive("AppTrayButton", true);
@@ -201,7 +288,7 @@ public partial class SystemBarView : UserControl
     public void HideAppTrayPanel(bool immediate = false)
     {
         _ = GuiMotion.SetVisibleAsync(_appTray, _appTray.MaterialSurface, false, RaiseFlyoutVisibilityChanged, immediate,
-            GuiMotion.ShellSlideDistance, GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
+            FlyoutOffset(_appTray), GuiMotion.ShellSlideDuration(this, false), fadeOnExit: false);
         ConfigureTrayTransition();
         _trayChevron.RenderTransform = TransformOperations.Parse("rotate(0deg)");
         SetFlyoutButtonActive("AppTrayButton", false);
@@ -314,6 +401,13 @@ public partial class SystemBarView : UserControl
         // separator, weekday language, and local timezone. For example, this
         // becomes "su 23.8 03.36" in Finnish and "Sun 8/23 3:36 AM" in US English.
         var clockValue = now.ToString(timePattern, culture);
+        ToolTip.SetTip(this.FindControl<Button>("CalendarButton")!, now.ToString("f", culture));
+        if (_verticalDock)
+        {
+            // Keep the compact clock on one line; the full regional time and
+            // date remain available as its tooltip and in the calendar.
+            clockValue = now.ToString(timePattern.Replace(" tt", "").Replace("tt", "").Trim(), culture);
+        }
         if (_clockText is not null && !string.Equals(clockValue, _lastClockValue, StringComparison.Ordinal))
         {
             _lastClockValue = clockValue;
@@ -327,7 +421,8 @@ public partial class SystemBarView : UserControl
             // the weekday in the shell language so an English DaisyOS session
             // in Helsinki reads "Sun 23.8", not an unexpectedly translated
             // label; a Finnish shell naturally renders "su 23.8" instead.
-            var dateValue = $"{now.ToString("ddd", CultureInfo.CurrentCulture)} {now.ToString(GetCompactDatePattern(culture.DateTimeFormat.ShortDatePattern), culture)}";
+            var numericDate = now.ToString(GetCompactDatePattern(culture.DateTimeFormat.ShortDatePattern), culture);
+            var dateValue = _verticalDock ? numericDate : $"{now.ToString("ddd", CultureInfo.CurrentCulture)} {numericDate}";
             if (!string.Equals(dateValue, _lastDateValue, StringComparison.Ordinal))
             {
                 _lastDateValue = dateValue;

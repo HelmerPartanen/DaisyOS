@@ -60,7 +60,9 @@ public sealed class DesktopSettingsTests
             Assert.Empty(battery.GetVisualDescendants().OfType<BatteryLevelIcon>());
             window.SelectCategory("Appearance");
             Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
-            Assert.True(view.FindControl<ToggleSwitch>("BottomComponentsAutoHideToggle")!.IsEffectivelyVisible);
+            Assert.Null(view.FindControl<ToggleSwitch>("BottomComponentsAutoHideToggle"));
+            window.SelectCategory("Taskbar"); Dispatcher.UIThread.RunJobs(); window.UpdateLayout();
+            Assert.True(view.GetVisualDescendants().OfType<ToggleSwitch>().Single(x => x.Name == "TaskbarAutoHideToggle").IsEffectivelyVisible);
             Assert.Null(view.FindControl<ComboBox>("TaskbarVisibilityPicker"));
             Assert.Null(view.FindControl<ComboBox>("SystemBarVisibilityPicker"));
             Assert.Null(view.FindControl<ComboBox>("MediaWidgetVisibilityPicker"));

@@ -321,6 +321,13 @@
             </Grid>
           </Button>
 
+          <Button x:Name="NavTaskbar" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Taskbar">
+            <Grid ColumnDefinitions="24,*">
+              <controls:DaisyIcon Icon="desktop" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
+              <TextBlock Grid.Column="1" Text="{DynamicResource Loc_366F0E927D5C}" Classes="NavLabel" />
+            </Grid>
+          </Button>
+
           <Button x:Name="NavDesktop" Classes="Large SettingsNavItem" Click="OnNavCategoryClicked" Tag="Desktop">
             <Grid ColumnDefinitions="24,*">
               <controls:DaisyIcon Icon="desktop" Classes="NavIcon" Foreground="{DynamicResource ContentPrimaryBrush}" />
@@ -678,37 +685,6 @@
                 </Border>
               </StackPanel>
             </Border>
-
-            <StackPanel Spacing="12">
-              <StackPanel Spacing="6">
-                <TextBlock Text="{DynamicResource Loc_07BC589AFE54}" Classes="SettingsSectionTitle" />
-                <TextBlock Text="{DynamicResource Loc_4279B29E7899}" Classes="SettingsDescription" TextWrapping="Wrap" />
-              </StackPanel>
-              <Border Classes="SettingsGroupCard">
-                <StackPanel>
-                  <Border Classes="SettingsGroupRow">
-                    <Grid ColumnDefinitions="Auto,*,220" ColumnSpacing="12">
-                      <controls:DaisyIcon Icon="dock" Classes="SettingsRowIcon" />
-                      <TextBlock Grid.Column="1" Text="{DynamicResource Loc_86C9A2D06EFC}" Classes="SettingsLabel" VerticalAlignment="Center" />
-                      <controls:QuickSettingsSlider x:Name="TaskbarSizeSlider" Grid.Column="2" Minimum="0" Maximum="2" Value="1"
-                                                    StepFrequency="1" ShowTicks="True" ShowIcon="False"
-                                                    ValueChanged="OnTaskbarSizeChanged" AutomationProperties.Name="{DynamicResource Loc_86C9A2D06EFC}" />
-                    </Grid>
-                  </Border>
-                  <Border Height="1" Background="{DynamicResource StrokeDefaultBrush}" Margin="20,0" />
-                  <Border Classes="SettingsGroupRow">
-                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
-                      <controls:DaisyIcon Icon="dock" Classes="SettingsRowIcon" />
-                      <StackPanel Grid.Column="1" Spacing="3" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource Loc_FBAF77989809}" Classes="SettingsLabel" />
-                        <TextBlock Text="{DynamicResource Loc_AB963EF0850B}" Classes="SettingsDescription" TextWrapping="Wrap" />
-                      </StackPanel>
-                      <ToggleSwitch x:Name="BottomComponentsAutoHideToggle" Grid.Column="2" VerticalAlignment="Center" Click="OnBottomComponentsAutoHideToggled" />
-                    </Grid>
-                  </Border>
-                </StackPanel>
-              </Border>
-            </StackPanel>
 
             <TextBlock Text="{DynamicResource Loc_88C45D9E526C}" Classes="SettingsSectionTitle" Margin="0,4,0,-12" />
             <Border Classes="SettingsGroupCard">

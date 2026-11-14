@@ -19,6 +19,7 @@ internal sealed class LayerShellWindowImpl : WindowImpl
     private WaylandSurfaceCreateResult<WLayerSurfaceProxy>? _layerHandle;
     private WLayerSurfaceProxy? _layerSurfaceProxy;
     private int[] _blurRegions = [];
+    private int[]? _inputRectangles;
 
     public LayerShellWindowImpl(WaylandWorkerClient client, LayerShellOptions options)
         : base(client, createInitialSink: false)
@@ -70,12 +71,25 @@ internal sealed class LayerShellWindowImpl : WindowImpl
         _layerSurfaceProxy?.SetOutputName(outputName);
     }
 
+    internal void SetGeometry(ZwlrLayerSurfaceV1.Anchor anchor, uint width, uint height)
+    {
+        _options = _options with { Anchor = anchor, Width = width, Height = height };
+        _layerSurfaceProxy?.SetGeometry(anchor, width, height);
+    }
+
     internal void SetExclusiveZone(int exclusiveZone)
     {
         if (exclusiveZone < -1)
             throw new ArgumentOutOfRangeException(nameof(exclusiveZone));
 
+        _options = _options with { ExclusiveZone = exclusiveZone };
         _layerSurfaceProxy?.SetExclusiveZone(exclusiveZone);
+    }
+
+    internal void SetInputRectangles(int[] rectangles)
+    {
+        _inputRectangles = rectangles;
+        _layerSurfaceProxy?.SetInputRectangles(rectangles);
     }
 
     internal void SetBlurRegions(int[] regions)
@@ -119,6 +133,7 @@ internal sealed class LayerShellWindowImpl : WindowImpl
             parent._layerSurfaceProxy = _surfaceProxy;
             _surfaceProxy.SetCursor(parent.CurrentCursor?.Cursor);
             _surfaceProxy.SetBlurRegions(parent._blurRegions);
+            if (parent._inputRectangles is { } rectangles) _surfaceProxy.SetInputRectangles(rectangles);
 
             // Unlike an xdg toplevel, a layer surface must not synchronously
             // wait for its first configure while Avalonia is constructing the

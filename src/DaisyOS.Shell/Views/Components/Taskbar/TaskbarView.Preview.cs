@@ -24,7 +24,7 @@ public partial class TaskbarView
         _previewDelay?.Stop();
         _previewButton = button;
         _previewToken = Guid.NewGuid().ToString("N");
-        if (!PreviewWindows(button).Any() || !TaskbarPreviewState.IsAvailable) return;
+        if (!PreviewsEnabled || !PreviewWindows(button).Any() || !TaskbarPreviewState.IsAvailable) return;
         ToolTip.SetIsOpen(button, false);
         ToolTip.SetShowDelay(button, int.MaxValue);
         ToolTip.SetBetweenShowDelay(button, -1);
@@ -70,7 +70,7 @@ public partial class TaskbarView
     private void PublishHoverPreview()
     {
         var button = _previewButton;
-        if (button is null || !button.IsPointerOver || !TaskbarPreviewState.IsAvailable) { HideHoverPreview(); return; }
+        if (!PreviewsEnabled || button is null || !button.IsPointerOver || !TaskbarPreviewState.IsAvailable) { HideHoverPreview(); return; }
         var windows = PreviewWindows(button);
         if (windows.Length == 0) { HideHoverPreview(); return; }
         var top = TopLevel.GetTopLevel(button);
@@ -98,12 +98,12 @@ public partial class TaskbarView
             Color("ContentPrimaryBrush", "#fff5f5f7"), Color("StrokeDefaultBrush", "#ff444444"),
             Color("StateHoverBrush", "#20ffffff"), Color("ActionDangerHoverBrush", "#ffb8212c"),
             Application.Current is App { ReduceMotionEnabled: true }, IsNativePanelHosted ? top.Bounds.Height : 0,
-            Color("ContentOnActionBrush", "#ffffffff")));
+            Color("ContentOnActionBrush", "#ffffffff"), DockEdge.ToString(), IsNativePanelHosted ? top.Bounds.Width : 0));
         _previewShown = true;
     }
 
     internal bool HasHoverPreview(Control owner) => owner is Button button &&
-        TaskbarPreviewState.IsAvailable && PreviewWindows(button).Length > 0;
+        PreviewsEnabled && TaskbarPreviewState.IsAvailable && PreviewWindows(button).Length > 0;
 
     private static void RestorePreviewTooltip(Button button)
     {

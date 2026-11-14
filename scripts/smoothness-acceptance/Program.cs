@@ -38,7 +38,7 @@ if (Environment.GetEnvironmentVariable("DAISYOS_ACCEPTANCE_FRAME_TRACE") == "1" 
 var platformOptions = new WaylandPlatformOptions { UseDmabufSwapchain = Environment.GetEnvironmentVariable("DAISYOS_ACCEPTANCE_DMABUF") == "1" };
 if (Environment.GetEnvironmentVariable("DAISYOS_ACCEPTANCE_SOFTWARE") == "1") platformOptions.GlProfiles.Clear();
 AppBuilder.Configure<AcceptanceApp>().UseSkia().UseHarfBuzz()
-    .With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" })
+    .With(new FontManagerOptions { DefaultFamilyName = "Noto Sans" })
     .With(platformOptions).UseWayland()
     .StartWithClassicDesktopLifetime([]);
 return AcceptanceApp.ExitCode;

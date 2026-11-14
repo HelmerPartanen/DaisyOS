@@ -71,6 +71,8 @@ internal interface ILayerSurface : IWSurface
     void SetInputPassthrough(bool inputPassthrough);
     void SetKeyboardInteractivity(ZwlrLayerSurfaceV1.KeyboardInteractivity interactivity);
     void SetExclusiveZone(int exclusiveZone);
+    void SetGeometry(ZwlrLayerSurfaceV1.Anchor anchor, uint width, uint height);
+    void SetInputRectangles(int[] rectangles);
     void SetOutputName(string outputName);
     void SetBlurRegions(int[] regions);
 }

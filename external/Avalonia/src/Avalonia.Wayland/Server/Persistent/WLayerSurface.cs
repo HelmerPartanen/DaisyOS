@@ -46,6 +46,7 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
     private uint? _latestConfigureSerial;
     private bool _configured;
     private bool _inputPassthrough;
+    private int[]? _inputRectangles;
     private int _exclusiveZone;
     private ZwlrLayerSurfaceV1.KeyboardInteractivity _keyboardInteractivity;
     private readonly TaskCompletionSource<XdgConfigureBatch> _initialConfigure = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -154,6 +155,17 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
         Worker.WakeupRenderLoop();
     }
 
+    public void SetGeometry(ZwlrLayerSurfaceV1.Anchor anchor, uint width, uint height)
+    {
+        _options = _options with { Anchor = anchor, Width = width, Height = height };
+        if (_layerSurface is null || WlSurface is null) return;
+        // Commit the complete geometry together. An intermediate zero size
+        // with only one axis anchored is invalid in the layer-shell protocol.
+        _layerSurface.SetAnchor(anchor);
+        _layerSurface.SetSize(width, height);
+        WlSurface.Commit();
+    }
+
     public void SetExclusiveZone(int exclusiveZone)
     {
         if (exclusiveZone < -1)
@@ -167,12 +179,19 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
         WlSurface.Commit();
     }
 
+    public void SetInputRectangles(int[] rectangles)
+    {
+        _inputRectangles = rectangles;
+        if (WlSurface is null) return;
+        ApplyInputRegion(); WlSurface.Commit();
+    }
+
     private void ApplyInputRegion()
     {
         if (WlSurface is null)
             return;
 
-        if (!_inputPassthrough)
+        if (!_inputPassthrough && _inputRectangles is null)
         {
             // A null region restores the protocol default: the full surface
             // accepts input.
@@ -184,6 +203,10 @@ internal sealed class WLayerSurface : WSurface, ILayerSurface
         // real empty wl_region so the compositor hit-tests the layer below
         // while this transient surface is visually hidden.
         var emptyRegion = Globals!.WlCompositor.CreateRegion(new EmptyRegionListener(), Connection!.Queue);
+        if (!_inputPassthrough && _inputRectangles is { } rectangles)
+            for (var offset = 0; offset + 3 < rectangles.Length; offset += 4)
+                if (rectangles[offset + 2] > 0 && rectangles[offset + 3] > 0)
+                    emptyRegion.Add(rectangles[offset], rectangles[offset + 1], rectangles[offset + 2], rectangles[offset + 3]);
         WlSurface.SetInputRegion(emptyRegion);
         emptyRegion.Destroy();
     }

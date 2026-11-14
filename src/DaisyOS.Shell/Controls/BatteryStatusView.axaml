@@ -4,7 +4,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:controls="clr-namespace:DaisyOS.Shell.Controls">
   <StackPanel Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
-    <Grid Width="{Binding IconWidth, ElementName=Root}"
+    <Grid IsVisible="{Binding ShowIcon, ElementName=Root}"
+          Width="{Binding IconWidth, ElementName=Root}"
           Height="{Binding IconHeight, ElementName=Root}">
       <controls:BatteryLevelIcon x:Name="LevelIcon"
                                  Percentage="{Binding ChargePercent, ElementName=Root}"

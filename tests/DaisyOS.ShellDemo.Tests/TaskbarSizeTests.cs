@@ -1,3 +1,4 @@
+using Avalonia.VisualTree;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -42,17 +43,17 @@ public sealed class TaskbarSizeTests
     }
 
     [AvaloniaFact]
-    public void AppearanceShowsThreeSnappingSizeStops()
+    public void TaskbarPageShowsThreeSnappingSizeStops()
     {
         var window = new DaisyOS.Shell.Apps.System.Settings.SettingsWindow { Width = 1040, Height = 850 };
         window.Show();
         try
         {
-            window.SelectCategory("Appearance");
+            window.SelectCategory("Taskbar");
             Dispatcher.UIThread.RunJobs();
             window.UpdateLayout();
             var view = window.FindControl<DaisyOS.Shell.Apps.System.Settings.SettingsView>("SettingsContent")!;
-            var slider = view.FindControl<DaisyOS.Shell.Controls.QuickSettingsSlider>("TaskbarSizeSlider")!;
+            var slider = view.GetVisualDescendants().OfType<DaisyOS.Shell.Controls.QuickSettingsSlider>().Single(x => x.Name == "TaskbarSizeSlider");
             Assert.Equal(0, slider.Minimum);
             Assert.Equal(2, slider.Maximum);
             Assert.Equal(1, slider.Value);

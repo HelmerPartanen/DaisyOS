@@ -259,6 +259,26 @@ public partial class MediaWidget : UserControl
     private async void OnPlayPauseClicked(object? sender, RoutedEventArgs e) => await RunMediaCommandAsync(_mediaService.PlayPauseAsync);
     private async void OnNextClicked(object? sender, RoutedEventArgs e) => await RunMediaCommandAsync(_mediaService.NextAsync);
 
+    internal bool IsNativePanelHosted { get; set; }
+    private Services.Appearance.DockEdge _dockEdge;
+    public void SetDockEdge(Services.Appearance.DockEdge edge)
+    {
+        if (_dockEdge != edge) HideContextMenu();
+        _dockEdge = edge;
+        var vertical = Services.Shell.DockGeometry.IsVertical(edge);
+        Width = vertical ? 52 : 380; Height = vertical ? 184 : 52;
+        this.FindControl<Border>("MediaFrame")!.Height = Height;
+        var grid = this.FindControl<Grid>("MediaDockGrid")!;
+        grid.ColumnDefinitions = new ColumnDefinitions(vertical ? "*" : "44,*,120,28");
+        grid.RowDefinitions = new RowDefinitions(vertical ? "44,8,*" : "*");
+        this.FindControl<StackPanel>("MediaDockMetadata")!.IsVisible = !vertical;
+        this.FindControl<Canvas>("SpectrumCanvas")!.IsVisible = !vertical;
+        var actions = this.FindControl<StackPanel>("MediaDockActions")!;
+        actions.Orientation = vertical ? Avalonia.Layout.Orientation.Vertical : Avalonia.Layout.Orientation.Horizontal;
+        Grid.SetColumn(actions, vertical ? 0 : 2); Grid.SetRow(actions, vertical ? 2 : 0);
+        InvalidateMeasure();
+    }
+
     public bool IsContextMenuVisible => _contextMenuHost?.IsVisible == true;
 
     public Control? DetachContextMenuForNativeOverlay()
@@ -277,6 +297,7 @@ public partial class MediaWidget : UserControl
     public void ShowContextMenu()
     {
         if (_contextMenuHost is null) return;
+        Services.Shell.DockPopupPlacement.Position(_contextMenuHost, this.FindControl<Border>("MediaFrame")!, _dockEdge, IsNativePanelHosted);
         _contextMenuHost.IsVisible = true;
         ContextMenuVisibilityChanged?.Invoke(this, true);
     }

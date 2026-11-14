@@ -69,25 +69,25 @@
 <!-- ========================================================= -->
 
 <controls:ShellFrameBorder x:Name="SystemBarFrame"
-        Height="{DynamicResource ShellChromeHeight}"
+        Height="52"
         HorizontalAlignment="Right"
         VerticalAlignment="Bottom"
         Padding="0"
         Background="Transparent" BorderBrush="{DynamicResource ShellFrameOuterEdgeBrush}" BorderThickness="{DynamicResource ShellFrameBorderThickness}"
         CornerRadius="{DynamicResource RoundedXL}">
 
-  <controls:ShellFrameBorder Background="Transparent"
+  <controls:ShellFrameBorder x:Name="SystemBarInnerFrame" Background="Transparent"
           BorderBrush="{DynamicResource ShellSurfaceInnerBorderBrush}" BackgroundSizing="InnerBorderEdge"
           BorderThickness="{DynamicResource ShellFrameBorderThickness}"
           CornerRadius="{DynamicResource RoundedXLInset}">
 
     <!-- The two frame pixels leave the original 4px content inset and 40px controls intact. -->
-    <Border Background="{DynamicResource SurfaceBaseBrush}"
+    <Border x:Name="SystemBarFill" Background="{DynamicResource SurfaceBaseBrush}"
             Padding="4"
             CornerRadius="{DynamicResource RoundedXLDoubleInset}"
             ClipToBounds="True">
 
-      <StackPanel
+      <StackPanel x:Name="SystemDockItems"
           Orientation="Horizontal"
           VerticalAlignment="Center"
           Spacing="0">
@@ -121,13 +121,14 @@
                 ToolTip.Tip="{DynamicResource Loc_6BED1F88D239}"
                 Click="OnQuickSettingsRequested">
 
-          <Border Height="{DynamicResource ControlHeightStandard}"
+          <Border x:Name="QuickSettingsContent" Height="{DynamicResource ControlHeightStandard}"
                   Background="Transparent"
                   BorderBrush="Transparent"
                   BorderThickness="0"
                   CornerRadius="{DynamicResource RoundedMD}">
 
-            <StackPanel
+            <Grid>
+            <StackPanel x:Name="QuickStatusItems"
                 Orientation="Horizontal"
                 Spacing="12"
                 VerticalAlignment="Center">
@@ -189,6 +190,8 @@
                   VerticalAlignment="Center"/>
 
             </StackPanel>
+
+            </Grid>
           </Border>
         </Button>
 
@@ -265,14 +268,14 @@
                 ToolTip.Tip="{DynamicResource Loc_D5D0A30B517E}"
                 Click="OnCalendarRequested">
 
-          <Border
+          <Border x:Name="CalendarContent"
               Height="{DynamicResource ControlHeightStandard}"
               Background="Transparent"
               BorderBrush="Transparent"
               BorderThickness="0"
               CornerRadius="{DynamicResource RoundedMD}">
 
-            <StackPanel
+            <StackPanel x:Name="CalendarValues"
                 Orientation="Horizontal"
                 Spacing="12"
                 HorizontalAlignment="Center"

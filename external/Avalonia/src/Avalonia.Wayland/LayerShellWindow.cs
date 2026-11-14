@@ -57,6 +57,31 @@ public static class LayerShellWindow
         return false;
     }
 
+    /// <summary>Changes anchor and requested dimensions without changing the surface role.</summary>
+    public static void SetGeometry(Window window, ZwlrLayerSurfaceV1.Anchor anchor, uint width, uint height)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        if (window.PlatformImpl is LayerShellWindowImpl layerWindow)
+            layerWindow.SetGeometry(anchor, width, height);
+    }
+
+    /// <summary>Limits hit testing to logical surface-local rectangles; gaps remain click-through.</summary>
+    public static void SetInputRectangles(Window window, IReadOnlyList<Rect> rectangles)
+    {
+        ArgumentNullException.ThrowIfNull(window);
+        ArgumentNullException.ThrowIfNull(rectangles);
+        if (window.PlatformImpl is not LayerShellWindowImpl impl) return;
+        var data = new int[rectangles.Count * 4];
+        for (var i = 0; i < rectangles.Count; i++)
+        {
+            var rect = rectangles[i]; var offset = i * 4;
+            data[offset] = (int)Math.Floor(rect.X); data[offset + 1] = (int)Math.Floor(rect.Y);
+            data[offset + 2] = Math.Max(0, (int)Math.Ceiling(rect.Right) - data[offset]);
+            data[offset + 3] = Math.Max(0, (int)Math.Ceiling(rect.Bottom) - data[offset + 1]);
+        }
+        impl.SetInputRectangles(data);
+    }
+
     /// <summary>Moves a persistent window to an output, preserving its content and input policy.</summary>
     public static void SetOutputName(Window window, string outputName)
     {

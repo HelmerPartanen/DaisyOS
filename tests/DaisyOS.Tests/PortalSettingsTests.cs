@@ -11,7 +11,7 @@ public sealed class PortalSettingsTests
         var settings = PortalSettings.Values();
         var gtk = settings["org.gnome.desktop.interface"];
         Assert.Equal(1.0, gtk["text-scaling-factor"].GetDouble());
-        Assert.Equal("Inter 10", gtk["font-name"].GetString());
+        Assert.Equal("Noto Sans 10", gtk["font-name"].GetString());
         Assert.Equal(":minimize,maximize,close", settings["org.gnome.desktop.wm.preferences"]["button-layout"].GetString());
         Assert.InRange(settings["org.freedesktop.appearance"]["color-scheme"].GetUInt32(), 1u, 2u);
     }

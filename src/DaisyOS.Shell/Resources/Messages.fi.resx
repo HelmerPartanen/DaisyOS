@@ -7586,4 +7586,172 @@ Used by: src/DaisyOS.Shell/Services/DesktopIntegration/AuthenticationDialog.cs</
     <value>Vaihda taustakuva</value>
     <comment>Change wallpaper</comment>
   </data>
+  <data name="Loc_45A6CF8209DD" xml:space="preserve">
+    <value>Valitse tehtäväpalkin sijainti ja sen osien toiminta.</value>
+    <comment>Choose where the taskbar lives and how its components behave.</comment>
+  </data>
+  <data name="Loc_EBCE862136FA" xml:space="preserve">
+    <value>Tehtäväpalkin sijainti</value>
+    <comment>Taskbar position</comment>
+  </data>
+  <data name="Loc_14790C00E046" xml:space="preserve">
+    <value>Sijoita tehtäväpalkki, järjestelmäpalkki ja mediasäätimet haluamallesi näytön reunalle</value>
+    <comment>Place the taskbar, system bar and media controls on any screen edge</comment>
+  </data>
+  <data name="Loc_0A637EDBA09B" xml:space="preserve">
+    <value>Kaikki kolme osaa siirtyvät valitulle näytön reunalle. Sivupalkkien kuvakkeet ja teksti pysyvät oikein päin.</value>
+    <comment>All three components follow the selected screen edge. Side panels keep icons and text upright.</comment>
+  </data>
+  <data name="Loc_9C347FD264D8" xml:space="preserve">
+    <value>Sovelluspalkin kohdistus</value>
+    <comment>App dock alignment</comment>
+  </data>
+  <data name="Loc_E4BB9F1ECE9A" xml:space="preserve">
+    <value>Alku</value>
+    <comment>Start</comment>
+  </data>
+  <data name="Loc_D946067427E9" xml:space="preserve">
+    <value>Keskelle</value>
+    <comment>Center</comment>
+  </data>
+  <data name="Loc_F4DB1E48476F" xml:space="preserve">
+    <value>Loppu</value>
+    <comment>End</comment>
+  </data>
+  <data name="Loc_3E28B94851E8" xml:space="preserve">
+    <value>Pienet, tavalliset tai suuret sovelluskuvakkeet.</value>
+    <comment>Small, default or large app icons.</comment>
+  </data>
+  <data name="Loc_B65C31BE9450" xml:space="preserve">
+    <value>AUTOMAATTINEN PIILOTUS</value>
+    <comment>AUTO-HIDE</comment>
+  </data>
+  <data name="Loc_4658356EBBAA" xml:space="preserve">
+    <value>Piilota tehtäväpalkin osat automaattisesti</value>
+    <comment>Auto-hide taskbar components</comment>
+  </data>
+  <data name="Loc_A03691BAC45C" xml:space="preserve">
+    <value>Näytä kaikki osat siirtämällä osoitin valitulle näytön reunalle.</value>
+    <comment>Reveal all components by moving to the selected screen edge.</comment>
+  </data>
+  <data name="Loc_87E2A93C73FA" xml:space="preserve">
+    <value>Piilotuksen viive</value>
+    <comment>Hide delay</comment>
+  </data>
+  <data name="Loc_F5D61EAD3EEF" xml:space="preserve">
+    <value>Lyhyt</value>
+    <comment>Short</comment>
+  </data>
+  <data name="Loc_D1D87C4717D5" xml:space="preserve">
+    <value>Pitkä</value>
+    <comment>Long</comment>
+  </data>
+  <data name="Loc_1500B2FF2EFF" xml:space="preserve">
+    <value>Erittäin pitkä</value>
+    <comment>Very long</comment>
+  </data>
+  <data name="Loc_EB5617B80B68" xml:space="preserve">
+    <value>OSAT</value>
+    <comment>COMPONENTS</comment>
+  </data>
+  <data name="Loc_4F5D858BB045" xml:space="preserve">
+    <value>Näytä järjestelmäpalkki</value>
+    <comment>Show system bar</comment>
+  </data>
+  <data name="Loc_2317E98C3F77" xml:space="preserve">
+    <value>Näytä pika-asetukset, ilmoitukset ja kello tehtäväpalkin reunalla.</value>
+    <comment>Keep quick settings, notifications and the clock on the taskbar edge.</comment>
+  </data>
+  <data name="Loc_5C8FF450BBB5" xml:space="preserve">
+    <value>Näytä mediasäätimet</value>
+    <comment>Show media controls</comment>
+  </data>
+  <data name="Loc_068213962172" xml:space="preserve">
+    <value>Näytä toistosäätimet sovelluspalkin vieressä.</value>
+    <comment>Show playback controls alongside the app dock.</comment>
+  </data>
+  <data name="Loc_77387BDB5468" xml:space="preserve">
+    <value>Näytä sovellusvalikon painike</value>
+    <comment>Show launcher button</comment>
+  </data>
+  <data name="Loc_AF60399C09A5" xml:space="preserve">
+    <value>Sovellusvalikon voi aina avata Super-näppäimellä.</value>
+    <comment>The launcher is always available with the Super key.</comment>
+  </data>
+  <data name="Loc_B27A7D46A6E4" xml:space="preserve">
+    <value>Näytä päivämäärä kellon vieressä</value>
+    <comment>Show date beside clock</comment>
+  </data>
+  <data name="Loc_4F2F3E709308" xml:space="preserve">
+    <value>Päivämäärä näytetään vaakasuorissa palkeissa.</value>
+    <comment>The date is shown on horizontal panels.</comment>
+  </data>
+  <data name="Loc_FA3DEC2685D7" xml:space="preserve">
+    <value>SOVELLUKSET</value>
+    <comment>APPLICATIONS</comment>
+  </data>
+  <data name="Loc_ED5F1F93C9A4" xml:space="preserve">
+    <value>Järjestä sovelluskuvakkeet vetämällä. Kiinnitä tai irrota sovellus hiiren oikealla painikkeella.</value>
+    <comment>Drag app icons to reorder them. Right-click an app to pin or unpin it.</comment>
+  </data>
+  <data name="Loc_A7B4C2D9B29D" xml:space="preserve">
+    <value>Lukitse sovelluskuvakkeiden järjestys</value>
+    <comment>Lock app icon order</comment>
+  </data>
+  <data name="Loc_AECB1B36145F" xml:space="preserve">
+    <value>Estä tahaton järjestäminen. Sovelluspainikkeita voi silti käyttää.</value>
+    <comment>Prevent accidental rearranging while keeping app buttons usable.</comment>
+  </data>
+  <data name="Loc_24B063D3A818" xml:space="preserve">
+    <value>Näytä käynnissäolon merkit</value>
+    <comment>Show running indicators</comment>
+  </data>
+  <data name="Loc_0E77D42E4863" xml:space="preserve">
+    <value>Merkitse avoimet, aktiiviset ja pienennetyt sovellukset.</value>
+    <comment>Mark open, active and minimized applications.</comment>
+  </data>
+  <data name="Loc_06D4E379EC46" xml:space="preserve">
+    <value>Näytä ikkunoiden esikatselut</value>
+    <comment>Show window previews</comment>
+  </data>
+  <data name="Loc_A34327025AAE" xml:space="preserve">
+    <value>Esikatsele avoimia ikkunoita siirtämällä osoitin sovelluksen päälle.</value>
+    <comment>Preview open windows when hovering over an app.</comment>
+  </data>
+  <data name="Loc_F6B13F9FB563" xml:space="preserve">
+    <value>Näytä työkaluvihjeet</value>
+    <comment>Show tooltips</comment>
+  </data>
+  <data name="Loc_09168B97EB33" xml:space="preserve">
+    <value>Näytä tehtäväpalkin, järjestelmäpalkin ja mediasäätimien vihjeet.</value>
+    <comment>Show labels for taskbar, system bar and media controls.</comment>
+  </data>
+  <data name="Loc_3D0BB5FF5403" xml:space="preserve">
+    <value>Palauta tehtäväpalkki</value>
+    <comment>Reset taskbar</comment>
+  </data>
+  <data name="Loc_7EF2FAD58D1F" xml:space="preserve">
+    <value>PALAUTTAMINEN</value>
+    <comment>RESET</comment>
+  </data>
+  <data name="Loc_D73A09DFCCC8" xml:space="preserve">
+    <value>Palauta tehtäväpalkin oletukset</value>
+    <comment>Restore taskbar defaults</comment>
+  </data>
+  <data name="Loc_A2372120BD59" xml:space="preserve">
+    <value>Palauta alareunan sijainti, oletuskoko ja näkyvät osat. Kiinnitetyt sovellukset ja niiden järjestys säilyvät.</value>
+    <comment>Restore the bottom position, default size and visible components. Pinned apps and their order are kept.</comment>
+  </data>
+  <data name="Loc_6F819DB3DB1D" xml:space="preserve">
+    <value>Näytä kukin osa siirtämällä osoitin sen kohdalle valitulla näytön reunalla.</value>
+    <comment>Reveal each component by hovering over its position on the selected edge.</comment>
+  </data>
+  <data name="Loc_D238EBB1691E" xml:space="preserve">
+    <value>Näytä päivämäärä kellon yhteydessä</value>
+    <comment>Show date with clock</comment>
+  </data>
+  <data name="Loc_43BDADA7EC61" xml:space="preserve">
+    <value>Näytä päivämäärä kellon vieressä tai sen yläpuolella sivupalkeissa.</value>
+    <comment>Place the date beside the clock or above it on side panels.</comment>
+  </data>
 </root>

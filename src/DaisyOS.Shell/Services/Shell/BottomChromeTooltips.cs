@@ -12,6 +12,9 @@ namespace DaisyOS.Shell.Services.Shell;
 /// <summary>One passive label above the bottom chrome, never an input-owning popup.</summary>
 public sealed class BottomChromeTooltips : Canvas
 {
+    public Appearance.DockEdge Edge { get; set; }
+    public double ReservedExtent { get; set; } = ShellSurfacePlan.PrimaryPanelExclusiveZone;
+    public bool Enabled { get; set; } = true;
     private readonly Border _card;
     private readonly TextBlock _label;
     private readonly DispatcherTimer _delay = new() { Interval = TimeSpan.FromMilliseconds(400) };
@@ -85,7 +88,7 @@ public sealed class BottomChromeTooltips : Canvas
 
     private void ShowPending()
     {
-        if (_owner is not { IsEffectivelyVisible: true, IsPointerOver: true } owner || owner == _dismissedOwner || _suppress?.Invoke(owner) == true)
+        if (!Enabled || _owner is not { IsEffectivelyVisible: true, IsPointerOver: true } owner || owner == _dismissedOwner || _suppress?.Invoke(owner) == true)
         {
             _card.IsVisible = false;
             return;
@@ -97,11 +100,17 @@ public sealed class BottomChromeTooltips : Canvas
         if (point is null) return;
         _label.Text = text;
         _card.IsVisible = true;
-        _card.Measure(new Size(Math.Max(0, Bounds.Width - 16), double.PositiveInfinity));
+        var vertical = DockGeometry.IsVertical(Edge);
+        _card.Measure(new Size(Math.Max(0, Bounds.Width - (vertical ? ReservedExtent + 12 : 16)), double.PositiveInfinity));
         var size = _card.DesiredSize;
-        var center = point.Value.X / top.Bounds.Width * Bounds.Width;
-        SetLeft(_card, Math.Clamp(center - size.Width / 2, 8, Math.Max(8, Bounds.Width - size.Width - 8)));
-        // The reserved strip includes the 3px clearance above the 52px taskbar frame.
-        SetTop(_card, Bounds.Height - ShellSurfacePlan.PrimaryPanelExclusiveZone - size.Height);
+        var center = vertical ? (point.Value.Y + owner.Bounds.Height / 2) / top.Bounds.Height * Bounds.Height : point.Value.X / top.Bounds.Width * Bounds.Width;
+        var x = Math.Clamp(center - size.Width / 2, 8, Math.Max(8, Bounds.Width - size.Width - 8));
+        var y = Edge == Appearance.DockEdge.Top ? ReservedExtent : Bounds.Height - ReservedExtent - size.Height;
+        if (vertical)
+        {
+            x = Edge == Appearance.DockEdge.Left ? ReservedExtent + 6 : Bounds.Width - ReservedExtent - size.Width - 6;
+            y = Math.Clamp(center - size.Height / 2, 8, Math.Max(8, Bounds.Height - size.Height - 8));
+        }
+        SetLeft(_card, x); SetTop(_card, y);
     }
 }

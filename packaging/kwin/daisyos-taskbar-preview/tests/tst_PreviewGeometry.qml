@@ -13,6 +13,20 @@ TestCase {
         var result = Geometry.layout(screen, anchor, 1);
         compare(result.y + result.height + 12, 1388);
     }
+    function test_selectedDockEdges_data() {
+        return [{tag:"Left", edge:"Left"}, {tag:"Right", edge:"Right"}, {tag:"Top", edge:"Top"}];
+    }
+    function test_selectedDockEdges(data) {
+        var screen = {x:0, y:0, width:1920, height:1080};
+        var vertical = data.edge === "Left" || data.edge === "Right";
+        var anchor = Geometry.resolveAnchor(screen, {anchorX:vertical ? 3/82 : 0.5, anchorY:vertical ? 0.5 : 3/82,
+            anchorWidth:vertical ? 40/82 : 40/1920, anchorHeight:vertical ? 40/1080 : 40/82,
+            panelWidth:vertical ? 82 : 1920, panelHeight:vertical ? 1080 : 82, dockEdge:data.edge});
+        var preview = Geometry.layout(screen, anchor, 20);
+        if (data.edge === "Left") verify(preview.x > (anchor.anchorX + anchor.anchorWidth) * screen.width);
+        if (data.edge === "Right") verify(preview.x + preview.width < anchor.anchorX * screen.width);
+        if (data.edge === "Top") verify(preview.y > (anchor.anchorY + anchor.anchorHeight) * screen.height);
+    }
     function test_staysInsideOutput_data() {
         return [
             {tag: "left", x:0, y:0, w:1920, h:1080, ax:0, ay:0.95, count:1},

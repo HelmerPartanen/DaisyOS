@@ -94,7 +94,7 @@ public sealed class BottomChromeTests
     [InlineData(0.15)]
     [InlineData(0.5)]
     [InlineData(0.9)]
-    public void MediaRevealsAndHidesIndependently(double position)
+    public void EachComponentRevealsIndependentlyAndMenusHoldItOpen(double position)
     {
         var shell = new ShellView();
         shell.Resources["MotionDurationShellEnter"] = TimeSpan.Zero;

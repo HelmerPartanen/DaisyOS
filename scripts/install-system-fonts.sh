@@ -44,12 +44,12 @@ fi
 if [[ "$1" == --root ]]; then
   install -d "$2/etc/xdg"
   for font_key in font menuFont toolBarFont activeFont; do
-    kwriteconfig6 --file "$2/etc/xdg/kdeglobals" --group General --key "$font_key" 'Inter,10,-1,5,50,0,0,0,0,0'
+    kwriteconfig6 --file "$2/etc/xdg/kdeglobals" --group General --key "$font_key" 'Noto Sans,10,-1,5,50,0,0,0,0,0'
   done
-  kwriteconfig6 --file "$2/etc/xdg/kdeglobals" --group General --key smallestReadableFont 'Inter,8,-1,5,50,0,0,0,0,0'
+  kwriteconfig6 --file "$2/etc/xdg/kdeglobals" --group General --key smallestReadableFont 'Noto Sans,8,-1,5,50,0,0,0,0,0'
   for gtk_version in 3.0 4.0; do
     install -d "$2/etc/gtk-$gtk_version"
-    kwriteconfig6 --file "$2/etc/gtk-$gtk_version/settings.ini" --group Settings --key gtk-font-name 'Inter 10'
+    kwriteconfig6 --file "$2/etc/gtk-$gtk_version/settings.ini" --group Settings --key gtk-font-name 'Noto Sans 10'
   done
 
   install -Dm644 "$repo_root/packaging/fonts/90-daisyos.gschema.override" \

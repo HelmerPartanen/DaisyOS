@@ -10,6 +10,6 @@ internal static class Program
 
     public static AppBuilder BuildAvaloniaApp() =>
         AppBuilder.Configure<App>().UsePlatformDetect()
-            .With(new Avalonia.Media.FontManagerOptions { DefaultFamilyName = "Inter" })
+            .With(new Avalonia.Media.FontManagerOptions { DefaultFamilyName = "Noto Sans" })
             .LogToTrace();
 }

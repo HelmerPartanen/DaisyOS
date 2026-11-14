@@ -6,8 +6,10 @@ using Avalonia.Media.Immutable;
 
 namespace DaisyOS.Shell.Controls;
 
+public enum CartoucheTailEdge { Bottom, Top, Left, Right }
+
 /// <summary>
-/// A seamless popover container featuring a smooth, rounded downward cartouche (pointer beak)
+/// A seamless popover container featuring a smooth, rounded cartouche on any edge
 /// that flows continuously with the 3-tier DaisyOS shell glass border and elevation shadow.
 /// </summary>
 public class CartoucheBorder : Decorator
@@ -52,6 +54,27 @@ public class CartoucheBorder : Decorator
     {
         get => GetValue(TailOnTopProperty);
         set => SetValue(TailOnTopProperty, value);
+    }
+
+    public static readonly StyledProperty<CartoucheTailEdge> TailEdgeProperty =
+        AvaloniaProperty.Register<CartoucheBorder, CartoucheTailEdge>(nameof(TailEdge));
+    public CartoucheTailEdge TailEdge { get => GetValue(TailEdgeProperty); set => SetValue(TailEdgeProperty, value); }
+
+    public static readonly StyledProperty<double> TailYProperty =
+        AvaloniaProperty.Register<CartoucheBorder, double>(nameof(TailY), double.NaN);
+    public double TailY { get => GetValue(TailYProperty); set => SetValue(TailYProperty, value); }
+
+    private CartoucheTailEdge EffectiveTailEdge => TailOnTop ? CartoucheTailEdge.Top : TailEdge;
+
+    private Thickness ContentInsets()
+    {
+        var padding = Padding;
+        var th = Math.Max(0, TailHeight);
+        var edge = EffectiveTailEdge;
+        return new Thickness(padding.Left + 2 + (edge == CartoucheTailEdge.Left ? th : 0),
+            padding.Top + 2 + (edge == CartoucheTailEdge.Top ? th : 0),
+            padding.Right + 2 + (edge == CartoucheTailEdge.Right ? th : 0),
+            padding.Bottom + 2 + (edge == CartoucheTailEdge.Bottom ? th : 0));
     }
 
     public static readonly StyledProperty<double> CornerRadiusProperty =
@@ -101,19 +124,15 @@ public class CartoucheBorder : Decorator
     static CartoucheBorder()
     {
         AffectsRender<CartoucheBorder>(
-            TailXProperty, TailWidthProperty, TailHeightProperty, TailOnTopProperty,
+            TailXProperty, TailYProperty, TailEdgeProperty, TailWidthProperty, TailHeightProperty, TailOnTopProperty,
             CornerRadiusProperty, BackgroundProperty, BorderBrushProperty,
             InnerHighlightBrushProperty);
-        AffectsMeasure<CartoucheBorder>(TailHeightProperty, PaddingProperty);
+        AffectsMeasure<CartoucheBorder>(TailHeightProperty, TailEdgeProperty, TailOnTopProperty, PaddingProperty);
     }
 
     protected override Size MeasureOverride(Size availableSize)
     {
-        double th = TailHeight;
-        var padding = Padding;
-        var innerPadding = TailOnTop
-            ? new Thickness(padding.Left + 2, padding.Top + 2 + th, padding.Right + 2, padding.Bottom + 2)
-            : new Thickness(padding.Left + 2, padding.Top + 2, padding.Right + 2, padding.Bottom + 2 + th);
+        var innerPadding = ContentInsets();
 
         if (Child != null)
         {
@@ -126,11 +145,7 @@ public class CartoucheBorder : Decorator
 
     protected override Size ArrangeOverride(Size finalSize)
     {
-        double th = TailHeight;
-        var padding = Padding;
-        var innerPadding = TailOnTop
-            ? new Thickness(padding.Left + 2, padding.Top + 2 + th, padding.Right + 2, padding.Bottom + 2)
-            : new Thickness(padding.Left + 2, padding.Top + 2, padding.Right + 2, padding.Bottom + 2 + th);
+        var innerPadding = ContentInsets();
 
         if (Child != null)
         {
@@ -153,13 +168,13 @@ public class CartoucheBorder : Decorator
 
         double th = TailHeight;
         double tw = TailWidth;
-        double tx = TailX;
+        double tx = EffectiveTailEdge is CartoucheTailEdge.Left or CartoucheTailEdge.Right ? TailY : TailX;
         double cr = CornerRadius;
-        bool tailOnTop = TailOnTop;
+        var tailEdge = EffectiveTailEdge;
 
         var borderless = this.TryFindResource("ShellFrameBorderThickness", out var thickness)
             && thickness is Thickness { Left: 0, Top: 0, Right: 0, Bottom: 0 };
-        var geometry = GetGeometry(w, h, tx, tw, th, cr, tailOnTop, borderless);
+        var geometry = GetGeometry(w, h, tx, tw, th, cr, tailEdge, borderless);
 
         // 1. Multi-layered soft drop shadow
         using (context.PushTransform(Matrix.CreateTranslation(0, 4)))
@@ -210,7 +225,8 @@ public class CartoucheBorder : Decorator
     private GeometryBundle? _geometry;
     private double _geometryWidth, _geometryHeight, _geometryTailX, _geometryTailWidth;
     private double _geometryTailHeight, _geometryCornerRadius;
-    private bool _geometryTailOnTop, _geometryBorderless;
+    private CartoucheTailEdge _geometryTailEdge;
+    private bool _geometryBorderless;
     private Pen? _innerPen, _outerPen;
     private IBrush? _innerPenBrush, _outerPenBrush;
 
@@ -221,13 +237,13 @@ public class CartoucheBorder : Decorator
         double tailWidth,
         double tailHeight,
         double cornerRadius,
-        bool tailOnTop, bool borderless)
+        CartoucheTailEdge tailEdge, bool borderless)
     {
         if (_geometry is { } cached &&
             _geometryWidth.Equals(width) && _geometryHeight.Equals(height) &&
             _geometryTailX.Equals(tailX) && _geometryTailWidth.Equals(tailWidth) &&
             _geometryTailHeight.Equals(tailHeight) && _geometryCornerRadius.Equals(cornerRadius) &&
-            _geometryTailOnTop == tailOnTop && _geometryBorderless == borderless)
+            _geometryTailEdge == tailEdge && _geometryBorderless == borderless)
         {
             return cached;
         }
@@ -238,13 +254,13 @@ public class CartoucheBorder : Decorator
         _geometryTailWidth = tailWidth;
         _geometryTailHeight = tailHeight;
         _geometryCornerRadius = cornerRadius;
-        _geometryTailOnTop = tailOnTop;
+        _geometryTailEdge = tailEdge;
         _geometryBorderless = borderless;
         _geometry = new GeometryBundle(
-            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0, tailOnTop),
-            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, borderless ? 0 : 2.0, tailOnTop),
-            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 1.5, tailOnTop),
-            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0.5, tailOnTop));
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0, tailEdge),
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, borderless ? 0 : 2.0, tailEdge),
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 1.5, tailEdge),
+            BuildGeometry(width, height, tailX, tailWidth, tailHeight, cornerRadius, 0.5, tailEdge));
         return _geometry;
     }
 
@@ -258,8 +274,14 @@ public class CartoucheBorder : Decorator
         return pen;
     }
 
-    private static StreamGeometry BuildGeometry(double width, double height, double tailX, double tailWidth, double tailHeight, double cornerRadius, double inset, bool tailOnTop)
+    internal static StreamGeometry BuildGeometry(double width, double height, double tailX, double tailWidth, double tailHeight, double cornerRadius, double inset, CartoucheTailEdge tailEdge)
     {
+        // Build the familiar bottom cartouche, then orient the complete path.
+        // Content stays upright; only the frame geometry changes direction.
+        var actualWidth = width;
+        var actualHeight = height;
+        if (tailEdge is CartoucheTailEdge.Left or CartoucheTailEdge.Right)
+            (width, height) = (height, width);
         var geom = new StreamGeometry();
         using var ctx = geom.Open();
 
@@ -267,10 +289,10 @@ public class CartoucheBorder : Decorator
         double t = inset;
         double r = Math.Max(l + 1, width - inset);
         double b = Math.Max(t + 1, height - tailHeight - inset);
-        double cr = Math.Max(2, cornerRadius - inset);
+        double cr = Math.Clamp(cornerRadius - inset, 0, Math.Min(r - l, b - t) / 2);
 
         double tw = Math.Max(4, tailWidth - inset * 0.5);
-        double th = Math.Max(2, tailHeight - inset * 0.5);
+        double th = tailHeight <= 0 ? 0 : Math.Max(0, tailHeight - inset * 0.5);
 
         double minTx = l + cr + tw / 2.0;
         double maxTx = r - cr - tw / 2.0;
@@ -295,25 +317,28 @@ public class CartoucheBorder : Decorator
         // Bottom-right corner
         ctx.ArcTo(new Point(r - cr, b), new Size(cr, cr), 0, false, SweepDirection.Clockwise);
 
-        // Bottom edge to right base of tail
-        ctx.LineTo(new Point(tailRight, b));
+        if (th > 0)
+        {
+            // Bottom edge to right base of tail
+            ctx.LineTo(new Point(tailRight, b));
 
-        // Right slope of tail into rounded tip
-        Point p1 = new Point(tx + tw * 0.30, b + th * 0.15);
-        Point p2 = new Point(tx + tw * 0.14, tipY - th * 0.25);
-        Point pTipR = new Point(tx + tw * 0.08, tipY - th * 0.08);
-        ctx.CubicBezierTo(p1, p2, pTipR);
+            // Right slope of tail into rounded tip
+            Point p1 = new Point(tx + tw * 0.30, b + th * 0.15);
+            Point p2 = new Point(tx + tw * 0.14, tipY - th * 0.25);
+            Point pTipR = new Point(tx + tw * 0.08, tipY - th * 0.08);
+            ctx.CubicBezierTo(p1, p2, pTipR);
 
-        // Rounded tip
-        Point pTipC = new Point(tx, tipY);
-        Point pTipL = new Point(tx - tw * 0.08, tipY - th * 0.08);
-        ctx.CubicBezierTo(new Point(tx + tw * 0.03, tipY), pTipC, pTipC);
-        ctx.CubicBezierTo(new Point(tx - tw * 0.03, tipY), pTipL, pTipL);
+            // Rounded tip
+            Point pTipC = new Point(tx, tipY);
+            Point pTipL = new Point(tx - tw * 0.08, tipY - th * 0.08);
+            ctx.CubicBezierTo(new Point(tx + tw * 0.03, tipY), pTipC, pTipC);
+            ctx.CubicBezierTo(new Point(tx - tw * 0.03, tipY), pTipL, pTipL);
 
-        // Left slope of tail back to bottom edge
-        Point p3 = new Point(tx - tw * 0.14, tipY - th * 0.25);
-        Point p4 = new Point(tx - tw * 0.30, b + th * 0.15);
-        ctx.CubicBezierTo(p3, p4, new Point(tailLeft, b));
+            // Left slope of tail back to bottom edge
+            Point p3 = new Point(tx - tw * 0.14, tipY - th * 0.25);
+            Point p4 = new Point(tx - tw * 0.30, b + th * 0.15);
+            ctx.CubicBezierTo(p3, p4, new Point(tailLeft, b));
+        }
 
         // Bottom edge to bottom-left corner
         ctx.LineTo(new Point(l + cr, b));
@@ -326,8 +351,13 @@ public class CartoucheBorder : Decorator
         ctx.ArcTo(new Point(l + cr, t), new Size(cr, cr), 0, false, SweepDirection.Clockwise);
 
         ctx.EndFigure(isClosed: true);
-        if (tailOnTop)
-            geom.Transform = new MatrixTransform(new Matrix(1, 0, 0, -1, 0, height));
+        geom.Transform = tailEdge switch
+        {
+            CartoucheTailEdge.Top => new MatrixTransform(new Matrix(1, 0, 0, -1, 0, actualHeight)),
+            CartoucheTailEdge.Left => new MatrixTransform(new Matrix(0, 1, -1, 0, actualWidth, 0)),
+            CartoucheTailEdge.Right => new MatrixTransform(new Matrix(0, 1, 1, 0, 0, 0)),
+            _ => null
+        };
         return geom;
     }
 }

@@ -25,4 +25,4 @@ internal static class TaskbarPreviewState
 
 internal sealed record TaskbarPreviewRequest(string Token, string[] WindowIds, double AnchorX, double AnchorY,
     double AnchorWidth, double AnchorHeight, string Surface, string Raised, string Foreground,
-    string Stroke, string Hover, string Danger, bool ReduceMotion, double PanelHeight = 0, string OnAction = "#ffffffff");
+    string Stroke, string Hover, string Danger, bool ReduceMotion, double PanelHeight = 0, string OnAction = "#ffffffff", string DockEdge = "Bottom", double PanelWidth = 0);

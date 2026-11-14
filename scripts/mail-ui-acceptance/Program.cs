@@ -20,7 +20,7 @@ var root = Path.Combine(Path.GetTempPath(), "daisy-mail-qa-" + Guid.NewGuid().To
 Directory.CreateDirectory(root);
 Environment.SetEnvironmentVariable("XDG_DATA_HOME", root);
 AppBuilder.Configure<MailQaApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false }).UseSkia().UseHarfBuzz()
- .With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" }).SetupWithoutStarting();
+ .With(new FontManagerOptions { DefaultFamilyName = "Noto Sans" }).SetupWithoutStarting();
 try
 {
     // Never launch a live provider login from the isolated acceptance runner.

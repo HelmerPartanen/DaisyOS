@@ -14,6 +14,8 @@ using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using DaisyOS.Shell.Controls;
 using DaisyOS.Shell.Services;
+using DaisyOS.Shell.Services.Appearance;
+using DaisyOS.Shell.Services.Shell;
 using DaisyOS.Shell.Services.Windows;
 using DaisyOS.Shell.Services.Compositor;
 using DaisyOS.Shell.ViewModels;
@@ -88,6 +90,37 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         private IReadOnlyList<string>? _pendingOrder;
 
         public bool IsContextMenuVisible => _contextMenuHost?.IsVisible == true;
+
+        private TaskbarPreferences _dockPreferences = new();
+        internal bool IsVertical => DockGeometry.IsVertical(_dockPreferences.Edge);
+        internal DockEdge DockEdge => _dockPreferences.Edge;
+        internal bool PreviewsEnabled => _dockPreferences.ShowWindowPreviews;
+        private double PointerAxis(Point point) => IsVertical ? point.Y : point.X;
+        private double GetItemPosition(Control item) => IsVertical ? Canvas.GetTop(item) : Canvas.GetLeft(item);
+        private void SetItemPosition(Control item, double value)
+        {
+            Canvas.SetLeft(item, IsVertical ? 0 : value);
+            Canvas.SetTop(item, IsVertical ? value : 0);
+        }
+        public void ApplyDockPreferences(TaskbarPreferences preferences)
+        {
+            if (_dragItem is not null) EndInteraction(_dragItem, new RoutedEventArgs());
+            HideContextMenu(); HideHoverPreview();
+            _dockPreferences = preferences;
+            if (_taskbarBody is not null)
+            {
+                _taskbarBody.Height = IsVertical ? double.NaN : 52;
+                _taskbarBody.Width = IsVertical ? 52 : double.NaN;
+            }
+            if (this.FindControl<StackPanel>("DockItems") is { } items)
+                items.Orientation = IsVertical ? Avalonia.Layout.Orientation.Vertical : Avalonia.Layout.Orientation.Horizontal;
+            if (_startButton is not null) _startButton.IsVisible = preferences.ShowLauncherButton;
+            foreach (var item in _order)
+                if (item.Content is Panel content)
+                    foreach (var indicator in content.Children.OfType<Border>().Where(x => x.Classes.Contains("TaskbarWindowIndicator")))
+                        indicator.IsVisible = preferences.ShowWindowIndicators;
+            UpdateCanvasWidth(); LayoutAllInstant(); InvalidateMeasure();
+        }
 
         public TaskbarView()
         {
@@ -530,6 +563,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
         private Transitions GetPositionTransitions() => new()
         {
+            new DoubleTransition { Property = Canvas.TopProperty, Duration = MotionDuration("MotionDurationBase", 160), Easing = new CubicEaseOut() },
             new DoubleTransition { Property = Canvas.LeftProperty, Duration = MotionDuration("MotionDurationBase", 160), Easing = new CubicEaseOut() },
             new TransformOperationsTransition { Property = Visual.RenderTransformProperty, Duration = MotionDuration("MotionDurationFast", 100), Easing = new CubicEaseOut() }
         };
@@ -545,7 +579,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             {
                 var icon = _order[i];
                 icon.Transitions = GetDragTransitions(); // avoid animating in from 0 on first layout
-                Canvas.SetLeft(icon, SlotX(i));
+                SetItemPosition(icon, SlotX(i));
                 icon.Transitions = GetPositionTransitions();
             }
         }
@@ -556,7 +590,8 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             // MeasureOverride receives the unscaled layout slot. The transform is
             // applied after layout, so the child must reserve room for its scaled
             // width inside the parent's available width.
-            var available = Math.Min(limit, double.IsFinite(availableSize.Width) ? Math.Max(0, availableSize.Width - 24) : limit);
+            var span = IsVertical ? availableSize.Height : availableSize.Width;
+            var available = Math.Min(limit, double.IsFinite(span) ? Math.Max(0, span - (IsVertical ? 6 : 24)) : limit);
             if (Math.Abs(_availableWidth - available) > 0.1)
             {
                 _availableWidth = available;
@@ -571,15 +606,26 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             var count = _order.Count;
             // Frame/insets (12), Start (40), and the gap after Start (4) stay fixed.
             var naturalWidth = count == 0 ? 0 : count * 40 + (count - 1) * 4 + _order.Sum(StackExtent);
-            var scale = naturalWidth == 0 ? 1 : Math.Min(1, Math.Max(0, _availableWidth - 56) / naturalWidth);
+            var budget = Math.Max(40, _availableWidth - (_dockPreferences.ShowLauncherButton ? 56 : 12));
+            var scale = naturalWidth == 0 ? 1 : Math.Min(1, budget / naturalWidth);
+            if (IsVertical) scale = Math.Max(0.65, scale);
+            if (this.FindControl<ScrollViewer>("DockIconScroll") is { } scroll)
+            {
+                scroll.MaxHeight = IsVertical ? budget : 40;
+                scroll.MaxWidth = IsVertical ? 40 : double.PositiveInfinity;
+                scroll.HorizontalScrollBarVisibility = Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
+                scroll.VerticalScrollBarVisibility = IsVertical ? Avalonia.Controls.Primitives.ScrollBarVisibility.Hidden : Avalonia.Controls.Primitives.ScrollBarVisibility.Disabled;
+            }
             ItemWidth = 40 * scale;
             Spacing = 4 * scale;
-            _canvas.Width = naturalWidth * scale;
+            _canvas.Width = IsVertical ? 40 : naturalWidth * scale;
+            _canvas.Height = IsVertical ? naturalWidth * scale : 40;
             for (var index = 0; index < count; index++)
             {
                 var button = _order[index];
                 button.MinWidth = 0;
-                button.Width = ItemWidth;
+                button.Width = IsVertical ? 40 : ItemWidth;
+                button.Height = IsVertical ? ItemWidth : 40;
                 button.HorizontalContentAlignment = Avalonia.Layout.HorizontalAlignment.Center;
                 button.VerticalContentAlignment = Avalonia.Layout.VerticalAlignment.Center;
                 if (button.Content is Panel panel)
@@ -590,7 +636,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
                 if (button != _dragItem)
                 {
                     button.Transitions = GetDragTransitions();
-                    Canvas.SetLeft(button, SlotX(index));
+                    SetItemPosition(button, SlotX(index));
                     button.Transitions = GetPositionTransitions();
                 }
             }
@@ -615,6 +661,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
             if (button.Content is Panel panel && panel.Children.OfType<Border>().FirstOrDefault(b => b.Classes.Contains("TaskbarWindowIndicator")) is { } indicator)
             {
+                indicator.IsVisible = _dockPreferences.ShowWindowIndicators;
                 indicator.Classes.Set("WindowRunning", presentation.IsRunning && !presentation.IsMinimized);
                 indicator.Classes.Set("WindowActive", presentation.IsActive);
                 indicator.Classes.Set("WindowMinimized", presentation.IsMinimized);
@@ -695,7 +742,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             _forceQuitItems[tag] = forceQuit;
             _appNames[tag] = window.DisplayName;
             WireUpIcon(iconButton);
-            Canvas.SetLeft(iconButton, SlotX(_order.Count - 1));
+            SetItemPosition(iconButton, SlotX(_order.Count - 1));
             UpdateCanvasWidth();
         }
 
@@ -1002,18 +1049,18 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             _dragItem = icon;
             _pointerDown = true;
             _isDragging = false;
-            _pointerStartX = e.GetPosition(_canvas).X;
-            _dragStartLeft = Canvas.GetLeft(icon);
+            _pointerStartX = PointerAxis(e.GetPosition(_canvas));
+            _dragStartLeft = GetItemPosition(icon);
             // Leave a normal press to Avalonia's Button lifecycle. Capture begins only once this
             // gesture crosses the drag threshold, preserving the same pressed/click effect as Start.
         }
 
         private void Icon_PointerMoved(object? sender, PointerEventArgs e)
         {
-            if (!_pointerDown || _dragItem is null || _canvas is null) return;
+            if (_dockPreferences.LockIconOrder || !_pointerDown || _dragItem is null || _canvas is null) return;
             if (sender is not Button icon || icon != _dragItem) return;
 
-            var currentX = e.GetPosition(_canvas).X;
+            var currentX = PointerAxis(e.GetPosition(_canvas));
             var delta = currentX - _pointerStartX;
 
             if (!_isDragging)
@@ -1028,7 +1075,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
 
             // Track the pointer 1:1 - no position transition on the dragged item itself, keeping render transform.
             icon.Transitions = GetDragTransitions();
-            Canvas.SetLeft(icon, newLeft);
+            SetItemPosition(icon, newLeft);
 
             ReorderIfNeeded(icon, newLeft);
         }
@@ -1075,7 +1122,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
         {
             var left = SlotX(index);
             icon.Transitions = GetPositionTransitions();
-            Canvas.SetLeft(icon, left);
+            SetItemPosition(icon, left);
         }
 
         private void Icon_PointerReleased(object? sender, PointerReleasedEventArgs e)
@@ -1101,7 +1148,7 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             if (index >= 0)
             {
                 icon.Transitions = GetPositionTransitions();
-                Canvas.SetLeft(icon, SlotX(index));
+                SetItemPosition(icon, SlotX(index));
             }
 
             icon.Classes.Remove("dragging");
@@ -1583,41 +1630,15 @@ namespace DaisyOS.Shell.Views.Components.Taskbar
             _order.Add(iconButton);
 
             WireUpIcon(iconButton);
-            Canvas.SetLeft(iconButton, SlotX(_order.Count - 1));
+            SetItemPosition(iconButton, SlotX(_order.Count - 1));
             UpdateCanvasWidth();
         }
 
         private void PositionContextMenu(Button icon)
         {
             if (_contextMenuHost is null) return;
-
-            var screenWidth = 1440.0;
-            if (TopLevel.GetTopLevel(this) is { } topLevel && topLevel.Bounds.Width > 0)
-            {
-                screenWidth = topLevel.Bounds.Width;
-            }
-            else if (TopLevel.GetTopLevel(_contextMenuHost) is { } root && root.Bounds.Width > 0)
-            {
-                screenWidth = root.Bounds.Width;
-            }
-
-            var taskbarScale = this.TryFindResource("TaskbarScale", out var scaleResource) && scaleResource is double configuredScale ? configuredScale : 1;
-            var taskbarWidth = _taskbarBody?.Bounds.Width > 0 ? _taskbarBody.Bounds.Width : ((_canvas?.Width ?? 0) + 58);
-            var taskbarLeft = Math.Max(0, (screenWidth - taskbarWidth * taskbarScale) / 2);
-            var iconLeft = Canvas.GetLeft(icon);
-            // 50px offset = outer body padding (1px) + inner border (1px) + pad (4px) + StartButton (40px) + spacing (4px)
-            var iconCenterOnScreen = taskbarLeft + (50 + iconLeft + (ItemWidth / 2)) * taskbarScale;
-
-            const double estimatedMenuWidth = 200.0;
-            var menuLeft = Math.Clamp(iconCenterOnScreen - (estimatedMenuWidth / 2), 12, screenWidth - estimatedMenuWidth - 12);
-
-            _contextMenuHost.TailX = iconCenterOnScreen - menuLeft;
-            _contextMenuHost.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Left;
-            // Keep the menu above the scaled taskbar, with its original 3px gap.
-            _contextMenuHost.Margin = new Thickness(menuLeft, 0, 0, 52 * taskbarScale + 3);
+            DockPopupPlacement.Position(_contextMenuHost, icon, DockEdge, IsNativePanelHosted);
         }
-
-
 
         private static void LaunchDesktopAction(DesktopActionInfo action)
         {

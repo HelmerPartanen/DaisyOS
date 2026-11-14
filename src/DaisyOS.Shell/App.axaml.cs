@@ -82,6 +82,10 @@ public partial class App : Application
     private LocalSendWindow? _localSendWindow;
     private Window? _nativeLocalSendSurface;
     private Window? _nativeBottomEdgeSensorSurface;
+    private Window? _nativeTooltipSurface;
+    private (DockEdge Edge, int Extent)? _appliedDockGeometry;
+    private Rect[] _nativePanelInputRectangles = [];
+    private Rect[] _nativeSensorInputRectangles = [];
     private Window? _windowedLocalSendHost;
     public DaisyOS.Shell.Services.Tray.StatusNotifierService AppTray { get; } = new();
 
@@ -466,6 +470,7 @@ public partial class App : Application
             || previous.TextScalePercent != loaded.TextScalePercent;
         var profilePictureChanged = !string.Equals(previous.ProfilePictureUri, loaded.ProfilePictureUri, StringComparison.Ordinal);
         var taskbarSizeChanged = previous.TaskbarSize != loaded.TaskbarSize;
+        var taskbarPreferencesChanged = previous.Taskbar != loaded.Taskbar;
         var wallpaperChanged = previous.UseSolidWallpaper != loaded.UseSolidWallpaper
             || !string.Equals(previous.SolidWallpaperColor, loaded.SolidWallpaperColor, StringComparison.OrdinalIgnoreCase)
             || !string.Equals(previous.WallpaperUri, loaded.WallpaperUri, StringComparison.Ordinal);
@@ -485,9 +490,10 @@ public partial class App : Application
         if (typographyChanged) TypographyPolicy.Apply(Resources, _appearanceSettings.SystemFontFamily, _appearanceSettings.TextScalePercent);
         if (profilePictureChanged || typographyChanged) ApplyProfilePictureResources();
         if (taskbarSizeChanged || typographyChanged) ApplyTaskbarSizeResources();
+        if (taskbarPreferencesChanged || taskbarSizeChanged) _shellView?.ApplyTaskbarPreferences(_appearanceSettings.Taskbar, _appearanceSettings.TaskbarSize);
 
         if (bordersChanged || accessibilityChanged || accentChanged || languageChanged || typographyChanged ||
-            profilePictureChanged || taskbarSizeChanged || wallpaperChanged || lockScreenChanged || barVisibilityChanged ||
+            profilePictureChanged || taskbarPreferencesChanged || taskbarSizeChanged || wallpaperChanged || lockScreenChanged || barVisibilityChanged ||
             previous.ThemeMode != loaded.ThemeMode)
         {
             AppearanceChanged?.Invoke(this, EventArgs.Empty);
@@ -543,7 +549,7 @@ public partial class App : Application
         var panelContent = shell.DetachDesktopChromeForNativePanel();
         var launcherContent = shell.DetachLauncherForNativeOverlay();
         var widgetLibrary = shell.Desktop.DetachWidgetLibraryForNativeOverlay();
-        var systemFlyoutContent = shell.SystemBar.DetachFlyoutsForNativeOverlay();
+        var systemFlyoutContent = shell.SystemBar.DetachFlyoutsForNativeOverlay(shell.DockReservedExtent);
         Control? launcherAppContextMenu = null;
         if (systemFlyoutContent is Panel flyoutPanel)
         {
@@ -603,16 +609,18 @@ public partial class App : Application
                 InputPassthrough = true
             }, shell.DetachWallpaperForNativeBackground());
         var desktopSurface = backend.CreateWindow(LayerShellSurfaceOptions.DesktopItems(), shell);
+        var dockEdge = _appearanceSettings.Taskbar.Edge;
+        var dockExtent = ShellSurfacePlan.PanelExtent(dockEdge, _appearanceSettings.TaskbarSize, _appearanceSettings.Taskbar.ShowSystemBar);
         var panelSurface = backend.CreateWindow(
-            LayerShellSurfaceOptions.PrimaryPanel(
-                ShellSurfacePlan.PrimaryPanelExclusiveZone,
-                surfaceHeight: ShellSurfacePlan.PrimaryPanelSurfaceHeight),
-            panelContent);
+            DockGeometry.AtEdge(LayerShellSurfaceOptions.PrimaryPanel(_appearanceSettings.TaskbarAutoHide ? 0 : dockExtent),
+                dockEdge, (uint)(dockExtent + ShellSurfacePlan.PrimaryPanelShadowBleed)), panelContent);
         _nativePanelSurface = panelSurface;
+        panelSurface.LayoutUpdated += (_, _) => UpdateNativePanelInput(shell);
         var bottomEdgeSensorSurface = backend.CreateWindow(
-            LayerShellSurfaceOptions.BottomEdgeSensor(),
+            DockGeometry.AtEdge(LayerShellSurfaceOptions.BottomEdgeSensor(), dockEdge, 2),
             new Border { Background = Brushes.Transparent });
         _nativeBottomEdgeSensorSurface = bottomEdgeSensorSurface;
+        bottomEdgeSensorSurface.LayoutUpdated += (_, _) => UpdateNativePanelInput(shell);
         // The mapped panel captures the full bottom strip when either bar is
         // visible. It must reveal the other bar even while it covers the sensor.
         BindBottomEdgeReveal(panelSurface, shell);
@@ -699,7 +707,8 @@ public partial class App : Application
         _nativeShellSurfaces.Add(systemFlyoutSurface);
         _nativeShellSurfaces.Add(widgetLibrarySurface);
         var tooltipSurface = backend.CreateWindow(
-            LayerShellSurfaceOptions.BottomTooltipOverlay(), shell.DetachBottomTooltipsForNativeOverlay());
+            DockGeometry.AtEdge(LayerShellSurfaceOptions.BottomTooltipOverlay(), dockEdge, DockGeometry.IsVertical(dockEdge) ? 438u : 160u), shell.DetachBottomTooltipsForNativeOverlay());
+        _nativeTooltipSurface = tooltipSurface;
         _nativeShellSurfaces.Add(tooltipSurface);
         _nativeShellSurfaces.Add(toastSurface);
         _nativeShellSurfaces.Add(metricsSurface);
@@ -1262,6 +1271,7 @@ public partial class App : Application
         }
         _appearanceSettings.TaskbarSize = size;
         ApplyTaskbarSizeResources();
+        _shellView?.ApplyTaskbarPreferences(_appearanceSettings.Taskbar, size);
         await PersistAppearanceAsync();
         AppearanceChanged?.Invoke(this, EventArgs.Empty);
     }
@@ -1271,6 +1281,34 @@ public partial class App : Application
         var height = CurrentTaskbarSize switch { 0 => 44d, 2 => 55d, _ => 52d };
         Resources["TaskbarScale"] = height / 52d;
         Resources["TaskbarMenuInset"] = new Thickness(0, 0, 0, height + 3);
+    }
+
+    public TaskbarPreferences CurrentTaskbarPreferences => _appearanceSettings.Taskbar;
+    public bool TaskbarMediaVisible => _shellView?.Desktop.ViewModel.BottomMediaWidgetVisible
+        ?? new Services.Desktop.DesktopLayoutStore().Load().BottomMediaWidgetVisible;
+
+    public async Task SetTaskbarPreferencesAsync(TaskbarPreferences preferences)
+    {
+        _appearanceSettings.Taskbar = preferences.Normalize();
+        if (_useDesktopSettings)
+            await ApplyDesktopSettingAsync("taskbar-preferences", global::System.Text.Json.JsonSerializer.Serialize(_appearanceSettings.Taskbar, Services.Serialization.DaisyShellJsonContext.Default.TaskbarPreferences));
+        else
+        {
+            _shellView?.ApplyTaskbarPreferences(_appearanceSettings.Taskbar, _appearanceSettings.TaskbarSize);
+            await PersistAppearanceAsync();
+        }
+        AppearanceChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public async Task SetTaskbarMediaVisibleAsync(bool visible)
+    {
+        if (_useDesktopSettings) { await ApplyDesktopSettingAsync("taskbar-media", visible.ToString()); return; }
+        if (_shellView is not null)
+        {
+            _shellView.Desktop.ViewModel.BottomMediaWidgetVisible = visible;
+            _shellView.Desktop.ViewModel.SaveLayout();
+            _shellView.ApplyTaskbarPreferences(_appearanceSettings.Taskbar, _appearanceSettings.TaskbarSize);
+        }
     }
 
     public async Task SetBottomComponentsAutoHideAsync(bool enabled)
@@ -1704,6 +1742,7 @@ public partial class App : Application
     {
         _shellView = shell;
         shell.BottomChromeStateChanged += (_, _) => ApplyNativeBottomChromeState(shell);
+        shell.ApplyTaskbarPreferences(_appearanceSettings.Taskbar, _appearanceSettings.TaskbarSize);
         shell.SetBottomBarAutoHide(_appearanceSettings.TaskbarAutoHide, _appearanceSettings.SystemBarAutoHide, _appearanceSettings.MediaWidgetAutoHide);
         shell.Taskbar.ApplyOrder(SessionState.DockOrder);
         shell.Taskbar.OrderChanged += (_, order) => SessionState.SetDockOrder(order);
@@ -1732,8 +1771,9 @@ public partial class App : Application
         void Reveal(PointerEventArgs args)
         {
             var point = args.GetPosition(surface);
-            if (point.Y >= surface.Bounds.Height - 2)
-                shell.RevealBottomBarAt(point.X, surface.Bounds.Width);
+            if (DockGeometry.IsAtEdge(point, surface.Bounds.Size, shell.DockEdge))
+                shell.RevealBottomBarAt(DockGeometry.IsVertical(shell.DockEdge) ? point.Y : point.X,
+                    DockGeometry.IsVertical(shell.DockEdge) ? surface.Bounds.Height : surface.Bounds.Width);
         }
         surface.AddHandler(InputElement.PointerMovedEvent, (_, args) => Reveal(args),
             RoutingStrategies.Bubble, handledEventsToo: true);
@@ -1741,16 +1781,51 @@ public partial class App : Application
             RoutingStrategies.Direct, handledEventsToo: true);
     }
 
+    private void UpdateNativePanelInput(ShellView shell)
+    {
+        if (_nativePanelSurface is not { } surface) return;
+        var rectangles = shell.GetDockInputRectangles(surface);
+        if (!_nativePanelInputRectangles.SequenceEqual(rectangles))
+        {
+            _nativePanelInputRectangles = rectangles;
+            LayerShellWindow.SetInputRectangles(surface, rectangles);
+        }
+        if (_nativeBottomEdgeSensorSurface is { } sensor)
+        {
+            var reveal = shell.GetDockRevealRectangles(sensor.Bounds.Size);
+            if (!_nativeSensorInputRectangles.SequenceEqual(reveal))
+            {
+                _nativeSensorInputRectangles = reveal;
+                LayerShellWindow.SetInputRectangles(sensor, reveal);
+            }
+        }
+    }
+
     private void ApplyNativeBottomChromeState(ShellView shell)
     {
+        var geometry = (shell.DockEdge, (int)shell.DockReservedExtent);
+        if (_nativePanelSurface is not null && _appliedDockGeometry != geometry)
+        {
+            _appliedDockGeometry = geometry;
+            var panel = DockGeometry.AtEdge(LayerShellSurfaceOptions.PrimaryPanel(geometry.Item2), geometry.Item1,
+                (uint)(geometry.Item2 + ShellSurfacePlan.PrimaryPanelShadowBleed));
+            AvaloniaLayerShellWindowBackend.SetGeometry(_nativePanelSurface, panel);
+            if (_nativeBottomEdgeSensorSurface is { } sensor)
+                AvaloniaLayerShellWindowBackend.SetGeometry(sensor, DockGeometry.AtEdge(LayerShellSurfaceOptions.BottomEdgeSensor(), geometry.Item1, 2));
+            if (_nativeTooltipSurface is { } tooltip)
+                AvaloniaLayerShellWindowBackend.SetGeometry(tooltip, DockGeometry.AtEdge(LayerShellSurfaceOptions.BottomTooltipOverlay(), geometry.Item1,
+                    DockGeometry.IsVertical(geometry.Item1) ? 438u : 160u));
+        }
+
         if (_nativePanelSurface is { } panelSurface)
         {
             LayerShellWindow.SetExclusiveZone(
                 panelSurface,
                 shell.IsExternalFullscreenActive || shell.CanReleaseBottomWorkArea
                     ? 0
-                    : ShellSurfacePlan.PrimaryPanelExclusiveZone);
+                    : (int)shell.DockReservedExtent);
             LayerShellWindow.SetInputPassthrough(panelSurface, shell.IsBottomPanelInputPassthrough);
+            UpdateNativePanelInput(shell);
         }
         if (_nativeBottomEdgeSensorSurface is { } sensorSurface)
             LayerShellWindow.SetInputPassthrough(sensorSurface, !shell.IsBottomEdgeSensorEnabled);

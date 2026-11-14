@@ -26,6 +26,8 @@ public sealed class AppearanceSettingsStore
             var settings = JsonSerializer.Deserialize(File.ReadAllText(_path), DaisyOS.Shell.Services.Serialization.DaisyShellJsonContext.Default.AppearanceSettings)
                            ?? new AppearanceSettings();
 
+            settings.Taskbar = (settings.Taskbar ?? new()).Normalize();
+
             // Migrate independent bar preferences to a single consistent setting.
             var autoHide = settings.BottomComponentsAutoHide
                 ?? (settings.TaskbarAutoHide || settings.SystemBarAutoHide || settings.MediaWidgetAutoHide);

@@ -113,10 +113,10 @@ internal static class Program
             .LogToTrace()
             .With(new FontManagerOptions
             {
-                DefaultFamilyName = Services.Theming.TypographyPolicy.BundledDefaultFamilyName,
+                DefaultFamilyName = Services.Theming.TypographyPolicy.DefaultFamilyName,
                 FontFamilyMappings = new Dictionary<string, FontFamily>
                 {
-                    [Services.Theming.TypographyPolicy.DefaultFamilyName] = new FontFamily(Services.Theming.TypographyPolicy.BundledDefaultFamilyName),
+                    ["Inter"] = new FontFamily(Services.Theming.TypographyPolicy.BundledInterFamilyName),
                     ["Atkinson Hyperlegible"] = new FontFamily("avares://DaisyOS.Shell/Assets/fonts/AtkinsonHyperlegible#Atkinson Hyperlegible")
                 }
             })

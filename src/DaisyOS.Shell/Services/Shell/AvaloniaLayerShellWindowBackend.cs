@@ -46,6 +46,9 @@ public sealed class AvaloniaLayerShellWindowBackend : ILayerShellWindowBackend
         return LayerShellWindow.Create(nativeOptions, factory);
     }
 
+    public static void SetGeometry(Window window, LayerShellSurfaceOptions options) =>
+        LayerShellWindow.SetGeometry(window, ToNativeAnchor(options.Anchor), options.Width, options.Height);
+
     private static ZwlrLayerShellV1.Layer ToNativeLayer(LayerShellSurfaceRole role) => role switch
     {
         LayerShellSurfaceRole.Background => ZwlrLayerShellV1.Layer.Background,

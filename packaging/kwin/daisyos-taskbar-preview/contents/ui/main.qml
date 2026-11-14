@@ -61,7 +61,7 @@ Window {
             return Math.max(1, client.width - inset * 2) / Math.max(1, client.height - title - inset * 2);
         }));
         var bounds = Geometry.layout(output.geometry, anchor, windows.length, aspect);
-        if (!same || next.anchorX !== request.anchorX || next.anchorY !== request.anchorY || next.panelHeight !== request.panelHeight || clients.length !== windows.length) {
+        if (!same || next.anchorX !== request.anchorX || next.anchorY !== request.anchorY || next.panelHeight !== request.panelHeight || next.dockEdge !== request.dockEdge || next.panelWidth !== request.panelWidth || clients.length !== windows.length) {
             x = bounds.x; y = bounds.y; width = bounds.width; height = bounds.height;
             cardWidth = bounds.cardWidth;
             anchorRect = {x: output.geometry.x + anchor.anchorX * output.geometry.width,

@@ -12,7 +12,7 @@ if (args.Any(argument => argument != "--all-fonts"))
     throw new ArgumentException("Usage: TypographyPerformance [--all-fonts]");
 LinuxTextLibraryIsolation.EnsureLoaded();
 AppBuilder.Configure<Application>().UseHeadless(new AvaloniaHeadlessPlatformOptions())
-    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = TypographyPolicy.BundledDefaultFamilyName }).SetupWithoutStarting();
+    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = TypographyPolicy.DefaultFamilyName }).SetupWithoutStarting();
 var fixture = "ÅÉgjpq 日本語 العربية हिन्दी";
 var roles = new (string Role, double Size, double Line)[] {
     ("Caption",12,16),("BodySmall",13,18),("Body",14,20),("BodyLarge",16,24),

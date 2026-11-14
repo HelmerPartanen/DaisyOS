@@ -44,6 +44,8 @@ public sealed class AppearanceSettings
 
     public int TaskbarSize { get; set; } = 1;
 
+    public TaskbarPreferences Taskbar { get; set; } = new();
+
     public bool? BottomComponentsAutoHide { get; set; }
 
     public bool TaskbarAutoHide { get; set; }

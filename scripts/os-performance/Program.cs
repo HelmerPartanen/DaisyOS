@@ -17,7 +17,7 @@ if (args.Length != 4) throw new ArgumentException("Usage: PerformanceBenchmark <
 var fixture = args[0]; var output = args[1]; var samples = int.Parse(args[2]); var warmups = int.Parse(args[3]);
 DaisyOS.Shell.Services.Theming.LinuxTextLibraryIsolation.EnsureLoaded();
 AppBuilder.Configure<BenchmarkApp>().UseHeadless(new AvaloniaHeadlessPlatformOptions { UseHeadlessDrawing = false })
-    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = "avares://DaisyOS.Shell/Assets/fonts/Inter#Inter" }).SetupWithoutStarting();
+    .UseSkia().UseHarfBuzz().With(new FontManagerOptions { DefaultFamilyName = "Noto Sans" }).SetupWithoutStarting();
 var metrics = new Dictionary<string, List<double>>();
 const int catalogSize = 2000, fileCount = 1000;
 const string launcherQuery = "Application 012", filesQuery = "*012*", filesSort = "Size";

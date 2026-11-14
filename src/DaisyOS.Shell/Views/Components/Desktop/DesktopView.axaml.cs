@@ -615,6 +615,16 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             RebuildGrid();
         }
 
+        private Services.Appearance.DockEdge _dockEdge;
+        private double _dockExtent = 58;
+        public void SetDockEdge(Services.Appearance.DockEdge edge, double extent)
+        {
+            _dockEdge = edge; _dockExtent = extent;
+            if (WidgetLibrary.FindControl<Control>("LibraryFrame") is { } libraryFrame)
+                libraryFrame.Margin = Services.Shell.DockGeometry.Inset(edge, extent);
+            RebuildGrid();
+        }
+
         private void RebuildGrid()
         {
             if (Bounds.Width <= 0 || Bounds.Height <= 0) return;
@@ -626,9 +636,9 @@ namespace DaisyOS.Shell.Views.Components.Desktop
             // Keep desktop cells outside the complete 64px bottom safe area:
             // 6px top gap + 52px chrome + 6px bottom gap. DesktopGridMetrics
             // then applies its own 6px inset on every edge of this work area.
-            const double bottomSectionHeight = 64.0;
-            var usableHeight = Math.Max(0, Bounds.Height - bottomSectionHeight);
-            var workArea = new DaisyOS.Core.Desktop.Rect(0, 0, Bounds.Width, usableHeight);
+            var inset = Services.Shell.DockGeometry.Inset(_dockEdge, _dockExtent + 6);
+            var workArea = new DaisyOS.Core.Desktop.Rect(inset.Left, inset.Top,
+                Math.Max(0, Bounds.Width - inset.Left - inset.Right), Math.Max(0, Bounds.Height - inset.Top - inset.Bottom));
             // Bounds and pointer coordinates are already Avalonia logical units.
             // Keep the physical DPI as metadata, but request logical cell sizes;
             // applying RenderScaling to both made icons and widgets enormous.

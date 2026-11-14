@@ -51,7 +51,7 @@
                 </Transitions>
               </Border.Transitions>
             </Border>
-            <Grid Margin="4" ColumnDefinitions="44,*,120,28">
+            <Grid x:Name="MediaDockGrid" Margin="4" ColumnDefinitions="44,*,120,28">
               <Border Width="44" Height="44" CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True">
                 <Grid>
                   <Image x:Name="Artwork" theming:ThemeTransitionPolicy.Enabled="False" Stretch="UniformToFill" IsVisible="False"
@@ -69,13 +69,13 @@
                 </Grid>
               </Border>
 
-              <StackPanel Grid.Column="1" Margin="10,0,8,0" Spacing="1" VerticalAlignment="Center">
+              <StackPanel x:Name="MediaDockMetadata" Grid.Column="1" Margin="10,0,8,0" Spacing="1" VerticalAlignment="Center">
                 <controls:MarqueeText x:Name="MediaTitle" Text="{DynamicResource Loc_A92C2C9ABECA}" FontSize="{DynamicResource TypeSizeBodySmall}" FontWeight="Regular" Foreground="{DynamicResource ContentPrimaryBrush}"/>
                 <TextBlock x:Name="MediaArtist" FontSize="{DynamicResource TypeSizeCaption}"
                            Foreground="{DynamicResource ContentSecondaryBrush}" TextTrimming="CharacterEllipsis" MaxLines="1"/>
               </StackPanel>
 
-              <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+              <StackPanel x:Name="MediaDockActions" Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Button Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
                   <controls:DaisyIcon x:Name="PreviousGlyph" Icon="rewind" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
                 </Button>

@@ -21,12 +21,75 @@ using DaisyOS.Shell.Views.Windows;
 using DaisyOS.Shell.Services.Diagnostics;
 using DaisyOS.Shell.Services.Motion;
 using DaisyOS.Shell.Services.Shell;
+using DaisyOS.Shell.Services.Appearance;
 using DaisyOS.Shell.Controls;
 
 namespace DaisyOS.Shell.Views
 {
     public partial class ShellView : UserControl
     {
+        private TaskbarPreferences _taskbarPreferences = new();
+        private DockComponentsPanel? _dockPanel;
+        public DockEdge DockEdge => _taskbarPreferences.Edge;
+        public double DockReservedExtent { get; private set; } = ShellSurfacePlan.PrimaryPanelExclusiveZone;
+        public void ApplyTaskbarPreferences(TaskbarPreferences preferences, int taskbarSize)
+        {
+            _taskbarPreferences = preferences.Normalize();
+            DockReservedExtent = ShellSurfacePlan.PanelExtent(_taskbarPreferences.Edge, taskbarSize, _taskbarPreferences.ShowSystemBar);
+            _taskbarAutoHideTimer.Interval = _systemBarAutoHideTimer.Interval = _mediaAutoHideTimer.Interval = TimeSpan.FromMilliseconds(_taskbarPreferences.HideDelayMilliseconds);
+            TaskbarContent.ApplyDockPreferences(_taskbarPreferences);
+            SystemBarContent.SetDockEdge(DockEdge);
+            SystemBarContent.DockOverlay?.SetDockEdge(DockEdge, DockReservedExtent);
+            MediaWidgetContent.SetDockEdge(DockEdge);
+            if (_dockPanel is null)
+            {
+                _dockPanel = new DockComponentsPanel();
+                MoveToNativePanel(MediaWidgetContent, _dockPanel);
+                MoveToNativePanel(TaskbarContent, _dockPanel);
+                MoveToNativePanel(SystemBarContent, _dockPanel);
+                DesktopExperience.Children.Add(_dockPanel);
+            }
+            _dockPanel.Edge = DockEdge;
+            _dockPanel.DockAlignment = _taskbarPreferences.Alignment;
+            _dockPanel.ReservedExtent = DockReservedExtent;
+            _dockPanel.IncludeSystemBar = _taskbarPreferences.ShowSystemBar;
+            _dockPanel.IncludeMedia = Desktop.ViewModel.BottomMediaWidgetVisible;
+            _dockPanel.InvalidateMeasure();
+            _bottomTooltips.Edge = DockEdge;
+            _bottomTooltips.ReservedExtent = DockReservedExtent;
+            _bottomTooltips.Enabled = _taskbarPreferences.ShowTooltips;
+            _bottomTooltips.Dismiss();
+            Desktop.SetDockEdge(DockEdge, DockReservedExtent);
+            LauncherContent.FindControl<Grid>("LauncherContentGrid")!.Margin = DockGeometry.Inset(DockEdge, DockReservedExtent);
+            ApplyBottomBarVisibility(immediate: true);
+        }
+
+        public Rect[] GetDockInputRectangles(Visual surface) => new Control[] { MediaWidgetContent, TaskbarContent, SystemBarContent }
+            .Where(control => control.IsVisible && control.IsHitTestVisible && control.Bounds.Width > 0 && control.Bounds.Height > 0)
+            .Select(control =>
+            {
+                var point = control.TranslatePoint(default, surface) ?? default;
+                return new Rect(point, control.Bounds.Size);
+            }).ToArray();
+
+        public Rect[] GetDockRevealRectangles(Size sensorSize)
+        {
+            if (_dockPanel is null || !IsBottomEdgeSensorEnabled) return [];
+            var vertical = DockGeometry.IsVertical(DockEdge);
+            var sourceSpan = vertical ? _dockPanel.Bounds.Height : _dockPanel.Bounds.Width;
+            var targetSpan = vertical ? sensorSize.Height : sensorSize.Width;
+            if (sourceSpan <= 0 || targetSpan <= 0) return [];
+            var enabled = new[] { _mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible,
+                _taskbarAutoHide, _systemBarAutoHide && _taskbarPreferences.ShowSystemBar };
+            return Enumerable.Range(0, 3).Where(index => enabled[index]).Select(index =>
+            {
+                var slot = _dockPanel.GetComponentSlot(index);
+                var start = (vertical ? slot.Y : slot.X) / sourceSpan * targetSpan;
+                var length = (vertical ? slot.Height : slot.Width) / sourceSpan * targetSpan;
+                return vertical ? new Rect(0, start, sensorSize.Width, length) : new Rect(start, 0, length, sensorSize.Height);
+            }).Where(rect => rect.Width > 0 && rect.Height > 0).ToArray();
+        }
+
         private readonly DispatcherTimer _feedbackTimer = new() { Interval = TimeSpan.FromSeconds(5) };
         private readonly DispatcherTimer _taskbarAutoHideTimer = new() { Interval = TimeSpan.FromMilliseconds(1100) };
         private readonly DispatcherTimer _systemBarAutoHideTimer = new() { Interval = TimeSpan.FromMilliseconds(1100) };
@@ -109,6 +172,7 @@ namespace DaisyOS.Shell.Views
             Desktop.ViewModel.BottomMediaWidgetVisibilityChanged += (_, visible) =>
             {
                 if (!visible) { _mediaRevealed = false; _mediaAutoHideTimer.Stop(); }
+                if (_dockPanel is not null) { _dockPanel.IncludeMedia = visible; _dockPanel.InvalidateMeasure(); }
                 ApplyBottomBarVisibility();
             };
             SetBottomMediaWidgetVisible(Desktop.ViewModel.BottomMediaWidgetVisible, immediate: true);
@@ -118,7 +182,7 @@ namespace DaisyOS.Shell.Views
         {
             _ = GuiMotion.SetVisibleAsync(MediaWidgetContent,
                 MediaWidgetContent.FindControl<Border>("MediaFrame")!, visible,
-                NotifyBottomChromeStateChanged, immediate, GuiMotion.ShellSlideDistance,
+                NotifyBottomChromeStateChanged, immediate, DockGeometry.Slide(DockEdge, GuiMotion.ShellSlideDistance),
                 GuiMotion.ShellSlideDuration(this, visible));
         }
 
@@ -128,7 +192,7 @@ namespace DaisyOS.Shell.Views
         public SystemBarView SystemBar => SystemBarContent;
         public DaisyOS.Shell.Views.Components.Widgets.MediaWidget MediaWidget => MediaWidgetContent;
         public event EventHandler? BottomChromeStateChanged;
-        public bool CanReleaseBottomWorkArea => _taskbarAutoHide && _systemBarAutoHide &&
+        public bool CanReleaseBottomWorkArea => _taskbarAutoHide && (_systemBarAutoHide || !_taskbarPreferences.ShowSystemBar) &&
             (_mediaAutoHide || !Desktop.ViewModel.BottomMediaWidgetVisible);
         public bool IsBottomPanelInputPassthrough =>
             !TaskbarContent.IsVisible && !SystemBarContent.IsVisible && !MediaWidgetContent.IsVisible;
@@ -204,20 +268,17 @@ namespace DaisyOS.Shell.Views
         public void RevealBottomBarAt(double pointerX, double outputWidth)
         {
             if (_lockScreenActive || !IsBottomEdgeSensorEnabled || outputWidth <= 0) return;
-            var position = pointerX / outputWidth;
-            if (_mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible && position < 0.30)
+            var target = _dockPanel is not null
+                ? _dockPanel.ComponentAtEdgePosition(pointerX, outputWidth)
+                : (pointerX / outputWidth) switch { < 0.30 => 0, <= 0.72 => 1, >= 0.80 => 2, _ => -1 };
+            if (target == 1 && _taskbarAutoHide) RevealTaskbarTemporarily();
+            if (target == 2 && _systemBarAutoHide && _taskbarPreferences.ShowSystemBar) RevealSystemBarTemporarily();
+            if (target == 0 && _mediaAutoHide && Desktop.ViewModel.BottomMediaWidgetVisible)
             {
-                if (!_mediaRevealed)
-                {
-                    _mediaRevealed = true;
-                    ApplyBottomBarVisibility();
-                }
+                _mediaRevealed = true;
+                ApplyBottomBarVisibility();
                 ScheduleMediaAutoHide();
             }
-            if (_taskbarAutoHide && position >= 0.30 && position <= 0.72)
-                RevealTaskbarTemporarily();
-            if (_systemBarAutoHide && position >= 0.80)
-                RevealSystemBarTemporarily();
         }
 
         public void SetLauncherOpen(bool isOpen)
@@ -289,14 +350,14 @@ namespace DaisyOS.Shell.Views
         private void ApplyBottomBarVisibility(bool immediate = false)
         {
             var taskbarVisible = !_lockScreenActive && (!_externalFullscreenActive || _taskbarAutoHide || IsLauncherVisible) && IsTaskbarVisibleByPreference;
-            var systemBarVisible = !_lockScreenActive && (!_externalFullscreenActive || _systemBarAutoHide || IsLauncherVisible) && (!_systemBarAutoHide || _systemBarRevealed || IsLauncherVisible);
+            var systemBarVisible = _taskbarPreferences.ShowSystemBar && !_lockScreenActive && (!_externalFullscreenActive || _systemBarAutoHide || IsLauncherVisible) && (!_systemBarAutoHide || _systemBarRevealed || IsLauncherVisible);
             _ = GuiMotion.SetVisibleAsync(
                 TaskbarContent,
                 TaskbarContent.FindControl<Border>("TaskbarBody")!,
                 taskbarVisible,
                 NotifyBottomChromeStateChanged,
                 immediate,
-                GuiMotion.ShellSlideDistance,
+                DockGeometry.Slide(DockEdge, GuiMotion.ShellSlideDistance),
                 GuiMotion.ShellSlideDuration(this, taskbarVisible), fadeOnExit: false, fadeOnEnter: false);
             _ = GuiMotion.SetVisibleAsync(
                 SystemBarContent,
@@ -304,7 +365,7 @@ namespace DaisyOS.Shell.Views
                 systemBarVisible,
                 NotifyBottomChromeStateChanged,
                 immediate,
-                GuiMotion.ShellSlideDistance,
+                DockGeometry.Slide(DockEdge, GuiMotion.ShellSlideDistance),
                 GuiMotion.ShellSlideDuration(this, systemBarVisible), fadeOnExit: false, fadeOnEnter: false);
             SetBottomMediaWidgetVisible(!_lockScreenActive && !_externalFullscreenActive && Desktop.ViewModel.BottomMediaWidgetVisible &&
                 (!_mediaAutoHide || _mediaRevealed), immediate);
@@ -392,11 +453,16 @@ namespace DaisyOS.Shell.Views
         public Control DetachDesktopChromeForNativePanel()
         {
             TaskbarContent.IsNativePanelHosted = true;
-            var panel = new Grid { IsHitTestVisible = true, Background = Brushes.Transparent };
-            MoveToNativePanel(MediaWidgetContent, panel);
-            MoveToNativePanel(TaskbarContent, panel);
-            MoveToNativePanel(SystemBarContent, panel);
-            return panel;
+            MediaWidgetContent.IsNativePanelHosted = true;
+            _dockPanel ??= new DockComponentsPanel { IsHitTestVisible = true, Background = Brushes.Transparent };
+            if (_dockPanel.Parent is Panel parent) parent.Children.Remove(_dockPanel);
+            if (_dockPanel.Children.Count == 0)
+            {
+                MoveToNativePanel(MediaWidgetContent, _dockPanel);
+                MoveToNativePanel(TaskbarContent, _dockPanel);
+                MoveToNativePanel(SystemBarContent, _dockPanel);
+            }
+            return _dockPanel;
         }
 
         /// <summary>Moves the launcher into a modal, native overlay surface.</summary>
@@ -474,13 +540,9 @@ namespace DaisyOS.Shell.Views
         private static void MoveToNativePanel(Control control, Panel panel)
         {
             MoveToPanel(control, panel);
-            var margin = control.Margin;
-            control.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Bottom;
-            control.Margin = new Thickness(
-                margin.Left,
-                ShellSurfacePlan.PrimaryPanelContentSafeInset,
-                margin.Right,
-                ShellSurfacePlan.PrimaryPanelContentSafeInset);
+            control.Margin = default;
+            control.HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Stretch;
+            control.VerticalAlignment = Avalonia.Layout.VerticalAlignment.Stretch;
         }
 
         public void ToggleMetricsPanel() => MetricsPanel.TogglePanel();
@@ -569,8 +631,8 @@ namespace DaisyOS.Shell.Views
         private void OnPointerMoved(object? sender, PointerEventArgs e)
         {
             var position = e.GetPosition(this);
-            if (position.Y >= Bounds.Height - 2)
-                RevealBottomBarAt(position.X, Bounds.Width);
+            if (DockGeometry.IsAtEdge(position, Bounds.Size, DockEdge))
+                RevealBottomBarAt(DockGeometry.IsVertical(DockEdge) ? position.Y : position.X, DockGeometry.IsVertical(DockEdge) ? Bounds.Height : Bounds.Width);
         }
 
         private void OnPointerPressed(object? sender, PointerPressedEventArgs e)
