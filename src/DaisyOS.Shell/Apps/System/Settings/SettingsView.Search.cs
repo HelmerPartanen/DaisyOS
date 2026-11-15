@@ -30,8 +30,6 @@ public partial class SettingsView
         CategoryContent.Children.Add(new StackPanel { Orientation = Avalonia.Layout.Orientation.Horizontal, Spacing = 8, Children = { pause, rebuild } });
         AddSection(Loc.Get("SEARCH"), Loc.Get("Latency reflects the latest 256 completed searches."),
             Row("Average search latency"), Row("P95 search latency"), Row("Completed searches"), Row("Cancelled searches"));
-        var providers = new TextBlock { TextWrapping = Avalonia.Media.TextWrapping.Wrap };
-        CategoryContent.Children.Add(providers);
         async Task RefreshAsync()
         {
             if (refreshing) return;
@@ -59,8 +57,6 @@ public partial class SettingsView
                 values["P95 search latency"].Text = $"{metrics.P95Ms:0.00} ms";
                 values["Completed searches"].Text = metrics.CompletedQueries.ToString("N0");
                 values["Cancelled searches"].Text = metrics.CancelledQueries.ToString("N0");
-                providers.Text = string.Join(Environment.NewLine, global::System.Linq.Enumerable.Select(metrics.Providers,
-                    provider => $"{provider.ProviderId}: {provider.Status} · {provider.DurationMs:0.00} ms"));
             }
             catch (Exception)
             {
@@ -86,7 +82,8 @@ public partial class SettingsView
         _ = RefreshAsync();
         var timer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
         timer.Tick += (_, _) => { if (buildVersion != _categoryBuildVersion) timer.Stop(); else _ = RefreshAsync(); };
-        providers.AttachedToVisualTree += (_, _) => timer.Start();
-        providers.DetachedFromVisualTree += (_, _) => timer.Stop();
+        pause.AttachedToVisualTree += (_, _) => timer.Start();
+        pause.DetachedFromVisualTree += (_, _) => timer.Stop();
+        if (TopLevel.GetTopLevel(pause) is not null) timer.Start();
     }
 }

@@ -123,13 +123,15 @@ Window {
         anchors.fill: parent
         radius: 16
         color: popup.request.surface || "#ff181818"
-        border.width: 1
-        border.color: popup.request.stroke || "#ff444444"
         opacity: popup.reveal
         scale: 0.98 + popup.reveal * 0.02
         transformOrigin: Item.Bottom
         Behavior on opacity { NumberAnimation { duration: popup.duration; easing.type: Easing.OutCubic } }
         Behavior on scale { NumberAnimation { duration: 220; easing.type: Easing.OutCubic } }
+        PreviewOutline {
+            strokeColor: popup.request.stroke || "#ff444444"
+            radius: surface.radius
+        }
         Flickable {
             id: strip
             anchors.fill: parent

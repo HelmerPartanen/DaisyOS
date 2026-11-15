@@ -17,6 +17,7 @@
     </Style>
     <!-- Click scale effect scoped only to the three media control buttons -->
     <Style Selector="Border#MediaFrame Button.ShellButton">
+      <Setter Property="CornerRadius" Value="{DynamicResource RoundedMD}"/>
       <Setter Property="RenderTransform" Value="none"/>
       <Setter Property="Transitions">
         <Transitions>
@@ -76,13 +77,13 @@
               </StackPanel>
 
               <StackPanel x:Name="MediaDockActions" Grid.Column="2" Orientation="Horizontal" Spacing="0" VerticalAlignment="Center" HorizontalAlignment="Center">
-                <Button Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
+                <Button Classes="ShellButton" Width="40" Height="40" Click="OnPreviousClicked" ToolTip.Tip="{DynamicResource Loc_C50A886D0DC5}">
                   <controls:DaisyIcon x:Name="PreviousGlyph" Icon="rewind" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
                 </Button>
-                <Button x:Name="PlayPauseButton" Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
+                <Button x:Name="PlayPauseButton" Classes="ShellButton" Width="40" Height="40" Click="OnPlayPauseClicked" ToolTip.Tip="{DynamicResource Loc_436E61016E26}">
                   <controls:DaisyIcon x:Name="PlayPauseGlyph" Icon="play" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
                 </Button>
-                <Button Classes="ShellButton" Width="{DynamicResource ControlHeightStandard}" Height="{DynamicResource ControlHeightStandard}" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
+                <Button Classes="ShellButton" Width="40" Height="40" Click="OnNextClicked" ToolTip.Tip="{DynamicResource Loc_F930A5DF6B51}">
                   <controls:DaisyIcon x:Name="NextGlyph" Icon="fast-forward" Weight="Fill" Size="{DynamicResource ShellStatusIconSize}" Foreground="{DynamicResource ContentTertiaryBrush}"/>
                 </Button>
               </StackPanel>

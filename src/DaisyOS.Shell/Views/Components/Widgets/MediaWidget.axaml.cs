@@ -266,7 +266,7 @@ public partial class MediaWidget : UserControl
         if (_dockEdge != edge) HideContextMenu();
         _dockEdge = edge;
         var vertical = Services.Shell.DockGeometry.IsVertical(edge);
-        Width = vertical ? 52 : 380; Height = vertical ? 184 : 52;
+        Width = vertical ? 52 : 380; Height = vertical ? 192 : 52;
         this.FindControl<Border>("MediaFrame")!.Height = Height;
         var grid = this.FindControl<Grid>("MediaDockGrid")!;
         grid.ColumnDefinitions = new ColumnDefinitions(vertical ? "*" : "44,*,120,28");
@@ -275,6 +275,7 @@ public partial class MediaWidget : UserControl
         this.FindControl<Canvas>("SpectrumCanvas")!.IsVisible = !vertical;
         var actions = this.FindControl<StackPanel>("MediaDockActions")!;
         actions.Orientation = vertical ? Avalonia.Layout.Orientation.Vertical : Avalonia.Layout.Orientation.Horizontal;
+        actions.Spacing = vertical ? 4 : 0;
         Grid.SetColumn(actions, vertical ? 0 : 2); Grid.SetRow(actions, vertical ? 2 : 0);
         InvalidateMeasure();
     }

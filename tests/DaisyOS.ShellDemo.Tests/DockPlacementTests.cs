@@ -67,6 +67,25 @@ public sealed class DockPlacementTests
             for (var a = 0; a < rectangles.Length; a++)
                 for (var b = a + 1; b < rectangles.Length; b++)
                     Assert.False(rectangles[a].Intersects(rectangles[b]), $"{edge}: overlapping components");
+            var taskbarButton = shell.Taskbar.FindControl<Button>("StartButton")!;
+            var systemButton = shell.SystemBar.FindControl<Button>("AppTrayButton")!;
+            var mediaActions = shell.MediaWidget.FindControl<StackPanel>("MediaDockActions")!;
+            Assert.Equal(taskbarButton.CornerRadius, systemButton.CornerRadius);
+            Assert.Equal(shell.SystemBar.FindControl<StackPanel>("SystemDockItems")!.Spacing, mediaActions.Spacing);
+            var mediaButtons = mediaActions.Children.OfType<Button>().ToArray();
+            Assert.Equal(3, mediaButtons.Length);
+            foreach (var button in mediaButtons)
+            {
+                Assert.Equal(systemButton.Bounds.Size, button.Bounds.Size);
+                Assert.Equal(taskbarButton.CornerRadius, button.CornerRadius);
+            }
+            var mediaFrame = shell.MediaWidget.FindControl<Border>("MediaFrame")!;
+            var mediaBottom = mediaButtons[^1].TranslatePoint(new Point(0, mediaButtons[^1].Bounds.Height), mediaFrame)!.Value.Y;
+            Assert.True(mediaBottom <= mediaFrame.Bounds.Height - 6 + 0.01, "Media controls must fit inside the frame's six-pixel inset.");
+            for (var index = 1; index < mediaButtons.Length; index++)
+                Assert.Equal(mediaActions.Spacing, vertical
+                    ? mediaButtons[index].Bounds.Top - mediaButtons[index - 1].Bounds.Bottom
+                    : mediaButtons[index].Bounds.Left - mediaButtons[index - 1].Bounds.Right, 3);
             var body = shell.Taskbar.FindControl<Border>("TaskbarBody")!;
             Assert.Equal(vertical ? Orientation.Vertical : Orientation.Horizontal, shell.Taskbar.FindControl<StackPanel>("DockItems")!.Orientation);
             if (vertical)

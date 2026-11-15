@@ -7,7 +7,7 @@
   <Style Selector="Border.MonitorCard"><Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}"/><Setter Property="Padding" Value="{DynamicResource SpaceInset5}"/><Setter Property="BorderThickness" Value="0"/></Style>
   <Style Selector="TextBlock.Label"><Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/><Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}"/></Style>
   <Style Selector="TextBlock.Value"><Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
-  <Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="{DynamicResource SpaceInset3}"/><Setter Property="Margin" Value="{DynamicResource Space1}"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+  <Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="{DynamicResource SpaceInset3}"/><Setter Property="Margin" Value="{DynamicResource SpaceInset1}"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
   <Style Selector="ListBoxItem:pointerover"><Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/></Style>
   <Style Selector="ListBoxItem:selected"><Setter Property="Background" Value="{DynamicResource StateSelectedBrush}"/></Style>
   <Style Selector="ListBoxItem:selected:pointerover, ListBoxItem:pressed"><Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/></Style>
@@ -20,7 +20,7 @@
      <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsApplications}" Tag="1" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="squares-four" Size="{DynamicResource IconSizeMedium}"/><TextBlock Text="Applications" VerticalAlignment="Center"/></StackPanel></Button>
      <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsProcesses}" Tag="2" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="cpu" Size="{DynamicResource IconSizeMedium}"/><TextBlock Text="Processes" VerticalAlignment="Center"/></StackPanel></Button>
     </StackPanel>
-    <StackPanel Grid.Row="1" Spacing="{DynamicResource Space2}" Margin="{DynamicResource Space2}"><TextBlock Text="SYSTEM UPTIME" Classes="Label"/><TextBlock Text="{Binding Uptime}" FontWeight="SemiBold"/><TextBlock Text="{Binding ProcessCount, StringFormat='{}{0} processes running'}" Classes="Label"/></StackPanel>
+    <StackPanel Grid.Row="1" Spacing="{DynamicResource Space2}" Margin="{DynamicResource SpaceInset2}"><TextBlock Text="SYSTEM UPTIME" Classes="Label"/><TextBlock Text="{Binding Uptime}" FontWeight="SemiBold"/><TextBlock Text="{Binding ProcessCount, StringFormat='{}{0} processes running'}" Classes="Label"/></StackPanel>
    </Grid>
   </Border>
   <Grid Grid.Column="1" x:Name="MainPaneLayout" RowDefinitions="Auto,*">
