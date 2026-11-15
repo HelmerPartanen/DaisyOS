@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=System Monitor
+Comment=Inspect application, process and resource activity
+Exec=daisyos-taskmanager
+Icon=org.daisyos.taskmanager
+StartupWMClass=org.daisyos.taskmanager
+Categories=System;Monitor;

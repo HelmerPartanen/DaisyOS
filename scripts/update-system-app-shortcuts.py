@@ -16,7 +16,7 @@ if shutil.which('xdg-user-dir'):
     if result.returncode == 0 and result.stdout.strip(): desktop = Path(result.stdout.strip())
 removed_file = Path(os.environ.get('XDG_DATA_HOME', str(Path.home()/'.local/share'))) / 'daisyos/applications/removed-optional-applications'
 removed = set(removed_file.read_text().lower().splitlines()) if removed_file.exists() else set()
-for app in ('Files', 'Mail', 'Notes', 'Settings', 'DiskManager', 'AppInstaller', 'Calculator', 'AppStore', 'UIKit'):
+for app in ('Files', 'Mail', 'Notes', 'Settings', 'TaskManager', 'DiskManager', 'AppInstaller', 'Calculator', 'AppStore', 'UIKit'):
     if app.lower() in removed: continue
     shortcut = desktop / f'org.daisyos.{app.lower()}.desktop'
     if not shortcut.is_file(): continue

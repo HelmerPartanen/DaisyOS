@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:controls="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell"
+ xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming;assembly=DaisyOS.Shell"
+ xmlns:diag="clr-namespace:DaisyOS.Shell.Apps.System.Diagnostics"
+ x:Class="DaisyOS.Shell.Apps.System.Diagnostics.MonitorMetricCard" x:Name="Root" theming:ThemeTransitionPolicy.Enabled="False" x:DataType="diag:MonitorMetricCard">
+ <UserControl.Styles>
+  <Style Selector="Border, TextBlock, controls|DaisyIcon, diag|UsageHistory">
+   <Setter Property="theming:ThemeTransitionPolicy.Enabled" Value="False"/>
+   <Setter Property="Transitions"><Transitions/></Setter>
+  </Style>
+ </UserControl.Styles>
+ <Border Background="{DynamicResource SurfaceRaisedSubtleBrush}" CornerRadius="{DynamicResource RadiusSurface}" Padding="12">
+  <StackPanel Spacing="4">
+   <Grid ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8">
+    <controls:DaisyIcon Icon="{Binding Icon, ElementName=Root}" Foreground="{DynamicResource ContentSecondaryBrush}" Size="{DynamicResource IconSizeMedium}"/>
+    <TextBlock Grid.Column="1" Text="{Binding Title, ElementName=Root}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+    <TextBlock Grid.Column="2" Text="{Binding Value, ElementName=Root}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold" VerticalAlignment="Center" MaxWidth="170" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Value, ElementName=Root}"/>
+    <controls:DaisyIcon Grid.Column="3" Icon="caret-right" Foreground="{DynamicResource ContentSecondaryBrush}" Size="16"/>
+   </Grid>
+   <TextBlock Text="{Binding Assessment, ElementName=Root}" ToolTip.Tip="{Binding Assessment, ElementName=Root}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" TextTrimming="CharacterEllipsis"/>
+   <diag:UsageHistory Samples="{Binding Samples, ElementName=Root}" SecondarySamples="{Binding SecondarySamples, ElementName=Root}" EndTime="{Binding EndTime, ElementName=Root}" Maximum="{Binding Maximum, ElementName=Root}" Stroke="{Binding Accent, ElementName=Root}" Height="32" AutomationProperties.Name="{Binding Title, ElementName=Root}"/>
+   <TextBlock Text="{Binding Detail, ElementName=Root}" Foreground="{DynamicResource ContentSecondaryBrush}" FontSize="{DynamicResource TypeSizeCaption}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Detail, ElementName=Root}"/>
+  </StackPanel>
+ </Border>
+</UserControl>

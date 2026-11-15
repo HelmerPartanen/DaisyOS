@@ -68,7 +68,6 @@ public partial class App : Application
     private readonly LinuxSystemThemeService _systemThemeService = new(new SafeCommandRunner());
     private readonly LinuxPersonalizationService _personalizationService = new(new SafeCommandRunner());
     private CancellationTokenSource? _systemThemeSyncCancellation;
-    private DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerWindow? _taskManagerWindow;
     private DaisyOS.Shell.Views.Components.Clipboard.ClipboardHistoryWindow? _clipboardHistoryWindow;
     // LocalSend is shell UI in a native session. Its persistent content is
     // mounted once on a layer-shell overlay, not created as an xdg app window
@@ -2368,12 +2367,9 @@ public partial class App : Application
         HideLauncher(restoreFocus: false);
         _shellView?.Taskbar.HideContextMenu();
 
-        // An owned window has an immediate, local activation state. Handle an
-        // active owned app before consulting KWin so a taskbar click cannot be
-        // mistaken for a restore while the compositor snapshot is catching up.
-        // This preserves the familiar focused -> minimize contract.
+        // Owned windows use their local state for both minimize and restore.
+        // KWin snapshots can lag behind a minimize and still report active.
         if (NativeAppIds.Contains(appId, StringComparer.Ordinal)
-            && _nativeWindowTracker.GetState(appId) == NativeAppWindowState.Active
             && _nativeWindowTracker.ToggleFromTaskbar(appId))
         {
             return;
@@ -2887,43 +2883,14 @@ public partial class App : Application
         if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }
 
-    /// <summary>Opens one instance of the native DaisyOS System Monitor.</summary>
-    public void ShowTaskManager()
+    /// <summary>Opens System Monitor through the shared standalone application lifecycle.</summary>
+    public async void ShowTaskManager()
     {
         HideLauncher(restoreFocus: false);
-        if (_nativeWindowTracker.RestoreAndActivate("taskmanager"))
-        {
-            return;
-        }
-
-        if (_taskManagerWindow is { IsVisible: false } cached)
-        {
-            _nativeWindowTracker.Register("taskmanager", cached);
-            ShowNormalApplicationWindow(cached);
-            cached.Activate();
-            return;
-        }
-
-        try
-        {
-            _taskManagerWindow = new DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerWindow(_compositorWindows);
-            var taskManagerModel = _taskManagerWindow.DataContext as DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerViewModel;
-            _lightweightWindows.Track(_taskManagerWindow, () => taskManagerModel?.SetActive(false),
-                () => taskManagerModel?.SetActive(true), () => _nativeWindowTracker.Unregister("taskmanager"));
-            SetNativeApplicationId(_taskManagerWindow, "taskmanager");
-            _taskManagerWindow.Closed += (_, _) => _taskManagerWindow = null;
-
-            ShowNormalApplicationWindow(_taskManagerWindow);
-            _nativeWindowTracker.Register("taskmanager", _taskManagerWindow);
-        }
-        catch (Exception ex)
-        {
-            Console.Error.WriteLine($"[system-monitor] Window creation failed: {ex}");
-            _nativeWindowTracker.Unregister("taskmanager");
-            _taskManagerWindow?.Close();
-            _taskManagerWindow = null;
-            Feedback.Show(Loc.Get("System Monitor could not be opened."));
-        }
+        var launchId = _launchFeedback?.BeginLocalLaunch("org.daisyos.taskmanager");
+        var result = await PackagedApplicationLauncher.LaunchAsync("TaskManager");
+        if (!result.Succeeded && launchId is not null) _launchFeedback?.LocalLaunchFailed(launchId);
+        if (!result.Succeeded) Feedback.Show(Loc.Get(result.Message));
     }
 
     /// <summary>Opens the live catalog of reusable DaisyOS interface components.</summary>

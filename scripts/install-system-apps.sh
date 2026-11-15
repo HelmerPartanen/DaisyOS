@@ -16,7 +16,7 @@ fi
 python3 "$repo_root/scripts/install-user-gaming-integration.py"
 data_home="${XDG_DATA_HOME:-$HOME/.local/share}"
 removed_apps="$data_home/daisyos/applications/removed-optional-applications"
-for application in Mail Notes Settings DiskManager AppInstaller Calculator AppStore UIKit; do
+for application in Mail Notes Settings TaskManager DiskManager AppInstaller Calculator AppStore UIKit; do
   if [[ -f "$removed_apps" ]] && grep -q -i -x "$application" "$removed_apps"; then
     echo "Keeping intentionally removed optional application absent: $application"
     continue
@@ -34,10 +34,12 @@ for application in Mail Notes Settings DiskManager AppInstaller Calculator AppSt
   fi
   lower="${application,,}"
   icon_name="$application"
+  [[ "$application" != TaskManager ]] || icon_name=System_Monitor
   [[ "$application" != DiskManager ]] || icon_name=Disk_Manager
   [[ "$application" != AppStore ]] || icon_name=Store
   [[ "$application" != UIKit ]] || icon_name=UiKit
   icon_suffix=""
+  [[ "$application" != TaskManager ]] || icon_suffix=_Dark
   [[ "$application" != DiskManager ]] || icon_suffix=_Dark
   install -Dm0644 "$repo_root/src/DaisyOS.Shell/Assets/AppIcons/${icon_name}${icon_suffix}.png" "$data_home/icons/hicolor/1024x1024/apps/org.daisyos.$lower.png"
   ln -sfn "$binary" "$HOME/.local/bin/daisyos-$lower"

@@ -14,6 +14,9 @@ public sealed class NativeTaskbarIdentityTests
     [InlineData("appstore", "appstore")]
     [InlineData("appstore", "org.daisyos.appstore")]
     [InlineData("appstore", "org.daisyos.appstore.desktop")]
+    [InlineData("taskmanager", "taskmanager")]
+    [InlineData("taskmanager", "org.daisyos.taskmanager")]
+    [InlineData("taskmanager", "org.daisyos.taskmanager.desktop")]
     [InlineData("notes", "notes")]
     [InlineData("notes", "org.daisyos.notes.desktop")]
     public void DesktopIdPinsReceiveWindowIndicatorsAndCompositorRestoreIdentity(string app, string pin)

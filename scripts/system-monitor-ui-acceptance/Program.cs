@@ -1,4 +1,6 @@
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+using Avalonia.Media.Imaging;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Headless;
@@ -10,6 +12,7 @@ using DaisyOS.Shell;
 using DaisyOS.Shell.Apps.System.Diagnostics;
 using DaisyOS.Shell.Views.Components.Taskbar;
 using DaisyOS.Shell.Services.Compositor;
+using DaisyOS.Shell.Services.Windows;
 using DaisyOS.System.Diagnostics;
 using DaisyOS.System.Processes;
 
@@ -27,9 +30,9 @@ var runner = new RecordingRunner();
 var service = new LinuxProcessMonitorService(runner);
 Pump(CheckService());
 foreach (var theme in new[] { ThemeVariant.Dark, ThemeVariant.Light })
-foreach (var width in new[] { 920, 1100 })
+foreach (var (width, height) in new[] { (920, 620), (1100, 760), (1360, 860) })
 {
-    var window = new TaskManagerWindow { Width = width, Height = 760, RequestedThemeVariant = theme };
+    var window = new TaskManagerWindow { Width = width, Height = height, RequestedThemeVariant = theme };
     var vm = (TaskManagerViewModel)window.DataContext!;
     window.Show();
     var startup = Stopwatch.StartNew();
@@ -40,6 +43,33 @@ foreach (var width in new[] { 920, 1100 })
     Check(vm.ProcessCount > 0, "Real process samples");
     Check(vm.TotalMemory > 0, "Physical memory sample");
     Save("overview");
+    var cards = window.GetVisualDescendants().OfType<MonitorMetricCard>().ToArray();
+    var probes = cards.Select(card => card.TranslatePoint(new Point(card.Bounds.Width - 14, card.Bounds.Height - 14), window)!.Value).ToArray();
+    using (var baseline = window.CaptureRenderedFrame()!)
+    {
+        var colors = probes.Select(point => Pixel(baseline, point)).ToArray();
+        Pump(vm.RefreshAsync());
+        for (var frameIndex = 0; frameIndex < 4; frameIndex++)
+        {
+            Tick(1);
+            using var frame = window.CaptureRenderedFrame()!;
+            Check(probes.Select(point => Pixel(frame, point)).SequenceEqual(colors), "Live metric card surfaces do not flash during refresh");
+        }
+    }
+    var tracker = new NativeAppWindowTracker();
+    tracker.Register("taskmanager", window);
+    foreach (var restoreState in new[] { WindowState.Normal, WindowState.Maximized })
+    {
+        window.WindowState = restoreState;
+        window.WindowState = WindowState.Minimized;
+        Check(tracker.ToggleFromTaskbar("taskmanager"), "Owned monitor taskbar restore");
+        Check(window.WindowState == restoreState, "Preserve window state after minimize");
+        Check(tracker.ToggleFromTaskbar("taskmanager"), "Owned monitor taskbar minimize");
+        Check(window.WindowState == WindowState.Minimized, "Active taskbar click minimizes");
+    }
+    tracker.RestoreAndActivate("taskmanager");
+    window.WindowState = WindowState.Normal;
+    vm.SetActive(false);
     vm.Navigate(2); Tick(5);
     Check(vm.FilteredProcesses.Count > 0, "Process rows");
     vm.SortIndex = 2;
@@ -50,6 +80,36 @@ foreach (var width in new[] { 920, 1100 })
     Pump(vm.RefreshAsync());
     Check(ReferenceEquals(own, vm.SelectedProcess), "Preserve selected row during refresh");
     Save("processes");
+    var realizedRows = window.GetVisualDescendants().OfType<ProcessTableGrid>().Where(row => row.Classes.Contains("ProcessDataRow")).ToArray();
+    Check(realizedRows.Length > 0, "Virtualized process rows are realized");
+    foreach (var row in realizedRows)
+    {
+        var icon = row.GetVisualDescendants().OfType<MonitorAppIcon>().Single();
+        Check(icon.Source is not null || icon.GetVisualDescendants().OfType<DaisyOS.Shell.Controls.DaisyIcon>().Single().IsVisible, "Every process has an app icon or a visible system fallback");
+    }
+    vm.CloseDetails(); vm.TreeMode = true; Tick(2); Save("process-tree");
+    vm.TreeMode = false; vm.AdvancedColumns = true; Tick(2); Save("process-columns"); vm.AdvancedColumns = false;
+    for (var resource = 0; resource < 4; resource++)
+    {
+        vm.OpenResource(resource); Tick(2);
+        if (resource >= 2)
+        {
+            var selector = window.GetVisualDescendants().OfType<ComboBox>().Single(c => c.Name == "DeviceSelector");
+            Check(selector.SelectedIndex == vm.DeviceIndex && selector.SelectedItem is string,  $"Device selector displays its selection: resource={resource}, index={selector.SelectedIndex}, model={vm.DeviceIndex}, item={selector.SelectedItem}, count={selector.ItemCount}, options={string.Join(",", vm.DeviceOptions)}, device={vm.SelectedDevice}");
+            if (selector.ItemCount > 1)
+            {
+                selector.SelectedIndex = 1; Tick(2);
+                var selectedDevice = vm.SelectedDevice;
+                Pump(vm.RefreshAsync()); Tick(2);
+                Check(vm.SelectedDevice == selectedDevice && selector.SelectedIndex == 1, "Device selection survives sampling");
+                vm.OpenResource(resource == 2 ? 3 : 2); Tick(2); vm.OpenResource(resource); Tick(2);
+                Check(vm.SelectedDevice == selectedDevice && selector.SelectedIndex == 1, "Device selection survives navigation");
+                selector.SelectedIndex = 0; Tick(2);
+            }
+        }
+        Save("resource-" + resource);
+    }
+    vm.Navigate(2);
     vm.SearchFilter = "no-such-process-123456789";
     Check(vm.IsEmpty, "Empty search state"); Save("empty");
     vm.SearchFilter = ""; vm.Navigate(1); Tick(4);
@@ -64,24 +124,47 @@ foreach (var width in new[] { 920, 1100 })
         bitmap.Save(Path.Combine(output, $"{page}-{theme.Key}-{width}.png"));
     }
 }
+using (var pausedModel = new TaskManagerViewModel(start: false))
+{
+    var pending = pausedModel.RefreshAsync();
+    pausedModel.TogglePause();
+    Pump(pending);
+    Check(pausedModel.ProcessCount == 0 && pausedModel.MemoryHistory.Length == 0, "Pause freezes an in-flight update");
+    Pump(pausedModel.RefreshAsync());
+    Check(pausedModel.ProcessCount > 0 && pausedModel.PauseLabel == "Resume", "Manual refresh while paused");
+}
 var compositor = new FakeWindows();
 using (var vm = new TaskManagerViewModel(compositor, start: false))
 {
     Pump(vm.RefreshAsync()); vm.Navigate(1);
-    Check(vm.FilteredProcesses.Count == 1, "Compositor application rows");
-    vm.SelectedProcess = vm.FilteredProcesses[0];
-    Check(vm.CanEnd && !vm.CanForce, "Window close availability");
-    Pump(vm.EndProcessAsync(vm.SelectedProcess));
+    Check(vm.Applications.Count == 1, "Grouped compositor application rows");
+    vm.SelectedApplication = vm.Applications[0];
+    Check(vm.CanCloseApp, "Window close availability");
+    Pump(vm.CloseApplicationAsync());
     Check(compositor.Closed == "window-1", "Close uses compositor window identity");
+    var grouped = new FakeWindows { Windows = [
+        new("notes-1", "notes", "Shopping list", null, null, null, 1, true, false, false, false, true, ProcessId: Environment.ProcessId),
+        new("notes-2", "notes", "Project notes", null, null, null, 2, false, true, false, false, true, ProcessId: Environment.ProcessId),
+        new("browser-1", "browser", "Browser window", null, null, null, 1, false, false, false, false, true, ProcessId: 99999999)] };
+    var appWindow = new TaskManagerWindow(grouped) { Width = 1360, Height = 860 };
+    appWindow.Show();
+    var apps = (TaskManagerViewModel)appWindow.DataContext!;
+    Pump(apps.RefreshAsync()); apps.Navigate(1); apps.SelectedApplication = apps.Applications[0];
+    Tick(3);
+    foreach (var application in apps.Applications) application.IsExpanded = true;
+    Tick(4);
+    using var frame = appWindow.CaptureRenderedFrame() ?? throw new Exception("No app frame");
+    frame.Save(Path.Combine(output, "applications-grouped.png"));
+    appWindow.Close();
 }
-Console.WriteLine("PASS: live sampling, sorting, filtering, selection, process protection, signals, tooltip labels and themed rendering.");
+Console.WriteLine("PASS: stable card frames, process icons, aligned tables, live sampling, device selection, process protection and themed rendering.");
 async Task CheckService()
 {
     var expectedCpuCount = File.ReadLines("/proc/stat").Count(l => l.Length > 3 && l.StartsWith("cpu") && char.IsDigit(l[3]));
     Check(LinuxSystemMetricsService.LogicalProcessorCount == expectedCpuCount, "Hardware CPU count ignores validation quota");
     var processes = await service.GetProcessesAsync();
     var own = processes.Single(p => p.Pid == Environment.ProcessId);
-    Check(own.StartTimeTicks > 0 && own.MemoryBytes > 0 && own.ExecutablePath.StartsWith('/'), "Process metadata");
+    Check(own.StartTimeTicks > 0 && own.MemoryBytes > 0 && own.ExecutablePath.StartsWith('/') && own.ThreadCount > 0 && own.ParentPid > 0, "Process metadata");
     Check(!await service.KillProcessAsync(1), "Protect init");
     Check(!await service.KillProcessAsync(Environment.ProcessId), "Protect monitor");
     Check(!await service.EndInstanceAsync(Environment.ProcessId, own.StartTimeTicks + 1), "Reject wrong identity");
@@ -104,6 +187,12 @@ async Task CheckService()
     Check(activity.Sample().ReceiveBytesPerSecond is null, "First sample has no rate");
     Check(activity.Sample().ReceiveBytesPerSecond >= 0, "Second rate sample");
 }
+static int Pixel(Bitmap bitmap, Point point)
+{
+    var memory = Marshal.AllocHGlobal(4);
+    try { bitmap.CopyPixels(new PixelRect((int)point.X, (int)point.Y, 1, 1), memory, 4, 4); return Marshal.ReadInt32(memory); }
+    finally { Marshal.FreeHGlobal(memory); }
+}
 static void Check(bool condition, string message) { if (!condition) throw new Exception(message); }
 static void Tick(int count) { for (var i = 0; i < count; i++) { Dispatcher.UIThread.RunJobs(); AvaloniaHeadlessPlatform.ForceRenderTimerTick(); Thread.Sleep(10); } }
 static void Pump(Task task) { var timer = Stopwatch.StartNew(); while (!task.IsCompleted) { Tick(1); if (timer.Elapsed.TotalSeconds > 60) throw new TimeoutException(); } task.GetAwaiter().GetResult(); }
@@ -125,7 +214,7 @@ public sealed class MonitorQaApp : Application
 public sealed class FakeWindows : ICompositorWindowService
 {
     public string? Closed { get; private set; }
-    public IReadOnlyCollection<CompositorWindowRecord> Windows { get; } = [new("window-1", "notes", "Notes — Example", null, null, null, 1, false, false, false, false, true, ProcessId: Environment.ProcessId)];
+    public IReadOnlyCollection<CompositorWindowRecord> Windows { get; init; } = [new("window-1", "notes", "Notes — Example", null, null, null, 1, false, false, false, false, true, ProcessId: Environment.ProcessId)];
     public event EventHandler? WindowsChanged { add { } remove { } }
     public bool IsAvailable => true;
     public Task StartAsync(CancellationToken cancellationToken = default) => Task.CompletedTask;

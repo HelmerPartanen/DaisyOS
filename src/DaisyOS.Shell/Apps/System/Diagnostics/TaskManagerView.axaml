@@ -1,82 +1,202 @@
 <UserControl x:Class="DaisyOS.Shell.Apps.System.Diagnostics.TaskManagerView"
  xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:theming="clr-namespace:DaisyOS.Shell.Services.Theming;assembly=DaisyOS.Shell"
  xmlns:controls="clr-namespace:DaisyOS.Shell.Controls;assembly=DaisyOS.Shell" xmlns:diag="clr-namespace:DaisyOS.Shell.Apps.System.Diagnostics"
  x:DataType="diag:TaskManagerViewModel">
+ <UserControl.Resources>
+  <ControlTheme x:Key="MonitorMetricLinkTheme" TargetType="Button">
+   <Setter Property="Template"><ControlTemplate>
+    <Border x:Name="PART_FocusRing" CornerRadius="{TemplateBinding CornerRadius}" BorderThickness="2" BorderBrush="Transparent">
+     <ContentPresenter x:Name="PART_ContentPresenter" Content="{TemplateBinding Content}" ContentTemplate="{TemplateBinding ContentTemplate}" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+    </Border>
+   </ControlTemplate></Setter>
+   <Style Selector="^:focus-visible /template/ Border#PART_FocusRing"><Setter Property="BorderBrush" Value="{DynamicResource FocusRingBrush}"/></Style>
+   <Style Selector="^:pointerover"><Setter Property="Opacity" Value="0.92"/></Style>
+  </ControlTheme>
+
+  <DataTemplate x:Key="ResourceDetailTemplate" x:DataType="diag:DetailRow">
+   <Border Classes="MonitorCard" Margin="5" Padding="14"><StackPanel Spacing="6"><TextBlock Text="{Binding Label}" Classes="Label"/><SelectableTextBlock Text="{Binding Value}" Foreground="{DynamicResource ContentPrimaryBrush}" FontSize="{DynamicResource TypeSizeBodyLarge}" TextWrapping="Wrap"/></StackPanel></Border>
+  </DataTemplate>
+  <DataTemplate x:Key="DetailTemplate" x:DataType="diag:DetailRow">
+   <StackPanel Spacing="4" Margin="0,0,0,12"><TextBlock Text="{Binding Label}" Classes="Label"/><SelectableTextBlock Foreground="{DynamicResource ContentPrimaryBrush}" Text="{Binding Value}" TextWrapping="Wrap" FontSize="{DynamicResource TypeSizeBodySmall}"/></StackPanel>
+  </DataTemplate>
+ </UserControl.Resources>
  <UserControl.Styles>
-  <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml" />
-  <Style Selector="Border.MonitorCard"><Setter Property="Background" Value="{DynamicResource ActionSecondaryBrush}"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}"/><Setter Property="Padding" Value="{DynamicResource SpaceInset5}"/><Setter Property="BorderThickness" Value="0"/></Style>
+  <StyleInclude Source="avares://DaisyOS.Shell/Styles/SidebarNavigationStyles.axaml"/>
+  <Style Selector="diag|UsageHistory"><Setter Property="theming:ThemeTransitionPolicy.Enabled" Value="False"/><Setter Property="Transitions"><Transitions/></Setter></Style>
+  <Style Selector="Border.MonitorCard"><Setter Property="Background" Value="{DynamicResource SurfaceRaisedSubtleBrush}"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}"/><Setter Property="Padding" Value="16"/></Style>
   <Style Selector="TextBlock.Label"><Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/><Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}"/></Style>
-  <Style Selector="TextBlock.Value"><Setter Property="FontSize" Value="28"/><Setter Property="FontWeight" Value="SemiBold"/></Style>
-  <Style Selector="ListBoxItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="{DynamicResource SpaceInset3}"/><Setter Property="Margin" Value="{DynamicResource SpaceInset1}"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
-  <Style Selector="ListBoxItem:pointerover"><Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/></Style>
-  <Style Selector="ListBoxItem:selected"><Setter Property="Background" Value="{DynamicResource StateSelectedBrush}"/></Style>
-  <Style Selector="ListBoxItem:selected:pointerover, ListBoxItem:pressed"><Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/></Style>
+  <Style Selector="Button.MetricLink"><Setter Property="Theme" Value="{StaticResource MonitorMetricLinkTheme}"/><Setter Property="theming:ThemeTransitionPolicy.Enabled" Value="False"/><Setter Property="Transitions"><Transitions/></Setter><Setter Property="RenderTransform" Value="none"/><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="VerticalAlignment" Value="Stretch"/><Setter Property="Padding" Value="0"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="VerticalContentAlignment" Value="Stretch"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusSurface}"/></Style>
+  <Style Selector="Button.SortHeader"><Setter Property="HorizontalAlignment" Value="Stretch"/><Setter Property="Background" Value="Transparent"/><Setter Property="Padding" Value="0"/><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}"/></Style>
+  <Style Selector="Button.MonitorRow TextBlock"><Setter Property="TextAlignment" Value="Left"/><Setter Property="TextWrapping" Value="NoWrap"/></Style>
+  <Style Selector="Button.MonitorRow TextBlock.Label"><Setter Property="Foreground" Value="{DynamicResource ContentSecondaryBrush}"/><Setter Property="FontSize" Value="{DynamicResource TypeSizeCaption}"/></Style>
+  <Style Selector="ListBox.MonitorList"><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/><Setter Property="Padding" Value="0"/></Style>
+  <Style Selector="ListBox.MonitorList ListBoxItem"><Setter Property="MinHeight" Value="56"/><Setter Property="HorizontalContentAlignment" Value="Stretch"/><Setter Property="Padding" Value="10"/><Setter Property="Margin" Value="4,2"/><Setter Property="CornerRadius" Value="{DynamicResource RadiusControl}"/><Setter Property="Background" Value="Transparent"/><Setter Property="BorderThickness" Value="0"/></Style>
+  <Style Selector="ListBox.MonitorList ListBoxItem:pointerover /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource StateHoverBrush}"/><Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/></Style>
+  <Style Selector="ListBox.MonitorList ListBoxItem:selected /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource StateSelectedBrush}"/><Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/></Style>
+  <Style Selector="ListBox.MonitorList ListBoxItem:selected:pointerover /template/ ContentPresenter#PART_ContentPresenter, ListBox.MonitorList ListBoxItem:pressed /template/ ContentPresenter#PART_ContentPresenter"><Setter Property="Background" Value="{DynamicResource StatePressedBrush}"/><Setter Property="Foreground" Value="{DynamicResource ContentPrimaryBrush}"/></Style>
  </UserControl.Styles>
- <Grid ColumnDefinitions="210,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
-  <Border Background="{DynamicResource SurfaceRaisedSubtleBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="0,0,1,0" Padding="16">
-   <Grid RowDefinitions="*,Auto" RowSpacing="{DynamicResource Space6}">
+
+ <Grid ColumnDefinitions="190,*" Background="{DynamicResource SurfaceBaseSolidBrush}">
+  <Border Background="{DynamicResource SurfaceRaisedSubtleBrush}" Padding="12,16">
+   <Grid RowDefinitions="*,Auto">
     <StackPanel Spacing="{DynamicResource SidebarItemGap}">
-     <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsOverview}" Tag="0" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="gauge" Size="{DynamicResource IconSizeMedium}"/><TextBlock Text="Overview" VerticalAlignment="Center"/></StackPanel></Button>
-     <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsApplications}" Tag="1" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="squares-four" Size="{DynamicResource IconSizeMedium}"/><TextBlock Text="Applications" VerticalAlignment="Center"/></StackPanel></Button>
-     <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsProcesses}" Tag="2" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="cpu" Size="{DynamicResource IconSizeMedium}"/><TextBlock Text="Processes" VerticalAlignment="Center"/></StackPanel></Button>
+     <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsOverview}" Tag="0" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="system-overview" Size="20"/><TextBlock Text="Overview"/></StackPanel></Button>
+     <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsApplications}" Tag="1" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="squares-four" Size="20"/><TextBlock Text="Applications"/></StackPanel></Button>
+     <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsProcesses}" Tag="2" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="process-list" Size="20"/><TextBlock Text="Processes"/></StackPanel></Button>
+     <Button Classes="Large SettingsNavItem" Classes.Active="{Binding IsResources}" Tag="3" Click="OnNavigate"><StackPanel Orientation="Horizontal" Spacing="12"><controls:DaisyIcon Icon="cpu" Size="20"/><TextBlock Text="Resources"/></StackPanel></Button>
     </StackPanel>
-    <StackPanel Grid.Row="1" Spacing="{DynamicResource Space2}" Margin="{DynamicResource SpaceInset2}"><TextBlock Text="SYSTEM UPTIME" Classes="Label"/><TextBlock Text="{Binding Uptime}" FontWeight="SemiBold"/><TextBlock Text="{Binding ProcessCount, StringFormat='{}{0} processes running'}" Classes="Label"/></StackPanel>
+    <StackPanel Grid.Row="1" Spacing="6" Margin="10"><TextBlock Text="SYSTEM UPTIME" Classes="Label"/><TextBlock Text="{Binding Uptime}" FontWeight="SemiBold"/><TextBlock Text="{Binding ProcessCount, StringFormat='{}{0} processes'}" Classes="Label"/></StackPanel>
    </Grid>
   </Border>
   <Grid Grid.Column="1" x:Name="MainPaneLayout" RowDefinitions="Auto,*">
    <controls:AppWindowTitleBar x:Name="AppTitleBar"/>
-   <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*,Auto" Margin="24,12,24,16" RowSpacing="16">
+   <Grid Grid.Row="1" RowDefinitions="Auto,Auto,*,Auto" Margin="24,12,24,16" RowSpacing="10">
     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8">
      <StackPanel Spacing="4"><TextBlock Text="{Binding Heading}" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold"/><TextBlock Text="{Binding Description}" Classes="Label" TextWrapping="Wrap"/></StackPanel>
-     <Button Grid.Column="1" Content="{Binding PauseLabel}" Click="OnPause" VerticalAlignment="Top"/>
-     <Button Grid.Column="2" Classes="IconButton Subtle" Click="OnRefresh" ToolTip.Tip="Refresh now" AutomationProperties.Name="Refresh now" VerticalAlignment="Top"><controls:DaisyIcon Icon="arrows-clockwise" Size="{DynamicResource IconSizeMedium}"/></Button>
+     <Button Grid.Column="1" Classes="Secondary Small" Content="{Binding PauseLabel}" Click="OnPause" VerticalAlignment="Top"/>
+     <Button Grid.Column="2" Classes="IconButton Subtle Small" Click="OnRefresh" ToolTip.Tip="Refresh now" AutomationProperties.Name="Refresh now" VerticalAlignment="Top"><controls:DaisyIcon Icon="arrows-clockwise" Size="20"/></Button>
     </Grid>
-    <Border Grid.Row="1" IsVisible="{Binding HasError}" Padding="12" CornerRadius="8" Background="{DynamicResource SurfaceRaisedBrush}"><TextBlock Text="{Binding Error}" Foreground="{DynamicResource StatusDangerBrush}" TextWrapping="Wrap"/></Border>
+    <Border Grid.Row="1" IsVisible="{Binding HasError}" Padding="10" CornerRadius="{DynamicResource RadiusControl}" Background="{DynamicResource SurfaceRaisedSubtleBrush}"><TextBlock Text="{Binding Error}" Foreground="{DynamicResource StatusDangerBrush}" TextWrapping="Wrap" MaxLines="2" ToolTip.Tip="{Binding Error}"/></Border>
+    <!-- Overview: four entry points, followed by the biggest attributable users. -->
     <ScrollViewer Grid.Row="2" IsVisible="{Binding IsOverview}" HorizontalScrollBarVisibility="Disabled">
-     <StackPanel Spacing="16">
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-       <Border Grid.Column="0" Classes="MonitorCard"><StackPanel Spacing="12">
-        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Processor" FontWeight="SemiBold"/><TextBlock Grid.Column="1" Text="100%" Classes="Label"/></Grid>
-        <TextBlock Text="{Binding CpuUsage}" Classes="Value"/><TextBlock Text="{Binding CpuDetail}" Classes="Label" TextWrapping="Wrap" MinHeight="32"/>
-        <diag:UsageHistory Samples="{Binding CpuHistory}" Stroke="{DynamicResource ActionPrimaryBrush}" Height="96" AutomationProperties.Name="Processor usage history"/>
-        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Last 2 minutes" Classes="Label"/><TextBlock Grid.Column="1" Text="Now" Classes="Label"/></Grid>
-        <ProgressBar MinWidth="0" Value="{Binding CpuPercent}" Maximum="100" Height="5" Foreground="{DynamicResource ActionPrimaryBrush}" AutomationProperties.Name="Processor usage"/>
-       </StackPanel></Border>
-       <Border Grid.Column="1" Classes="MonitorCard"><StackPanel Spacing="12">
-        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Memory" FontWeight="SemiBold"/><TextBlock Grid.Column="1" Text="100%" Classes="Label"/></Grid>
-        <TextBlock Text="{Binding MemoryUsage}" Classes="Value"/><TextBlock Text="{Binding MemoryDetail}" Classes="Label" TextWrapping="Wrap" MinHeight="32"/>
-        <diag:UsageHistory Samples="{Binding MemoryHistory}" Stroke="{DynamicResource AccentOptionPurpleBrush}" Height="96" AutomationProperties.Name="Memory usage history"/>
-        <Grid ColumnDefinitions="*,Auto"><TextBlock Text="Last 2 minutes" Classes="Label"/><TextBlock Grid.Column="1" Text="Now" Classes="Label"/></Grid>
-        <ProgressBar MinWidth="0" Value="{Binding MemoryPercent}" Maximum="100" Height="5" Foreground="{DynamicResource AccentOptionPurpleBrush}" AutomationProperties.Name="Memory usage"/>
-       </StackPanel></Border>
+     <StackPanel Spacing="10">
+      <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+       <Button Classes="MetricLink" Tag="0" Click="OnResource" AutomationProperties.Name="Inspect CPU"><diag:MonitorMetricCard Title="CPU" Icon="cpu" Value="{Binding CpuUsage}" Assessment="{Binding CpuAssessment}" Detail="{Binding CpuDetail}" Samples="{Binding CpuHistory}" EndTime="{Binding HistoryEnd}" Accent="{DynamicResource ActionPrimaryBrush}"/></Button>
+       <Button Grid.Column="1" Classes="MetricLink" Tag="1" Click="OnResource" AutomationProperties.Name="Inspect memory"><diag:MonitorMetricCard Title="Memory" Icon="squares-four" Value="{Binding MemoryUsage}" Assessment="{Binding MemoryAssessment}" Detail="{Binding MemoryDetail}" Samples="{Binding MemoryHistory}" EndTime="{Binding HistoryEnd}" Accent="{DynamicResource ActionPrimaryBrush}"/></Button>
+       <Button Grid.Row="1" Classes="MetricLink" Tag="2" Click="OnResource" AutomationProperties.Name="Inspect disks"><diag:MonitorMetricCard Title="Disk" Icon="hard-drive" Value="{Binding DiskRead}" Assessment="{Binding DiskWrite, StringFormat='Write: {0}'}" Detail="Physical disks · Read ━ / Write ┄" Samples="{Binding DiskHistory}" SecondarySamples="{Binding DiskWriteHistory}" Maximum="0" EndTime="{Binding HistoryEnd}" Accent="{DynamicResource ActionPrimaryBrush}"/></Button>
+       <Button Grid.Row="1" Grid.Column="1" Classes="MetricLink" Tag="3" Click="OnResource" AutomationProperties.Name="Inspect network"><diag:MonitorMetricCard Title="Network" Icon="arrows-down-up" Value="{Binding NetworkReceive}" Assessment="{Binding NetworkSend, StringFormat='Send: {0}'}" Detail="All interfaces · Receive ━ / Send ┄" Samples="{Binding NetworkHistory}" SecondarySamples="{Binding NetworkSendHistory}" Maximum="0" EndTime="{Binding HistoryEnd}" Accent="{DynamicResource ActionPrimaryBrush}"/></Button>
       </Grid>
-      <Grid ColumnDefinitions="*,*" ColumnSpacing="16">
-       <Border Grid.Column="0" Classes="MonitorCard"><StackPanel Spacing="12"><TextBlock Text="Disk activity" FontWeight="SemiBold"/><Grid ColumnDefinitions="*,*"><StackPanel Spacing="4"><TextBlock Text="Read" Classes="Label"/><TextBlock Text="{Binding DiskRead}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold"/></StackPanel><StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Write" Classes="Label"/><TextBlock Text="{Binding DiskWrite}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold"/></StackPanel></Grid><TextBlock Text="Physical disks · Combined throughput" Classes="Label" TextWrapping="Wrap"/></StackPanel></Border>
-       <Border Grid.Column="1" Classes="MonitorCard"><StackPanel Spacing="12"><TextBlock Text="Network activity" FontWeight="SemiBold"/><Grid ColumnDefinitions="*,*"><StackPanel Spacing="4"><TextBlock Text="Receive" Classes="Label"/><TextBlock Text="{Binding NetworkReceive}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold"/></StackPanel><StackPanel Grid.Column="1" Spacing="4"><TextBlock Text="Send" Classes="Label"/><TextBlock Text="{Binding NetworkSend}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold"/></StackPanel></Grid><TextBlock Text="All interfaces · Excludes loopback" Classes="Label" TextWrapping="Wrap"/></StackPanel></Border>
-      </Grid>
-      <Border Classes="MonitorCard"><StackPanel Spacing="10"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="Swap memory" FontWeight="SemiBold"/><TextBlock Grid.Column="1" Text="{Binding SwapDetail}" Classes="Label"/></Grid><ProgressBar MinWidth="0" Value="{Binding SwapPercent}" Height="5"/><TextBlock Text="Disk space used as extra memory when applications need more RAM." Classes="Label" TextWrapping="Wrap"/></StackPanel></Border>
+      <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="10"><StackPanel VerticalAlignment="Center" Spacing="2"><TextBlock Text="Top resource users" FontWeight="SemiBold"/><TextBlock Text="{Binding TopUsersNote}" Classes="Label" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding TopUsersNote}"/></StackPanel><ComboBox Grid.Column="1" ItemsSource="{Binding TopSortOptions}" SelectedIndex="{Binding TopSort, Mode=TwoWay}" MinWidth="100" AutomationProperties.Name="Rank top users by"/><Button Grid.Column="2" Classes="Subtle Small" Content="View all" Click="OnViewAll"/></Grid>
+      <Border Classes="MonitorCard" Padding="6"><StackPanel><ItemsControl ItemsSource="{Binding TopUsers}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="diag:TopUsageRow"><Button Classes="SettingsNavItem Flexible Small MonitorRow" Click="OnTopUser" Height="{DynamicResource ButtonHeightSmall}" MinHeight="{DynamicResource ButtonHeightSmall}" HorizontalContentAlignment="Stretch" Padding="10,4" ToolTip.Tip="{Binding Detail}"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10"><diag:MonitorAppIcon Source="{Binding ApplicationIcon}"/><TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="{Binding Value}" VerticalAlignment="Center" FontWeight="SemiBold"/></Grid></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl><TextBlock Text="No attributable applications are available." IsVisible="{Binding !HasTopUsers}" Classes="Label" Margin="10"/></StackPanel></Border>
+      <TextBlock Text="{Binding SystemSummary}" Classes="Label" TextWrapping="Wrap"/>
      </StackPanel>
     </ScrollViewer>
-    <Grid Grid.Row="2" IsVisible="{Binding IsList}" RowDefinitions="Auto,*,Auto" RowSpacing="12">
-     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><controls:SearchBar Text="{Binding SearchFilter, Mode=TwoWay}" PlaceholderText="Search by name, PID or executable"/><ComboBox Grid.Column="1" ItemsSource="{Binding SortOptions}" SelectedIndex="{Binding SortIndex, Mode=TwoWay}" MinWidth="150" AutomationProperties.Name="Sort by"/></Grid>
-     <Border Grid.Row="1" Background="{DynamicResource SurfaceRaisedBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1" CornerRadius="{DynamicResource RoundedLG}" ClipToBounds="True">
-      <Grid RowDefinitions="Auto,*">
-       <Border Padding="16,12" Background="{DynamicResource SurfaceSunkenBrush}"><Grid ColumnDefinitions="*,110,120" ColumnSpacing="16"><TextBlock Text="{Binding ListSummary}" Classes="Label"/><TextBlock Grid.Column="1" Text="CPU · Total %" Classes="Label"/><TextBlock Grid.Column="2" Text="Memory · RAM" Classes="Label"/></Grid></Border>
-       <ListBox Grid.Row="1" ItemsSource="{Binding FilteredProcesses}" SelectedItem="{Binding SelectedProcess, Mode=TwoWay}" Background="Transparent" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Running items">
-        <ListBox.ItemTemplate><DataTemplate x:DataType="diag:ProcessRowViewModel">
-         <Grid ColumnDefinitions="*,110,120" ColumnSpacing="16">
-          <Grid ColumnDefinitions="Auto,*" ColumnSpacing="{DynamicResource Space3}"><Border Width="32" Height="32" CornerRadius="{DynamicResource RadiusControl}" Background="{DynamicResource ActionSecondaryBrush}" VerticalAlignment="Center"><Grid><controls:DaisyIcon Icon="{Binding FallbackIcon}" IsVisible="{Binding !HasApplicationIcon}" Size="{DynamicResource IconSizeMedium}" Foreground="{DynamicResource ContentSecondaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/><Image Source="{Binding ApplicationIcon}" IsVisible="{Binding HasApplicationIcon}" Width="24" Height="24" Stretch="Uniform" RenderOptions.BitmapInterpolationMode="HighQuality"/></Grid></Border><StackPanel Grid.Column="1" Spacing="{DynamicResource Space1}"><TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Name}"/><TextBlock Text="{Binding Detail}" Classes="Label" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Detail}"/></StackPanel></Grid>
-          <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center"><TextBlock Text="{Binding CpuText}"/><ProgressBar MinWidth="0" Value="{Binding CpuPercent}" Maximum="100" Height="4" Foreground="{DynamicResource ActionPrimaryBrush}"/></StackPanel>
-          <StackPanel Grid.Column="2" Spacing="8" VerticalAlignment="Center"><TextBlock Text="{Binding MemoryText}"/><ProgressBar MinWidth="0" Value="{Binding MemoryPercent}" Maximum="100" Height="4" Foreground="{DynamicResource AccentOptionPurpleBrush}"/></StackPanel>
+    <!-- Lists share a responsive details host; selected identities survive refreshes. -->
+    <Grid Grid.Row="2" IsVisible="{Binding IsList}" x:Name="ListAndDetails" ColumnDefinitions="*,0">
+     <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="10">
+      <controls:SearchBar Text="{Binding SearchFilter, Mode=TwoWay}" PlaceholderText="Search name, PID, executable or user"/>
+      <WrapPanel Grid.Row="1" ItemSpacing="12" LineSpacing="8" IsVisible="{Binding IsProcesses}">
+       <CheckBox Content="My processes" IsChecked="{Binding MyProcesses, Mode=TwoWay}"/>
+       <CheckBox Content="Process tree" IsChecked="{Binding TreeMode, Mode=TwoWay}"/>
+       <CheckBox Content="Extra columns" IsChecked="{Binding AdvancedColumns, Mode=TwoWay}"/>
+      </WrapPanel>
+      <TextBlock Grid.Row="2" Text="{Binding ListSummary}" Classes="Label" TextWrapping="Wrap"/>
+      <Border Grid.Row="3" Background="{DynamicResource SurfaceRaisedSubtleBrush}" CornerRadius="{DynamicResource RadiusSurface}" ClipToBounds="True">
+       <Grid>
+        <ScrollViewer IsVisible="{Binding IsProcesses}" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+         <Grid RowDefinitions="Auto,*" MinWidth="{Binding ProcessTableMinWidth}">
+          <diag:ProcessTableGrid x:Name="ProcessHeader" AdvancedColumns="{Binding AdvancedColumns}" ColumnSpacing="6" Margin="14,6">
+           <Button Classes="Subtle Small SortHeader" Content="{Binding NameHeader}" Tag="0" Click="OnSort"/><Button Grid.Column="1" Classes="Subtle Small SortHeader" Content="{Binding PidHeader}" Tag="3" Click="OnSort"/>
+           <Button Grid.Column="2" Classes="Subtle Small SortHeader" Content="{Binding CpuHeader}" Tag="1" Click="OnSort"/><Button Grid.Column="3" Classes="Subtle Small SortHeader" Content="{Binding MemoryHeader}" Tag="2" Click="OnSort"/>
+           <Button Grid.Column="4" Classes="Subtle Small SortHeader" Content="{Binding UserHeader}" Tag="4" Click="OnSort"/><Button Grid.Column="5" Classes="Subtle Small SortHeader" Content="{Binding StateHeader}" Tag="5" Click="OnSort"/>
+           <Button Grid.Column="6" Classes="Subtle Small SortHeader" Content="{Binding ParentHeader}" Tag="6" Click="OnSort" IsVisible="{Binding AdvancedColumns}"/><Button Grid.Column="7" Classes="Subtle Small SortHeader" Content="{Binding ThreadsHeader}" Tag="7" Click="OnSort" IsVisible="{Binding AdvancedColumns}"/>
+           <Button Grid.Column="8" Classes="Subtle Small SortHeader" Content="{Binding ReadHeader}" Tag="8" Click="OnSort" IsVisible="{Binding AdvancedColumns}"/><Button Grid.Column="9" Classes="Subtle Small SortHeader" Content="{Binding WriteHeader}" Tag="9" Click="OnSort" IsVisible="{Binding AdvancedColumns}"/>
+          </diag:ProcessTableGrid>
+          <ListBox Grid.Row="1" x:Name="ProcessList" Classes="MonitorList" ScrollViewer.VerticalScrollBarVisibility="Visible" ItemsSource="{Binding FilteredProcesses}" SelectedItem="{Binding SelectedProcess, Mode=TwoWay}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Running processes" DoubleTapped="OnOpenDetails" KeyDown="OnListKeyDown">
+           <ListBox.ItemTemplate><DataTemplate x:DataType="diag:ProcessRowViewModel">
+            <diag:ProcessTableGrid Classes="ProcessDataRow" AdvancedColumns="{Binding $parent[diag:TaskManagerView].DataContext.AdvancedColumns}" ColumnSpacing="6">
+             <Grid ColumnDefinitions="Auto,Auto,*" Margin="{Binding Indent}" ColumnSpacing="8">
+              <Button Classes="IconButton Subtle Small" IsVisible="{Binding HasChildren}" Click="OnToggleBranch" AutomationProperties.Name="Expand or collapse process"><controls:DaisyIcon Icon="{Binding ExpandIcon}" Size="14"/></Button>
+              <diag:MonitorAppIcon Grid.Column="1" Source="{Binding ApplicationIcon}"/>
+              <StackPanel Grid.Column="2" VerticalAlignment="Center"><TextBlock Text="{Binding Name}" FontWeight="Medium" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding ExecutablePath}"/></StackPanel>
+             </Grid>
+             <TextBlock Grid.Column="1" Text="{Binding Pid}" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="{Binding CpuText}" VerticalAlignment="Center"/><TextBlock Grid.Column="3" Text="{Binding MemoryText}" VerticalAlignment="Center"/>
+             <TextBlock Grid.Column="4" Text="{Binding User}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip.Tip="{Binding User}"/><TextBlock Grid.Column="5" Text="{Binding State}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+             <TextBlock Grid.Column="6" Text="{Binding ParentPid}" IsVisible="{Binding $parent[diag:TaskManagerView].DataContext.AdvancedColumns}" VerticalAlignment="Center"/><TextBlock Grid.Column="7" Text="{Binding Threads}" IsVisible="{Binding $parent[diag:TaskManagerView].DataContext.AdvancedColumns}" VerticalAlignment="Center"/>
+             <TextBlock Grid.Column="8" Text="{Binding ReadText}" IsVisible="{Binding $parent[diag:TaskManagerView].DataContext.AdvancedColumns}" VerticalAlignment="Center"/><TextBlock Grid.Column="9" Text="{Binding WriteText}" IsVisible="{Binding $parent[diag:TaskManagerView].DataContext.AdvancedColumns}" VerticalAlignment="Center"/>
+            </diag:ProcessTableGrid>
+           </DataTemplate></ListBox.ItemTemplate>
+          </ListBox>
          </Grid>
-        </DataTemplate></ListBox.ItemTemplate>
-       </ListBox>
-       <TextBlock Grid.Row="1" Text="{Binding EmptyMessage}" IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="360" TextAlignment="Center" Classes="Label" Margin="24" IsHitTestVisible="False"/>
+        </ScrollViewer>
+        <Grid IsVisible="{Binding IsApplications}" RowDefinitions="Auto,*">
+         <Grid x:Name="ApplicationHeader" ColumnDefinitions="*,108,108" ColumnSpacing="12" Margin="14,6"><Button Classes="Subtle Small SortHeader" Content="{Binding NameHeader}" Tag="0" Click="OnSort"/><Button Grid.Column="1" Classes="Subtle Small SortHeader" Content="{Binding CpuHeader}" Tag="1" Click="OnSort"/><Button Grid.Column="2" Classes="Subtle Small SortHeader" Content="{Binding MemoryHeader}" Tag="2" Click="OnSort"/></Grid>
+         <ListBox Grid.Row="1" x:Name="ApplicationsList" Classes="MonitorList" ScrollViewer.VerticalScrollBarVisibility="Visible" ItemsSource="{Binding Applications}" SelectedItem="{Binding SelectedApplication, Mode=TwoWay}" ScrollViewer.HorizontalScrollBarVisibility="Disabled" AutomationProperties.Name="Open applications" DoubleTapped="OnOpenDetails" KeyDown="OnListKeyDown">
+          <ListBox.ItemTemplate><DataTemplate x:DataType="diag:ApplicationRowViewModel">
+           <Grid RowDefinitions="Auto,Auto" RowSpacing="6">
+            <Grid Classes="ApplicationDataRow" ColumnDefinitions="*,108,108" ColumnSpacing="12">
+             <Grid ColumnDefinitions="Auto,Auto,*" ColumnSpacing="8"><Button Classes="IconButton Subtle Small" Click="OnToggleApplication" AutomationProperties.Name="Expand or collapse application windows"><controls:DaisyIcon Icon="{Binding ExpandIcon}" Size="14"/></Button><diag:MonitorAppIcon Grid.Column="1" Source="{Binding ApplicationIcon}" Fallback="squares-four"/><StackPanel Grid.Column="2"><TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Summary}" Classes="Label" TextTrimming="CharacterEllipsis"/></StackPanel></Grid>
+             <TextBlock Grid.Column="1" Text="{Binding CpuText}" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="{Binding MemoryText}" VerticalAlignment="Center"/>
+            </Grid>
+            <Border Grid.Row="1" IsVisible="{Binding IsExpanded}" Margin="40,0,0,0">
+             <ItemsControl ItemsSource="{Binding Windows}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="diag:WindowRowViewModel">
+              <Grid ColumnDefinitions="Auto,*,72,72" ColumnSpacing="8" Margin="0,4" MinHeight="48"><diag:MonitorAppIcon Source="{Binding ApplicationIcon}" Fallback="squares-four"/><StackPanel Grid.Column="1" VerticalAlignment="Center"><TextBlock Text="{Binding Title}" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Title}"/><TextBlock Text="{Binding Detail}" Classes="Label"/></StackPanel><Button Grid.Column="2" Classes="Subtle Small" HorizontalAlignment="Stretch" Content="Show" Click="OnShowWindow"/><Button Grid.Column="3" Classes="Subtle Small" HorizontalAlignment="Stretch" Content="Close" IsEnabled="{Binding CanClose}" Click="OnCloseWindow"/></Grid>
+             </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+            </Border>
+           </Grid>
+          </DataTemplate></ListBox.ItemTemplate>
+         </ListBox>
+        </Grid>
+        <TextBlock Text="{Binding EmptyMessage}" IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="340" TextAlignment="Center" Classes="Label" Margin="24" IsHitTestVisible="False"/>
+       </Grid>
+      </Border>
+     </Grid>
+     <Border x:Name="DetailsPanel" Grid.Column="1" IsVisible="{Binding DetailsOpen}" Background="{DynamicResource SurfaceBaseSolidBrush}" BorderBrush="{DynamicResource StrokeSubtleBrush}" BorderThickness="1" CornerRadius="{DynamicResource RadiusSurface}" Padding="16" ZIndex="10">
+      <Grid RowDefinitions="Auto,*" RowSpacing="14">
+       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8"><TextBlock Text="{Binding DetailsHeading}" FontWeight="SemiBold" FontSize="{DynamicResource TypeSizeSubtitle}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/><Button Grid.Column="1" Classes="IconButton Subtle Small" Click="OnCloseDetails" AutomationProperties.Name="Close details"><controls:DaisyIcon Icon="x" Size="16"/></Button></Grid>
+       <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Spacing="12">
+         <StackPanel IsVisible="{Binding IsProcesses}" Spacing="12">
+          <ItemsControl ItemsSource="{Binding ProcessDetails}" ItemTemplate="{StaticResource DetailTemplate}"/>
+          <TextBlock Text="{Binding ProcessProtection}" Classes="Label" TextWrapping="Wrap"/>
+          <WrapPanel ItemSpacing="8" LineSpacing="8"><Button Classes="Secondary Small" Content="End process…" IsEnabled="{Binding CanEnd}" Click="OnEndSelectedProcessClicked"/><Button Classes="Danger Small" Content="Force quit…" IsEnabled="{Binding CanEnd}" Click="OnForceQuit"/></WrapPanel>
+         </StackPanel>
+         <StackPanel IsVisible="{Binding IsApplications}" Spacing="12">
+          <TextBlock Text="{Binding SelectedApplication.Attribution}" Classes="Label" TextWrapping="Wrap"/>
+          <TextBlock Text="Attributable processes" FontWeight="SemiBold"/>
+          <ItemsControl ItemsSource="{Binding ApplicationProcesses}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="diag:ProcessRowViewModel"><Button Classes="SettingsNavItem Flexible Small MonitorRow" Click="OnInspectProcess" HorizontalContentAlignment="Stretch" Padding="8"><Grid ColumnDefinitions="Auto,*" ColumnSpacing="8"><diag:MonitorAppIcon Source="{Binding ApplicationIcon}"/><StackPanel Grid.Column="1"><TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Detail}" Classes="Label"/><TextBlock Text="{Binding ExecutablePath}" Classes="Label" TextTrimming="CharacterEllipsis"/></StackPanel></Grid></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+          <TextBlock Text="Usage is based on known window owners and exclusively attributable descendants. Shared hosts are excluded. RAM totals may include shared pages." Classes="Label" TextWrapping="Wrap"/>
+          <Button Classes="Secondary Small" Content="Close all windows" IsEnabled="{Binding CanCloseApp}" Click="OnCloseApp" HorizontalAlignment="Left"/>
+         </StackPanel>
+        </StackPanel>
+       </ScrollViewer>
       </Grid>
      </Border>
-     <StackPanel Grid.Row="2" Spacing="12"><TextBlock Text="{Binding SelectionDetail}" Classes="Label" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding SelectionDetail}"/><StackPanel Orientation="Horizontal" Spacing="8" HorizontalAlignment="Right"><Button Content="Force quit…" IsVisible="{Binding IsProcesses}" IsEnabled="{Binding CanForce}" Click="OnForceQuit"/><Button Content="{Binding ActionLabel}" IsEnabled="{Binding CanEnd}" Click="OnEndSelectedProcessClicked"/></StackPanel></StackPanel>
     </Grid>
-    <TextBlock Grid.Row="3" Text="{Binding Status}" Classes="Label" TextTrimming="CharacterEllipsis"/>
+    <!-- Resources use a compact summary, paired rates and an aligned metric grid. -->
+    <Grid Grid.Row="2" IsVisible="{Binding IsResources}" RowDefinitions="Auto,Auto,*" RowSpacing="12">
+     <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="8">
+      <Button Classes="Subtle Small" HorizontalAlignment="Stretch" Classes.Selected="{Binding IsCpuResource}" Content="CPU" Tag="0" Click="OnResource"/>
+      <Button Grid.Column="1" Classes="Subtle Small" HorizontalAlignment="Stretch" Classes.Selected="{Binding IsMemoryResource}" Content="Memory" Tag="1" Click="OnResource"/>
+      <Button Grid.Column="2" Classes="Subtle Small" HorizontalAlignment="Stretch" Classes.Selected="{Binding IsDiskResource}" Content="Disk" Tag="2" Click="OnResource"/>
+      <Button Grid.Column="3" Classes="Subtle Small" HorizontalAlignment="Stretch" Classes.Selected="{Binding IsNetworkResource}" Content="Network" Tag="3" Click="OnResource"/>
+     </Grid>
+     <Grid Grid.Row="1" IsVisible="{Binding HasDeviceSelector}" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
+      <ComboBox x:Name="DeviceSelector" ItemsSource="{Binding DeviceOptions}" SelectionChanged="OnDeviceSelectionChanged" MinWidth="210" AutomationProperties.Name="Device or interface"/>
+      <Button Grid.Column="2" Classes="Secondary Small" Content="Open Disk Manager" IsVisible="{Binding IsDiskResource}" Click="OnDiskManager" x:Name="DiskManagerLink"/>
+     </Grid>
+     <ScrollViewer Grid.Row="2" HorizontalScrollBarVisibility="Disabled"><StackPanel Spacing="14">
+      <Border Classes="MonitorCard"><StackPanel Spacing="12">
+       <Grid ColumnDefinitions="Auto,*,140,140" ColumnSpacing="12">
+        <controls:DaisyIcon Icon="{Binding ResourceIcon}" Size="24" Foreground="{DynamicResource ContentSecondaryBrush}" VerticalAlignment="Center"/>
+        <TextBlock Grid.Column="1" Text="{Binding ResourceTitle}" FontSize="{DynamicResource TypeSizeSubtitle}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+        <StackPanel Grid.Column="2" Spacing="3"><TextBlock Text="{Binding ResourcePrimaryLabel}" Classes="Label"/><TextBlock Text="{Binding ResourceValue}" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/></StackPanel>
+        <StackPanel Grid.Column="3" Spacing="3"><TextBlock Text="{Binding ResourceSecondaryLabel}" Classes="Label"/><TextBlock Text="{Binding ResourceSecondaryValue}" FontSize="{DynamicResource TypeSizeHeading}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/></StackPanel>
+       </Grid>
+       <TextBlock Text="{Binding ResourceExplanation}" Classes="Label" TextWrapping="Wrap"/>
+       <TextBlock Text="{Binding ResourceScale}" Classes="Label" HorizontalAlignment="Right"/>
+       <diag:UsageHistory Samples="{Binding ResourceHistory}" SecondarySamples="{Binding ResourceSecondaryHistory}" Maximum="{Binding ResourceMaximum}" EndTime="{Binding HistoryEnd}" Stroke="{DynamicResource ActionPrimaryBrush}" Height="128" AutomationProperties.Name="Resource usage over the last two minutes"/>
+       <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12"><TextBlock Text="{Binding ResourceLegend}" Classes="Label" TextWrapping="Wrap"/><TextBlock Grid.Column="1" Text="Now" Classes="Label"/></Grid>
+      </StackPanel></Border>
+      <ItemsControl ItemsSource="{Binding ResourceDetails}" ItemTemplate="{StaticResource ResourceDetailTemplate}" Margin="-5,0"><ItemsControl.ItemsPanel><ItemsPanelTemplate><UniformGrid Columns="2"/></ItemsPanelTemplate></ItemsControl.ItemsPanel></ItemsControl>
+      <StackPanel IsVisible="{Binding IsCpuResource}" Spacing="10">
+       <Button Classes="Secondary Small" Content="{Binding CoreToggleLabel}" Click="OnToggleCores" HorizontalAlignment="Stretch"/>
+       <ItemsControl ItemsSource="{Binding Cores}" IsVisible="{Binding ShowCoreCharts}"><ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel ItemWidth="164" ItemSpacing="10" LineSpacing="10"/></ItemsPanelTemplate></ItemsControl.ItemsPanel><ItemsControl.ItemTemplate><DataTemplate x:DataType="diag:CoreUsageRow">
+        <Border Classes="MonitorCard" Padding="12"><StackPanel Spacing="8"><Grid ColumnDefinitions="*,Auto"><TextBlock Text="{Binding Name}" Classes="Label"/><TextBlock Grid.Column="1" Text="{Binding Value}" FontWeight="Medium"/></Grid><diag:UsageHistory Samples="{Binding Samples}" EndTime="{Binding EndTime}" Maximum="100" Height="40" Stroke="{DynamicResource ActionPrimaryBrush}" AutomationProperties.Name="{Binding Name}"/></StackPanel></Border>
+       </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+      </StackPanel>
+      <StackPanel IsVisible="{Binding HasContributors}" Spacing="10">
+       <controls:SectionHeader Title="Processes using this resource"/>
+       <TextBlock Text="{Binding ContributorNote}" Classes="Label" TextWrapping="Wrap"/>
+       <Border Classes="MonitorCard" Padding="6"><StackPanel>
+        <ItemsControl ItemsSource="{Binding Contributors}"><ItemsControl.ItemTemplate><DataTemplate x:DataType="diag:ResourceContributor"><Button Classes="SettingsNavItem Flexible Small MonitorRow" Click="OnContributor" HorizontalContentAlignment="Stretch" Padding="10,6"><Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10"><diag:MonitorAppIcon Source="{Binding ApplicationIcon}"/><TextBlock Grid.Column="1" Text="{Binding Name}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/><TextBlock Grid.Column="2" Text="{Binding Value}" VerticalAlignment="Center"/></Grid></Button></DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+        <TextBlock Text="No accessible process measurements are available." IsVisible="{Binding !HasContributorRows}" Classes="Label" Margin="10" TextWrapping="Wrap"/>
+       </StackPanel></Border>
+      </StackPanel>
+     </StackPanel></ScrollViewer>
+    </Grid>
+    <TextBlock Grid.Row="3" Text="{Binding Status}" Classes="Label" TextTrimming="CharacterEllipsis" ToolTip.Tip="{Binding Status}"/>
    </Grid>
   </Grid>
  </Grid>

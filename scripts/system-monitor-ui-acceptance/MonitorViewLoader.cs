@@ -14,3 +14,7 @@ public partial class TaskManagerWindow
     private TaskManagerView MonitorContent => this.FindControl<TaskManagerView>("MonitorContent")!;
     private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
 }
+public partial class MonitorMetricCard
+{
+    private void InitializeComponent() => AvaloniaXamlLoader.Load(this);
+}

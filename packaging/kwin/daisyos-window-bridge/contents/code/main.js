@@ -16,6 +16,7 @@ var daisyAppTitles = {
     "calculator": "calculator",
     "files": "files",
     "disk manager": "diskmanager",
+    "system monitor": "taskmanager",
     "app installer": "appinstaller",
     "sovellusasentaja": "appinstaller",
     "app store": "appstore",
@@ -30,6 +31,7 @@ var daisyAppIdsByWaylandAppId = {
     "org.daisyos.calculator": "calculator",
     "org.daisyos.files": "files",
     "org.daisyos.diskmanager": "diskmanager",
+    "org.daisyos.taskmanager": "taskmanager",
     "org.daisyos.appinstaller": "appinstaller",
     "org.daisyos.appstore": "appstore"
 };

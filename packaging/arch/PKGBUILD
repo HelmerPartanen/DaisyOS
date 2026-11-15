@@ -47,6 +47,11 @@ package_daisyos-shell() {
     case "$(basename "$entry")" in apps|*-root|*.service|*.desktop) continue ;; esac
     cp -a "$entry" "$pkgdir/usr/lib/daisyos/"
   done
+  install -d "$pkgdir/usr/lib/daisyos/apps/TaskManager"
+  cp -a "$srcdir/apps/TaskManager/." "$pkgdir/usr/lib/daisyos/apps/TaskManager/"
+  ln -s /usr/lib/daisyos/apps/TaskManager/DaisyOS.TaskManager "$pkgdir/usr/bin/daisyos-taskmanager"
+  install -Dm644 "$srcdir/applications/org.daisyos.taskmanager.desktop" "$pkgdir/usr/share/applications/org.daisyos.taskmanager.desktop"
+  install -Dm644 "$srcdir/applications/icons/org.daisyos.taskmanager.png" "$pkgdir/usr/share/icons/hicolor/1024x1024/apps/org.daisyos.taskmanager.png"
   mkdir -p "$pkgdir/usr/lib/daisyos/apps/Continuity"
   cp -a "$srcdir/apps/Continuity/." "$pkgdir/usr/lib/daisyos/apps/Continuity/"
   ln -s /usr/lib/daisyos/daisyos-shell "$pkgdir/usr/bin/daisyos-shell"

@@ -66,7 +66,7 @@ dotnet restore
 dotnet build --configuration Release --no-restore "${properties[@]}"
 dotnet test --configuration Release --no-build "${properties[@]}"
 rm -rf "$publish_dir"
-for application in Files Mail Notes Settings DiskManager AppInstaller; do
+for application in Files Mail Notes Settings TaskManager DiskManager AppInstaller; do
   dotnet restore "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --runtime linux-x64 "${properties[@]}"
 done
@@ -81,7 +81,7 @@ install -m755 "$repo_root/services/DaisyGaming/rust/target/release/daisy-gamingd
 install -m644 "$repo_root/packaging/gaming/daisyos-gamingd.service" "$publish_dir/daisyos-gamingd.service"
 install -m644 "$repo_root/packaging/gaming/org.daisyos.Gaming1.service" "$publish_dir/org.daisyos.Gaming1.service"
 
-for application in Files Mail Notes Settings DiskManager AppInstaller; do
+for application in Files Mail Notes Settings TaskManager DiskManager AppInstaller; do
   dotnet publish "src/DaisyOS.$application/DaisyOS.$application.csproj" \
     --configuration Release --runtime linux-x64 --self-contained true \
     --no-restore --output "$publish_dir/apps/$application" "${properties[@]}"

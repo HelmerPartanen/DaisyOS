@@ -56,6 +56,7 @@ public class DiskManagerTaskbarTests
     [InlineData("diskmanager")]
     [InlineData("notes")]
     [InlineData("settings")]
+    [InlineData("taskmanager")]
     public void UnpinnedNativeAppsAppearWhileRunningAndLeaveAfterClosing(string app)
     {
         var view = new TaskbarView(); view.ApplyOrder(["files"]);
